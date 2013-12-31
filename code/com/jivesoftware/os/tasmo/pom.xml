@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.jivesoftware.os.jive</groupId>
+    <artifactId>tasmo</artifactId>
+    <version>unspecified</version>
+    <packaging>pom</packaging>
+    <parent>
+        <groupId>com.jivesoftware.os.tasmo.inheritance.poms</groupId>
+        <artifactId>global-repo-management</artifactId>
+        <version>unspecified</version>
+        <relativePath>inheritance-poms/global-repo-management/pom.xml</relativePath>
+    </parent>
+    <modules>
+    </modules>
+
+</project>
