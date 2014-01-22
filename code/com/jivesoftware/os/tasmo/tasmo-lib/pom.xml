@@ -5,12 +5,12 @@
     <parent>
         <groupId>com.jivesoftware.os.tasmo.inheritance.poms</groupId>
         <artifactId>shared-lib-build-management</artifactId>
-        <version>0.1-SNAPSHOT</version>
+        <version>0.2-SNAPSHOT</version>
         <relativePath>../inheritance-poms/shared-lib-build-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.tasmo</groupId>
     <artifactId>tasmo-lib</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <version>0.2-SNAPSHOT</version>
     <properties>
         <module.type>service_lib</module.type>
     </properties>
@@ -94,7 +94,7 @@
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-lib</artifactId>
             <scope>test</scope>
-            <version>0.1-SNAPSHOT</version>
+            <version>0.2-SNAPSHOT</version>
             <type>jar</type>
         </dependency>
     </dependencies>
