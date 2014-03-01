@@ -50,24 +50,24 @@ public class ReferenceStore {
 
         multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
             new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
-            @Override
-            public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> value) throws Exception {
-                if (value == null) {
-                    versionedBIds.callback(null); // EOS
-                    return null;
-                } else {
-                    Reference reference = new Reference(value.getColumn(), value.getTimestamp());
+                @Override
+                public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> value) throws Exception {
+                    if (value == null) {
+                        versionedBIds.callback(null); // EOS
+                        return null;
+                    } else {
+                        Reference reference = new Reference(value.getColumn(), value.getTimestamp());
                     LOG.trace(" |--> Got bIds Tenant={} A={} B={} Timestamp={}", new Object[]{
                         tenantIdAndCentricId, aClassAndField_aId, value.getColumn(), value.getTimestamp()});
-                    Reference returned = versionedBIds.callback(reference);
-                    if (returned == reference) {
-                        return value;
-                    } else {
-                        return null;
+                        Reference returned = versionedBIds.callback(reference);
+                        if (returned == reference) {
+                            return value;
+                        } else {
+                            return null;
+                        }
                     }
                 }
-            }
-        });
+            });
 
     }
 
@@ -76,29 +76,28 @@ public class ReferenceStore {
 
         LOG.inc("get_aIds");
 
+        List<KeyedColumnValueCallbackStream<ClassAndField_IdKey, ObjectId, byte[], Long>> callbacks = new ArrayList<>(aClassNames.size());
         for (String aClassName : aClassNames) {
-
             final ClassAndField_IdKey aClassAndField_bId = new ClassAndField_IdKey(aClassName, aFieldName, bId.getObjectId());
-            LOG.trace(" |--> Get aIds Tenant={} B={}", tenantIdAndCentricId, aClassAndField_bId);
-            multiBackLinks.getEntrys(tenantIdAndCentricId, aClassAndField_bId, null, Long.MAX_VALUE, 1000, false, null, null,
+            callbacks.add(new KeyedColumnValueCallbackStream<ClassAndField_IdKey, ObjectId, byte[], Long>(aClassAndField_bId,
                 new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
-                @Override
-                public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> value) throws Exception {
-                    if (value != null) {
-                        Reference reference = new Reference(value.getColumn(), value.getTimestamp());
-                        LOG.trace(" |--> Got aIds Tenant={} B={} A={} Timestamp={}", new Object[]{
-                            tenantIdAndCentricId, aClassAndField_bId, value.getColumn(), value.getTimestamp()});
-                        Reference returned = versioneAIds.callback(reference);
-                        if (returned != reference) {
-                            return null;
+                    @Override
+                    public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> value)
+                        throws Exception {
+                        if (value != null) {
+                            Reference reference = new Reference(value.getColumn(), value.getTimestamp());
+                            LOG.trace(" |--> Got aIds Tenant={} B={} A={} Timestamp={}", new Object[] {
+                                tenantIdAndCentricId, aClassAndField_bId, value.getColumn(), value.getTimestamp() });
+                            Reference returned = versioneAIds.callback(reference);
+                            if (returned != reference) {
+                                return null;
+                            }
                         }
+                        return value;
                     }
-
-                    return value;
-                }
-            });
+                }));
         }
-
+        multiBackLinks.multiRowGetAll(tenantIdAndCentricId, callbacks);
         versioneAIds.callback(null); // EOS
     }
 
@@ -179,23 +178,23 @@ public class ReferenceStore {
 
         multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
             new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
-            @Override
-            public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> bObjectId)
-                throws Exception {
-                if (bObjectId != null) {
-                    if (bObjectId.getTimestamp() < removeAtTimestamp) {
+                @Override
+                public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> bObjectId)
+                    throws Exception {
+                    if (bObjectId != null) {
+                        if (bObjectId.getTimestamp() < removeAtTimestamp) {
 
-                        ClassAndField_IdKey aClassAndField_bId = new ClassAndField_IdKey(aId.getObjectId().getClassName(),
-                            aFieldName, bObjectId.getColumn());
-                        multiLinks.remove(tenantIdAndCentricId, aClassAndField_aId, bObjectId.getColumn(), constantTimestamper);
-                        multiBackLinks.remove(tenantIdAndCentricId, aClassAndField_bId, aId.getObjectId(), constantTimestamper);
+                            ClassAndField_IdKey aClassAndField_bId = new ClassAndField_IdKey(aId.getObjectId().getClassName(),
+                                aFieldName, bObjectId.getColumn());
+                            multiLinks.remove(tenantIdAndCentricId, aClassAndField_aId, bObjectId.getColumn(), constantTimestamper);
+                            multiBackLinks.remove(tenantIdAndCentricId, aClassAndField_bId, aId.getObjectId(), constantTimestamper);
 
-                        removed_bIds.callback(new Reference(bObjectId.getColumn(), bObjectId.getTimestamp()));
+                            removed_bIds.callback(new Reference(bObjectId.getColumn(), bObjectId.getTimestamp()));
+                        }
                     }
+                    return bObjectId;
                 }
-                return bObjectId;
-            }
-        });
+            });
 
         removed_bIds.callback(null); // EOS
 

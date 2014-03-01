@@ -13,8 +13,8 @@ import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
-import com.jivesoftware.os.tasmo.lib.exists.ExistanceUpdate;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
+import com.jivesoftware.os.tasmo.lib.exists.ExistenceUpdate;
 import com.jivesoftware.os.tasmo.lib.process.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.EventProcessorDispatcher;
 import com.jivesoftware.os.tasmo.lib.process.NoOpEventProcessor;
@@ -54,32 +54,32 @@ public class TasmoViewMaterializer {
             LOG.startTimer("processWrittenEvents");
             tasmoEventBookkeeper.begin(writtenEvents);
 
-            List<ExistanceUpdate> exist = new ArrayList<>();
-            List<ExistanceUpdate> noLongerExist = new ArrayList<>();
+            List<ExistenceUpdate> exist = new ArrayList<>();
+            List<ExistenceUpdate> noLongerExist = new ArrayList<>();
             for (WrittenEvent writtenEvent : writtenEvents) {
                 TenantId tenantId = writtenEvent.getTenantId();
                 long timestamp = writtenEvent.getEventId();
                 WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
                 ObjectId objectId = writtenInstance.getInstanceId();
                 if (writtenInstance.isDeletion()) {
-                    noLongerExist.add(new ExistanceUpdate(tenantId, timestamp, objectId));
+                    noLongerExist.add(new ExistenceUpdate(tenantId, timestamp, objectId));
                 } else {
-                    exist.add(new ExistanceUpdate(tenantId, timestamp, objectId));
+                    exist.add(new ExistenceUpdate(tenantId, timestamp, objectId));
                 }
             }
 
-            List<ExistanceUpdate> checkIfExists = new ArrayList<>();
+            List<ExistenceUpdate> checkIfExists = new ArrayList<>();
             checkIfExists.addAll(exist);
             checkIfExists.addAll(noLongerExist);
             Set<ObjectId> currentlyExists = existenceStore.getExistence(checkIfExists);
             Set<ObjectId> transitioning = new HashSet<>();
-            for (ExistanceUpdate existanceUpdate : exist) {
-                if (!currentlyExists.contains(existanceUpdate.objectId)) {
-                    transitioning.add(existanceUpdate.objectId);
+            for (ExistenceUpdate existenceUpdate : exist) {
+                if (!currentlyExists.contains(existenceUpdate.objectId)) {
+                    transitioning.add(existenceUpdate.objectId);
                 }
             }
 
-            for (ExistanceUpdate existanceUpdate : noLongerExist) {
+            for (ExistenceUpdate existanceUpdate : noLongerExist) {
                 if (currentlyExists.contains(existanceUpdate.objectId)) {
                     transitioning.add(existanceUpdate.objectId);
                 }

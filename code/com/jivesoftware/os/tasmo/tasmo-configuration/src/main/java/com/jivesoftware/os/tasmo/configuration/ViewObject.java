@@ -21,6 +21,7 @@ public class ViewObject {
     private final Map<String, ViewArray> arrayFields;
     private final Map<String, ViewObject> refFields;
     private final Map<String, ViewArray> backRefFields;
+    private final Map<String, ViewArray> countFields;
     private final Map<String, ViewObject> latestBackRefFields;
 
     public ViewObject(Set<ObjectId> ids,
@@ -28,6 +29,7 @@ public class ViewObject {
         Map<String, ViewArray> arrayFields,
         Map<String, ViewObject> refFields,
         Map<String, ViewArray> backRefFields,
+        Map<String, ViewArray> countFields,
         Map<String, ViewObject> latestBackRefFields) {
 
         this.classNames = new HashSet<String>(ids.size());
@@ -39,6 +41,7 @@ public class ViewObject {
         this.arrayFields = arrayFields;
         this.refFields = refFields;
         this.backRefFields = backRefFields;
+        this.countFields = countFields;
         this.latestBackRefFields = latestBackRefFields;
     }
 
@@ -54,6 +57,9 @@ public class ViewObject {
             triggeringEventClassNames.addAll(viewObject.getTriggeringEventClassNames());
         }
         for (ViewArray viewArray : backRefFields.values()) {
+            triggeringEventClassNames.addAll(viewArray.getTriggeringEventClassNames());
+        }
+        for (ViewArray viewArray : countFields.values()) {
             triggeringEventClassNames.addAll(viewArray.getTriggeringEventClassNames());
         }
         for (ViewObject viewObject : latestBackRefFields.values()) {
@@ -92,6 +98,9 @@ public class ViewObject {
             return false;
         }
         if (!isMapOfArraysTheSame(backRefFields, other.backRefFields)) {
+            return false;
+        }
+        if (!isMapOfArraysTheSame(countFields, other.countFields)) {
             return false;
         }
         if (!isMapOfViewObjectsTheSame(latestBackRefFields, other.latestBackRefFields)) {
@@ -159,15 +168,25 @@ public class ViewObject {
         }
         if (!backRefFields.isEmpty()) {
             for (Entry<String, ViewArray> backRefsField : backRefFields.entrySet()) {
-                ViewObject referringObject = backRefsField.getValue().element;
-
                 pathCallback.push(classNames, ValueType.backrefs, backRefsField.getKey());
 
                 //We have no way to get the referring field type from the example json so we use refOrRefs value type
+                //ViewObject referringObject = backRefsField.getValue().element;
                 //pathCallback.push(referringObject.id.getClassName(), ValueType.refOrRefs, backRefsField.getKey());
 
                 backRefsField.getValue().depthFirstTravers(pathCallback);
+                pathCallback.pop();
+            }
+        }
+        if (!countFields.isEmpty()) {
+            for (Entry<String, ViewArray> countField : countFields.entrySet()) {
+                pathCallback.push(classNames, ValueType.count, countField.getKey());
 
+                //We have no way to get the referring field type from the example json so we use refOrRefs value type
+                //ViewObject referringObject = countField.getValue().element;
+                //pathCallback.push(referringObject.id.getClassName(), ValueType.refOrRefs, backRefsField.getKey());
+
+                countField.getValue().depthFirstTravers(pathCallback);
                 pathCallback.pop();
             }
         }
@@ -308,6 +327,7 @@ public class ViewObject {
             Map<String, ViewArray> arrayFields = new HashMap<>();
             Map<String, ViewObject> refFields = new HashMap<>();
             Map<String, ViewArray> backRefFields = new HashMap<>();
+            Map<String, ViewArray> countFields = new HashMap<>();
             Map<String, ViewObject> latestBackRefFields = new HashMap<>();
 
             for (Iterator<String> fieldIter = objectNode.fieldNames(); fieldIter.hasNext();) {
@@ -328,16 +348,22 @@ public class ViewObject {
                     }
                 } else if (fieldName.equals(ReservedFields.VIEW_CLASS)) {
                     //ignore
-                } else if (fieldName.startsWith(ReservedFields.ALL_BACK_REF_FIELD_PREFIX)) {
+                } else if (fieldName.startsWith(ReservedFields.ALL_BACK_REF_FIELD_PREFIX) ||
+                    fieldName.startsWith(ReservedFields.COUNT_BACK_REF_FIELD_PREFIX)) {
                     if (value.isArray() && value.size() == 1 && value.get(0).isObject()) {
                         ViewArray viewArray = processArrayNode((ArrayNode) value);
                         if (viewArray.element == null) {
                             throw new IllegalArgumentException("Back reference field " + fieldName + " does not contain valid example view data");
                         }
-                        backRefFields.put(removeFieldNameModifier(fieldName), viewArray);
+                        if (fieldName.startsWith(ReservedFields.ALL_BACK_REF_FIELD_PREFIX)) {
+                            backRefFields.put(removeFieldNameModifier(fieldName), viewArray);
+                        } else {
+                            countFields.put(removeFieldNameModifier(fieldName), viewArray);
+                        }
                     } else {
                         throw new IllegalArgumentException("Back-Reference fields (fields beginning with "
-                            + ReservedFields.ALL_BACK_REF_FIELD_PREFIX + ") must hold"
+                            + ReservedFields.ALL_BACK_REF_FIELD_PREFIX + " or " + ReservedFields.COUNT_BACK_REF_FIELD_PREFIX
+                            + ") must hold"
                             + " values that are one element arrays of json objects. "
                             + fieldName + " does not.");
                     }
@@ -364,7 +390,7 @@ public class ViewObject {
                 }
             }
 
-            return new ViewObject(nodeIds, valueFields, arrayFields, refFields, backRefFields, latestBackRefFields);
+            return new ViewObject(nodeIds, valueFields, arrayFields, refFields, backRefFields, countFields, latestBackRefFields);
         }
 
         private boolean isValidRefValue(String exampleValue) {
@@ -395,6 +421,8 @@ public class ViewObject {
                 return fieldname.substring(ReservedFields.ALL_BACK_REF_FIELD_PREFIX.length());
             } else if (fieldname.startsWith(ReservedFields.LATEST_BACK_REF_FIELD_PREFIX)) {
                 return fieldname.substring(ReservedFields.LATEST_BACK_REF_FIELD_PREFIX.length());
+            } else if (fieldname.startsWith(ReservedFields.COUNT_BACK_REF_FIELD_PREFIX)) {
+                return fieldname.substring(ReservedFields.COUNT_BACK_REF_FIELD_PREFIX.length());
             } else {
                 return fieldname;
             }

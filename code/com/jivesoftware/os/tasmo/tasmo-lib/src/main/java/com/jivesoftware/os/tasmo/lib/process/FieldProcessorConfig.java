@@ -14,7 +14,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 /**
  * @author jonathan.colt
  */
-public class ExecutableStepConfig {
+public class FieldProcessorConfig {
 
     public final WrittenEventProvider writtenEventProvider;
     public final CommitChange commitChange;
@@ -22,7 +22,7 @@ public class ExecutableStepConfig {
     public final boolean idCentric;
     public final boolean notificationRequired;
 
-    public ExecutableStepConfig(
+    public FieldProcessorConfig(
             WrittenEventProvider writtenEventProvider,
             CommitChange commitChange,
             String viewIdFieldName,

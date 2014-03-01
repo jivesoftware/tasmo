@@ -1,5 +1,7 @@
 package com.jivesoftware.os.tasmo.lib.write;
 
+import com.jivesoftware.os.jive.utils.logger.MetricLogger;
+import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
@@ -10,6 +12,8 @@ import java.util.List;
 import java.util.Set;
 
 public class ExistenceCommitChange implements CommitChange {
+
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final ExistenceStore existenceStore;
     private final CommitChange commitChange;
@@ -31,9 +35,26 @@ public class ExistenceCommitChange implements CommitChange {
 
         List<ViewFieldChange> filtered = new ArrayList<>();
         for (ViewFieldChange fieldChange : changes) {
+            ObjectId[] modelPathInstanceIds = fieldChange.getModelPathInstanceIds();
+
             if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.remove
-                    || existence.containsAll(Arrays.asList(fieldChange.getModelPathInstanceIds()))) {
+                    || existence.containsAll(Arrays.asList(modelPathInstanceIds))) {
                 filtered.add(fieldChange);
+            } else {
+                if (LOG.isDebugEnabled()) {
+                    StringBuilder msg = new StringBuilder("Ignoring ViewFieldChange: ").append(fieldChange).
+                        append(" due to nonexistent objects. ");
+
+                    String sep = "";
+                    for (ObjectId objectId : modelPathInstanceIds) {
+                        msg.append(sep);
+                        msg.append(objectId).append(existence.contains(objectId) ? " exists" : " does not exist");
+                        sep = ",";
+                    }
+
+                    LOG.debug(msg.toString());
+
+                }
             }
         }
         commitChange.commitChange(tenantIdAndCentricId, filtered);

@@ -30,12 +30,12 @@ public class BackrefRemovalProcessor implements EventProcessor {
     private final WrittenInstanceHelper writtenInstanceHelper;
     private final ReferenceStore referenceStore;
     private final ModelPathStepType refType;
-    private final ArrayListMultimap<InitialStepKey, ExecutableStep> steps;
+    private final ArrayListMultimap<InitialStepKey, FieldProcessor> steps;
     private final boolean idCentric;
 
     public BackrefRemovalProcessor(WrittenInstanceHelper writtenInstanceHelper, ReferenceStore referenceStore,
             ModelPathStepType refType,
-            ArrayListMultimap<InitialStepKey, ExecutableStep> steps,
+            ArrayListMultimap<InitialStepKey, FieldProcessor> steps,
             boolean idCentric) {
         this.writtenInstanceHelper = writtenInstanceHelper;
         this.referenceStore = referenceStore;
@@ -62,19 +62,19 @@ public class BackrefRemovalProcessor implements EventProcessor {
         for (InitialStepKey key : steps.keySet()) {
             String initialFieldName = key.getInitialFieldName();
             if (payload.hasField(key.getTriggerFieldName()) && (payload.hasField(initialFieldName) || payload.isDeletion())) {
-                Collection<ExecutableStep> initialStepsForKey = steps.get(key);
+                Collection<FieldProcessor> initialStepsForKey = steps.get(key);
                 Id userId = (idCentric) ? writtenEvent.getCentricId() : Id.NULL;
                 TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
 
                 processRemoveRefs(tenantIdAndCentricId,
                     writtenOrderId, objectInstanceId, initialFieldName, initialStepsForKey, modifiedViewProvider, writtenEvent);
 
-                if (refType.equals(ModelPathStepType.latest_backRef)) {
-                    Collection<Reference> bIds = writtenInstanceHelper.getReferencesFromInstanceField(payload, initialFieldName, writtenOrderId);
-                    if (!bIds.isEmpty()) {
-                        cleanUpOldLatestBackRef(bIds, tenantIdAndCentricId, initialFieldName, initialStepsForKey, modifiedViewProvider, writtenEvent);
-                    }
-                }
+//                if (refType.equals(ModelPathStepType.latest_backRef)) {
+//                    Collection<Reference> bIds = writtenInstanceHelper.getReferencesFromInstanceField(payload, initialFieldName, writtenOrderId);
+//                    if (!bIds.isEmpty()) {
+//                        cleanUpOldLatestBackRef(bIds, tenantIdAndCentricId, initialFieldName, initialStepsForKey, modifiedViewProvider, writtenEvent);
+//                    }
+//                }
 
                 wasProcessed |= true;
             }
@@ -87,7 +87,7 @@ public class BackrefRemovalProcessor implements EventProcessor {
         final long removeAtTimestamp,
         final Reference objectInstanceId,
         final String initialFieldName,
-        final Collection<ExecutableStep> initialSteps,
+        final Collection<FieldProcessor> initialSteps,
         final ModifiedViewProvider modifiedViewProvider,
         final WrittenEvent writtenEvent) throws Exception {
 
@@ -96,7 +96,7 @@ public class BackrefRemovalProcessor implements EventProcessor {
             @Override
             public Reference callback(Reference bId) throws Exception {
                 if (bId != null && bId.getTimestamp() < removeAtTimestamp) {
-                    for (ExecutableStep step : initialSteps) {
+                    for (FieldProcessor step : initialSteps) {
                         ViewFieldContext context = step.createContext(modifiedViewProvider, writtenEvent, bId, true);
                         step.process(tenantIdAndCentricId, writtenEvent, context, objectInstanceId);
                         context.commit();
@@ -111,11 +111,11 @@ public class BackrefRemovalProcessor implements EventProcessor {
     private void cleanUpOldLatestBackRef(Collection<Reference> bIds,
         final TenantIdAndCentricId tenantIdAndCentricId,
         final String initialFieldName,
-        final Collection<ExecutableStep> initialSteps,
+        final Collection<FieldProcessor> initialSteps,
         final ModifiedViewProvider modifiedViewProvider,
         final WrittenEvent writtenEvent) throws Exception {
         for (final Reference bId : bIds) {
-            for (final ExecutableStep step : initialSteps) {
+            for (final FieldProcessor step : initialSteps) {
                 final ViewFieldContext context = step.createContext(modifiedViewProvider, writtenEvent, bId, true);
                 referenceStore.get_aIds(tenantIdAndCentricId, bId, step.getModelPathStep().getOriginClassNames(),
                     initialFieldName, new CallbackStream<Reference>() {

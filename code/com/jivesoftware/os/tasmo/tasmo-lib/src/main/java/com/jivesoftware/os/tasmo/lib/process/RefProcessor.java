@@ -27,10 +27,10 @@ public class RefProcessor implements EventProcessor {
 
     private final WrittenInstanceHelper writtenInstanceHelper;
     private final ReferenceStore referenceStore;
-    private final ArrayListMultimap<InitialStepKey, ExecutableStep> steps;
+    private final ArrayListMultimap<InitialStepKey, FieldProcessor> steps;
     private final boolean idCentric;
 
-    public RefProcessor(WrittenInstanceHelper writtenInstanceHelper, ReferenceStore referenceStore, ArrayListMultimap<InitialStepKey, ExecutableStep> steps,
+    public RefProcessor(WrittenInstanceHelper writtenInstanceHelper, ReferenceStore referenceStore, ArrayListMultimap<InitialStepKey, FieldProcessor> steps,
             boolean idCentric) {
         this.writtenInstanceHelper = writtenInstanceHelper;
         this.referenceStore = referenceStore;
@@ -60,7 +60,7 @@ public class RefProcessor implements EventProcessor {
             if (writtenInstance.hasField(key.getTriggerFieldName())
                 && writtenEvent.getWrittenInstance().hasField(key.getInitialFieldName())) {
                 Id userId = (idCentric) ? writtenEvent.getCentricId() : Id.NULL;
-                Collection<ExecutableStep> initialStepsForKey = steps.get(key);
+                Collection<FieldProcessor> initialStepsForKey = steps.get(key);
                 String initialFieldName = key.getInitialFieldName();
                 TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
 
@@ -81,11 +81,11 @@ public class RefProcessor implements EventProcessor {
         final Reference objectInstanceId,
         final String initialFieldName,
         Collection<Reference> bIds,
-        final Collection<ExecutableStep> initialSteps,
+        final Collection<FieldProcessor> initialSteps,
         final ModifiedViewProvider modifiedViewProvider,
         final WrittenEvent writtenEvent) throws Exception {
         referenceStore.link_aId_aField_to_bIds(tenantIdAndCentricId, addAtTimestamp, objectInstanceId, initialFieldName, bIds);
-        for (ExecutableStep step : initialSteps) {
+        for (FieldProcessor step : initialSteps) {
             ViewFieldContext context = step.createContext(modifiedViewProvider, writtenEvent, objectInstanceId, false);
             for (Reference bId : bIds) {
                 step.process(tenantIdAndCentricId, writtenEvent, context, bId);

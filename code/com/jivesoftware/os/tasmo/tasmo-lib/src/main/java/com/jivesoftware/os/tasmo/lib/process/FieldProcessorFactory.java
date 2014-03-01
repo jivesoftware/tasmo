@@ -45,8 +45,8 @@ public class FieldProcessorFactory {
         this.referenceStore = referenceStore;
     }
 
-    public List<ExecutableStep> buildFieldProcessors(ExecutableStepConfig executableStepConfig) {
-        List<ExecutableStep> initialExecutableSteps = Lists.newArrayList();
+    public List<FieldProcessor> buildFieldProcessors(FieldProcessorConfig executableStepConfig) {
+        List<FieldProcessor> initialExecutableSteps = Lists.newArrayList();
         List<ModelPathStep> modelPathMembers = modelPath.getPathMembers();
         for (int i = 0; i < modelPathMembers.size(); i++) {
             initialExecutableSteps.add(buildFieldProcessor(executableStepConfig, modelPathMembers, i));
@@ -54,7 +54,7 @@ public class FieldProcessorFactory {
         return initialExecutableSteps;
     }
 
-    private ExecutableStep buildFieldProcessor(ExecutableStepConfig executableStepConfig, List<ModelPathStep> modelPathMembers, int initialPathIndex) {
+    private FieldProcessor buildFieldProcessor(FieldProcessorConfig executableStepConfig, List<ModelPathStep> modelPathMembers, int initialPathIndex) {
 
         List<ProcessStep> steps = new ArrayList<>();
         InitialStepContext firstStep = new InitialStepContext(
@@ -68,10 +68,10 @@ public class FieldProcessorFactory {
         steps.addAll(buildRootwardSteps(initialPathIndex, modelPathMembers));
         steps.add(new ViewValueWriterStep(viewClassName, modelPathId));
 
-        return new ExecutableStep(firstStep, steps, executableStepConfig);
+        return new FieldProcessor(firstStep, steps, executableStepConfig);
     }
 
-    public ExecutableStep buildInitialBackrefStep(ExecutableStepConfig executableStepConfig) {
+    public FieldProcessor buildInitialBackrefStep(FieldProcessorConfig executableStepConfig) {
         List<ModelPathStep> modelPathMembers = modelPath.getPathMembers();
 
         ModelPathStep modelPathStep = modelPathMembers.get(0);
@@ -107,7 +107,7 @@ public class FieldProcessorFactory {
             steps.addAll(buildRootwardSteps(0, modelPathMembers));
             steps.add(new ViewValueWriterStep(viewClassName, modelPathId));
 
-            return new ExecutableStep(firstStep, steps, executableStepConfig);
+            return new FieldProcessor(firstStep, steps, executableStepConfig);
         } else {
             return null;
         }
@@ -152,6 +152,7 @@ public class FieldProcessorFactory {
             case refs:
                 return new B_IdsStreamer(referenceStore, aFieldName);
             case backRefs:
+            case count:
                 return new A_IdsStreamer(referenceStore, aClassNames, aFieldName);
             case latest_backRef:
                 return new Latest_A_IdStreamer(referenceStore, aClassNames, aFieldName);
@@ -186,6 +187,7 @@ public class FieldProcessorFactory {
             case refs:
                 return new A_IdsStreamer(referenceStore, aClassNames, aFieldName);
             case backRefs:
+            case count:
             case latest_backRef: // For this case we are likely doing more work that we absolutely need to.
                 return new B_IdsStreamer(referenceStore, aFieldName);
             default:

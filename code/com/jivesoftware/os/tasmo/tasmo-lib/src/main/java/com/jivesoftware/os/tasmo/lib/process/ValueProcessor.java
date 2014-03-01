@@ -29,10 +29,10 @@ import java.util.Set;
 public class ValueProcessor implements EventProcessor {
 
     private final EventValueStore eventValueStore;
-    private final ArrayListMultimap<InitialStepKey, ExecutableStep> steps;
+    private final ArrayListMultimap<InitialStepKey, FieldProcessor> steps;
     private final boolean idCentric;
 
-    public ValueProcessor(EventValueStore eventValueStore, ArrayListMultimap<InitialStepKey, ExecutableStep> steps,
+    public ValueProcessor(EventValueStore eventValueStore, ArrayListMultimap<InitialStepKey, FieldProcessor> steps,
             boolean idCentric) {
         this.eventValueStore = eventValueStore;
         this.steps = steps;
@@ -65,7 +65,7 @@ public class ValueProcessor implements EventProcessor {
             for (InitialStepKey key : steps.keySet()) {
                 if (writtenEvent.getWrittenInstance().hasField(key.getTriggerFieldName())) {
                     OpaqueFieldValue got = writtenInstance.getFieldValue(key.getTriggerFieldName());
-                    if (got == null) {
+                    if (got == null || got.isNull()) {
                         transaction.remove(key.getTriggerFieldName());
                     } else {
                         transaction.set(key.getTriggerFieldName(), got);
@@ -75,13 +75,13 @@ public class ValueProcessor implements EventProcessor {
             eventValueStore.commit(transaction);
         }
 
-        Set<ExecutableStep> processedChains = new HashSet<>();
+        Set<FieldProcessor> processedChains = new HashSet<>();
         Reference instanceReference = new Reference(objectInstanceId, writtenOrderId);
 
         for (InitialStepKey key : steps.keySet()) {
             if (writtenEvent.getWrittenInstance().hasField(key.getTriggerFieldName())) {
 
-                for (ExecutableStep step : steps.get(key)) {
+                for (FieldProcessor step : steps.get(key)) {
 
                     if (!processedChains.contains(step)) {
 

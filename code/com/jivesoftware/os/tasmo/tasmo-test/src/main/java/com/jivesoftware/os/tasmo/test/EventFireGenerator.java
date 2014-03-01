@@ -33,7 +33,7 @@ public class EventFireGenerator {
 
     private final TenantId tenant;
     private final Id actor;
-    private final int FANOUT = 2;
+    public static final int FANOUT = 2;
 
     public EventFireGenerator(TenantId tenant, Id actor) {
         this.tenant = tenant;
@@ -117,15 +117,11 @@ public class EventFireGenerator {
                     generateIdsForPathStep(idProvider, referencedId, pathIndex + 1, path);
                     break;
                 case refs:
-                    for (int i = 0; i < FANOUT; i++) {
-                        IdTreeNode multiReferencedId = new IdTreeNode(previousId, idProvider.nextId());
-                        generateIdsForPathStep(idProvider, multiReferencedId, pathIndex + 1, path);
-                    }
-                    break;
                 case backRefs:
+                case count:
                     for (int i = 0; i < FANOUT; i++) {
-                        IdTreeNode multiReferencingIds = new IdTreeNode(previousId, idProvider.nextId());
-                        generateIdsForPathStep(idProvider, multiReferencingIds, pathIndex + 1, path);
+                        IdTreeNode idTreeNode = new IdTreeNode(previousId, idProvider.nextId());
+                        generateIdsForPathStep(idProvider, idTreeNode, pathIndex + 1, path);
                     }
                     break;
                 case latest_backRef:
@@ -164,7 +160,7 @@ public class EventFireGenerator {
                     accumulator.add(generateEvent(referrer, currentStep, referenced));
                     break;
                 case backRefs:
-
+                case count:
                     ObjectId referred = new ObjectId(currentDestination, currentId.value());
                     for (IdTreeNode nextNode : nextIds) {
                         accumulator.add(generateEvent(new ObjectId(currentOrigin, nextNode.value()), currentStep, Arrays.asList(referred)));

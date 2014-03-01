@@ -16,10 +16,10 @@ import java.util.Set;
 
 public class ExistenceTransitionProcessor implements EventProcessor {
 
-    private final Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, ExecutableStep>> initialSteps;
+    private final Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>> initialSteps;
     private final boolean idCentric;
 
-    public ExistenceTransitionProcessor(Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, ExecutableStep>> initialSteps,
+    public ExistenceTransitionProcessor(Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>> initialSteps,
             boolean idCentric) {
         this.initialSteps = initialSteps;
         this.idCentric = idCentric;
@@ -35,7 +35,7 @@ public class ExistenceTransitionProcessor implements EventProcessor {
 
         for (ModelPathStepType stepType : ModelPathStepType.values()) {
 
-            ArrayListMultimap<InitialStepKey, ExecutableStep> steps = initialSteps.get(stepType);
+            ArrayListMultimap<InitialStepKey, FieldProcessor> steps = initialSteps.get(stepType);
             if (steps != null) {
 
                 TenantId tenantId = writtenEvent.getTenantId();
@@ -47,12 +47,12 @@ public class ExistenceTransitionProcessor implements EventProcessor {
                 ObjectId objectInstanceId = writtenInstance.getInstanceId();
                 ModifiedViewProvider modifiedViewProvider = batchContext.getModifiedViewProvider();
 
-                Set<ExecutableStep> processedChains = new HashSet<>();
+                Set<FieldProcessor> processedChains = new HashSet<>();
                 Reference instanceReference = new Reference(objectInstanceId, writtenOrderId);
 
                 for (InitialStepKey key : steps.keySet()) {
 
-                    for (ExecutableStep step : steps.get(key)) {
+                    for (FieldProcessor step : steps.get(key)) {
 
                         if (!processedChains.contains(step)) {
 

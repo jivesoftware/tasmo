@@ -16,13 +16,13 @@ import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import java.util.List;
 
-public class ExecutableStep {
+public class FieldProcessor {
 
     private final InitialStepContext initialStep;
     private final List<ProcessStep> steps;
-    private final ExecutableStepConfig executableStepConfig;
+    private final FieldProcessorConfig executableStepConfig;
 
-    public ExecutableStep(InitialStepContext initialStep, List<ProcessStep> steps, ExecutableStepConfig executableStepConfig) {
+    public FieldProcessor(InitialStepContext initialStep, List<ProcessStep> steps, FieldProcessorConfig executableStepConfig) {
         this.initialStep = initialStep;
         this.steps = steps;
         this.executableStepConfig = executableStepConfig;

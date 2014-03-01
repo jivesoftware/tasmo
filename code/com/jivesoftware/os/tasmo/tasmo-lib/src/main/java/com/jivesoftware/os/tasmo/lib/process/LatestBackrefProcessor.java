@@ -26,11 +26,11 @@ public class LatestBackrefProcessor implements EventProcessor {
 
     private final WrittenInstanceHelper writtenInstanceHelper;
     private final ReferenceStore referenceStore;
-    private final ArrayListMultimap<InitialStepKey, ExecutableStep> steps;
+    private final ArrayListMultimap<InitialStepKey, FieldProcessor> steps;
     private final boolean idCentric;
 
     public LatestBackrefProcessor(WrittenInstanceHelper writtenInstanceHelper, ReferenceStore referenceStore,
-            ArrayListMultimap<InitialStepKey, ExecutableStep> steps,
+            ArrayListMultimap<InitialStepKey, FieldProcessor> steps,
             boolean idCentric) {
         this.writtenInstanceHelper = writtenInstanceHelper;
         this.referenceStore = referenceStore;
@@ -63,7 +63,7 @@ public class LatestBackrefProcessor implements EventProcessor {
 
                 Collection<Reference> bIds = writtenInstanceHelper.getReferencesFromInstanceField(writtenEvent.getWrittenInstance(),
                     key.getInitialFieldName(), writtenOrderId);
-                Collection<ExecutableStep> initialStepsForKey = steps.get(key);
+                Collection<FieldProcessor> initialStepsForKey = steps.get(key);
                 String initialFieldName = key.getInitialFieldName();
                 processAddBackRefs(bIds, tenantIdAndCentricId, writtenOrderId, objectInstanceId, initialFieldName, initialStepsForKey,
                     modifiedViewProvider, writtenEvent);
@@ -74,13 +74,13 @@ public class LatestBackrefProcessor implements EventProcessor {
     }
 
     private void processAddBackRefs(Collection<Reference> bIds, final TenantIdAndCentricId tenantIdAndCentricId, final long addAtTimestamp,
-        final Reference objectInstanceId, final String initialFieldName, final Collection<ExecutableStep> initialSteps,
+        final Reference objectInstanceId, final String initialFieldName, final Collection<FieldProcessor> initialSteps,
         final ModifiedViewProvider modifiedViewProvider,
         final WrittenEvent writtenEvent) throws Exception {
 
         referenceStore.link_aId_aField_to_bIds(tenantIdAndCentricId, addAtTimestamp, objectInstanceId, initialFieldName, bIds);
         for (final Reference bId : bIds) {
-            for (final ExecutableStep step : initialSteps) {
+            for (final FieldProcessor step : initialSteps) {
                 final ViewFieldContext context = step.createContext(modifiedViewProvider, writtenEvent, bId, false);
                 step.process(tenantIdAndCentricId, writtenEvent, context, objectInstanceId);
                 context.commit();

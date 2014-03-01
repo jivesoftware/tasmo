@@ -33,33 +33,33 @@ public class ExistenceStore {
         this.eventValueStore = classFieldValueStore;
     }
 
-    public void addObjectId(List<ExistanceUpdate> existanceUpdates) {
+    public void addObjectId(List<ExistenceUpdate> existenceUpdates) {
 
         List<TenantRowColumValueTimestampAdd<TenantId, ObjectId, String, String>> batch = new ArrayList<>();
-        for (ExistanceUpdate existanceUpdate : existanceUpdates) {
-            batch.add(new TenantRowColumValueTimestampAdd<>(existanceUpdate.tenantId,
-                    existanceUpdate.objectId, existenceColumnKey,
+        for (ExistenceUpdate existenceUpdate : existenceUpdates) {
+            batch.add(new TenantRowColumValueTimestampAdd<>(existenceUpdate.tenantId,
+                    existenceUpdate.objectId, existenceColumnKey,
                     Boolean.TRUE.toString(),
-                    new ConstantTimestamper(existanceUpdate.timestamp)));
+                    new ConstantTimestamper(existenceUpdate.timestamp)));
         }
         eventValueStore.multiRowsMultiAdd(batch);
     }
 
-    public void removeObjectId(List<ExistanceUpdate> existanceUpdates) {
+    public void removeObjectId(List<ExistenceUpdate> existenceUpdates) {
         List<TenantRowColumnTimestampRemove<TenantId, ObjectId, String>> batch = new ArrayList<>();
-        for (ExistanceUpdate existanceUpdate : existanceUpdates) {
-            batch.add(new TenantRowColumnTimestampRemove<>(existanceUpdate.tenantId,
-                    existanceUpdate.objectId, existenceColumnKey,
-                    new ConstantTimestamper(existanceUpdate.timestamp)));
+        for (ExistenceUpdate existenceUpdate : existenceUpdates) {
+            batch.add(new TenantRowColumnTimestampRemove<>(existenceUpdate.tenantId,
+                    existenceUpdate.objectId, existenceColumnKey,
+                    new ConstantTimestamper(existenceUpdate.timestamp)));
         }
         eventValueStore.multiRowsMultiRemove(batch);
     }
 
-    public Set<ObjectId> getExistence(List<ExistanceUpdate> existanceUpdates) {
+    public Set<ObjectId> getExistence(List<ExistenceUpdate> existenceUpdates) {
 
         ListMultimap<TenantId, ObjectId> tenantIdsObjectIds = ArrayListMultimap.create();
-        for (ExistanceUpdate existanceUpdate : existanceUpdates) {
-            tenantIdsObjectIds.put(existanceUpdate.tenantId, existanceUpdate.objectId);
+        for (ExistenceUpdate existenceUpdate : existenceUpdates) {
+            tenantIdsObjectIds.put(existenceUpdate.tenantId, existenceUpdate.objectId);
         }
 
         Set<ObjectId> existence = new HashSet<>();

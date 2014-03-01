@@ -27,10 +27,10 @@ import java.util.Collection;
 public class RefRemovalProcessor implements EventProcessor {
 
     private final ReferenceStore referenceStore;
-    private final ArrayListMultimap<InitialStepKey, ExecutableStep> steps;
+    private final ArrayListMultimap<InitialStepKey, FieldProcessor> steps;
     private final boolean idCentric;
 
-    public RefRemovalProcessor(ReferenceStore referenceStore, ArrayListMultimap<InitialStepKey, ExecutableStep> steps,
+    public RefRemovalProcessor(ReferenceStore referenceStore, ArrayListMultimap<InitialStepKey, FieldProcessor> steps,
             boolean idCentric) {
         this.referenceStore = referenceStore;
         this.steps = steps;
@@ -55,7 +55,7 @@ public class RefRemovalProcessor implements EventProcessor {
         for (InitialStepKey key : steps.keySet()) {
             String initialFieldName = key.getInitialFieldName();
             if (payload.hasField(key.getTriggerFieldName()) && (payload.hasField(initialFieldName) || payload.isDeletion())) {
-                Collection<ExecutableStep> initialStepsForKey = steps.get(key);
+                Collection<FieldProcessor> initialStepsForKey = steps.get(key);
                 Id userId = (idCentric) ? writtenEvent.getCentricId() : Id.NULL;
                 TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
                 processRemoveRefs(tenantIdAndCentricId,
@@ -72,7 +72,7 @@ public class RefRemovalProcessor implements EventProcessor {
         final long removeAtTimestamp,
         final Reference objectInstanceId,
         final String initialFieldName,
-        final Collection<ExecutableStep> initialSteps,
+        final Collection<FieldProcessor> initialSteps,
         final ModifiedViewProvider modifiedViewProvider,
         final WrittenEvent writtenEvent) throws Exception {
 
@@ -81,7 +81,7 @@ public class RefRemovalProcessor implements EventProcessor {
             @Override
             public Reference callback(Reference bId) throws Exception {
                 if (bId != null && bId.getTimestamp() < removeAtTimestamp) {
-                    for (ExecutableStep step : initialSteps) {
+                    for (FieldProcessor step : initialSteps) {
                         ViewFieldContext context = step.createContext(modifiedViewProvider, writtenEvent, objectInstanceId, true);
                         step.process(tenantIdAndCentricId, writtenEvent, context, bId);
                         context.commit();

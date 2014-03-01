@@ -19,9 +19,9 @@ import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.AllBackrefsProcessor;
 import com.jivesoftware.os.tasmo.lib.process.BackrefRemovalProcessor;
 import com.jivesoftware.os.tasmo.lib.process.EventProcessorDispatcher;
-import com.jivesoftware.os.tasmo.lib.process.ExecutableStep;
-import com.jivesoftware.os.tasmo.lib.process.ExecutableStepConfig;
 import com.jivesoftware.os.tasmo.lib.process.ExistenceTransitionProcessor;
+import com.jivesoftware.os.tasmo.lib.process.FieldProcessor;
+import com.jivesoftware.os.tasmo.lib.process.FieldProcessorConfig;
 import com.jivesoftware.os.tasmo.lib.process.FieldProcessorFactory;
 import com.jivesoftware.os.tasmo.lib.process.InitialStepKey;
 import com.jivesoftware.os.tasmo.lib.process.LatestBackrefProcessor;
@@ -120,8 +120,8 @@ public class TasmoViewModel {
 
         Map<String, FieldProcessorFactory> allFieldProcessorFactories = Maps.newHashMap();
 
-        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, ExecutableStep>>> groupSteps = new HashMap<>();
-        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, ExecutableStep>>> groupIdCentricSteps = new HashMap<>();
+        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>>> groupSteps = new HashMap<>();
+        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>>> groupIdCentricSteps = new HashMap<>();
 
         for (ViewBinding viewBinding : views.getViewBindings()) {
 
@@ -130,9 +130,9 @@ public class TasmoViewModel {
             boolean idCentric = viewBinding.isIdCentric();
             boolean isNotificationRequired = viewBinding.isNotificationRequired();
 
-            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, ExecutableStep>>> accumlulate = (idCentric) ? groupIdCentricSteps : groupSteps;
+            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>>> accumlulate = (idCentric) ? groupIdCentricSteps : groupSteps;
 
-            ExecutableStepConfig executableStepConfig = new ExecutableStepConfig(
+            FieldProcessorConfig executableStepConfig = new FieldProcessorConfig(
                 writtenEventProvider,
                 changeWriter,
                 viewIdFieldName,
@@ -151,10 +151,10 @@ public class TasmoViewModel {
                 LOG.info("Bind:{}", factoryKey);
                 allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
 
-                List<ExecutableStep> executableSteps = fieldProcessorFactory.buildFieldProcessors(executableStepConfig);
+                List<FieldProcessor> executableSteps = fieldProcessorFactory.buildFieldProcessors(executableStepConfig);
                 groupExecutableStepsByClass(accumlulate, executableSteps);
 
-                ExecutableStep initialBackRefStep = fieldProcessorFactory.buildInitialBackrefStep(executableStepConfig);
+                FieldProcessor initialBackRefStep = fieldProcessorFactory.buildInitialBackrefStep(executableStepConfig);
                 if (initialBackRefStep != null) {
                     groupExecutableStepsByClass(accumlulate, Arrays.asList(initialBackRefStep));
                 }
@@ -168,43 +168,53 @@ public class TasmoViewModel {
         return all;
     }
 
-    private void buildInitialStepDispatchers(Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, ExecutableStep>>> groupSteps,
+    private void buildInitialStepDispatchers(Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>>> groupSteps,
         boolean idCentric,
         ListMultimap<String, EventProcessorDispatcher> all) {
 
         for (String className : groupSteps.keySet()) {
-            Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, ExecutableStep>> typedSteps = groupSteps.get(className);
-
+            Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>> typedSteps = groupSteps.get(className);
+            ArrayListMultimap<InitialStepKey, FieldProcessor> backRefs = typedSteps.get(ModelPathStepType.backRefs);
+            ArrayListMultimap<InitialStepKey, FieldProcessor> counts = typedSteps.get(ModelPathStepType.count);
+            ArrayListMultimap<InitialStepKey, FieldProcessor> backRefsAndCounts = ArrayListMultimap.create();
+            if (backRefs != null) {
+                backRefsAndCounts.putAll(backRefs);
+            }
+            if (counts != null) {
+                backRefsAndCounts.putAll(counts);
+            }
             EventProcessorDispatcher initialStepDispatcher = new EventProcessorDispatcher(className,
                 new ValueProcessor(eventValueStore, typedSteps.get(ModelPathStepType.value), idCentric),
                 new RefProcessor(writtenInstanceHelper, referenceStore, typedSteps.get(ModelPathStepType.ref), idCentric),
                 new RefProcessor(writtenInstanceHelper, referenceStore, typedSteps.get(ModelPathStepType.refs), idCentric),
-                new AllBackrefsProcessor(writtenInstanceHelper, referenceStore, typedSteps.get(ModelPathStepType.backRefs), idCentric),
+                new AllBackrefsProcessor(writtenInstanceHelper, referenceStore, backRefsAndCounts, idCentric),
                 new LatestBackrefProcessor(writtenInstanceHelper, referenceStore, typedSteps.get(ModelPathStepType.latest_backRef), idCentric),
                 new RefRemovalProcessor(referenceStore, typedSteps.get(ModelPathStepType.ref), idCentric),
                 new RefRemovalProcessor(referenceStore, typedSteps.get(ModelPathStepType.refs), idCentric),
                 new BackrefRemovalProcessor(writtenInstanceHelper, referenceStore, ModelPathStepType.latest_backRef,
                 typedSteps.get(ModelPathStepType.latest_backRef), idCentric),
                 new BackrefRemovalProcessor(writtenInstanceHelper, referenceStore, ModelPathStepType.backRefs,
-                typedSteps.get(ModelPathStepType.backRefs), idCentric),
+                    backRefs, idCentric),
+                new BackrefRemovalProcessor(writtenInstanceHelper, referenceStore, ModelPathStepType.count,
+                    counts, idCentric),
                 new ExistenceTransitionProcessor(typedSteps, idCentric));
             all.put(className, initialStepDispatcher);
         }
     }
 
     private void groupExecutableStepsByClass(
-        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, ExecutableStep>>> groupedExecutableSteps,
-        List<ExecutableStep> executableSteps) {
+        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>>> groupedExecutableSteps,
+        List<FieldProcessor> executableSteps) {
 
-        for (ExecutableStep executableStep : executableSteps) {
+        for (FieldProcessor executableStep : executableSteps) {
             for (String className : executableStep.getInitialClassNames()) {
-                Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, ExecutableStep>> typedSteps = groupedExecutableSteps.get(className);
+                Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>> typedSteps = groupedExecutableSteps.get(className);
                 if (typedSteps == null) {
                     typedSteps = Maps.newHashMap();
                     groupedExecutableSteps.put(className, typedSteps);
                 }
                 ModelPathStepType stepType = executableStep.getInitialModelPathStepType();
-                ArrayListMultimap<InitialStepKey, ExecutableStep> steps = typedSteps.get(stepType);
+                ArrayListMultimap<InitialStepKey, FieldProcessor> steps = typedSteps.get(stepType);
                 if (steps == null) {
                     steps = ArrayListMultimap.create();
                     typedSteps.put(stepType, steps);

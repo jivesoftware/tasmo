@@ -78,6 +78,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Materialization {
+
     public static final TenantId MASTER_TENANT_ID = new TenantId("master");
     ExistenceStore existenceStore;
     EventValueStore eventValueStore;
@@ -97,7 +98,6 @@ public class Materialization {
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
     }
-
     WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
 
     public ViewChangeNotificationProcessor getViewChangeNotificationProcessor() {
@@ -158,37 +158,37 @@ public class Materialization {
 //            };
 //
 //        } else {
-            return new RowColumnValueStoreProvider() {
+        return new RowColumnValueStoreProvider() {
+            @Override
+            public RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore() {
+                return new RowColumnValueStoreImpl<>();
+            }
 
-                 @Override
-                public RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore() {
-                    return new RowColumnValueStoreImpl<>();
-                }
+            @Override
+            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() {
+                return new RowColumnValueStoreImpl<>();
+            }
 
-                @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() {
-                    return new RowColumnValueStoreImpl<>();
-                }
+            @Override
+            public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore() {
+                return new RowColumnValueStoreImpl<>();
+            }
 
-                @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore() {
-                    return new RowColumnValueStoreImpl<>();
-                }
+            @Override
+            public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks() {
+                return new RowColumnValueStoreImpl<>();
+            }
 
-                @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks() {
-                    return new RowColumnValueStoreImpl<>();
-                }
-
-                @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() {
-                    return new RowColumnValueStoreImpl<>();
-                }
-            };
+            @Override
+            public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() {
+                return new RowColumnValueStoreImpl<>();
+            }
+        };
         //}
     }
 
     public static interface RowColumnValueStoreProvider {
+
         RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore() throws Exception;
 
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() throws Exception;
@@ -227,7 +227,7 @@ public class Materialization {
         EventValueCacheProvider cacheProvider = new EventValueCacheProvider() {
             @Override
             public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> createValueStoreCache() {
-               return new RowColumnValueStoreImpl<>();
+                return new RowColumnValueStoreImpl<>();
             }
         };
 
@@ -239,7 +239,7 @@ public class Materialization {
         viewValueReader = new ViewValueReader(viewValueStore);
 
         ReferenceStore referenceStore = new ReferenceStore(rowColumnValueStoreProvider.multiLinks(),
-            rowColumnValueStoreProvider.multiBackLinks());
+                rowColumnValueStoreProvider.multiBackLinks());
 
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
         CommitChange commitChange = new CommitChange() {
@@ -249,17 +249,17 @@ public class Materialization {
                 for (ViewFieldChange change : changes) {
                     try {
                         write.add(new ViewWriteFieldChange(
-                            change.getEventId(),
-                            -1,
-                            -1,
-                            tenantIdAndCentricId,
-                            change.getActorId(),
-                            ViewWriteFieldChange.Type.valueOf(change.getType().name()),
-                            change.getViewObjectId(),
-                            change.getModelPathId(),
-                            change.getModelPathInstanceIds(),
-                            mapper.writeValueAsString(change.getValue()),
-                            change.getTimestamp()));
+                                change.getEventId(),
+                                -1,
+                                -1,
+                                tenantIdAndCentricId,
+                                change.getActorId(),
+                                ViewWriteFieldChange.Type.valueOf(change.getType().name()),
+                                change.getViewObjectId(),
+                                change.getModelPathId(),
+                                change.getModelPathInstanceIds(),
+                                mapper.writeValueAsString(change.getValue()),
+                                change.getTimestamp()));
                     } catch (Exception ex) {
                         throw new CommitChangeException("Failed to add change for the following reason.", ex);
                     }
@@ -276,7 +276,7 @@ public class Materialization {
         commitChange = new ExistenceCommitChange(existenceStore, commitChange);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
-            new CallbackStream<List<BookkeepingEvent>>() {
+                new CallbackStream<List<BookkeepingEvent>>() {
             @Override
             public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
                 return value;
@@ -296,15 +296,15 @@ public class Materialization {
         };
 
         tasmoViewModel = new TasmoViewModel(
-            MASTER_TENANT_ID,
-            viewsProvider,
-            eventProvider,
-            referenceStore,
-            eventValueStore,
-            commitChange);
+                MASTER_TENANT_ID,
+                viewsProvider,
+                eventProvider,
+                referenceStore,
+                eventValueStore,
+                commitChange);
 
         materializer = new TasmoViewMaterializer(existenceStore, tasmoEventBookkeeper,
-            tasmoViewModel, getViewChangeNotificationProcessor());
+                tasmoViewModel, getViewChangeNotificationProcessor());
 
 
     }
@@ -323,7 +323,6 @@ public class Materialization {
             public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, final Set<Id> permissionCheckTheseIds) {
                 System.out.println("NO-OP permisions check for (" + permissionCheckTheseIds.size() + ") ids.");
                 return new ViewPermissionCheckResult() {
-
                     @Override
                     public Set<Id> allowed() {
                         return permissionCheckTheseIds;
@@ -353,17 +352,17 @@ public class Materialization {
         };
 
         viewProvider = new ViewProvider<>(viewPermissionChecker,
-            viewValueReader,
-            tenantViewsProvider,
-            viewAsObjectNode,
-            merger,
-            staleViewFieldStream);
+                viewValueReader,
+                tenantViewsProvider,
+                viewAsObjectNode,
+                merger,
+                staleViewFieldStream);
         return new Expectations(viewValueStore, newViews);
 
     }
 
     List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {
-        return parseModelPathStrings(simpleBindings.toArray(new String[simpleBindings.size()]));
+        return parseModelPathStrings(simpleBindings.toArray(new String[ simpleBindings.size() ]));
     }
 
     List<ViewBinding> parseModelPathStrings(String... simpleBindings) {
@@ -421,29 +420,22 @@ public class Materialization {
                 Set<String> destinationClassName = splitClassNames(memberParts[3].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
-            } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")) {
+            } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
+                    || pathMember.contains("." + ModelPathStepType.count + ".")
+                    || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
+                // Example: Content.count.VersionedContent.ref_parent
+                // Example: Content.latest_backRef.VersionedContent.ref_parent
                 Set<String> destinationClassName = splitClassNames(memberParts[0].trim());
                 ModelPathStepType stepType = ModelPathStepType.valueOf(memberParts[1].trim());
                 Set<String> originClassName = splitClassNames(memberParts[2].trim());
                 String refFieldName = memberParts[3].trim();
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
-
-            } else if (pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
-
-                // Example: Content.backRefs.VersionedContent.ref_parent
-                Set<String> destinationClassName = splitClassNames(memberParts[0].trim());
-                ModelPathStepType stepType = ModelPathStepType.valueOf(memberParts[1].trim());
-                Set<String> originClassName = splitClassNames(memberParts[2].trim());
-                String refFieldName = memberParts[3].trim();
-
-                return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else {
 
@@ -455,7 +447,7 @@ public class Materialization {
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
+                        null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
 
             }
         } catch (Exception x) {
@@ -519,12 +511,12 @@ public class Materialization {
 
     private String[] toStringArray(String string, String delim) {
         if (string == null || delim == null) {
-            return new String[0];
+            return new String[ 0 ];
         }
         StringTokenizer tokenizer = new StringTokenizer(string, delim);
         int tokenCount = tokenizer.countTokens();
 
-        String[] tokens = new String[tokenCount];
+        String[] tokens = new String[ tokenCount ];
         for (int i = 0; i < tokenCount; i++) {
             tokens[i] = tokenizer.nextToken();
         }

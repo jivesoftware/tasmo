@@ -25,19 +25,21 @@ public class EventProcessorDispatcher implements WrittenEventProcessor {
     private final RefRemovalProcessor refsRemovalProcessor;
     private final BackrefRemovalProcessor latestBackRefRemovalProcessor;
     private final BackrefRemovalProcessor allBackRefsRemovalProcessor;
+    private final BackrefRemovalProcessor countsRemovalProcessor;
     private final ExistenceTransitionProcessor existenceTransitionProcessor;
 
     public EventProcessorDispatcher(String className,
-            ValueProcessor valueProcessor,
-            RefProcessor refProcessor,
-            RefProcessor refsProcessor,
-            AllBackrefsProcessor allBackrefsProcessor,
-            LatestBackrefProcessor latestBackrefProcessor,
-            RefRemovalProcessor refRemovalProcessor,
-            RefRemovalProcessor refsRemovalProcessor,
-            BackrefRemovalProcessor latestBackRefRemovalProcessor,
-            BackrefRemovalProcessor allBackRefsRemovalProcessor,
-            ExistenceTransitionProcessor existenceTransitionProcessor) {
+        ValueProcessor valueProcessor,
+        RefProcessor refProcessor,
+        RefProcessor refsProcessor,
+        AllBackrefsProcessor allBackrefsProcessor,
+        LatestBackrefProcessor latestBackrefProcessor,
+        RefRemovalProcessor refRemovalProcessor,
+        RefRemovalProcessor refsRemovalProcessor,
+        BackrefRemovalProcessor latestBackRefRemovalProcessor,
+        BackrefRemovalProcessor allBackRefsRemovalProcessor,
+        BackrefRemovalProcessor countsRemovalProcessor,
+        ExistenceTransitionProcessor existenceTransitionProcessor) {
         this.className = className;
         this.valueProcessor = valueProcessor;
         this.refProcessor = refProcessor;
@@ -48,6 +50,7 @@ public class EventProcessorDispatcher implements WrittenEventProcessor {
         this.refsRemovalProcessor = refsRemovalProcessor;
         this.latestBackRefRemovalProcessor = latestBackRefRemovalProcessor;
         this.allBackRefsRemovalProcessor = allBackRefsRemovalProcessor;
+        this.countsRemovalProcessor = countsRemovalProcessor;
         this.existenceTransitionProcessor = existenceTransitionProcessor;
     }
 
@@ -65,10 +68,11 @@ public class EventProcessorDispatcher implements WrittenEventProcessor {
         wasProcessed |= invokeEventProcessor(batchContext, "ref removals", refRemovalProcessor, writtenEvent);
         wasProcessed |= invokeEventProcessor(batchContext, "multi-ref removals", refsRemovalProcessor, writtenEvent);
         wasProcessed |= invokeEventProcessor(batchContext, "back-ref removals", allBackRefsRemovalProcessor, writtenEvent);
+        wasProcessed |= invokeEventProcessor(batchContext, "count removals", countsRemovalProcessor, writtenEvent);
         wasProcessed |= invokeEventProcessor(batchContext, "latest back-ref removals", latestBackRefRemovalProcessor, writtenEvent);
 
         if (batchContext.getTransitioning().contains(writtenEvent.getWrittenInstance().getInstanceId())) {
-            wasProcessed |= invokeEventProcessor(batchContext, "initial backrefs", existenceTransitionProcessor, writtenEvent);
+            wasProcessed |= invokeEventProcessor(batchContext, "existence transition", existenceTransitionProcessor, writtenEvent);
         }
 
         LOG.trace("End:" + this.toString());
@@ -76,9 +80,9 @@ public class EventProcessorDispatcher implements WrittenEventProcessor {
     }
 
     private boolean invokeEventProcessor(WrittenEventContext batchContext,
-            String processorName,
-            EventProcessor eventProcessor,
-            WrittenEvent writtenEvent) throws Exception {
+        String processorName,
+        EventProcessor eventProcessor,
+        WrittenEvent writtenEvent) throws Exception {
         if (eventProcessor != null) {
             LOG.startTimer(processorName);
             try {

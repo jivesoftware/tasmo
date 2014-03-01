@@ -58,8 +58,9 @@ public class LatestBackRefsTest extends BaseTasmoTest {
 
         expectations.addExpectation(contentId1, viewClassName, viewFieldName, new ObjectId[]{contentId1, otherAuthorId2}, "userName", "ted");
         expectations.addExpectation(contentId2, viewClassName, viewFieldName, new ObjectId[]{contentId2, otherAuthorId2}, "userName", "ted");
-        expectations.addExpectation(contentId1, viewClassName, viewFieldName, new ObjectId[]{contentId1, otherAuthorId1}, "userName", null);
-        expectations.addExpectation(contentId2, viewClassName, viewFieldName, new ObjectId[]{contentId2, otherAuthorId1}, "userName", null);
+        //we don't actually clean up the old latest anymore
+        expectations.addExpectation(contentId1, viewClassName, viewFieldName, new ObjectId[]{contentId1, otherAuthorId1}, "userName", "jane");
+        expectations.addExpectation(contentId2, viewClassName, viewFieldName, new ObjectId[]{contentId2, otherAuthorId1}, "userName", "jane");
 
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();

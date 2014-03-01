@@ -90,12 +90,5 @@
             <artifactId>tasmo-view-reader-service</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-lib</artifactId>
-            <scope>test</scope>
-            <version>0.2-SNAPSHOT</version>
-            <type>jar</type>
-        </dependency>
     </dependencies>
 </project>

@@ -466,20 +466,13 @@ public class BaseTasmoTest {
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
                     refFieldName, stepType, destinationClassName, null);
 
-            } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")) {
+            } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
+                || pathMember.contains("." + ModelPathStepType.count + ".")
+                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
-                Set<String> destinationClassName = splitClassNames(memberParts[0].trim());
-                ModelPathStepType stepType = ModelPathStepType.valueOf(memberParts[1].trim());
-                Set<String> originClassName = splitClassNames(memberParts[2].trim());
-                String refFieldName = memberParts[3].trim();
-
-                return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
-
-            } else if (pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
-
-                // Example: Content.backRefs.VersionedContent.ref_parent
+                // Example: Content.count.VersionedContent.ref_parent
+                // Example: Content.latest_backRef.VersionedContent.ref_parent
                 Set<String> destinationClassName = splitClassNames(memberParts[0].trim());
                 ModelPathStepType stepType = ModelPathStepType.valueOf(memberParts[1].trim());
                 Set<String> originClassName = splitClassNames(memberParts[2].trim());
