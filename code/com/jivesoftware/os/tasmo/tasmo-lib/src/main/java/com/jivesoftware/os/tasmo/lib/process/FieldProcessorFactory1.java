@@ -25,7 +25,7 @@ import java.util.Set;
 /**
  *
  */
-public class FieldProcessorFactory {
+public class FieldProcessorFactory1 {
 
     private final String viewClassName;
     private final String modelPathId;
@@ -33,7 +33,7 @@ public class FieldProcessorFactory {
     private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
 
-    public FieldProcessorFactory(
+    public FieldProcessorFactory1(
         String viewClassName,
         ModelPath modelPath,
         EventValueStore eventValueStore,
@@ -45,32 +45,7 @@ public class FieldProcessorFactory {
         this.referenceStore = referenceStore;
     }
 
-    public List<FieldProcessor> buildFieldProcessors(FieldProcessorConfig executableStepConfig) {
-        List<FieldProcessor> initialExecutableSteps = Lists.newArrayList();
-        List<ModelPathStep> modelPathMembers = modelPath.getPathMembers();
-        for (int i = 0; i < modelPathMembers.size(); i++) {
-            initialExecutableSteps.add(buildFieldProcessor(executableStepConfig, modelPathMembers, i));
-        }
-        return initialExecutableSteps;
-    }
-
-    private FieldProcessor buildFieldProcessor(FieldProcessorConfig executableStepConfig, List<ModelPathStep> modelPathMembers, int initialPathIndex) {
-
-        List<ProcessStep> steps = new ArrayList<>();
-        InitialStepContext firstStep = new InitialStepContext(
-            modelPathMembers.get(initialPathIndex),
-            modelPathMembers.size(),
-            viewClassName,
-            modelPathId);
-
-        steps.addAll(buildLeafwardSteps(initialPathIndex, modelPathMembers));
-        steps.addAll(buildRootwardSteps(initialPathIndex, modelPathMembers));
-        steps.add(new ViewValueWriterStep(viewClassName, modelPathId));
-
-        return new FieldProcessor(firstStep, steps, executableStepConfig);
-    }
-
-    public FieldProcessor buildInitialBackrefStep(FieldProcessorConfig executableStepConfig) {
+    public FieldProcessor buildFieldProcessor(FieldProcessorConfig executableStepConfig) {
         List<ModelPathStep> modelPathMembers = modelPath.getPathMembers();
 
         ModelPathStep modelPathStep = modelPathMembers.get(0);
@@ -101,31 +76,38 @@ public class FieldProcessorFactory {
 
             List<ProcessStep> steps = new ArrayList<>();
             steps.add(new BackrefStep(modelPathStep, referenceStore, modelPathStep.getOriginClassNames()));
-            steps.addAll(buildLeafwardSteps(0, modelPathMembers));
-            steps.addAll(buildRootwardSteps(0, modelPathMembers));
+            steps.addAll(buildLeafwardSteps(modelPathMembers));
             steps.add(new ViewValueWriterStep(viewClassName, modelPathId));
 
             return new FieldProcessor(firstStep, steps, executableStepConfig);
         } else {
-            return null;
+            List<ProcessStep> steps = new ArrayList<>();
+            InitialStepContext firstStep = new InitialStepContext(
+                modelPathMembers.get(0),
+                modelPathMembers.size(),
+                viewClassName,
+                modelPathId);
+
+            steps.addAll(buildLeafwardSteps(modelPathMembers));
+            steps.add(new ViewValueWriterStep(viewClassName, modelPathId));
+
+            return new FieldProcessor(firstStep, steps, executableStepConfig);
         }
     }
 
-    List<ProcessStep> buildLeafwardSteps(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
+    List<ProcessStep> buildLeafwardSteps(List<ModelPathStep> modelPathMembers) {
         List<ProcessStep> steps = new ArrayList<>();
 
         int modelPathMembersSize = modelPathMembers.size();
         ModelPathStep member;
         ModelPathStepType memberType;
         // leafward
-        for (int pathIndex = initialPathIndex + 1; pathIndex < modelPathMembersSize; pathIndex++) {
+        for (int pathIndex = 1; pathIndex < modelPathMembersSize; pathIndex++) {
             member = modelPathMembers.get(pathIndex);
 
             ProcessStep processStep;
             if (pathIndex == modelPathMembersSize - 1) {
-
-                processStep = new ValueStep(eventValueStore, member.getFieldNames(), initialPathIndex, pathIndex);
-
+                processStep = new ValueStep(eventValueStore, member.getFieldNames(), 0, pathIndex);
             } else {
                 memberType = member.getStepType();
                 RefStreamer streamer = createLeafwardStreamer(
@@ -156,40 +138,6 @@ public class FieldProcessorFactory {
                 return new Latest_A_IdStreamer(referenceStore, aClassNames, aFieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support rev streaming");
-        }
-    }
-
-    List<ProcessStep> buildRootwardSteps(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
-        List<ProcessStep> steps = new ArrayList<>();
-        ModelPathStep member;
-        // rootward
-        for (int pathIndex = initialPathIndex - 1; pathIndex >= 0; pathIndex--) {
-            member = modelPathMembers.get(pathIndex);
-            RefStreamer streamer = createRootwardStreamer(
-                member.getOriginClassNames(),
-                member.getRefFieldName(),
-                member.getStepType());
-
-            Set<String> streamToTypes =
-                member.getStepType().isBackReferenceType() ? member.getDestinationClassNames() : member.getOriginClassNames();
-            ProcessStep processStep = new RootwardStep(streamer, pathIndex, streamToTypes);
-            steps.add(processStep);
-        }
-        return steps;
-    }
-
-    RefStreamer createRootwardStreamer(Set<String> aClassNames, String aFieldName, ModelPathStepType fieldType) {
-        switch (fieldType) {
-            case ref:
-                return new A_IdsStreamer(referenceStore, aClassNames, aFieldName);
-            case refs:
-                return new A_IdsStreamer(referenceStore, aClassNames, aFieldName);
-            case backRefs:
-            case count:
-            case latest_backRef: // For this case we are likely doing more work that we absolutely need to.
-                return new B_IdsStreamer(referenceStore, aFieldName);
-            default:
-                throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support fwd streaming");
         }
     }
 }

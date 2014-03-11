@@ -10,7 +10,6 @@ package com.jivesoftware.os.tasmo.lib.process;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import java.util.Set;
@@ -32,7 +31,6 @@ class RootwardStep implements ProcessStep {
 
     @Override
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
-        final WrittenEvent writtenEvent,
         final ViewFieldContext context,
         Reference objectIntanceId,
         final StepStream streamTo) throws Exception {

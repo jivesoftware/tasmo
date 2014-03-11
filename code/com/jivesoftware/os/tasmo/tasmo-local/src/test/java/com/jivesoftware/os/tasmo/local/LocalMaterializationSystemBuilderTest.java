@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.local;
+apckage com.jivesoftware.os.tasmo.local;
 
 
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;

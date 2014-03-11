@@ -9,7 +9,6 @@
 package com.jivesoftware.os.tasmo.lib.process;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 
 /**
@@ -29,7 +28,6 @@ public class ViewValueWriterStep implements ProcessStep {
 
     @Override
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
-            WrittenEvent writtenEvent,
             ViewFieldContext context,
             Reference objectInstanceId,
             StepStream streamTo) throws Exception {

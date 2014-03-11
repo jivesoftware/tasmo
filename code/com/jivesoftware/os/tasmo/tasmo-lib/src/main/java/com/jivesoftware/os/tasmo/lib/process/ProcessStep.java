@@ -9,7 +9,6 @@
 package com.jivesoftware.os.tasmo.lib.process;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 
 /**
@@ -18,7 +17,6 @@ import com.jivesoftware.os.tasmo.reference.lib.Reference;
 public interface ProcessStep {
 
     void process(TenantIdAndCentricId tenantIdAndCentricId,
-        WrittenEvent writtenEvent,
         ViewFieldContext context,
         Reference objectIntanceId,
         StepStream streamTo) throws Exception;

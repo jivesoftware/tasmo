@@ -21,19 +21,16 @@ import java.util.Set;
 public class InitialStepContext {
 
     protected final ModelPathStep initialModelPathMember;
-    protected final int pathIndex;
     protected final int membersSize;
     protected final String viewClassName;
     protected final String modelPathId;
 
     public InitialStepContext(
         ModelPathStep initialModelPathMember,
-        int pathIndex,
         int membersSize,
         String viewclassName,
         String modelPathId) {
         this.initialModelPathMember = initialModelPathMember;
-        this.pathIndex = pathIndex;
         this.membersSize = membersSize;
         this.viewClassName = viewclassName;
         this.modelPathId = modelPathId;
@@ -49,10 +46,6 @@ public class InitialStepContext {
 
     public ModelPathStepType getInitialModelPathStepType() {
         return initialModelPathMember.getStepType();
-    }
-
-    public int getPathIndex() {
-        return pathIndex;
     }
 
     public String getRefFieldName() {
@@ -79,7 +72,6 @@ public class InitialStepContext {
     public String toString() {
         return "InitialStep{ viewClassName=" + viewClassName
             + ", initialModelPathMember=" + initialModelPathMember
-            + ", pathIndex=" + pathIndex
             + ", membersSize=" + membersSize
             + ", modelPathId=" + modelPathId
             + '}';

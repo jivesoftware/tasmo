@@ -14,10 +14,10 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
  *
  * @author jonathan.colt
  */
-public class NoOpEventProcessor implements WrittenEventProcessor {
+public class NoOpEventProcessor implements EventProcessor {
 
     @Override
-    public boolean process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception {
+    public boolean process(WrittenEvent writtenEvent) throws Exception {
         return false;
     }
 }

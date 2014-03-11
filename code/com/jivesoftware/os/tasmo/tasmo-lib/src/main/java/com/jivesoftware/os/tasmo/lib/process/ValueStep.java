@@ -10,7 +10,6 @@ package com.jivesoftware.os.tasmo.lib.process;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import java.util.List;
 
@@ -36,13 +35,12 @@ public class ValueStep implements ProcessStep {
 
     @Override
     public void process(TenantIdAndCentricId tenantIdAndCentricId,
-        WrittenEvent writtenEvent,
         ViewFieldContext context,
         Reference objectInstanceId,
         StepStream streamTo) throws Exception {
 
         context.setPathId(pathIndex, objectInstanceId);
-        context.populateLeadNodeFields(eventValueStore, writtenEvent, objectInstanceId.getObjectId(), fieldNames);
+        context.populateLeadNodeFields(eventValueStore, objectInstanceId.getObjectId(), fieldNames);
 
         streamTo.stream(context.getPathId(processingPathIndex));
     }

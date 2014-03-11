@@ -12,7 +12,6 @@ package com.jivesoftware.os.tasmo.lib.process;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.reference.lib.A_IdsStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
@@ -37,7 +36,7 @@ public class BackrefStep implements ProcessStep {
     }
 
     @Override
-    public void process(TenantIdAndCentricId tenantIdAndCentricId, WrittenEvent writtenEvent, ViewFieldContext context, Reference objectIntanceId,
+    public void process(TenantIdAndCentricId tenantIdAndCentricId, ViewFieldContext context, Reference objectIntanceId,
         final StepStream streamTo) throws Exception {
         RefStreamer refStreamer = new A_IdsStreamer(referenceStore,
             initialModelPathMember.getOriginClassNames(),

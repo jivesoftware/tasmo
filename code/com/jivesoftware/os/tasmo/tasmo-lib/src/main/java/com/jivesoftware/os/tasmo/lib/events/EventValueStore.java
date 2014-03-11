@@ -17,7 +17,6 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.Con
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -27,103 +26,20 @@ public class EventValueStore {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventValueStore;
-    private final EventValueCacheProvider eventValueCacheProvider;
-    private final ThreadLocal<RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException>> caches;
 
-    public EventValueStore(RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> classFieldValueStore,
-            EventValueCacheProvider cacheProvider) {
+    public EventValueStore(RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> classFieldValueStore) {
         this.eventValueStore = classFieldValueStore;
-        this.eventValueCacheProvider = cacheProvider;
-
-        this.caches = new ThreadLocal<RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException>>() {
-            @Override
-            protected RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> initialValue() {
-                return eventValueCacheProvider.createValueStoreCache();
-            }
-        };
     }
 
     public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] get(
             TenantIdAndCentricId tenantIdAndCentricId, ObjectId objectId, String[] fieldNames) {
-        if (eventValueCacheProvider != null) {
-            return getWithCache(tenantIdAndCentricId, objectId, fieldNames);
-        } else {
-            return getWithoutCache(tenantIdAndCentricId, objectId, fieldNames);
-        }
-    }
-
-    private ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] getWithoutCache(
-            TenantIdAndCentricId tenantIdAndCentricId, ObjectId objectId, String[] fieldNames) {
-        return eventValueStore.multiGetEntries(tenantIdAndCentricId, objectId, fieldNames, null, null);
-    }
-
-    private ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] getWithCache(
-            TenantIdAndCentricId tenantIdAndCentricId, ObjectId objectId, String[] fieldNames) {
-        LOG.inc("get calls");
-
-        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> cache = caches.get();
-        ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] cached = cache
-                .multiGetEntries(tenantIdAndCentricId, objectId, fieldNames, null, null);
-
-        String[] fieldsToRetreive = extractCacheMisses(fieldNames, cached);
-
-        ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] retreived = eventValueStore
-                .multiGetEntries(tenantIdAndCentricId, objectId, fieldsToRetreive, null, null);
-
-        cacheRetreivedFields(retreived, cache, tenantIdAndCentricId, objectId);
-
-        ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] result = new ColumnValueAndTimestamp[fieldNames.length];
-        mergeCacheAndStoreResults(cached, retreived, result);
-
-        return result;
-    }
-
-    private String[] extractCacheMisses(String[] requestedFields, ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] cached) {
-        List<String> missFields = new ArrayList<>();
-
-        for (int i = 0; i < cached.length; i++) {
-            if (cached[i] == null) {
-                missFields.add(requestedFields[i]);
-                LOG.inc("cache misses");
-            } else {
-                LOG.inc("cache hits");
-            }
-        }
-
-        return missFields.toArray(new String[missFields.size()]);
-    }
-
-    private void mergeCacheAndStoreResults(ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] cached,
-            ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] stored,
-            ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] results) {
-
-        int missIndex = 0;
-        for (int resultIndex = 0; resultIndex < results.length; resultIndex++) {
-            if (cached[resultIndex] != null) {
-                results[resultIndex] = cached[resultIndex];
-            } else {
-                results[resultIndex] = stored[missIndex++];
-            }
-        }
-    }
-
-    private void cacheRetreivedFields(ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] retreived,
-            RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> cache,
-            TenantIdAndCentricId tenantIdAndCentricId, ObjectId objectId) {
-        for (ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> retreivedField : retreived) {
-            if (retreivedField != null) {
-                cache.add(tenantIdAndCentricId, objectId, retreivedField.getColumn(),
-                        retreivedField.getValue(), null, new ConstantTimestamper(retreivedField.getTimestamp()));
-            }
-        }
+            return eventValueStore.multiGetEntries(tenantIdAndCentricId, objectId, fieldNames, null, null);
     }
 
     public void removeObjectId(TenantIdAndCentricId tenantIdAndCentricId,
             long removeAtTimestamp,
             ObjectId objectId) {
-        caches.remove(); // TODO should we also clear caching after a successful remove?
         eventValueStore.removeRow(tenantIdAndCentricId, objectId, new ConstantTimestamper(removeAtTimestamp));
-        //caches.remove(); // TODO should we also clear caching after a successful remove?
     }
 
     public Transaction begin(TenantIdAndCentricId tenantIdAndCentricId,
@@ -134,8 +50,6 @@ public class EventValueStore {
     }
 
     public void commit(Transaction transaction) {
-
-        caches.remove(); // TODO should we also clear caching after a successful adds / removes?
 
         ObjectId objectInstanceId = transaction.objectInstanceId;
         if (!transaction.addedFieldNames.isEmpty()) {
