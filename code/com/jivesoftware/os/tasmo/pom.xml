@@ -18,6 +18,7 @@
         <module>tasmo-event-api</module>
         <module>tasmo-id</module>
         <module>tasmo-lib</module>
+        <module>tasmo-local</module>
         <module>tasmo-model</module>
         <module>tasmo-reference-lib</module>
         <module>tasmo-reference-reader-api</module>
