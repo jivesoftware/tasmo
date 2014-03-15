@@ -6,40 +6,39 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.view.reader.lib;
 
-import com.google.common.collect.ListMultimap;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
-import com.jivesoftware.os.tasmo.lib.process.EventProcessorDispatcher;
+import com.jivesoftware.os.tasmo.model.ViewBinding;
+import java.util.Map;
 
 /**
  *
- * @author jonathan.colt
  */
 public class VersionedTasmoViewModel {
 
     private final ChainedVersion version;
-    private final ListMultimap<String, EventProcessorDispatcher> dispatchers;
+    private final Map<String, ViewBinding> bindings;
 
     public VersionedTasmoViewModel(ChainedVersion version,
-        ListMultimap<String, EventProcessorDispatcher> dispatchers) {
+        Map<String, ViewBinding> bindings) {
         this.version = version;
-        this.dispatchers = dispatchers;
+        this.bindings = bindings;
     }
 
     public ChainedVersion getVersion() {
         return version;
     }
 
-    public ListMultimap<String, EventProcessorDispatcher> getDispatchers() {
-        return dispatchers;
+    public ViewBinding getBinding(String viewClassName) {
+        return bindings.get(viewClassName);
     }
 
     @Override
     public String toString() {
         return "VersionedViewTasmoModel{"
             + "version=" + version
-            + ", dispatchers=" + dispatchers
+            + ", bindings=" + bindings
             + '}';
     }
 }

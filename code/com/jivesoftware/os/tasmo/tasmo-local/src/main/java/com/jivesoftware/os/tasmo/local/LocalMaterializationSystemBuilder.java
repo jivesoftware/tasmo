@@ -34,7 +34,7 @@ import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.DispatcherProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
@@ -180,7 +180,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         ExistenceStore existenceStore = buildExistenceStore(rowColumnValueStoreProvider);
         commitChange = new ExistenceCommitChange(existenceStore, commitChange);
 
-        TasmoViewModel viewMaterializerModel = new TasmoViewModel(masterTenantId,
+        DispatcherProvider viewMaterializerModel = new DispatcherProvider(masterTenantId,
             viewsProvider,
             writtenEventProvider,
             buildReferenceStore(rowColumnValueStoreProvider),

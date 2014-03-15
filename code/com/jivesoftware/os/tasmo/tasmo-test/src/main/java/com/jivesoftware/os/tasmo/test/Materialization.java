@@ -25,7 +25,7 @@ import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.DispatcherProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
@@ -86,7 +86,7 @@ public class Materialization {
     ViewValueWriter viewValueWriter;
     ViewValueReader viewValueReader;
     ViewProvider<ViewResponse> viewProvider;
-    TasmoViewModel tasmoViewModel;
+    DispatcherProvider tasmoViewModel;
     TasmoViewMaterializer materializer;
     final ChainedVersion currentVersion = new ChainedVersion("0", "1");
     final AtomicReference<Views> views = new AtomicReference<>();
@@ -295,7 +295,7 @@ public class Materialization {
             }
         };
 
-        tasmoViewModel = new TasmoViewModel(
+        tasmoViewModel = new DispatcherProvider(
                 MASTER_TENANT_ID,
                 viewsProvider,
                 eventProvider,

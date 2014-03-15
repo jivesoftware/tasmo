@@ -40,7 +40,7 @@ public class TasmoViewModelTest {
     private ObjectMapper mapper = new ObjectMapper();
     private TenantId tenantId = new TenantId("master");
     private ViewsProvider viewsProvider;
-    private TasmoViewModel tasmoViewModel;
+    private DispatcherProvider tasmoViewModel;
     private WrittenEventProvider writtenEventProvider;
     private ReferenceStore referenceStore;
     private EventValueStore eventValueStore;
@@ -54,7 +54,7 @@ public class TasmoViewModelTest {
         referenceStore = Mockito.mock(ReferenceStore.class);
         eventValueStore = Mockito.mock(EventValueStore.class);
         changeWriter = Mockito.mock(CommitChange.class);
-        tasmoViewModel = new TasmoViewModel(
+        tasmoViewModel = new DispatcherProvider(
             tenantId,
             viewsProvider,
             writtenEventProvider,

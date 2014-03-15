@@ -21,7 +21,7 @@ import com.jivesoftware.os.tasmo.lib.process.ValueProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 
-public class TasmoViewModel {
+public class DispatcherProvider {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TenantEventsProvider tenantEventsProvider;
@@ -29,7 +29,7 @@ public class TasmoViewModel {
     private final EventValueStore eventValueStore;
     private final WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
 
-    public TasmoViewModel(
+    public DispatcherProvider(
         TenantEventsProvider tenantEventsProvider,
         ReferenceStore referenceStore,
         EventValueStore eventValueStore) {

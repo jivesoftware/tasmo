@@ -23,14 +23,14 @@ public class TasmoViewMaterializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TasmoEventBookkeeper tasmoEventBookkeeper;
-    private final TasmoViewModel tasmoViewModel;
+    private final DispatcherProvider dispatcherProvider;
     private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
 
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
-        TasmoViewModel tasmoViewModel,
+        DispatcherProvider dispatcherProvider,
         ViewChangeNotificationProcessor viewChangeNotificationProcessor) {
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
-        this.tasmoViewModel = tasmoViewModel;
+        this.dispatcherProvider = dispatcherProvider;
         this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
     }
 
@@ -47,7 +47,7 @@ public class TasmoViewMaterializer {
                     continue;
                 }
 
-                EventProcessor processorizer = tasmoViewModel.getDispatcher(writtenEvent.getTenantId(),
+                EventProcessor processorizer = dispatcherProvider.getDispatcher(writtenEvent.getTenantId(),
                     writtenEvent.getWrittenInstance().getInstanceId().getClassName());
                 if (processorizer == null) {
                     processorizer = new NoOpEventProcessor();

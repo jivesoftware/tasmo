@@ -6,63 +6,50 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.view.reader.lib;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Maps;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
+import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
-import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.process.FieldProcessor;
-import com.jivesoftware.os.tasmo.lib.process.FieldProcessorConfig;
-import com.jivesoftware.os.tasmo.lib.process.FieldProcessorFactory;
-import com.jivesoftware.os.tasmo.lib.process.InitialStepKey;
-import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
-import com.jivesoftware.os.tasmo.model.path.ModelPath;
-import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
-import java.util.List;
+import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class TasmoViewModel1 {
+public class ViewModelProvider {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TenantId masterTenantId;
     private final ViewsProvider viewsProvider;
-    private final WrittenEventProvider writtenEventProvider;
     private final ConcurrentHashMap<TenantId, VersionedTasmoViewModel> versionedViewModels;
-    private final ReferenceStore referenceStore;
-    private final EventValueStore eventValueStore;
-    private final CommitChange changeWriter;
-    private final WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
 
-    public TasmoViewModel1(
-        TenantId masterTenantId,
-        ViewsProvider viewsProvider,
-        WrittenEventProvider writtenEventProvider,
-        ReferenceStore referenceStore,
-        EventValueStore eventValueStore,
-        CommitChange changeWriter) {
+    public ViewModelProvider(TenantId masterTenantId, ViewsProvider viewsProvider) {
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
-        this.writtenEventProvider = writtenEventProvider;
-        this.referenceStore = referenceStore;
-        this.eventValueStore = eventValueStore;
-        this.changeWriter = changeWriter;
         this.versionedViewModels = new ConcurrentHashMap<>();
     }
+    
+    public ViewBinding getBindingForRequest(ViewDescriptor descriptor) {
+        VersionedTasmoViewModel viewModel = getModelForTenant(descriptor.getTenantId());
+        if (viewModel != null) {
+            ObjectId viewId = descriptor.getViewId();
+            if (viewId != null) {
+                return viewModel.getBinding(viewId.getClassName());
+            }
+        }
+        
+        return  null;
+    }
+    
 
-    VersionedTasmoViewModel getVersionedTasmoViewModel(TenantId tenantId) throws Exception {
+    private VersionedTasmoViewModel getModelForTenant(TenantId tenantId) {
         if (!versionedViewModels.containsKey(tenantId)) {
             loadModel(tenantId);
         }
@@ -82,10 +69,10 @@ public class TasmoViewModel1 {
         }
     }
 
-    synchronized public void loadModel(TenantId tenantId) {
+    synchronized private void loadModel(TenantId tenantId) {
         ChainedVersion currentVersion = viewsProvider.getCurrentViewsVersion(tenantId);
         if (currentVersion == ChainedVersion.NULL) {
-            versionedViewModels.put(tenantId, new VersionedTasmoViewModel(ChainedVersion.NULL, null));
+            versionedViewModels.put(tenantId, new VersionedTasmoViewModel(ChainedVersion.NULL, Collections.<String, ViewBinding>emptyMap()));
         } else {
             VersionedTasmoViewModel currentVersionedViewsModel = versionedViewModels.get(tenantId);
             if (currentVersionedViewsModel == null
@@ -94,8 +81,8 @@ public class TasmoViewModel1 {
                 Views views = viewsProvider.getViews(new ViewsProcessorId(tenantId, "NotBeingUsedYet"));
 
                 if (views != null) {
-                    ListMultimap<String, FieldProcessor> fieldProcessors = bindModelPaths(views);
-//                    versionedViewModels.put(tenantId, new VersionedTasmoViewModel(views.getVersion(), dispatchers));
+                    Map<String, ViewBinding> indexedBindings = indexByView(views);
+                    versionedViewModels.put(tenantId, new VersionedTasmoViewModel(currentVersion, indexedBindings));
                 } else {
                     LOG.info("ViewsProvider failed to provide a 'Views' instance for tenantId:" + tenantId);
                 }
@@ -103,9 +90,18 @@ public class TasmoViewModel1 {
                 LOG.debug("Didn't reload because view model versions are equal.");
             }
         }
-
+    }
+    
+    private Map<String, ViewBinding> indexByView(Views views) {
+        Map<String, ViewBinding> indexed = new HashMap<>();
+        for (ViewBinding binding : views.getViewBindings()) {
+            indexed.put(binding.getViewClassName(), binding);
+        }
+        
+        return indexed;
     }
 
+    /*
     private ListMultimap<String, FieldProcessor> bindModelPaths(Views views) throws IllegalArgumentException {
 
         Map<String, FieldProcessorFactory> allFieldProcessorFactories = Maps.newHashMap();
@@ -178,4 +174,5 @@ public class TasmoViewModel1 {
             }
         }
     }
+    */
 }

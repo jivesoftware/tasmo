@@ -111,7 +111,7 @@ public class BaseTasmoTest {
     ViewValueWriter viewValueWriter;
     ViewValueReader viewValueReader;
     ViewProvider<ViewResponse> viewProvider;
-    TasmoViewModel tasmoViewModel;
+    DispatcherProvider tasmoViewModel;
     TasmoViewMaterializer materializer;
     final ChainedVersion currentVersion = new ChainedVersion("0", "1");
     final AtomicReference<Views> views = new AtomicReference<>();
@@ -339,7 +339,7 @@ public class BaseTasmoTest {
             }
         };
 
-        tasmoViewModel = new TasmoViewModel(
+        tasmoViewModel = new DispatcherProvider(
             MASTER_TENANT_ID,
             viewsProvider,
             eventProvider,
