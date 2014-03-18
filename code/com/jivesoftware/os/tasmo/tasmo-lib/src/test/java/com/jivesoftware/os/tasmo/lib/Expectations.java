@@ -10,19 +10,24 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.model.ViewBinding;
-import com.jivesoftware.os.tasmo.model.Views;
-import com.jivesoftware.os.tasmo.model.path.ModelPath;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
-import java.io.IOException;
-import java.util.Arrays;
+import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
+import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
+import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
+import com.jivesoftware.os.tasmo.reference.lib.Reference;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import org.testng.Assert;
 
 /**
@@ -30,183 +35,205 @@ import org.testng.Assert;
  */
 class Expectations {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-    private final ViewValueStore viewValueStore;
-    private final Map<ViewKey, ModelPath> viewModelPaths = Maps.newHashMap();
-    private final List<Expectation> expectations = Lists.newArrayList();
+    private final EventValueStore eventValueStore;
+    private final ReferenceStore referenceStore;
+    private final ExistenceStore existenceStore;
+    private final WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider;
+    private final List<ValueExpectation> valueExpectations = Lists.newArrayList();
+    private final List<ReferenceExpectation> refExpectations = Lists.newArrayList();
+    private final List<ExistenceExpectation> existenceExpectations = Lists.newArrayList();
+    private final ObjectMapper mapper = new ObjectMapper();
 
-    public Expectations(ViewValueStore viewValueStore, Views views) {
-        this.viewValueStore = viewValueStore;
+    public Expectations(WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider,
+        EventValueStore eventValueStore, ReferenceStore referenceStore, ExistenceStore existenceStore) {
+        this.writtenEventProvider = writtenEventProvider;
+        this.eventValueStore = eventValueStore;
+        this.referenceStore = referenceStore;
+        this.existenceStore = existenceStore;
+    }
 
-        List<ViewBinding> bindings = views.getViewBindings();
-        for (ViewBinding viewBinding : bindings) {
-            for (ModelPath modelPath : viewBinding.getModelPaths()) {
-                viewModelPaths.put(new ViewKey(viewBinding.getViewClassName(), modelPath.getId()), modelPath);
+    void addValueExpectation(ObjectId valueObject, List<String> fields, List<Object> values) {
+        if (fields.size() != values.size()) {
+            throw new IllegalArgumentException("each field needs a value, each value needs a field");
+        }
+
+        valueExpectations.add(new ValueExpectation(valueObject, fields, values));
+    }
+
+    void addReferenceExpectation(ObjectId aId, String refField, List<ObjectId> bIds) {
+        refExpectations.add(new ReferenceExpectation(aId, refField, bIds));
+    }
+
+    void addExistenceExpectation(ObjectId id, boolean exists) {
+        existenceExpectations.add(new ExistenceExpectation(id, exists));
+    }
+
+    void assertExpectation(TenantIdAndCentricId tenantIdAndCentricId) throws Exception {
+        assertValueExpectations(tenantIdAndCentricId);
+        assertReferenceExpectations(tenantIdAndCentricId);
+        assertExistenceExpectations(tenantIdAndCentricId);
+    }
+
+    private void assertValueExpectations(TenantIdAndCentricId tenantIdAndCentricId) {
+        for (ValueExpectation valueExpectation : valueExpectations) {
+            ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] got =
+                eventValueStore.get(tenantIdAndCentricId, valueExpectation.valueObject, valueExpectation.fieldNamesAsArray());
+
+            Assert.assertEquals(got.length, valueExpectation.fieldNames.size(), "Unexpected number of value results. "
+                + valueExpectation.fieldNames.size() + " fields, and " + got.length + " results");
+
+            Set<String> nonNullFields = new HashSet<>();
+
+            for (ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> result : got) {
+                if (result != null) {
+                    Object expectedValue = valueExpectation.valueForField(result.getColumn());
+                    Assert.assertNotNull(expectedValue, result.getColumn() + " is not an expected field");
+                    JsonNode resultJson = writtenEventProvider.recoverFieldValue(result.getValue());
+
+                    JsonNode expectedJson;
+
+                    if (expectedValue instanceof ObjectId) {
+                        expectedJson = mapper.convertValue(((ObjectId) expectedValue).toStringForm(), JsonNode.class);
+                    } else if (expectedValue instanceof Collection) {
+                        Collection collection = (Collection) expectedValue;
+                        if (!collection.isEmpty() && collection.iterator().next() instanceof ObjectId) {
+                            List<String> stringForm = new ArrayList<>(collection.size());
+                            for (Object element : collection) {
+                                stringForm.add(((ObjectId) element).toStringForm());
+                            }
+                            expectedJson = mapper.convertValue(stringForm, JsonNode.class);
+                        } else {
+                            expectedJson = mapper.convertValue(expectedValue, JsonNode.class);
+                        }
+                    } else {
+                        expectedJson = mapper.convertValue(expectedValue, JsonNode.class);
+                    }
+
+                    Assert.assertEquals(resultJson.asText(), expectedJson.asText());
+                }
+            }
+
+            Assert.assertEquals(Sets.difference(valueExpectation.expectedNulls(), nonNullFields).size(), valueExpectation.expectedNulls().size());
+        }
+    }
+
+    private void assertReferenceExpectations(TenantIdAndCentricId tenantIdAndCentricId) throws Exception {
+        for (ReferenceExpectation referenceExpectation : refExpectations) {
+            final List<ObjectId> bIds = new ArrayList<>();
+
+            referenceStore.get_bIds(tenantIdAndCentricId, referenceExpectation.aId.getClassName(), referenceExpectation.refField,
+                new Reference(referenceExpectation.aId, 0), new CallbackStream<Reference>() {
+                @Override
+                public Reference callback(Reference value) throws Exception {
+                    if (value != null) {
+                        bIds.add(value.getObjectId());
+                    }
+                    return value;
+                }
+            });
+
+            Set<ObjectId> expected = new HashSet<>(referenceExpectation.bIds);
+            Set<ObjectId> found = new HashSet<>(bIds);
+
+            Assert.assertTrue(Sets.difference(expected, found).isEmpty());
+            Assert.assertTrue(Sets.difference(found, expected).isEmpty());
+
+            for (ObjectId bId : bIds) {
+                final Set aIds = new HashSet<>();
+
+                referenceStore.get_aIds(tenantIdAndCentricId, new Reference(bId, 0), Sets.newHashSet(referenceExpectation.aId.getClassName()),
+                    referenceExpectation.refField, new CallbackStream<Reference>() {
+                    @Override
+                    public Reference callback(Reference value) throws Exception {
+                        if (value != null) {
+                            aIds.add(value.getObjectId());
+                        }
+                        return value;
+                    }
+                });
+
+                Assert.assertTrue(aIds.contains(referenceExpectation.aId));
             }
         }
     }
 
-    void addExpectation(ObjectId rootId, String viewClassName, String viewFieldName, ObjectId[] pathIds, String fieldName, Object value) {
-        ObjectId viewId = new ObjectId(viewClassName, rootId.getId());
-        ModelPath modelPath = viewModelPaths.get(new ViewKey(viewClassName, viewFieldName));
-        expectations.add(new Expectation(viewId, viewClassName, viewFieldName, modelPath, pathIds, fieldName, value));
-    }
-
-    void assertExpectation(TenantIdAndCentricId tenantIdAndCentricId) throws IOException {
-        for (Expectation expectation : expectations) {
-            String got = viewValueStore.get(tenantIdAndCentricId,
-                expectation.viewId,
-                expectation.modelPathId,
-                expectation.modelPathInstanceIds);
-            JsonNode node = null;
-            if (got != null) {
-                got = MAPPER.readValue(got, String.class);
-                if (got != null) {
-                    node = MAPPER.readValue(got, JsonNode.class);
-                }
-            }
-            try {
-                if (expectation.value == null) {
-                    if (node != null) {
-                        JsonNode value = node.get(expectation.fieldName);
-                        if (value != null) {
-                            Assert.assertTrue(value instanceof NullNode, expectation.toString());
-                        }
-                    }
-                } else {
-                    JsonNode toTest;
-                    if (node != null && expectation.fieldName != null) {
-                        toTest = node.get(expectation.fieldName);
-                    } else {
-                        toTest = node;
-                    }
-                    Assert.assertEquals(toTest, MAPPER.convertValue(expectation.value, JsonNode.class), expectation.toString());
-                }
-            } catch (IllegalArgumentException x) {
-                System.out.println("Failed while asserting " + expectation);
-                throw x;
+    private void assertExistenceExpectations(TenantIdAndCentricId tenantIdAndCentricId) {
+        for (ExistenceExpectation existenceExpectation : existenceExpectations) {
+            Set<ObjectId> exists = existenceStore.getExistence(tenantIdAndCentricId.getTenantId(), Sets.newHashSet(existenceExpectation.objectId));
+            if (existenceExpectation.exists) {
+                Assert.assertTrue(exists.contains(existenceExpectation.objectId));
+            } else {
+                Assert.assertFalse(exists.contains(existenceExpectation.objectId));
             }
         }
     }
 
     void clear() {
-        expectations.clear();
+        valueExpectations.clear();
+        refExpectations.clear();
+        existenceExpectations.clear();
     }
 
-    static class ViewKey {
+    private static class ValueExpectation {
 
-        String viewClassName;
-        String viewFieldName;
+        private final ObjectId valueObject;
+        private final List<String> fieldNames;
+        private final List<Object> values;
 
-        public ViewKey(String viewClassName, String viewFieldName) {
-            this.viewClassName = viewClassName;
-            this.viewFieldName = viewFieldName;
+        public ValueExpectation(ObjectId valueObject, List<String> fieldNames, List<Object> values) {
+            this.valueObject = valueObject;
+            this.fieldNames = fieldNames;
+            this.values = values;
         }
 
-        @Override
-        public int hashCode() {
-            int hash = 7;
-            hash = 71 * hash + (this.viewClassName != null ? this.viewClassName.hashCode() : 0);
-            hash = 71 * hash + (this.viewFieldName != null ? this.viewFieldName.hashCode() : 0);
-            return hash;
+        Object valueForField(String field) {
+            for (int i = 0; i < fieldNames.size(); i++) {
+                if (fieldNames.get(i).equals(field)) {
+                    return values.get(i);
+                }
+            }
+
+            return null;
         }
 
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
+        String[] fieldNamesAsArray() {
+            return fieldNames.toArray(new String[fieldNames.size()]);
+        }
+
+        Set<String> expectedNulls() {
+            Set<String> nullFields = new HashSet<>();
+
+            for (int i = 0; i < values.size(); i++) {
+                if (values.get(i) == null) {
+                    nullFields.add(fieldNames.get(i));
+                }
             }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            final ViewKey other = (ViewKey) obj;
-            if (this.viewClassName != other.viewClassName && (this.viewClassName == null || !this.viewClassName.equals(other.viewClassName))) {
-                return false;
-            }
-            if (this.viewFieldName != other.viewFieldName && (this.viewFieldName == null || !this.viewFieldName.equals(other.viewFieldName))) {
-                return false;
-            }
-            return true;
+
+            return nullFields;
         }
     }
 
-    static class Expectation {
+    private static class ReferenceExpectation {
 
-        ObjectId viewId;
-        String viewClassName;
-        String modelPathId;
-        ModelPath path;
-        ObjectId[] modelPathInstanceIds;
-        String fieldName;
-        Object value;
+        private final ObjectId aId;
+        private final String refField;
+        private final List<ObjectId> bIds;
 
-        public Expectation(ObjectId viewId,
-            String viewClassName,
-            String viewFieldName,
-            ModelPath path,
-            ObjectId[] modelPathInstanceIds,
-            String fieldName,
-            Object value) {
-            this.viewId = viewId;
-            this.viewClassName = viewClassName;
-            this.modelPathId = viewFieldName;
-            this.path = path;
-            this.modelPathInstanceIds = modelPathInstanceIds;
-            this.fieldName = fieldName;
-            this.value = value;
+        public ReferenceExpectation(ObjectId aId, String refField, List<ObjectId> bIds) {
+            this.aId = aId;
+            this.refField = refField;
+            this.bIds = bIds;
         }
+    }
 
-        @Override
-        public String toString() {
-            return "Expectation{" + "viewId=" + viewId + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathId + ", path=" + path
-                + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds) + ", fieldName=" + fieldName + ", value=" + value + '}';
-        }
+    private static class ExistenceExpectation {
 
-        @Override
-        public int hashCode() {
-            int hash = 3;
-            hash = 37 * hash + (this.viewId != null ? this.viewId.hashCode() : 0);
-            hash = 37 * hash + (this.viewClassName != null ? this.viewClassName.hashCode() : 0);
-            hash = 37 * hash + (this.modelPathId != null ? this.modelPathId.hashCode() : 0);
-            hash = 37 * hash + (this.path != null ? this.path.hashCode() : 0);
-            hash = 37 * hash + (this.modelPathInstanceIds != null ? this.modelPathInstanceIds.hashCode() : 0);
-            hash = 37 * hash + (this.fieldName != null ? this.fieldName.hashCode() : 0);
-            hash = 37 * hash + (this.value != null ? this.value.hashCode() : 0);
-            return hash;
-        }
+        private final ObjectId objectId;
+        private final boolean exists;
 
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            final Expectation other = (Expectation) obj;
-            if (this.viewId != other.viewId && (this.viewId == null || !this.viewId.equals(other.viewId))) {
-                return false;
-            }
-            if ((this.viewClassName == null) ? (other.viewClassName != null) : !this.viewClassName.equals(other.viewClassName)) {
-                return false;
-            }
-            if ((this.modelPathId == null) ? (other.modelPathId != null) : !this.modelPathId.equals(other.modelPathId)) {
-                return false;
-            }
-            if (this.path != other.path && (this.path == null || !this.path.equals(other.path))) {
-                return false;
-            }
-            if (this.modelPathInstanceIds != other.modelPathInstanceIds
-                && (this.modelPathInstanceIds == null || !this.modelPathInstanceIds.equals(other.modelPathInstanceIds))) {
-                return false;
-            }
-            if ((this.fieldName == null) ? (other.fieldName != null) : !this.fieldName.equals(other.fieldName)) {
-                return false;
-            }
-            if (this.value != other.value && (this.value == null || !this.value.equals(other.value))) {
-                return false;
-            }
-            return true;
+        public ExistenceExpectation(ObjectId objectId, boolean exists) {
+            this.objectId = objectId;
+            this.exists = exists;
         }
     }
 }

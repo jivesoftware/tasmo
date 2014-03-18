@@ -8,9 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.lib.process;
 
-import com.jivesoftware.os.tasmo.configuration.EventModel;
 import com.jivesoftware.os.tasmo.configuration.EventsModel;
-import com.jivesoftware.os.tasmo.configuration.ValueType;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
@@ -37,7 +35,7 @@ public class ValueProcessor implements EventProcessor {
     @Override
     public boolean process(WrittenEvent writtenEvent) throws Exception {
         boolean wasProcessed = false;
-        
+
 
         TenantId tenantId = writtenEvent.getTenantId();
         Id userId = writtenEvent.getCentricId();
@@ -58,7 +56,7 @@ public class ValueProcessor implements EventProcessor {
                 writtenOrderId,
                 writtenOrderId,
                 objectInstanceId);
-            
+
             for (String fieldName : writtenEvent.getWrittenInstance().getFieldNames()) {
                 OpaqueFieldValue got = writtenInstance.getFieldValue(fieldName);
                 if (got == null || got.isNull()) {
@@ -69,7 +67,7 @@ public class ValueProcessor implements EventProcessor {
                     globalTransaction.set(fieldName, got);
                 }
             }
-          
+
             eventValueStore.commit(transaction);
             eventValueStore.commit(globalTransaction);
         }

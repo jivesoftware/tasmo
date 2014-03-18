@@ -20,7 +20,7 @@ public class VersionedEventsModel {
     private final ChainedVersion version;
     private final EventsModel eventsModel;
 
-    VersionedEventsModel(ChainedVersion version, EventsModel eventsModel) {
+    public VersionedEventsModel(ChainedVersion version, EventsModel eventsModel) {
         this.version = version;
         this.eventsModel = eventsModel;
     }

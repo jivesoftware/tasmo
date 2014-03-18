@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
@@ -33,14 +32,7 @@ public class EventValueStoreTest {
 
     @BeforeTest
     public void setUp() {
-        EventValueCacheProvider cacheProvider = new EventValueCacheProvider() {
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> createValueStoreCache() {
-               return new RowColumnValueStoreImpl<>();
-            }
-        };
-
-        eventValueStore = new EventValueStore(new RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue>(), cacheProvider);
+        eventValueStore = new EventValueStore(new RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue>());
     }
 
     /**

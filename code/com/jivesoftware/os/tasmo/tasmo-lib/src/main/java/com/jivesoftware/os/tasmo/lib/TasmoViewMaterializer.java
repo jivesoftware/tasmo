@@ -10,12 +10,17 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
+import com.jivesoftware.os.tasmo.lib.exists.ExistenceUpdate;
 import com.jivesoftware.os.tasmo.lib.process.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.EventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.NoOpEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
+import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,13 +28,16 @@ public class TasmoViewMaterializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TasmoEventBookkeeper tasmoEventBookkeeper;
+    private final ExistenceStore existenceStore;
     private final DispatcherProvider dispatcherProvider;
     private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
 
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
         DispatcherProvider dispatcherProvider,
+        ExistenceStore existenceStore,
         ViewChangeNotificationProcessor viewChangeNotificationProcessor) {
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
+        this.existenceStore = existenceStore;
         this.dispatcherProvider = dispatcherProvider;
         this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
     }
@@ -40,11 +48,24 @@ public class TasmoViewMaterializer {
             LOG.startTimer("processWrittenEvents");
             tasmoEventBookkeeper.begin(writtenEvents);
 
+            List<ExistenceUpdate> exist = new ArrayList<>();
+            List<ExistenceUpdate> noLongerExist = new ArrayList<>();
+
             for (WrittenEvent writtenEvent : writtenEvents) {
                 if (writtenEvent == null) {
                     LOG.warn("some one is sending null events.");
                     processed.add(null);
                     continue;
+                }
+
+                TenantId tenantId = writtenEvent.getTenantId();
+                long timestamp = writtenEvent.getEventId();
+                WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
+                ObjectId objectId = writtenInstance.getInstanceId();
+                if (writtenInstance.isDeletion()) {
+                    noLongerExist.add(new ExistenceUpdate(tenantId, timestamp, objectId));
+                } else {
+                    exist.add(new ExistenceUpdate(tenantId, timestamp, objectId));
                 }
 
                 EventProcessor processorizer = dispatcherProvider.getDispatcher(writtenEvent.getTenantId(),
@@ -56,6 +77,13 @@ public class TasmoViewMaterializer {
                     processed.add(writtenEvent);
                 }
                 //viewChangeNotificationProcessor.process(writtenEvent); //TODO - ruh roh!
+            }
+
+            if (!exist.isEmpty()) {
+                existenceStore.addObjectId(exist);
+            }
+            if (!noLongerExist.isEmpty()) {
+                existenceStore.removeObjectId(noLongerExist);
             }
             tasmoEventBookkeeper.succeeded();
 

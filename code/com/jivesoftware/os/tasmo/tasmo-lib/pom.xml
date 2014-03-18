@@ -21,14 +21,7 @@
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-view-reader-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-configuration</artifactId>
-            <version>0.1</version>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -72,7 +65,6 @@
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-reference-lib</artifactId>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
@@ -85,11 +77,6 @@
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-event-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-view-reader-service</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

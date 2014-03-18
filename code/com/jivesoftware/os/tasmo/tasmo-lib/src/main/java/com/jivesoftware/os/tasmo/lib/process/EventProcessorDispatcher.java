@@ -17,14 +17,13 @@ public class EventProcessorDispatcher implements EventProcessor {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final ValueProcessor valueProcessor;
     private final RefProcessor refProcessor;
-   
 
     public EventProcessorDispatcher(
         ValueProcessor valueProcessor,
         RefProcessor refProcessor) {
         this.valueProcessor = valueProcessor;
         this.refProcessor = refProcessor;
-        
+
     }
 
     @Override

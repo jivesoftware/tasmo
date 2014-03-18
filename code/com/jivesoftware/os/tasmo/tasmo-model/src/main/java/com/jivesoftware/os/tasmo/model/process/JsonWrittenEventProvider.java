@@ -37,7 +37,6 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
     @Override
     public TypeMarshaller<OpaqueFieldValue> getLiteralFieldValueMarshaller() {
         return new TypeMarshaller<OpaqueFieldValue>() {
-
             @Override
             public JsonLiteralFieldValue fromBytes(byte[] bytes) throws Exception {
                 JsonNode node = mapper.readValue(new ByteArrayInputStream(bytes), JsonNode.class);
@@ -66,6 +65,11 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
     @Override
     public OpaqueFieldValue convertFieldValue(JsonNode fieldValue) {
         return new JsonLiteralFieldValue(fieldValue);
+    }
+
+    @Override
+    public JsonNode recoverFieldValue(OpaqueFieldValue fieldValue) {
+        return ((JsonLiteralFieldValue) fieldValue).fieldVal;
     }
 
     @Override
@@ -122,9 +126,8 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
         @Override
         public String toString() {
             return "JsonWrittenEvent{" + "eventNode=" + eventNode
-                    + '}';
+                + '}';
         }
-
     }
 
     private static void validate(JsonWrittenEvent toValidate) {

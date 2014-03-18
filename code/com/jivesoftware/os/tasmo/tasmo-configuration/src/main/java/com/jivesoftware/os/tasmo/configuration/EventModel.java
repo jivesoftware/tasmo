@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
+import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -17,6 +18,7 @@ public class EventModel {
     public EventModel(String eventClass, Map<String, ValueType> eventFields) {
         this.eventClass = eventClass;
         this.eventFields = eventFields;
+        this.eventFields.put(ReservedFields.INSTANCE_ID, ValueType.value);
     }
 
     public String getEventClass() {
