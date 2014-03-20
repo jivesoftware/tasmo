@@ -15,20 +15,17 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
+import com.google.common.collect.Multimap;
 import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.TenantId;
+import java.util.List;
 import java.util.Set;
 
-public interface ViewPermissionChecker {
-
-    /**
-     * Returns a set of ids that are equal to or a subset of the input set of ids which the actor has permission to view.
-     *
-     *
-     * @param tenantId
-     * @param actorId
-     * @param permissionCheckTheseIds
-     * @return
-     */
-    public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, Set<Id> permissionCheckTheseIds);
+/**
+ *
+ * @author pete
+ */
+public interface ViewFormatter<V> {
+    
+    public V formatView(Set<Id> visibleIds, Multimap<String, ViewValue> valueNodes, List<Multimap<String, ViewReference>> referenceNodes); 
+    
 }

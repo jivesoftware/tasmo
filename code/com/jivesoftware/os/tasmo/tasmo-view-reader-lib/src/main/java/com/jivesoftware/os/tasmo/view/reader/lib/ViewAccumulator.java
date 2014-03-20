@@ -15,17 +15,19 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Function;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
-import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import com.jivesoftware.os.tasmo.model.path.ModelPath;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,51 +35,93 @@ import java.util.Set;
 /**
  *
  */
-public class ViewAccumulator {
+public class ViewAccumulator<V> {
 
-    private final ObjectMapper mapper;
     private final ViewPermissionChecker viewPermissionChecker;
-    private List<Multimap<String, ObjectId>> breadthFirstRefResults = new ArrayList<>();
-    private Multimap<String, OpaqueFieldValue>  valueResults = ArrayListMultimap.create();
-    private Set<Id> permittedIds = new HashSet<>();
+    private final ExistenceChecker existenceChecker;
+    private List<Multimap<String, ViewReference>> refResults = new ArrayList<>();
+    private Multimap<String, ViewValue> valueResults = ArrayListMultimap.create();
+    private Set<Id> presentIds = new HashSet<>();
+    private final List<ModelPath> allPaths;
+    private final ObjectId viewRoot;
 
-    public ViewAccumulator(ObjectMapper mapper, ViewPermissionChecker viewPermissionChecker) {
-        this.mapper = mapper;
+    public ViewAccumulator(ObjectId viewRoot, List<ModelPath> allPaths,
+        ViewPermissionChecker viewPermissionChecker, ExistenceChecker existenceChecker) {
+        this.viewRoot = viewRoot;
+        this.allPaths = allPaths;
         this.viewPermissionChecker = viewPermissionChecker;
+        this.existenceChecker = existenceChecker;
     }
 
-    public void addRefResults(Multimap<String, ObjectId> resultsAtTreeLevel) {
-        breadthFirstRefResults.add(resultsAtTreeLevel);
-        
-        for (String pathId : resultsAtTreeLevel.keySet()) {
-            for (ObjectId id : resultsAtTreeLevel.get(pathId)) {
-                permittedIds.add(id.getId());
+    public void addRefResults(Multimap<String, ViewReference> referenceSteps) {
+        for (String pathId : referenceSteps.keySet()) {
+            Collection<ViewReference> toAdd = referenceSteps.get(pathId);
+
+            for (ViewReference reference : toAdd) {
+                Set<Id> destinationIdSet = Sets.newHashSet(Iterables.transform(reference.getDestinationIds(), new Function<ObjectId, Id>() {
+                    @Override
+                    public Id apply(ObjectId f) {
+                        return f.getId();
+                    }
+                }));
+                presentIds.addAll(destinationIdSet);
+
             }
         }
+
+        refResults.add(referenceSteps);
     }
 
-    public void addValueResults(Multimap<String, OpaqueFieldValue> valueResults) {
-        this.valueResults.putAll(valueResults);
+
+    public V formatResults(TenantId tenantId, Id actorId, ViewFormatter<V> formatter) {
+        presentIds.retainAll(existenceChecker.check(tenantId, presentIds));
+        presentIds.retainAll(viewPermissionChecker.check(tenantId, actorId, presentIds).allowed());
+        return formatter.formatView(presentIds, valueResults, refResults);
     }
 
-    public ObjectNode formatResults(TenantId tenantId, Id actorId) {
-        permittedIds.addAll(viewPermissionChecker.check(tenantId, actorId, permittedIds).allowed());
-        return mapper.createObjectNode();
-    }
 
-    public void retainAllVisibleIds(TenantId tenantId, Id actorId, ViewPermissionChecker viewPermissionChecker) {
-        permittedIds.addAll(viewPermissionChecker.check(tenantId, actorId, permittedIds).allowed());
-    }
-    
-    public Collection<ObjectId> getIdsForPathAndDepth(String modelPathId, int depth) {
-        if (depth >= breadthFirstRefResults.size()) {
-            return Collections.emptyList();
+    public Multimap<String, ViewReference> buildNextViewLevel() {
+        int nextLevelIdx = refResults.size();
+
+        Multimap<String, ViewReference> nextLevel = ArrayListMultimap.create();
+
+        if (nextLevelIdx > 0) {
+            Multimap<String, ViewReference> lastLevel = refResults.get(nextLevelIdx - 1);
+
+            for (String pathId : lastLevel.keySet()) {
+                for (ViewReference reference : lastLevel.get(pathId)) {
+                    ModelPath path = reference.getPath();
+                    ModelPathStep nextStep = path.getPathMembers().get(nextLevelIdx);
+
+                    if (ModelPathStepType.value.equals(nextStep.getStepType())) {
+                        for (ObjectId source : reference.getDestinationIds()) {
+                            valueResults.put(pathId, new ViewValue(reference.getPath(), nextStep, source));
+                        }
+                    } else {
+                        for (ObjectId source : reference.getDestinationIds()) {
+                            nextLevel.put(pathId, new ViewReference(reference.getPath(), nextStep, source));
+                        }
+                    }
+
+                }
+            }
         } else {
-            Multimap<String, ObjectId> resultsAtDepth = breadthFirstRefResults.get(depth);
-            Collection<ObjectId> ids = resultsAtDepth.get(modelPathId);
-            return ids != null ? ids : Collections.<ObjectId>emptyList();
+            for (ModelPath path : allPaths) {
+                ModelPathStep step = path.getPathMembers().get(0);
+                if (ModelPathStepType.value.equals(step.getStepType())) {
+                    valueResults.put(path.getId(), new ViewValue(path, step, viewRoot));
+
+                } else {
+                    nextLevel.put(path.getId(), new ViewReference(path, step, viewRoot));
+                }
+            }
         }
+        
+        return nextLevel;
     }
     
-    
+    public Multimap<String, ViewValue> getViewValues() {
+        return valueResults;
+    }
+
 }

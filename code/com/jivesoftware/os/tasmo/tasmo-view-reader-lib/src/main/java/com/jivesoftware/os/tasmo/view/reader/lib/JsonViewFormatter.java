@@ -15,35 +15,30 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Multimap;
+import com.jivesoftware.os.tasmo.id.Id;
+import java.util.List;
 import java.util.Set;
 
 /**
  *
+ * @author pete
  */
-public class ReferenceRequest {
-    private final ModelPathStep step;
-    private final ObjectId objectId;
+public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
+    private final ObjectMapper mapper;
 
-    public ReferenceRequest(ModelPathStep step, ObjectId objectId) {
-        this.step = step;
-        this.objectId = objectId;
+    public JsonViewFormatter(ObjectMapper mapper) {
+        this.mapper = mapper;
     }
     
-    public ObjectId getObjectId() {
-        return objectId;
+
+    @Override
+    public ObjectNode formatView(Set<Id> visibleIds, Multimap<String, ViewValue> valueNodes, List<Multimap<String, ViewReference>> referenceNodes) {
+       
+        
+       return mapper.createObjectNode();
     }
     
-    public boolean isBackReference() {
-        return step.getStepType().isBackReferenceType();
-    }
-    
-    public Set<String> getOriginClassNames() {
-        return step.getOriginClassNames();
-    }
-    
-    public String getRefFieldName() {
-        return step.getRefFieldName();
-    }
 }

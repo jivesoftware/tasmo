@@ -19,16 +19,11 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import java.util.Set;
 
-public interface ViewPermissionChecker {
-
-    /**
-     * Returns a set of ids that are equal to or a subset of the input set of ids which the actor has permission to view.
-     *
-     *
-     * @param tenantId
-     * @param actorId
-     * @param permissionCheckTheseIds
-     * @return
-     */
-    public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, Set<Id> permissionCheckTheseIds);
+/**
+ *
+ */
+public interface ExistenceChecker {
+    
+    Set<Id> check(TenantId tenantId, Set<Id> existenceCheckTheseIds);
+    
 }

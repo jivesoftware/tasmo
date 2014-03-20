@@ -29,15 +29,7 @@
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
-            <artifactId>row-column-value-store-marshall-primatives</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
             <artifactId>row-column-value-store-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
         </dependency>
         <dependency>
             <groupId>org.testng</groupId>
@@ -45,20 +37,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -78,31 +58,13 @@
             <artifactId>tasmo-view-reader-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>merlin-config</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>http-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-configuration</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>jaxrs-util</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
             <artifactId>row-column-value-store-inmemory</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-lib</artifactId>
-            <version>0.1</version>
-            <type>jar</type>
+            <artifactId>tasmo-reference-lib</artifactId>
         </dependency>
     </dependencies>
 </project>

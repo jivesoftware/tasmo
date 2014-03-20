@@ -18,7 +18,6 @@ package com.jivesoftware.os.tasmo.view.reader.lib;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multimap;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
@@ -27,9 +26,6 @@ import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
-import com.jivesoftware.os.tasmo.model.path.ModelPath;
-import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
-import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReaderException;
@@ -47,15 +43,19 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
     private final ViewModelProvider viewModelProvider;
     private final ReferenceGatherer referenceGatherer;
     private final ValueGatherer valueGatherer;
+    private final ViewFormatter<ObjectNode> viewFormatter;
     private final ViewPermissionChecker viewPermissionChecker;
+    private final ExistenceChecker existenceChecker;
     private final ObjectMapper mapper;
 
     public ReadTimeViewMaterializer(ViewModelProvider viewModelProvider, ReferenceGatherer referenceGatherer, ValueGatherer valueGatherer,
-        ViewPermissionChecker viewPermissionChecker) {
+        ViewFormatter<ObjectNode> viewFormatter, ViewPermissionChecker viewPermissionChecker, ExistenceChecker existenceChecker) {
         this.viewModelProvider = viewModelProvider;
         this.referenceGatherer = referenceGatherer;
         this.valueGatherer = valueGatherer;
+        this.viewFormatter = viewFormatter;
         this.viewPermissionChecker = viewPermissionChecker;
+        this.existenceChecker = existenceChecker;
         this.mapper = new ObjectMapper();
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
     }
@@ -84,7 +84,7 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
     private ViewResponse getView(TenantId tenantId, ObjectId viewId, ViewResponse viewResponse) {
         if (viewResponse.getStatusCode() == ViewResponse.StatusCode.OK) {
             ObjectNode view = viewResponse.getViewBody();
-            if (view.size() == 0) {
+            if (view == null || view.size() == 0) {
                 LOG.debug("Retrieved empty view object for view object id {}. Returning null view object", viewId);
                 viewResponse = ViewResponse.notFound();
             } else if (view.has(ReservedFields.DELETED) && view.get(ReservedFields.DELETED).booleanValue()) {
@@ -106,57 +106,28 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
             return ViewResponse.error();
         }
 
-        ViewAccumulator accumulator = new ViewAccumulator(mapper, viewPermissionChecker);
-        Multimap<String, ValueRequest> valueSteps = ArrayListMultimap.create();
-        Multimap<String, ReferenceRequest> referenceSteps = ArrayListMultimap.create();
-
-        setInitialId(viewRequest, binding, accumulator);
-
-        boolean treeLevelsRemain = true;
-        int level = 0;
-        List<ModelPath> paths = binding.getModelPaths();
-
-        while (treeLevelsRemain) {
-            treeLevelsRemain = false;
-
-            for (int i = 0; i < paths.size(); i++) {
-                ModelPath path = paths.get(i);
-
-                if (level < path.getPathMemberSize()) {
-                    treeLevelsRemain = true;
-
-                    ModelPathStep step = path.getPathMembers().get(level);
-                    if (ModelPathStepType.value.equals(step.getStepType())) {
-                        for (ObjectId sourceId : accumulator.getIdsForPathAndDepth(path.getId(), level)) {
-                            valueSteps.put(path.getId(), new ValueRequest(step, sourceId));
-                        }
-                    } else {
-                        for (ObjectId sourceId : accumulator.getIdsForPathAndDepth(path.getId(), level)) {
-                            referenceSteps.put(path.getId(), new ReferenceRequest(step, sourceId));
-                        }
-                    }
-                }
-            }
-
-            accumulator.addRefResults(referenceGatherer.gatherReferenceResults(viewRequest.getTenantIdAndCentricId(), referenceSteps));
-            referenceSteps.clear();
+        ObjectId initialId = findInitialId(viewRequest, binding);
+        ViewAccumulator<ObjectNode> accumulator = new ViewAccumulator<>(initialId, binding.getModelPaths(), viewPermissionChecker, existenceChecker);
+        
+        Multimap<String, ViewReference> requestsToMake;
+        
+        while (!(requestsToMake = accumulator.buildNextViewLevel()).isEmpty()) {
+            referenceGatherer.gatherReferenceResults(viewRequest.getTenantIdAndCentricId(), requestsToMake);
+            accumulator.addRefResults(requestsToMake);
         }
+        
+        valueGatherer.gatherValueResults(viewRequest.getTenantIdAndCentricId(), accumulator.getViewValues());
 
-        accumulator.addValueResults(valueGatherer.gatherValueResults(viewRequest.getTenantIdAndCentricId(), valueSteps));
-
-        ObjectNode responseBody = accumulator.formatResults(viewRequest.getTenantId(), viewRequest.getActorId());
+        ObjectNode responseBody = accumulator.formatResults(viewRequest.getTenantId(), viewRequest.getActorId(), viewFormatter);
         return getView(viewRequest.getTenantId(), viewRequest.getViewId(), ViewResponse.ok(responseBody));
 
     }
-
-    //TODO always pull deleted field with values. Value result will have fields + deleted
-    //TODO detect invisible root id and return FORBIDDEN
-    private void setInitialId(ViewDescriptor viewRequest, ViewBinding binding, ViewAccumulator accumulator) {
-        Multimap<String, ObjectId> initialIds = ArrayListMultimap.create();
-        ObjectId initialObject = viewRequest.getViewId(); //this is wrong - we need the object id and  this doesn't have it yet
-        for (ModelPath path : binding.getModelPaths()) {
-            initialIds.put(path.getId(), initialObject);
-        }
-        accumulator.addRefResults(initialIds);
+    
+    private ObjectId findInitialId(ViewDescriptor viewDescriptor, ViewBinding binding) {
+        //TODO ideally add object id to view descriptor.
+        //if clients can't do that, we need to do an event value store request for instance id with the id portion of view id and with 
+        //every possible event class for the view root
+        return viewDescriptor.getViewId(); //this is wrong
     }
+
 }

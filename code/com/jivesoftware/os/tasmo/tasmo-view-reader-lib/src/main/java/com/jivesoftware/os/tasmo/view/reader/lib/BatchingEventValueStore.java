@@ -38,6 +38,7 @@ import java.util.Set;
  *
  */
 public class BatchingEventValueStore {
+
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventValueStore;
     private final ThreadLocal<GetBatch> getBatch = new ThreadLocal<GetBatch>() {
@@ -74,6 +75,7 @@ public class BatchingEventValueStore {
             tenantIdAndCentricId = request.tenantIdAndCentricId;
             callbacks.add(new KeyedColumnValueCallbackStream<>(request.objectId, new CallbackStream<ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>>() {
                 final Set<String> requestedFields = ImmutableSet.copyOf(request.fieldNames);
+
                 @Override
                 public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> callback(ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> value)
                     throws Exception {
@@ -91,6 +93,7 @@ public class BatchingEventValueStore {
     }
 
     private static class GetBatch {
+
         ListMultimap<GetRequest, CallbackStream<ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>>> requests = ArrayListMultimap.create();
 
         public void addRequest(TenantIdAndCentricId tenantIdAndCentricId, ObjectId objectId, String[] fieldNames,
@@ -108,6 +111,7 @@ public class BatchingEventValueStore {
     }
 
     private static class GetRequest {
+
         private final TenantIdAndCentricId tenantIdAndCentricId;
         private final ObjectId objectId;
         private final String[] fieldNames;
@@ -150,5 +154,4 @@ public class BatchingEventValueStore {
             return result;
         }
     }
-    
 }

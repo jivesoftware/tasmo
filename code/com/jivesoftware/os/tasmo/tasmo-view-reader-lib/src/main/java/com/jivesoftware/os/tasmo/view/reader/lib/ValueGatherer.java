@@ -15,7 +15,6 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
@@ -33,21 +32,18 @@ public class ValueGatherer {
         this.valueStore = valueStore;
     }
 
-    public Multimap<String, OpaqueFieldValue> gatherValueResults(
-        TenantIdAndCentricId tenantIdAndCentricId, Multimap<String, ValueRequest> valueRequests) throws Exception {
-        
-        final Multimap<String, OpaqueFieldValue> results = ArrayListMultimap.create();
+    public void gatherValueResults(
+        TenantIdAndCentricId tenantIdAndCentricId, Multimap<String, ViewValue> valueRequests) throws Exception {
 
         for (final String pathId : valueRequests.keySet()) {
-            //TODO validate that the underlying store will return results in the order we added requests
-            for (ValueRequest request : valueRequests.get(pathId)) {
+            for (final ViewValue request : valueRequests.get(pathId)) {
                 valueStore.addRequest(tenantIdAndCentricId, request.getObjectId(), request.getValueFieldNames(),
                     new CallbackStream<ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>>() {
                     @Override
                     public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> callback(
                         ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> value) throws Exception {
                         if (value != null) {
-                            results.put(pathId, value.getValue());
+                            request.addResult(value.getColumn(), value.getValue());
                         }
                         return value;
 
@@ -57,7 +53,5 @@ public class ValueGatherer {
         }
 
         valueStore.executeBatch();
-
-        return results;
     }
 }

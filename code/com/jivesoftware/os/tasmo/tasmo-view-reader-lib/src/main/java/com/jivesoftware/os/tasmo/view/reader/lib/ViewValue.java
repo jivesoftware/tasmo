@@ -17,31 +17,53 @@ package com.jivesoftware.os.tasmo.view.reader.lib;
 
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
  *
  */
-public class ValueRequest {
+public class ViewValue {
 
+    private final ModelPath path;
     private final ModelPathStep step;
     private final ObjectId objectId;
+    private final Map<String, OpaqueFieldValue> result;
 
-    public ValueRequest(ModelPathStep step, ObjectId objectId) {
-        this.step = step;
-        this.objectId = objectId;
+    public ViewValue(ModelPath path, ModelPathStep step, ObjectId objectId) {
+        if (ModelPathStepType.value.equals(step.getStepType())) {
+            this.path = path;
+            this.step = step;
+            this.objectId = objectId;
+            this.result = new HashMap<>();
+        } else {
+            throw new IllegalArgumentException("ViewValue can only be built with a value step");
+        }
+       
     }
 
     public ObjectId getObjectId() {
         return objectId;
     }
-    
+
     public String[] getValueFieldNames() {
         Set<String> fieldNames = new HashSet<>(step.getFieldNames());
         fieldNames.add(ReservedFields.DELETED);
         return fieldNames.toArray(new String[fieldNames.size()]);
     }
-   
+    
+    public void addResult(String fieldName, OpaqueFieldValue value) {
+        result.put(fieldName, value);
+    }
+
+    public ModelPath getPath() {
+        return path;
+    }
+    
 }

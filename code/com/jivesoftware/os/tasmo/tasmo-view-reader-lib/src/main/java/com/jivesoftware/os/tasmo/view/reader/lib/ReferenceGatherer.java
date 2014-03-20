@@ -15,7 +15,6 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.ObjectId;
@@ -33,22 +32,20 @@ public class ReferenceGatherer {
         this.referenceStore = referenceStore;
     }
 
-    public Multimap<String, ObjectId> gatherReferenceResults(
-        TenantIdAndCentricId tenantIdAndCentricId, Multimap<String, ReferenceRequest> referenceRequests) throws Exception {
-        
-        final Multimap<String, ObjectId> results = ArrayListMultimap.create();
+    public void gatherReferenceResults(
+        TenantIdAndCentricId tenantIdAndCentricId, Multimap<String, ViewReference> referenceRequests) throws Exception {
 
         for (final String pathId : referenceRequests.keySet()) {
 
             //TODO validate that the underlying store will return results in the order we added requests
-            for (ReferenceRequest request : referenceRequests.get(pathId)) {
-                ObjectId id = request.getObjectId();
+            for (final ViewReference request : referenceRequests.get(pathId)) {
+                ObjectId id = request.getOriginId();
 
                 CallbackStream<Reference> callbackStream = new CallbackStream<Reference>() {
                     @Override
                     public Reference callback(Reference value) throws Exception {
                         if (value != null) {
-                            results.put(pathId, value.getObjectId());
+                            request.addDestinationId(value);
                         }
                         return value;
                     }
@@ -64,6 +61,5 @@ public class ReferenceGatherer {
 
         referenceStore.executeBatch();
 
-        return results;
     }
 }

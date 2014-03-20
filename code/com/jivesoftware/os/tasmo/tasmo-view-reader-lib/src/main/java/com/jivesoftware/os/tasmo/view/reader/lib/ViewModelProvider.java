@@ -35,7 +35,7 @@ public class ViewModelProvider {
         this.viewsProvider = viewsProvider;
         this.versionedViewModels = new ConcurrentHashMap<>();
     }
-    
+
     public ViewBinding getBindingForRequest(ViewDescriptor descriptor) {
         VersionedTasmoViewModel viewModel = getModelForTenant(descriptor.getTenantId());
         if (viewModel != null) {
@@ -44,10 +44,9 @@ public class ViewModelProvider {
                 return viewModel.getBinding(viewId.getClassName());
             }
         }
-        
-        return  null;
+
+        return null;
     }
-    
 
     private VersionedTasmoViewModel getModelForTenant(TenantId tenantId) {
         if (!versionedViewModels.containsKey(tenantId)) {
@@ -91,88 +90,87 @@ public class ViewModelProvider {
             }
         }
     }
-    
+
     private Map<String, ViewBinding> indexByView(Views views) {
         Map<String, ViewBinding> indexed = new HashMap<>();
         for (ViewBinding binding : views.getViewBindings()) {
             indexed.put(binding.getViewClassName(), binding);
         }
-        
+
         return indexed;
     }
 
     /*
-    private ListMultimap<String, FieldProcessor> bindModelPaths(Views views) throws IllegalArgumentException {
+     private ListMultimap<String, FieldProcessor> bindModelPaths(Views views) throws IllegalArgumentException {
 
-        Map<String, FieldProcessorFactory> allFieldProcessorFactories = Maps.newHashMap();
+     Map<String, FieldProcessorFactory> allFieldProcessorFactories = Maps.newHashMap();
 
-        ArrayListMultimap<String, FieldProcessor> viewFieldProcessors = ArrayListMultimap.create();
+     ArrayListMultimap<String, FieldProcessor> viewFieldProcessors = ArrayListMultimap.create();
 
-        for (ViewBinding viewBinding : views.getViewBindings()) {
+     for (ViewBinding viewBinding : views.getViewBindings()) {
 
-            String viewClassName = viewBinding.getViewClassName();
-            String viewIdFieldName = viewBinding.getViewIdFieldName();
-            boolean idCentric = viewBinding.isIdCentric();
-            boolean isNotificationRequired = viewBinding.isNotificationRequired();
-
-
-            FieldProcessorConfig executableStepConfig = new FieldProcessorConfig(
-                writtenEventProvider,
-                changeWriter,
-                viewIdFieldName,
-                idCentric,
-                isNotificationRequired);
-
-            for (ModelPath modelPath : viewBinding.getModelPaths()) {
-
-                String factoryKey = viewBinding.getViewClassName() + "_" + modelPath.getId();
-                if (allFieldProcessorFactories.containsKey(factoryKey)) {
-                    throw new IllegalArgumentException("you have already created this binding:" + factoryKey);
-                }
-
-                FieldProcessorFactory fieldProcessorFactory = new FieldProcessorFactory(viewClassName, modelPath, eventValueStore, referenceStore);
-
-                LOG.info("Bind:{}", factoryKey);
-                allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
-
-//                FieldProcessor executableStep = fieldProcessorFactory.buildFieldProcessor(executableStepConfig);
-//                viewFieldProcessors.put(viewClassName, executableStep);
-            }
-
-        }
-        
-        return viewFieldProcessors;
-    }
+     String viewClassName = viewBinding.getViewClassName();
+     String viewIdFieldName = viewBinding.getViewIdFieldName();
+     boolean idCentric = viewBinding.isIdCentric();
+     boolean isNotificationRequired = viewBinding.isNotificationRequired();
 
 
-    private void groupExecutableStepsByClass(
-        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>>> groupedExecutableSteps,
-        List<FieldProcessor> executableSteps) {
+     FieldProcessorConfig executableStepConfig = new FieldProcessorConfig(
+     writtenEventProvider,
+     changeWriter,
+     viewIdFieldName,
+     idCentric,
+     isNotificationRequired);
 
-        for (FieldProcessor executableStep : executableSteps) {
-            for (String className : executableStep.getInitialClassNames()) {
-                Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>> typedSteps = groupedExecutableSteps.get(className);
-                if (typedSteps == null) {
-                    typedSteps = Maps.newHashMap();
-                    groupedExecutableSteps.put(className, typedSteps);
-                }
-                ModelPathStepType stepType = executableStep.getInitialModelPathStepType();
-                ArrayListMultimap<InitialStepKey, FieldProcessor> steps = typedSteps.get(stepType);
-                if (steps == null) {
-                    steps = ArrayListMultimap.create();
-                    typedSteps.put(stepType, steps);
-                }
+     for (ModelPath modelPath : viewBinding.getModelPaths()) {
 
-                String refFieldName = executableStep.getRefFieldName();
-                if (refFieldName != null) {
-                    steps.put(new InitialStepKey(refFieldName, refFieldName), executableStep);
-                }
+     String factoryKey = viewBinding.getViewClassName() + "_" + modelPath.getId();
+     if (allFieldProcessorFactories.containsKey(factoryKey)) {
+     throw new IllegalArgumentException("you have already created this binding:" + factoryKey);
+     }
 
-                for (String fieldName : executableStep.getInitialFieldNames()) {
-                    steps.put(new InitialStepKey(fieldName, refFieldName), executableStep);
-                }
-            }
-        }
-    }
-    */
+     FieldProcessorFactory fieldProcessorFactory = new FieldProcessorFactory(viewClassName, modelPath, eventValueStore, referenceStore);
+
+     LOG.info("Bind:{}", factoryKey);
+     allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
+
+     //                FieldProcessor executableStep = fieldProcessorFactory.buildFieldProcessor(executableStepConfig);
+     //                viewFieldProcessors.put(viewClassName, executableStep);
+     }
+
+     }
+     return viewFieldProcessors;
+     }
+
+
+     private void groupExecutableStepsByClass(
+     Map<String, Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>>> groupedExecutableSteps,
+     List<FieldProcessor> executableSteps) {
+
+     for (FieldProcessor executableStep : executableSteps) {
+     for (String className : executableStep.getInitialClassNames()) {
+     Map<ModelPathStepType, ArrayListMultimap<InitialStepKey, FieldProcessor>> typedSteps = groupedExecutableSteps.get(className);
+     if (typedSteps == null) {
+     typedSteps = Maps.newHashMap();
+     groupedExecutableSteps.put(className, typedSteps);
+     }
+     ModelPathStepType stepType = executableStep.getInitialModelPathStepType();
+     ArrayListMultimap<InitialStepKey, FieldProcessor> steps = typedSteps.get(stepType);
+     if (steps == null) {
+     steps = ArrayListMultimap.create();
+     typedSteps.put(stepType, steps);
+     }
+
+     String refFieldName = executableStep.getRefFieldName();
+     if (refFieldName != null) {
+     steps.put(new InitialStepKey(refFieldName, refFieldName), executableStep);
+     }
+
+     for (String fieldName : executableStep.getInitialFieldNames()) {
+     steps.put(new InitialStepKey(fieldName, refFieldName), executableStep);
+     }
+     }
+     }
+     }
+     */
 }
