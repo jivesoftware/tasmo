@@ -67,6 +67,10 @@ public class ViewReference {
     public String getRefFieldName() {
         return step.getRefFieldName();
     }
+    
+    public ModelPathStepType getStepType() {
+        return step.getStepType();
+    }
 
     public void addDestinationId(Reference destinationRef) {
         ObjectId objectId = destinationRef.getObjectId();
@@ -80,6 +84,10 @@ public class ViewReference {
         } else {
             destinations.add(objectId);
         }
+    }
+    
+    public int getCountValue() {
+        return count.get();
     }
 
     public List<ObjectId> getDestinationIds() {

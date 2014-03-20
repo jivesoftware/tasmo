@@ -15,10 +15,7 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
-import com.google.common.collect.Multimap;
-import com.jivesoftware.os.tasmo.id.Id;
-import java.util.List;
-import java.util.Set;
+import com.jivesoftware.os.tasmo.id.ObjectId;
 
 /**
  *
@@ -26,6 +23,16 @@ import java.util.Set;
  */
 public interface ViewFormatter<V> {
     
-    public V formatView(Set<Id> visibleIds, Multimap<String, ViewValue> valueNodes, List<Multimap<String, ViewReference>> referenceNodes); 
+    V getView();
+    
+    void addReferenceNode(ViewReference reference);
+    
+    void addValueNode(ViewValue value);
+
+    void setRoot(ObjectId viewRoot);
+    
+    void nextLevel();
+
+    void nextPath();
     
 }

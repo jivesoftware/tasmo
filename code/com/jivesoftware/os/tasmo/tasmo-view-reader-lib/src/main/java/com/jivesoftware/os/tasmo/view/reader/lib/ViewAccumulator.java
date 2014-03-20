@@ -72,13 +72,37 @@ public class ViewAccumulator<V> {
         refResults.add(referenceSteps);
     }
 
-
     public V formatResults(TenantId tenantId, Id actorId, ViewFormatter<V> formatter) {
         presentIds.retainAll(existenceChecker.check(tenantId, presentIds));
         presentIds.retainAll(viewPermissionChecker.check(tenantId, actorId, presentIds).allowed());
-        return formatter.formatView(presentIds, valueResults, refResults);
-    }
+        
+        if (presentIds.contains(viewRoot)) {
+            
+            formatter.setRoot(viewRoot);
 
+            for (ModelPath path : allPaths) {
+                for (Multimap<String, ViewReference> treeLevel : refResults) {
+                    for (ViewReference reference : treeLevel.get(path.getId())) {
+                        if (presentIds.contains(reference.getOriginId().getId())) {
+                            formatter.addReferenceNode(reference);
+                        }
+                    }
+                    
+                    formatter.nextLevel();
+                }
+
+                for (ViewValue value : valueResults.get(path.getId())) {
+                    if (presentIds.contains(value.getObjectId().getId())) {
+                        formatter.addValueNode(value);
+                    }
+                }
+                
+                formatter.nextPath();
+            }
+        }
+
+        return formatter.getView();
+    }
 
     public Multimap<String, ViewReference> buildNextViewLevel() {
         int nextLevelIdx = refResults.size();
@@ -116,12 +140,11 @@ public class ViewAccumulator<V> {
                 }
             }
         }
-        
+
         return nextLevel;
     }
-    
+
     public Multimap<String, ViewValue> getViewValues() {
         return valueResults;
     }
-
 }
