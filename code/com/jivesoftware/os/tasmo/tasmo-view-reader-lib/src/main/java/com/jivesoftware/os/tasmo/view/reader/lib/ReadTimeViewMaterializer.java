@@ -23,6 +23,7 @@ import com.google.common.collect.Multimap;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
@@ -32,7 +33,9 @@ import com.jivesoftware.os.tasmo.view.reader.api.ViewReaderException;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -123,11 +126,20 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
 
     }
     
-    private ObjectId findInitialId(ViewDescriptor viewDescriptor, ViewBinding binding) {
-        //TODO ideally add object id to view descriptor.
-        //if clients can't do that, we need to do an event value store request for instance id with the id portion of view id and with 
-        //every possible event class for the view root
-        return viewDescriptor.getViewId(); //this is wrong
+    private ObjectId findInitialId(ViewDescriptor viewDescriptor, ViewBinding binding) throws Exception {
+        Id rootId = viewDescriptor.getViewId().getId();
+        Set<ObjectId> potentialRoots = new HashSet<>();
+        for (String eventClass : binding.getModelPaths().get(0).getRootClassNames()) {
+            potentialRoots.add(new ObjectId(eventClass, rootId));
+        }
+        
+        Set<ObjectId> foundRoots = valueGatherer.lookupEventIds(viewDescriptor.getTenantIdAndCentricId(), potentialRoots);
+        
+        if (foundRoots.size() > 1) {
+            LOG.warn("Unexpectedly found more than one root object for view id " + viewDescriptor.getViewId() + " found " + foundRoots);
+        }
+        
+        return foundRoots.isEmpty() ? null : foundRoots.iterator().next();
     }
 
 }

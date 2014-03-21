@@ -51,6 +51,7 @@ public class ViewAccumulator<V> {
         this.allPaths = allPaths;
         this.viewPermissionChecker = viewPermissionChecker;
         this.existenceChecker = existenceChecker;
+        this.presentIds.add(viewRoot.getId());
     }
 
     public void addRefResults(Multimap<String, ViewReference> referenceSteps) {
@@ -76,7 +77,7 @@ public class ViewAccumulator<V> {
         presentIds.retainAll(existenceChecker.check(tenantId, presentIds));
         presentIds.retainAll(viewPermissionChecker.check(tenantId, actorId, presentIds).allowed());
         
-        if (presentIds.contains(viewRoot)) {
+        if (presentIds.contains(viewRoot.getId())) {
             
             formatter.setRoot(viewRoot);
 

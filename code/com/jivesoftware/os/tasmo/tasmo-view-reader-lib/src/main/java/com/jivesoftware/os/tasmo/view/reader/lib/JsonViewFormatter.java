@@ -19,12 +19,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.logger.MetricLogger;
+import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -32,38 +35,43 @@ import java.util.List;
  */
 public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
 
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final ObjectMapper mapper;
+    private final WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider;
     private ObjectNode root;
-    private List<JsonNode> level;
-    private List<JsonNode> nextLevel;
+    private ObjectId viewRoot;
+    private Map<ObjectId, JsonNode> level;
+    private Map<ObjectId, JsonNode> nextLevel;
     private static final String COUNT_PREFIX = "count_";
     private static final String ALL_PREFIX = "all_";
     private static final String LATEST_PREFIX = "latest_";
 
-    public JsonViewFormatter(ObjectMapper mapper) {
+    public JsonViewFormatter(ObjectMapper mapper, WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider) {
         this.mapper = mapper;
-        this.level = new ArrayList<>();
-        this.nextLevel = new ArrayList<>();
+        this.writtenEventProvider = writtenEventProvider;
+        this.level = new HashMap<>();
+        this.nextLevel = new HashMap<>();
     }
 
     @Override
     public void setRoot(ObjectId viewRoot) {
+        this.viewRoot = viewRoot;
         root = mapper.createObjectNode();
         root.put(ReservedFields.VIEW_OBJECT_ID, viewRoot.toStringForm());
-        level.add(root);
+        level.put(viewRoot, root);
     }
 
     @Override
     public void nextLevel() {
         level.clear();
-        level.addAll(nextLevel);
+        level.putAll(nextLevel);
         nextLevel.clear();
     }
 
     @Override
     public void nextPath() {
         level.clear();
-        level.add(root);
+        level.put(viewRoot, root);
         nextLevel.clear();
     }
 
@@ -77,47 +85,39 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
 
     @Override
     public void addReferenceNode(ViewReference reference) {
-        String viewObjectId = reference.getOriginId().toStringForm();
         ModelPathStepType stepType = reference.getStepType();
 
-        for (JsonNode node : level) {
-            if (node.isObject()) {
+        JsonNode node = level.get(reference.getOriginId());
+        if (node == null || !node.isObject()) {
+            LOG.warn("Expected object node when adding reference with origin " + reference.getOriginId()
+                + ". Found " + (node != null ? node.getNodeType() : null) + " in model path "
+                + reference.getPath().getId());
 
-                ObjectNode object = (ObjectNode) node;
-                if (viewObjectId.equals(object.get(ReservedFields.VIEW_OBJECT_ID).textValue())) {
-                    addReferenceToObject(stepType, object, reference);
-                }
-
-            } else if (node.isArray()) {
-
-                ArrayNode array = (ArrayNode) node;
-                for (Iterator<JsonNode> iter = array.elements(); iter.hasNext();) {
-                    JsonNode element = iter.next();
-                    if (element.isObject()) {
-                        ObjectNode object = (ObjectNode) element;
-                        if (viewObjectId.equals(object.get(ReservedFields.VIEW_OBJECT_ID).textValue())) {
-                            addReferenceToObject(stepType, object, reference);
-                        }
-                    } else {
-                        throw new IllegalStateException("Unexpected array element type. Expected object, found " + element.getNodeType());
-                    }
-                }
-
-            } else {
-                throw new IllegalStateException("Unexpected node type " + node.getNodeType());
-            }
+            return;
         }
-
+        
+        ObjectNode object = (ObjectNode) node;
+        addReferenceToObject(stepType, object, reference);
     }
 
     @Override
     public void addValueNode(ViewValue value) {
-        if (root == null) {
-            root = mapper.createObjectNode();
-            root.put(ReservedFields.VIEW_OBJECT_ID, value.getObjectId().toStringForm());
-            level.add(root);
+        JsonNode node = level.get(value.getObjectId());
+        if (node == null || !node.isObject()) {
+            LOG.warn("Expected object node when adding value with id " + value.getObjectId()
+                + ". Found " + (node != null ? node.getNodeType() : null) + " in model path "
+                + value.getPath().getId());
+
+            return;
         }
 
+        ObjectNode object = (ObjectNode) node;
+        for (Map.Entry<String, OpaqueFieldValue> entry : value.getResult().entrySet()) {
+            JsonNode valueNode = writtenEventProvider.recoverFieldValue(entry.getValue());
+            if (valueNode != null) {
+                object.put(entry.getKey(), writtenEventProvider.recoverFieldValue(entry.getValue()));
+            }
+        }
     }
 
     private void addReferenceToObject(ModelPathStepType stepType, ObjectNode object, ViewReference reference) {
@@ -132,7 +132,7 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
             destinationNode.put(ReservedFields.VIEW_OBJECT_ID, destination.toStringForm());
 
             object.put(LATEST_PREFIX + reference.getRefFieldName(), destinationNode);
-            nextLevel.add(destinationNode);
+            nextLevel.put(destination, destinationNode);
 
         } else if (ModelPathStepType.backRefs.equals(stepType)) {
 
@@ -142,9 +142,9 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
                 destinationNode.put(ReservedFields.VIEW_OBJECT_ID, destination.toStringForm());
 
                 array.add(destinationNode);
+                nextLevel.put(destination, destinationNode);
             }
             object.put(ALL_PREFIX + reference.getRefFieldName(), array);
-            nextLevel.add(array);
 
         } else if (ModelPathStepType.ref.equals(stepType)) {
 
@@ -153,7 +153,7 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
             destinationNode.put(ReservedFields.VIEW_OBJECT_ID, destination.toStringForm());
 
             object.put(reference.getRefFieldName(), destinationNode);
-            nextLevel.add(destinationNode);
+            nextLevel.put(destination, destinationNode);
 
         } else if (ModelPathStepType.refs.equals(stepType)) {
 
@@ -163,9 +163,9 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
                 destinationNode.put(ReservedFields.VIEW_OBJECT_ID, destination.toStringForm());
 
                 array.add(destinationNode);
+                nextLevel.put(destination, destinationNode);
             }
             object.put(reference.getRefFieldName(), array);
-            nextLevel.add(array);
 
         }
     }

@@ -18,8 +18,12 @@ package com.jivesoftware.os.tasmo.view.reader.lib;
 import com.google.common.collect.Multimap;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
+import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  *
@@ -53,5 +57,32 @@ public class ValueGatherer {
         }
 
         valueStore.executeBatch();
+    }
+    
+    public Set<ObjectId> lookupEventIds(TenantIdAndCentricId tenantIdAndCentricId, Set<ObjectId> eventIds) throws Exception {
+        final Set<ObjectId> results = new HashSet<>();
+        String[] fields = new String[]{ReservedFields.INSTANCE_ID};
+        
+        for (final ObjectId eventId : eventIds) {
+            valueStore.addRequest(tenantIdAndCentricId, eventId, fields, new CallbackStream<ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>>() {
+
+                @Override
+                public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> callback(ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> value) 
+                    throws Exception {
+                    if (value != null) {
+                        if (value.getColumn().equals(ReservedFields.INSTANCE_ID)) {
+                            results.add(eventId);
+                        }
+                    }
+                    return value;
+                }
+            });
+        }
+        
+        valueStore.executeBatch();
+        
+        return results;
+        
+        
     }
 }

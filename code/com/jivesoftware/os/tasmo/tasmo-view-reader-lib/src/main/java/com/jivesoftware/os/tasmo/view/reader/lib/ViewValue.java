@@ -66,4 +66,8 @@ public class ViewValue {
         return path;
     }
     
+    public Map<String, OpaqueFieldValue> getResult() {
+        return result;
+    } 
+    
 }
