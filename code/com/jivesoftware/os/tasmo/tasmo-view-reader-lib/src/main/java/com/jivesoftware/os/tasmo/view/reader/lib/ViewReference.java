@@ -37,7 +37,6 @@ public class ViewReference {
     private final ObjectId origin;
     private final List<ObjectId> destinations;
     private final AtomicReference<Reference> latest;
-    private final AtomicInteger count;
 
     public ViewReference(ModelPath path, ModelPathStep step, ObjectId objectId) {
         if (ModelPathStepType.value.equals(step.getStepType())) {
@@ -48,7 +47,6 @@ public class ViewReference {
             this.origin = objectId;
             this.destinations = new ArrayList<>();
             this.latest = new AtomicReference<>();
-            this.count = new AtomicInteger();
         }
     }
 
@@ -67,16 +65,14 @@ public class ViewReference {
     public String getRefFieldName() {
         return step.getRefFieldName();
     }
-    
+
     public ModelPathStepType getStepType() {
         return step.getStepType();
     }
 
     public void addDestinationId(Reference destinationRef) {
         ObjectId objectId = destinationRef.getObjectId();
-        if (ModelPathStepType.count.equals(step.getStepType())) {
-            count.incrementAndGet();
-        } else if (ModelPathStepType.latest_backRef.equals(step.getStepType())) {
+        if (ModelPathStepType.latest_backRef.equals(step.getStepType())) {
             Reference existing = latest.get();
             if (existing == null || destinationRef.getTimestamp() >= existing.getTimestamp()) {
                 latest.set(destinationRef);
@@ -84,10 +80,6 @@ public class ViewReference {
         } else {
             destinations.add(objectId);
         }
-    }
-    
-    public int getCountValue() {
-        return count.get();
     }
 
     public List<ObjectId> getDestinationIds() {

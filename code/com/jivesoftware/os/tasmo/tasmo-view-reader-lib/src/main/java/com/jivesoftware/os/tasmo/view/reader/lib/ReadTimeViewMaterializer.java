@@ -126,7 +126,11 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
         valueGatherer.gatherValueResults(viewRequest.getTenantIdAndCentricId(), accumulator.getViewValues());
 
         ObjectNode responseBody = accumulator.formatResults(viewRequest.getTenantId(), viewRequest.getActorId(), viewFormatter);
-        return getView(viewRequest.getTenantId(), viewRequest.getViewId(), ViewResponse.ok(responseBody));
+        if (accumulator.forbidden()) {
+            return ViewResponse.forbidden();
+        } else {
+            return getView(viewRequest.getTenantId(), viewRequest.getViewId(), ViewResponse.ok(responseBody));
+        }
 
     }
     

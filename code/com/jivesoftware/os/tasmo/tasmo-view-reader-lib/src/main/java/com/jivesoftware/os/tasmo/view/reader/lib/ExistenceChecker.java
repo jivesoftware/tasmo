@@ -15,7 +15,7 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
-import com.jivesoftware.os.tasmo.id.Id;
+import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import java.util.Set;
 
@@ -24,6 +24,6 @@ import java.util.Set;
  */
 public interface ExistenceChecker {
     
-    Set<Id> check(TenantId tenantId, Set<Id> existenceCheckTheseIds);
+    Set<ObjectId> check(TenantId tenantId, Set<ObjectId> existenceCheckTheseIds);
     
 }

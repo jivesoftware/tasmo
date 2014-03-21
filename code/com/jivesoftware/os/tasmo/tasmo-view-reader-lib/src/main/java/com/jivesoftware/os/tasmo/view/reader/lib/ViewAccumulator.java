@@ -16,8 +16,10 @@
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.jivesoftware.os.tasmo.id.Id;
@@ -41,9 +43,10 @@ public class ViewAccumulator<V> {
     private final ExistenceChecker existenceChecker;
     private List<Multimap<String, ViewReference>> refResults = new ArrayList<>();
     private Multimap<String, ViewValue> valueResults = ArrayListMultimap.create();
-    private Set<Id> presentIds = new HashSet<>();
+    private Set<ObjectId> presentIds = new HashSet<>();
     private final List<ModelPath> allPaths;
     private final ObjectId viewRoot;
+    private boolean forbidden;
 
     public ViewAccumulator(ObjectId viewRoot, List<ModelPath> allPaths,
         ViewPermissionChecker viewPermissionChecker, ExistenceChecker existenceChecker) {
@@ -51,7 +54,7 @@ public class ViewAccumulator<V> {
         this.allPaths = allPaths;
         this.viewPermissionChecker = viewPermissionChecker;
         this.existenceChecker = existenceChecker;
-        this.presentIds.add(viewRoot.getId());
+        this.presentIds.add(viewRoot);
     }
 
     public void addRefResults(Multimap<String, ViewReference> referenceSteps) {
@@ -59,33 +62,58 @@ public class ViewAccumulator<V> {
             Collection<ViewReference> toAdd = referenceSteps.get(pathId);
 
             for (ViewReference reference : toAdd) {
-                Set<Id> destinationIdSet = Sets.newHashSet(Iterables.transform(reference.getDestinationIds(), new Function<ObjectId, Id>() {
-                    @Override
-                    public Id apply(ObjectId f) {
-                        return f.getId();
-                    }
-                }));
-                presentIds.addAll(destinationIdSet);
-
+                presentIds.addAll(reference.getDestinationIds());
             }
         }
 
         refResults.add(referenceSteps);
     }
+    
+    public boolean forbidden() {
+        return forbidden;
+    }
 
     public V formatResults(TenantId tenantId, Id actorId, ViewFormatter<V> formatter) {
         presentIds.retainAll(existenceChecker.check(tenantId, presentIds));
-        presentIds.retainAll(viewPermissionChecker.check(tenantId, actorId, presentIds).allowed());
+       
+        //visibility only using id is awkward
+        Set<Id> visibleIds = viewPermissionChecker.check(tenantId, actorId,
+            Sets.newHashSet(Iterables.transform(presentIds, new Function<ObjectId, Id>(){
+
+            @Override
+            public Id apply(ObjectId f) {
+                return f.getId();
+            }
+            
+        }))).allowed();
         
-        if (presentIds.contains(viewRoot.getId())) {
+        Set<ObjectId> toRemove = new HashSet<>();
+        for (ObjectId objectId : presentIds) {
+            if (!visibleIds.contains(objectId.getId())) {
+                toRemove.add(objectId);
+            }
+        }
+        presentIds.removeAll(toRemove);
+        forbidden = toRemove.contains(viewRoot);
+        
+        if (presentIds.contains(viewRoot)) {
             
             formatter.setRoot(viewRoot);
 
             for (ModelPath path : allPaths) {
                 for (Multimap<String, ViewReference> treeLevel : refResults) {
                     for (ViewReference reference : treeLevel.get(path.getId())) {
-                        if (presentIds.contains(reference.getOriginId().getId())) {
-                            formatter.addReferenceNode(reference);
+                        if (presentIds.contains(reference.getOriginId())) {
+                            List<ObjectId> presentDestinations = Lists.newArrayList(Iterables.filter(reference.getDestinationIds(),
+                                new Predicate<ObjectId>(){
+
+                                @Override
+                                public boolean apply(ObjectId t) {
+                                    return presentIds.contains(t);
+                                }
+                                
+                            }));
+                            formatter.addReferenceNode(reference, presentDestinations);
                         }
                     }
                     
@@ -93,7 +121,7 @@ public class ViewAccumulator<V> {
                 }
 
                 for (ViewValue value : valueResults.get(path.getId())) {
-                    if (presentIds.contains(value.getObjectId().getId())) {
+                    if (presentIds.contains(value.getObjectId())) {
                         formatter.addValueNode(value);
                     }
                 }

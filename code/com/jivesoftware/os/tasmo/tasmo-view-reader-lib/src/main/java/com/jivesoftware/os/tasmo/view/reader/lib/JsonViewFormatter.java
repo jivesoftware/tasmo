@@ -27,6 +27,7 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -84,7 +85,7 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
     }
 
     @Override
-    public void addReferenceNode(ViewReference reference) {
+    public void addReferenceNode(ViewReference reference, List<ObjectId> presentDestinations) {
         ModelPathStepType stepType = reference.getStepType();
 
         JsonNode node = level.get(reference.getOriginId());
@@ -95,9 +96,9 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
 
             return;
         }
-        
+
         ObjectNode object = (ObjectNode) node;
-        addReferenceToObject(stepType, object, reference);
+        addReferenceToObject(stepType, object, reference, presentDestinations);
     }
 
     @Override
@@ -120,14 +121,17 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
         }
     }
 
-    private void addReferenceToObject(ModelPathStepType stepType, ObjectNode object, ViewReference reference) {
+    private void addReferenceToObject(ModelPathStepType stepType, ObjectNode object, ViewReference reference,
+        List<ObjectId> presentDestinations) {
         if (ModelPathStepType.count.equals(stepType)) {
 
-            object.put(COUNT_PREFIX + reference.getRefFieldName(), reference.getCountValue());
+            object.put(COUNT_PREFIX + reference.getRefFieldName(), presentDestinations.size());
 
         } else if (ModelPathStepType.latest_backRef.equals(stepType)) {
-
-            ObjectId destination = reference.getDestinationIds().get(0);
+            if (presentDestinations.isEmpty()) {
+                return;
+            }
+            ObjectId destination = presentDestinations.get(0);
             ObjectNode destinationNode = mapper.createObjectNode();
             destinationNode.put(ReservedFields.VIEW_OBJECT_ID, destination.toStringForm());
 
@@ -137,7 +141,7 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
         } else if (ModelPathStepType.backRefs.equals(stepType)) {
 
             ArrayNode array = mapper.createArrayNode();
-            for (ObjectId destination : reference.getDestinationIds()) {
+            for (ObjectId destination : presentDestinations) {
                 ObjectNode destinationNode = mapper.createObjectNode();
                 destinationNode.put(ReservedFields.VIEW_OBJECT_ID, destination.toStringForm());
 
@@ -147,8 +151,10 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
             object.put(ALL_PREFIX + reference.getRefFieldName(), array);
 
         } else if (ModelPathStepType.ref.equals(stepType)) {
-
-            ObjectId destination = reference.getDestinationIds().get(0);
+            if (presentDestinations.isEmpty()) {
+                return;
+            }
+            ObjectId destination = presentDestinations.get(0);
             ObjectNode destinationNode = mapper.createObjectNode();
             destinationNode.put(ReservedFields.VIEW_OBJECT_ID, destination.toStringForm());
 
@@ -158,7 +164,7 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
         } else if (ModelPathStepType.refs.equals(stepType)) {
 
             ArrayNode array = mapper.createArrayNode();
-            for (ObjectId destination : reference.getDestinationIds()) {
+            for (ObjectId destination : presentDestinations) {
                 ObjectNode destinationNode = mapper.createObjectNode();
                 destinationNode.put(ReservedFields.VIEW_OBJECT_ID, destination.toStringForm());
 

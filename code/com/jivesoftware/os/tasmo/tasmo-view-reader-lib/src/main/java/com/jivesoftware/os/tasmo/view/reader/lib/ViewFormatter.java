@@ -16,6 +16,7 @@
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
 import com.jivesoftware.os.tasmo.id.ObjectId;
+import java.util.List;
 
 /**
  *
@@ -25,7 +26,7 @@ public interface ViewFormatter<V> {
     
     V getView();
     
-    void addReferenceNode(ViewReference reference);
+    void addReferenceNode(ViewReference reference, List<ObjectId> presentDestinations);
     
     void addValueNode(ViewValue value);
 

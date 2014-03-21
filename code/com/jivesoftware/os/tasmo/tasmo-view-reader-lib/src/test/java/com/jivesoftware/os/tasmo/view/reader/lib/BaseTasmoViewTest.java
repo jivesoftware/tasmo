@@ -298,8 +298,8 @@ public class BaseTasmoViewTest {
         return new ExistenceChecker() {
 
             @Override
-            public Set<Id> check(TenantId tenantId, Set<Id> existenceCheckTheseIds) {
-                return existingIds.isEmpty() ? existenceCheckTheseIds : existingIds;
+            public Set<ObjectId> check(TenantId tenantId, Set<ObjectId> existenceCheckTheseIds) {
+                return existenceStore.getExistence(tenantId, existenceCheckTheseIds);
             }
         };
     }
