@@ -110,6 +110,10 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
         }
 
         ObjectId initialId = findInitialId(viewRequest, binding);
+        if (initialId == null) {
+            return ViewResponse.notFound();
+        }
+        
         ViewAccumulator<ObjectNode> accumulator = new ViewAccumulator<>(initialId, binding.getModelPaths(), viewPermissionChecker, existenceChecker);
         
         Multimap<String, ViewReference> requestsToMake;

@@ -109,8 +109,8 @@ public class BaseTasmoViewTest {
     }
     WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
     ViewReader<ViewResponse> viewReader;
-    private final Set<Id> permittedIds = new HashSet<>();
-    private final Set<Id> existingIds = new HashSet<>();
+    final Set<Id> permittedIds = new HashSet<>();
+    final Set<Id> existingIds = new HashSet<>();
     
     
 
@@ -183,12 +183,15 @@ public class BaseTasmoViewTest {
         RowColumnValueStoreProvider rowColumnValueStoreProvider = getRowColumnValueStoreProvider(uuid);
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore = rowColumnValueStoreProvider.eventStore();
         RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStorage = rowColumnValueStoreProvider.existenceStore();
+         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks =
+             rowColumnValueStoreProvider.multiLinks();
+         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks =
+             rowColumnValueStoreProvider.multiBackLinks();
 
         existenceStore = new ExistenceStore(existenceStorage);
         eventValueStore = new EventValueStore(eventStore);
 
-        referenceStore = new ReferenceStore(rowColumnValueStoreProvider.multiLinks(),
-            rowColumnValueStoreProvider.multiBackLinks());
+        referenceStore = new ReferenceStore(multiLinks, multiBackLinks);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
             new CallbackStream<List<BookkeepingEvent>>() {
@@ -231,7 +234,7 @@ public class BaseTasmoViewTest {
         
         ViewModelProvider viewModelProvider = new ViewModelProvider(tenantId, viewsProvider);
         BatchingReferenceStore batchingReferenceStore = new BatchingReferenceStore(
-            rowColumnValueStoreProvider.multiLinks(), rowColumnValueStoreProvider.multiBackLinks());
+            multiLinks, multiBackLinks);
         BatchingEventValueStore batchingEventValueStore = new BatchingEventValueStore(eventStore);
         
         

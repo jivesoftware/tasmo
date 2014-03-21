@@ -100,9 +100,13 @@ public class ViewAccumulator<V> {
                 
                 formatter.nextPath();
             }
+            
+            return formatter.getView();
+        } else {
+           return null;
         }
 
-        return formatter.getView();
+        
     }
 
     public Multimap<String, ViewReference> buildNextViewLevel() {
