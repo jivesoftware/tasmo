@@ -6,7 +6,7 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.process;
+package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.id.Id;
@@ -21,71 +21,86 @@ import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
-import com.jivesoftware.os.tasmo.reference.lib.Reference;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 /**
  * Context used while processing an event for a specific model path. Passed to ChainableProcessSteps which implement the operations performed at each step in
  * the path.
  */
-public class ViewFieldContext {
+public class PathTraversalContext {
 
-    final long eventId;
+    private final WrittenEvent writtenEvent;
     final TenantIdAndCentricId tenantIdAndCentricId;
-    final Id actorId;
     private final WrittenEventProvider writtenEventProvider;
     private final CommitChange commitChange;
-    private final long contextTimestamp;
     private final Id alternateViewId;
-    private final Reference[] modelPathInstanceState;
+    private final ReferenceWithTimestamp[] modelPathIdState;
+    private final List<ReferenceWithTimestamp> modelPathVersionState;
     private long leafNodeTimestamp;
     private final boolean removalContext;
     private LeafNodeFields leafNodeFields; // uck
     private int addIsRemovingFields = 0; // uck
     private final List<ViewFieldChange> changes = new ArrayList<>(); // uck
 
-    public ViewFieldContext(long eventId,
-        TenantIdAndCentricId tenantIdAndCentricId,
-        Id actorId,
-        WrittenEventProvider writtenEventProvider,
-        CommitChange commitChange,
-        long contextTimestamp,
-        Id alternateViewId,
-        int numberOfPathIds,
-        boolean removalContext) {
-        this.eventId = eventId;
+    public PathTraversalContext(WrittenEvent writtenEvent,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEventProvider writtenEventProvider,
+            CommitChange commitChange,
+            Id alternateViewId,
+            int numberOfPathIds,
+            boolean removalContext) {
+        this.writtenEvent = writtenEvent;
         this.tenantIdAndCentricId = tenantIdAndCentricId;
-        this.actorId = actorId;
         this.writtenEventProvider = writtenEventProvider;
         this.commitChange = commitChange;
-        this.contextTimestamp = contextTimestamp;
         this.alternateViewId = alternateViewId;
-        this.modelPathInstanceState = new Reference[numberOfPathIds];
+        this.modelPathIdState = new ReferenceWithTimestamp[numberOfPathIds];
+        this.modelPathVersionState = new ArrayList<>();
         this.removalContext = removalContext;
+
+        // A.a -> B
     }
 
-    public void setPathId(int pathIndex, Reference versionObjectId) {
-        this.modelPathInstanceState[pathIndex] = versionObjectId;
+    public TenantIdAndCentricId getTenantIdAndCentricId() {
+        return tenantIdAndCentricId;
     }
 
-    public Reference getPathId(int pathIndex) {
-        return this.modelPathInstanceState[pathIndex];
+    public void setPathId(int pathIndex, ReferenceWithTimestamp id) {
+        //System.out.println(Debug.caller(10) + " |||| SetPath:" + pathIndex + " |||| " + versionObjectId);
+        this.modelPathIdState[pathIndex] = id;
+    }
+
+    public void addVersion(ReferenceWithTimestamp version) {
+        //System.out.println(Debug.caller(10) + " |||| SetPath:" + pathIndex + " |||| " + versionObjectId);
+        this.modelPathVersionState.add(version);
+    }
+    public void addVersions(Collection<ReferenceWithTimestamp> versions) {
+        //System.out.println(Debug.caller(10) + " |||| SetPath:" + pathIndex + " |||| " + versionObjectId);
+        this.modelPathVersionState.addAll(versions);
+    }
+
+    public ReferenceWithTimestamp getPathId(int pathIndex) {
+        return this.modelPathIdState[pathIndex];
     }
 
     @Override
     public String toString() {
         return "ViewFieldContext{"
-            + "viewFieldKey=" + modelPathInstanceState
-            + ", rawFieldValue=" + leafNodeFields
-            + '}';
+                + "modelPathIdState=" + modelPathIdState
+                + "modelPathVersionState=" + modelPathVersionState
+                + ", rawFieldValue=" + leafNodeFields
+                + '}';
     }
 
-    void populateLeadNodeFields(EventValueStore eventValueStore, WrittenEvent writtenEvent, ObjectId objectInstanceId, List<String> fieldNames) {
+    public List<ReferenceWithTimestamp> populateLeafNodeFields(EventValueStore eventValueStore, ObjectId objectInstanceId, List<String> fieldNames) {
         LeafNodeFields fieldsToPopulate = writtenEventProvider.createLeafNodeFields();
-        long latestTimestamp = contextTimestamp;
-
+        long latestTimestamp = writtenEvent.getEventId();
+        List<ReferenceWithTimestamp> versions = new ArrayList<>();
         if (!removalContext) {
             addIsRemovingFields = 0;
             WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
@@ -100,7 +115,7 @@ public class ViewFieldContext {
 
             String[] fieldNamesArray = fieldNames.toArray(new String[fieldNames.size()]);
             ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] got = eventValueStore.get(tenantIdAndCentricId,
-                objectInstanceId, fieldNamesArray);
+                    objectInstanceId, fieldNamesArray);
 
             if (got != null) {
                 for (ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> g : got) {
@@ -114,6 +129,7 @@ public class ViewFieldContext {
                         } else {
                             fieldsToPopulate.addField(fieldName, fieldValue);
                         }
+                        versions.add(new ReferenceWithTimestamp(objectInstanceId, fieldName, timestamp));
                     }
                 }
             }
@@ -121,9 +137,10 @@ public class ViewFieldContext {
 
         this.leafNodeFields = fieldsToPopulate;
         this.leafNodeTimestamp = latestTimestamp;
+        return versions;
     }
 
-    void writeViewFields(String viewClassName, String modelPathId, ObjectId objectInstanceId) throws IOException {
+    public void writeViewFields(String viewClassName, String modelPathId, ObjectId objectInstanceId) throws IOException {
         if (leafNodeFields == null) {
             return;
         }
@@ -136,31 +153,24 @@ public class ViewFieldContext {
             viewId = objectId.getId();
         }
 
-        ViewFieldChange update = new ViewFieldChange(eventId,
+        ViewFieldChange update = new ViewFieldChange(writtenEvent.getEventId(),
                 0, // Deprecated
                 0, // Deprecated
                 tenantIdAndCentricId,
-                actorId,
+                writtenEvent.getActorId(),
                 (removalContext) ? ViewFieldChangeType.remove : ViewFieldChangeType.add, // uck
                 new ObjectId(viewClassName, viewId),
                 modelPathId,
-                copyModelPathObjectIds(),
+                Arrays.copyOf(modelPathIdState, modelPathIdState.length),
+                new ArrayList<>(modelPathVersionState),
                 leafNodeFields.toStringForm(),
                 getHighWaterTimestamp());
         changes.add(update);
     }
 
-    private ObjectId[] copyModelPathObjectIds() {
-        ObjectId[] ids = new ObjectId[modelPathInstanceState.length];
-        for (int i = 0; i < ids.length; i++) {
-            ids[i] = modelPathInstanceState[i].getObjectId();
-        }
-        return ids;
-    }
-
     private long getHighWaterTimestamp() {
         long highwaterTimestamp = leafNodeTimestamp;
-        for (Reference reference : modelPathInstanceState) {
+        for (ReferenceWithTimestamp reference : modelPathIdState) {
             highwaterTimestamp = Math.max(highwaterTimestamp, reference.getTimestamp());
         }
         return highwaterTimestamp;
@@ -171,6 +181,7 @@ public class ViewFieldContext {
         if (!changes.isEmpty()) {
             commitChange.commitChange(tenantIdAndCentricId, changes);
             changes.clear();
+            modelPathVersionState.clear();
         }
     }
 }

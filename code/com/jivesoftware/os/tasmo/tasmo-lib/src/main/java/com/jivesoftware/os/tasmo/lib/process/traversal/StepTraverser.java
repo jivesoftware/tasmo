@@ -6,20 +6,18 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.process;
+package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
-import com.jivesoftware.os.tasmo.reference.lib.Reference;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 
 /**
  *
  */
-public interface ProcessStep {
+public interface StepTraverser {
 
     void process(TenantIdAndCentricId tenantIdAndCentricId,
-        WrittenEvent writtenEvent,
-        ViewFieldContext context,
-        Reference objectIntanceId,
+        PathTraversalContext viewFieldContext,
+        ReferenceWithTimestamp referenceWithTimestamp,
         StepStream streamTo) throws Exception;
 }

@@ -6,32 +6,28 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.process;
+package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
-import com.jivesoftware.os.tasmo.reference.lib.Reference;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 
 /**
  *
  */
-public class ViewValueWriterStep implements ProcessStep {
+public class TraverseViewValueWriter implements StepTraverser {
 
     private final String viewClassName;
     private final String modelPathId;
 
-    public ViewValueWriterStep(String viewClassName,
-        String modelPathId) {
-
+    public TraverseViewValueWriter(String viewClassName, String modelPathId) {
         this.viewClassName = viewClassName;
         this.modelPathId = modelPathId;
     }
 
     @Override
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
-            WrittenEvent writtenEvent,
-            ViewFieldContext context,
-            Reference objectInstanceId,
+            PathTraversalContext context,
+            ReferenceWithTimestamp objectInstanceId,
             StepStream streamTo) throws Exception {
         context.writeViewFields(viewClassName, modelPathId, objectInstanceId.getObjectId());
     }

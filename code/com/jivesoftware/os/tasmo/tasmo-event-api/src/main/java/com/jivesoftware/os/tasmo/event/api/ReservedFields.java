@@ -79,6 +79,6 @@ public class ReservedFields {
      * This prefix is prepended to any view field which represents a count of back references
      */
     public static final String COUNT_BACK_REF_FIELD_PREFIX = "count_";
-    
+
     public static int EVENT_FIELD_COUNT = 8;
 }

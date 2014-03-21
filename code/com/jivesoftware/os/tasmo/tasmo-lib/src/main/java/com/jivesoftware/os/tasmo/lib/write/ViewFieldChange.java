@@ -13,7 +13,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -42,23 +44,25 @@ public class ViewFieldChange {
     private final ViewFieldChangeType type;
     private final ObjectId viewObjectId;
     private final String modelPathId;
-    private final ObjectId[] modelPathInstanceIds;
+    private final ReferenceWithTimestamp[] modelPathInstanceIds;
+    private final List<ReferenceWithTimestamp> modelPathVersions;
     private final String value;
     private final long timestamp;
 
     @JsonCreator
     public ViewFieldChange(
-        @JsonProperty("eventId") long eventId,
-        @JsonProperty("sessionId") long sessionId,
-        @JsonProperty("changeId") long changeId,
-        @JsonProperty("tenantIdAndCentricId") TenantIdAndCentricId tenantIdAndCentricId,
-        @JsonProperty("actorId") Id actorId,
-        @JsonProperty("type") ViewFieldChangeType type,
-        @JsonProperty("viewObjectId") ObjectId viewObjectId,
-        @JsonProperty("modelPathId") String modelPathId,
-        @JsonProperty("modelPathInstanceIds") ObjectId[] modelPathInstanceIds,
-        @JsonProperty("value") String value,
-        @JsonProperty("timestamp") long timestamp) {
+            @JsonProperty("eventId") long eventId,
+            @JsonProperty("sessionId") long sessionId,
+            @JsonProperty("changeId") long changeId,
+            @JsonProperty("tenantIdAndCentricId") TenantIdAndCentricId tenantIdAndCentricId,
+            @JsonProperty("actorId") Id actorId,
+            @JsonProperty("type") ViewFieldChangeType type,
+            @JsonProperty("viewObjectId") ObjectId viewObjectId,
+            @JsonProperty("modelPathId") String modelPathId,
+            @JsonProperty("modelPathInstanceIds") ReferenceWithTimestamp[] modelPathInstanceIds,
+            @JsonProperty("modelPathVersions") List<ReferenceWithTimestamp> modelPathVersions,
+            @JsonProperty("value") String value,
+            @JsonProperty("timestamp") long timestamp) {
         this.eventId = eventId;
         this.sessionId = sessionId;
         this.changeId = changeId;
@@ -68,6 +72,7 @@ public class ViewFieldChange {
         this.viewObjectId = viewObjectId;
         this.modelPathId = modelPathId;
         this.modelPathInstanceIds = modelPathInstanceIds;
+        this.modelPathVersions = modelPathVersions;
         this.value = value;
         this.timestamp = timestamp;
     }
@@ -112,8 +117,12 @@ public class ViewFieldChange {
         return modelPathId;
     }
 
-    public ObjectId[] getModelPathInstanceIds() {
+    public ReferenceWithTimestamp[] getModelPathInstanceIds() {
         return modelPathInstanceIds;
+    }
+
+    public List<ReferenceWithTimestamp> getModelPathVersions() {
+        return modelPathVersions;
     }
 
     public String getValue() {
@@ -127,15 +136,15 @@ public class ViewFieldChange {
     @Override
     public String toString() {
         return "ViewFieldChange{"
-            + "eventId=" + eventId
-            + ", tenantIdAndCentricId=" + tenantIdAndCentricId
-            + ", actorId=" + actorId
-            + ", type=" + type
-            + ", viewObjectId=" + viewObjectId
-            + ", modelPathId=" + modelPathId
-            + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
-            + ", value=" + value
-            + ", timestamp=" + timestamp + '}';
+                + "eventId=" + eventId
+                + ", tenantIdAndCentricId=" + tenantIdAndCentricId
+                + ", actorId=" + actorId
+                + ", type=" + type
+                + ", viewObjectId=" + viewObjectId
+                + ", modelPathId=" + modelPathId
+                + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
+                + ", value=" + value
+                + ", timestamp=" + timestamp + '}';
     }
 
     @Override

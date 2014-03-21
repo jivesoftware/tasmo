@@ -17,6 +17,7 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.Con
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,11 +28,14 @@ public class EventValueStore {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventValueStore;
+    private final ConcurrencyStore concurrencyStore;
     private final EventValueCacheProvider eventValueCacheProvider;
     private final ThreadLocal<RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException>> caches;
 
-    public EventValueStore(RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> classFieldValueStore,
+    public EventValueStore(ConcurrencyStore concurrencyStore,
+            RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> classFieldValueStore,
             EventValueCacheProvider cacheProvider) {
+        this.concurrencyStore = concurrencyStore;
         this.eventValueStore = classFieldValueStore;
         this.eventValueCacheProvider = cacheProvider;
 
@@ -124,6 +128,10 @@ public class EventValueStore {
         caches.remove(); // TODO should we also clear caching after a successful remove?
         eventValueStore.removeRow(tenantIdAndCentricId, objectId, new ConstantTimestamper(removeAtTimestamp));
         //caches.remove(); // TODO should we also clear caching after a successful remove?
+
+        // TODO where do we get the field names from?
+        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), objectId, new String[]{"??"}, removeAtTimestamp);
+        System.out.println("UNIMPLEMETED concurrencyStore.updated");
     }
 
     public Transaction begin(TenantIdAndCentricId tenantIdAndCentricId,
@@ -138,8 +146,9 @@ public class EventValueStore {
         caches.remove(); // TODO should we also clear caching after a successful adds / removes?
 
         ObjectId objectInstanceId = transaction.objectInstanceId;
+        String[] takeAddedFieldNames = null;
         if (!transaction.addedFieldNames.isEmpty()) {
-            String[] takeAddedFieldNames = transaction.takeAddedFieldNames();
+            takeAddedFieldNames = transaction.takeAddedFieldNames();
             OpaqueFieldValue[] takeAddedValues = transaction.takeAddedValues();
 
             eventValueStore.multiAdd(
@@ -156,14 +165,18 @@ public class EventValueStore {
                 }
             }
         }
+        String[] takeRemovedFieldNames = null;
         if (!transaction.removedFieldNames.isEmpty()) {
-            String[] takeRemovedFieldNames = transaction.takeRemovedFieldNames();
+            takeRemovedFieldNames = transaction.takeRemovedFieldNames();
 
             eventValueStore.multiRemove(
                     transaction.tenantIdAndCentricId,
                     objectInstanceId,
                     takeRemovedFieldNames,
                     new ConstantTimestamper(transaction.removeAtTimestamp));
+
+            concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, takeRemovedFieldNames, transaction.removeAtTimestamp);
+
             if (LOG.isTraceEnabled()) {
                 for (String takeRemovedFieldName : takeRemovedFieldNames) {
                     LOG.trace(" |--> Remove: Tenant={} Instance={} Field={} Time={}",
@@ -171,6 +184,13 @@ public class EventValueStore {
                 }
             }
 
+        }
+
+        if (takeAddedFieldNames != null) {
+            concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, takeAddedFieldNames, transaction.addAtTimestamp);
+        }
+        if (takeRemovedFieldNames != null) {
+            concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, takeRemovedFieldNames, transaction.removeAtTimestamp);
         }
 
     }

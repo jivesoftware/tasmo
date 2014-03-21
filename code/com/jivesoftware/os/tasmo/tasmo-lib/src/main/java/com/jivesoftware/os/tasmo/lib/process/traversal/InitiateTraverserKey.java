@@ -6,16 +6,16 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.process;
+package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 
-public class InitialStepKey {
+public class InitiateTraverserKey {
 
     private final String triggerFieldName;
     private final String refFieldName;
 
-    public InitialStepKey(String triggerFieldName, String refFieldName) {
+    public InitiateTraverserKey(String triggerFieldName, String refFieldName) {
         this.triggerFieldName = triggerFieldName;
         this.refFieldName = refFieldName;
     }
@@ -24,7 +24,7 @@ public class InitialStepKey {
         return triggerFieldName;
     }
 
-    public String getInitialFieldName() {
+    public String getRefFieldName() {
         return refFieldName;
     }
 
@@ -46,7 +46,7 @@ public class InitialStepKey {
             return false;
         }
 
-        InitialStepKey that = (InitialStepKey) o;
+        InitiateTraverserKey that = (InitiateTraverserKey) o;
 
         if (refFieldName != null ? !refFieldName.equals(that.refFieldName) : that.refFieldName != null) {
             return false;

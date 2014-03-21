@@ -5,16 +5,21 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import java.util.Objects;
 
-public class Reference {
+public class ReferenceWithTimestamp {
 
     private final ObjectId objectId;
     private final String fieldName;
+    private final long timestamp;
+    private final String pathToCreator;
 
     @JsonCreator
-    public Reference(@JsonProperty("objectId") ObjectId objectId,
-            @JsonProperty("fieldName") String fieldName) {
+    public ReferenceWithTimestamp(@JsonProperty("objectId") ObjectId objectId,
+            @JsonProperty("fieldName") String fieldName,
+            @JsonProperty("timestamp") long timestamp) {
         this.objectId = objectId;
         this.fieldName = fieldName;
+        this.timestamp = timestamp;
+        this.pathToCreator = ""; //Debug.caller(10);
     }
 
     public ObjectId getObjectId() {
@@ -25,9 +30,13 @@ public class Reference {
         return fieldName;
     }
 
+    public long getTimestamp() {
+        return timestamp;
+    }
+
     @Override
     public String toString() {
-        return "Reference{" + "objectId=" + objectId + ", fieldName=" + fieldName + '}';
+        return "Reference{" + "objectId=" + objectId + ", fieldName=" + fieldName + ", timestamp=" + timestamp + '}' + pathToCreator;
     }
 
     @Override
@@ -35,6 +44,7 @@ public class Reference {
         int hash = 7;
         hash = 19 * hash + Objects.hashCode(this.objectId);
         hash = 19 * hash + Objects.hashCode(this.fieldName);
+        hash = 19 * hash + (int) (this.timestamp ^ (this.timestamp >>> 32));
         return hash;
     }
 
@@ -46,11 +56,14 @@ public class Reference {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final Reference other = (Reference) obj;
+        final ReferenceWithTimestamp other = (ReferenceWithTimestamp) obj;
         if (!Objects.equals(this.objectId, other.objectId)) {
             return false;
         }
         if (!Objects.equals(this.fieldName, other.fieldName)) {
+            return false;
+        }
+        if (this.timestamp != other.timestamp) {
             return false;
         }
         return true;

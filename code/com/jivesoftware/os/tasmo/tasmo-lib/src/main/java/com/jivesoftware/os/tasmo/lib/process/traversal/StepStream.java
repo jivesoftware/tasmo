@@ -6,9 +6,9 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.process;
+package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import com.jivesoftware.os.tasmo.reference.lib.Reference;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 
 /**
  *
@@ -16,7 +16,7 @@ import com.jivesoftware.os.tasmo.reference.lib.Reference;
  */
 public interface StepStream {
 
-    void stream(Reference reference) throws Exception; // TODO: Consider batching?
+    void stream(ReferenceWithTimestamp reference) throws Exception; // TODO: Consider batching?
 
     int getStepIndex();
 }

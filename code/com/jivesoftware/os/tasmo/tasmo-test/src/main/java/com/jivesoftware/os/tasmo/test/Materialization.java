@@ -26,6 +26,7 @@ import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
@@ -51,6 +52,8 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
@@ -213,6 +216,8 @@ public class Materialization {
         }
     }
 
+    RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> rawViewValueStore;
+
     public void setupModelAndMaterializer() throws Exception {
 
 
@@ -231,14 +236,17 @@ public class Materialization {
             }
         };
 
+        RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
+        ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrency);
         existenceStore = new ExistenceStore(existenceStorage);
-        eventValueStore = new EventValueStore(eventStore, cacheProvider);
+        eventValueStore = new EventValueStore(concurrencyStore, eventStore, cacheProvider);
 
-        viewValueStore = new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), new ViewPathKeyProvider());
+        rawViewValueStore = rowColumnValueStoreProvider.viewValueStore();
+        viewValueStore = new ViewValueStore(rawViewValueStore, new ViewPathKeyProvider());
         viewValueWriter = new ViewValueWriter(viewValueStore);
         viewValueReader = new ViewValueReader(viewValueStore);
 
-        ReferenceStore referenceStore = new ReferenceStore(rowColumnValueStoreProvider.multiLinks(),
+        ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, rowColumnValueStoreProvider.multiLinks(),
                 rowColumnValueStoreProvider.multiBackLinks());
 
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
@@ -248,6 +256,12 @@ public class Materialization {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
+                        ReferenceWithTimestamp[] modelPathInstanceIds = change.getModelPathInstanceIds();
+                        ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];
+                        for (int i = 0; i < ids.length; i++) {
+                            ids[i] = modelPathInstanceIds[i].getObjectId();
+                        }
+
                         write.add(new ViewWriteFieldChange(
                                 change.getEventId(),
                                 -1,
@@ -257,7 +271,7 @@ public class Materialization {
                                 ViewWriteFieldChange.Type.valueOf(change.getType().name()),
                                 change.getViewObjectId(),
                                 change.getModelPathId(),
-                                change.getModelPathInstanceIds(),
+                                ids,
                                 mapper.writeValueAsString(change.getValue()),
                                 change.getTimestamp()));
                     } catch (Exception ex) {
@@ -274,6 +288,8 @@ public class Materialization {
         };
 
         commitChange = new ExistenceCommitChange(existenceStore, commitChange);
+
+        commitChange = new ConcurrencyCommitChange(concurrencyStore, commitChange);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
                 new CallbackStream<List<BookkeepingEvent>>() {
@@ -299,6 +315,7 @@ public class Materialization {
                 MASTER_TENANT_ID,
                 viewsProvider,
                 eventProvider,
+                concurrencyStore,
                 referenceStore,
                 eventValueStore,
                 commitChange);

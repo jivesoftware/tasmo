@@ -12,5 +12,5 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 
 public interface WrittenEventProcessor {
 
-    boolean process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception;
+    void process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception;
 }

@@ -71,7 +71,18 @@ public class Id implements Comparable<Id> {
 
     @Override
     public String toString() {
-        return "Id{" + "id=" + coder.encode(id) + '}';
+        String idAsString = coder.encode(id);
+        if (id.length == 8) {
+            idAsString = bytesToLong(id);
+        }
+        return "Id{" + "id=" + idAsString + '}';
+    }
+
+    private String bytesToLong(byte[] bytes) {
+        ByteBuffer buffer = ByteBuffer.allocate(8);
+        buffer.put(bytes);
+        buffer.flip(); //need flip
+        return String.valueOf(buffer.getLong());
     }
 
     @Override

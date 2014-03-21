@@ -50,7 +50,7 @@ public class Expectations {
         }
     }
 
-    public void buildExpectations(Expectations expectations, ViewBinding binding, EventFire input, Set<Id> deletedIds) throws Exception {
+    public void buildExpectations(long testCase, Expectations expectations, ViewBinding binding, EventFire input, Set<Id> deletedIds) throws Exception {
         for (Branch viewBranch : calculateBranches(input, binding.getModelPaths().get(0), deletedIds)) {
 
             for (Map.Entry<String, String> entry : input.getLeafNodeFields().entrySet()) {
@@ -59,7 +59,7 @@ public class Expectations {
                 System.out.println("Adding view path expecation: " + binding.getModelPaths().get(0).getId()
                         + Arrays.toString(branchIds) + ":" + entry.getKey() + "->" + entry.getValue());
 
-                expectations.addExpectation(branchIds[0], binding.getViewClassName(),
+                expectations.addExpectation(testCase, branchIds[0], binding.getViewClassName(),
                         binding.getModelPaths().get(0).getId(), branchIds, entry.getKey(),
                         viewBranch.isDeleted() ? null : entry.getValue());
             }
@@ -130,13 +130,14 @@ public class Expectations {
 
     }
 
-    void addExpectation(ObjectId rootId, String viewClassName, String viewFieldName, ObjectId[] pathIds, String fieldName, Object value) {
+    void addExpectation(long testCase, ObjectId rootId, String viewClassName, String viewFieldName, ObjectId[] pathIds, String fieldName, Object value) {
         ObjectId viewId = new ObjectId(viewClassName, rootId.getId());
         ModelPath modelPath = viewModelPaths.get(new ViewKey(viewClassName, viewFieldName));
-        expectations.add(new Expectation(viewId, viewClassName, viewFieldName, modelPath, pathIds, fieldName, value));
+        expectations.add(new Expectation(testCase, viewId, viewClassName, viewFieldName, modelPath, pathIds, fieldName, value));
     }
 
     void assertExpectation(TenantIdAndCentricId tenantIdAndCentricId) throws IOException {
+        List<AssertNode> asserts = new ArrayList<>();
         for (Expectation expectation : expectations) {
             String got = viewValueStore.get(tenantIdAndCentricId,
                     expectation.viewId,
@@ -157,19 +158,49 @@ public class Expectations {
                         }
                     }
                 } else {
-                    JsonNode toTest;
+                    JsonNode was;
                     if (node != null && expectation.fieldName != null) {
-                        toTest = node.get(expectation.fieldName);
+                        was = node.get(expectation.fieldName);
                     } else {
-                        toTest = node;
+                        was = node;
                     }
-                    Assert.assertEquals(toTest, MAPPER.convertValue(expectation.value, JsonNode.class), expectation.toString());
+                    JsonNode want = MAPPER.convertValue(expectation.value, JsonNode.class);
+                    //Assert.assertEquals(was, want, expectation.toString() + " WANTED: " + want + " but WAS:" + was);
+
+                    asserts.add(new AssertNode(expectation, want, was));
                 }
             } catch (IllegalArgumentException x) {
                 System.out.println("Failed while asserting " + expectation);
                 throw x;
             }
         }
+        StringBuilder errors = new StringBuilder();
+        for (AssertNode a : asserts) {
+            if (!a.isTrue()) {
+                errors.append(a.expectation.toString()).append(" WANTED: ").append(a.want).append(" but WAS:").append(a.was).append("\n");
+            }
+        }
+        if (errors.length() > 0) {
+            Assert.fail(errors.toString());
+        }
+    }
+
+    static class AssertNode {
+
+        Expectation expectation;
+        JsonNode want;
+        JsonNode was;
+
+        public AssertNode(Expectation expectation, JsonNode want, JsonNode was) {
+            this.expectation = expectation;
+            this.want = want;
+            this.was = was;
+        }
+
+        public boolean isTrue() {
+            return want.equals(was);
+        }
+
     }
 
     void clear() {
@@ -215,6 +246,7 @@ public class Expectations {
 
     static class Expectation {
 
+        long testCase;
         ObjectId viewId;
         String viewClassName;
         String modelPathId;
@@ -223,13 +255,15 @@ public class Expectations {
         String fieldName;
         Object value;
 
-        public Expectation(ObjectId viewId,
+        public Expectation(long testCase,
+                ObjectId viewId,
                 String viewClassName,
                 String viewFieldName,
                 ModelPath path,
                 ObjectId[] modelPathInstanceIds,
                 String fieldName,
                 Object value) {
+            this.testCase = testCase;
             this.viewId = viewId;
             this.viewClassName = viewClassName;
             this.modelPathId = viewFieldName;
@@ -241,7 +275,7 @@ public class Expectations {
 
         @Override
         public String toString() {
-            return "Expectation{" + "viewId=" + viewId + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathId + ", path=" + path
+            return "Expectation{" + "testCase=" + testCase + ", viewId=" + viewId + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathId + ", path=" + path
                     + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds) + ", fieldName=" + fieldName + ", value=" + value + '}';
         }
 

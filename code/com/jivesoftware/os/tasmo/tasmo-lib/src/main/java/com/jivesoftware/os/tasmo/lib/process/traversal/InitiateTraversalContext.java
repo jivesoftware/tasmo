@@ -6,7 +6,7 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.process;
+package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
@@ -18,7 +18,7 @@ import java.util.Set;
 /**
  *
  */
-public class InitialStepContext {
+public class InitiateTraversalContext {
 
     protected final ModelPathStep initialModelPathMember;
     protected final int pathIndex;
@@ -26,7 +26,7 @@ public class InitialStepContext {
     protected final String viewClassName;
     protected final String modelPathId;
 
-    public InitialStepContext(
+    public InitiateTraversalContext(
         ModelPathStep initialModelPathMember,
         int pathIndex,
         int membersSize,

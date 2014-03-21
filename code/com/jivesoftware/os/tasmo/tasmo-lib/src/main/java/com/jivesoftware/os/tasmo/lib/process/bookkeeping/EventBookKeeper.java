@@ -6,11 +6,13 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.process;
+package com.jivesoftware.os.tasmo.lib.process.bookkeeping;
 
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 
 public class EventBookKeeper implements WrittenEventProcessor {
@@ -23,7 +25,7 @@ public class EventBookKeeper implements WrittenEventProcessor {
     }
 
     @Override
-    public boolean process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception {
+    public void process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception {
 
         ObjectId instanceId = writtenEvent.getWrittenInstance().getInstanceId();
         String instanceClass = instanceId.getClassName();
@@ -37,7 +39,7 @@ public class EventBookKeeper implements WrittenEventProcessor {
             }
 
 
-            boolean processed = processorizer.process(batchContext, writtenEvent);
+            processorizer.process(batchContext, writtenEvent);
 
             LOG.inc("processed>" + instanceClass);
             LOG.inc("processed");
@@ -47,7 +49,6 @@ public class EventBookKeeper implements WrittenEventProcessor {
                 instanceClass,
                 instanceId.getId()});
 
-            return processed;
         } finally {
             LOG.stopTimer("processed>" + instanceClass);
             LOG.startTimer("processed");

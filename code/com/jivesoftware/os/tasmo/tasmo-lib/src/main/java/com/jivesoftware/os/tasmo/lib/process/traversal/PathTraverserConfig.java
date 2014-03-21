@@ -6,7 +6,7 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.process;
+package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
@@ -14,7 +14,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 /**
  * @author jonathan.colt
  */
-public class FieldProcessorConfig {
+public class PathTraverserConfig {
 
     public final WrittenEventProvider writtenEventProvider;
     public final CommitChange commitChange;
@@ -22,7 +22,7 @@ public class FieldProcessorConfig {
     public final boolean idCentric;
     public final boolean notificationRequired;
 
-    public FieldProcessorConfig(
+    public PathTraverserConfig(
             WrittenEventProvider writtenEventProvider,
             CommitChange commitChange,
             String viewIdFieldName,

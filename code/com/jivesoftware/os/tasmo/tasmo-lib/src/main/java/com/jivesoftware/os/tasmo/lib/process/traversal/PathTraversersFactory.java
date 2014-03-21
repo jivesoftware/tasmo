@@ -6,16 +6,16 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.process;
+package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import com.jivesoftware.os.tasmo.reference.lib.A_IdsStreamer;
-import com.jivesoftware.os.tasmo.reference.lib.B_IdsStreamer;
-import com.jivesoftware.os.tasmo.reference.lib.Latest_A_IdStreamer;
+import com.jivesoftware.os.tasmo.reference.lib.BackRefStreamer;
+import com.jivesoftware.os.tasmo.reference.lib.ForwardRefStreamer;
+import com.jivesoftware.os.tasmo.reference.lib.LatestBackRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import java.util.ArrayList;
@@ -25,7 +25,7 @@ import java.util.Set;
 /**
  *
  */
-public class FieldProcessorFactory {
+public class PathTraversersFactory {
 
     private final String viewClassName;
     private final String modelPathId;
@@ -33,7 +33,7 @@ public class FieldProcessorFactory {
     private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
 
-    public FieldProcessorFactory(
+    public PathTraversersFactory(
         String viewClassName,
         ModelPath modelPath,
         EventValueStore eventValueStore,
@@ -45,41 +45,41 @@ public class FieldProcessorFactory {
         this.referenceStore = referenceStore;
     }
 
-    public List<FieldProcessor> buildFieldProcessors(FieldProcessorConfig executableStepConfig) {
-        List<FieldProcessor> initialExecutableSteps = Lists.newArrayList();
+    public List<PathTraverser> buildPathTraversers(PathTraverserConfig pathTraverserConfig) {
+        List<PathTraverser> pathTraversers = Lists.newArrayList();
         List<ModelPathStep> modelPathMembers = modelPath.getPathMembers();
         for (int i = 0; i < modelPathMembers.size(); i++) {
-            initialExecutableSteps.add(buildFieldProcessor(executableStepConfig, modelPathMembers, i));
+            pathTraversers.add(buildPathTraverser(pathTraverserConfig, modelPathMembers, i));
         }
-        return initialExecutableSteps;
+        return pathTraversers;
     }
 
-    private FieldProcessor buildFieldProcessor(FieldProcessorConfig executableStepConfig, List<ModelPathStep> modelPathMembers, int initialPathIndex) {
+    private PathTraverser buildPathTraverser(PathTraverserConfig pathTraverserConfig, List<ModelPathStep> modelPathSteps, int initialPathIndex) {
 
-        List<ProcessStep> steps = new ArrayList<>();
-        InitialStepContext firstStep = new InitialStepContext(
-            modelPathMembers.get(initialPathIndex),
+        InitiateTraversalContext firstStep = new InitiateTraversalContext(
+            modelPathSteps.get(initialPathIndex),
             initialPathIndex,
-            modelPathMembers.size(),
+            modelPathSteps.size(),
             viewClassName,
             modelPathId);
 
-        steps.addAll(buildLeafwardSteps(initialPathIndex, modelPathMembers));
-        steps.addAll(buildRootwardSteps(initialPathIndex, modelPathMembers));
-        steps.add(new ViewValueWriterStep(viewClassName, modelPathId));
+        List<StepTraverser> steps = new ArrayList<>();
+        steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
+        steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
+        steps.add(new TraverseViewValueWriter(viewClassName, modelPathId));
 
-        return new FieldProcessor(firstStep, steps, executableStepConfig);
+        return new PathTraverser(firstStep, steps, pathTraverserConfig);
     }
 
-    public FieldProcessor buildInitialBackrefStep(FieldProcessorConfig executableStepConfig) {
-        List<ModelPathStep> modelPathMembers = modelPath.getPathMembers();
+    public PathTraverser buildInitialBackrefStep(PathTraverserConfig pathTraverserConfig) {
+        List<ModelPathStep> modelPathSteps = modelPath.getPathMembers();
 
-        ModelPathStep modelPathStep = modelPathMembers.get(0);
+        ModelPathStep modelPathStep = modelPathSteps.get(0);
         ModelPathStepType stepType = modelPathStep.getStepType();
         if (stepType.isBackReferenceType()) {
 
-            int modelPathMembersSize = modelPathMembers.size();
-            InitialStepContext firstStep = new InitialStepContext(
+            int modelPathMembersSize = modelPathSteps.size();
+            InitiateTraversalContext firstStep = new InitiateTraversalContext(
                 modelPathStep,
                 0,
                 modelPathMembersSize,
@@ -101,20 +101,20 @@ public class FieldProcessorFactory {
                 }
             };
 
-            List<ProcessStep> steps = new ArrayList<>();
-            steps.add(new BackrefStep(modelPathStep, referenceStore, modelPathStep.getOriginClassNames()));
-            steps.addAll(buildLeafwardSteps(0, modelPathMembers));
-            steps.addAll(buildRootwardSteps(0, modelPathMembers));
-            steps.add(new ViewValueWriterStep(viewClassName, modelPathId));
+            List<StepTraverser> steps = new ArrayList<>();
+            steps.add(new TraverseBackref(modelPathStep, referenceStore, modelPathStep.getOriginClassNames()));
+            steps.addAll(buildLeafwardTraversers(0, modelPathSteps));
+            steps.addAll(buildRootwardTraversers(0, modelPathSteps));
+            steps.add(new TraverseViewValueWriter(viewClassName, modelPathId));
 
-            return new FieldProcessor(firstStep, steps, executableStepConfig);
+            return new PathTraverser(firstStep, steps, pathTraverserConfig);
         } else {
             return null;
         }
     }
 
-    List<ProcessStep> buildLeafwardSteps(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
-        List<ProcessStep> steps = new ArrayList<>();
+    List<StepTraverser> buildLeafwardTraversers(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
+        List<StepTraverser> steps = new ArrayList<>();
 
         int modelPathMembersSize = modelPathMembers.size();
         ModelPathStep member;
@@ -123,10 +123,10 @@ public class FieldProcessorFactory {
         for (int pathIndex = initialPathIndex + 1; pathIndex < modelPathMembersSize; pathIndex++) {
             member = modelPathMembers.get(pathIndex);
 
-            ProcessStep processStep;
+            StepTraverser processStep;
             if (pathIndex == modelPathMembersSize - 1) {
 
-                processStep = new ValueStep(eventValueStore, member.getFieldNames(), initialPathIndex, pathIndex);
+                processStep = new TraverseValue(eventValueStore, member.getFieldNames(), initialPathIndex, pathIndex);
 
             } else {
                 memberType = member.getStepType();
@@ -137,7 +137,7 @@ public class FieldProcessorFactory {
 
                 Set<String> streamToTypes =
                     memberType.isBackReferenceType() ? member.getOriginClassNames() : member.getDestinationClassNames();
-                processStep = new LeafwardStep(streamer, pathIndex, streamToTypes);
+                processStep = new TraverseLeafward(streamer, pathIndex, streamToTypes);
             }
 
             steps.add(processStep);
@@ -145,24 +145,24 @@ public class FieldProcessorFactory {
         return steps;
     }
 
-    RefStreamer createLeafwardStreamer(Set<String> aClassNames, String aFieldName, ModelPathStepType fieldType) {
+    RefStreamer createLeafwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
-                return new B_IdsStreamer(referenceStore, aFieldName);
+                return new ForwardRefStreamer(referenceStore, fieldName);
             case refs:
-                return new B_IdsStreamer(referenceStore, aFieldName);
+                return new ForwardRefStreamer(referenceStore, fieldName);
             case backRefs:
             case count:
-                return new A_IdsStreamer(referenceStore, aClassNames, aFieldName);
+                return new BackRefStreamer(referenceStore, classNames, fieldName);
             case latest_backRef:
-                return new Latest_A_IdStreamer(referenceStore, aClassNames, aFieldName);
+                return new LatestBackRefStreamer(referenceStore, classNames, fieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support rev streaming");
         }
     }
 
-    List<ProcessStep> buildRootwardSteps(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
-        List<ProcessStep> steps = new ArrayList<>();
+    List<StepTraverser> buildRootwardTraversers(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
+        List<StepTraverser> steps = new ArrayList<>();
         ModelPathStep member;
         // rootward
         for (int pathIndex = initialPathIndex - 1; pathIndex >= 0; pathIndex--) {
@@ -174,22 +174,22 @@ public class FieldProcessorFactory {
 
             Set<String> streamToTypes =
                 member.getStepType().isBackReferenceType() ? member.getDestinationClassNames() : member.getOriginClassNames();
-            ProcessStep processStep = new RootwardStep(streamer, pathIndex, streamToTypes);
+            StepTraverser processStep = new TraverseRootward(streamer, pathIndex, streamToTypes);
             steps.add(processStep);
         }
         return steps;
     }
 
-    RefStreamer createRootwardStreamer(Set<String> aClassNames, String aFieldName, ModelPathStepType fieldType) {
+    RefStreamer createRootwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
-                return new A_IdsStreamer(referenceStore, aClassNames, aFieldName);
+                return new BackRefStreamer(referenceStore, classNames, fieldName);
             case refs:
-                return new A_IdsStreamer(referenceStore, aClassNames, aFieldName);
+                return new BackRefStreamer(referenceStore, classNames, fieldName);
             case backRefs:
             case count:
             case latest_backRef: // For this case we are likely doing more work that we absolutely need to.
-                return new B_IdsStreamer(referenceStore, aFieldName);
+                return new ForwardRefStreamer(referenceStore, fieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support fwd streaming");
         }

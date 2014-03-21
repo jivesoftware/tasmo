@@ -11,7 +11,6 @@ import com.google.common.collect.Sets;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
@@ -122,7 +121,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         RowColumnValueStoreUtil rowColumnValueStoreUtil = new RowColumnValueStoreUtil();
 
         String uuid = UUID.randomUUID().toString();
-       
+
        rowColumnValueStoreProvider = rowColumnValueStoreUtil.getInMemoryRowColumnValueStoreProvider(uuid, writtenEventProvider);
 
         ViewValueStore viewValueStore = buildViewValueStore(rowColumnValueStoreProvider);
@@ -335,7 +334,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
         return new CommitChange() {
             @Override
-            public void commitChange(TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
+            public boolean commitChange(TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
@@ -361,6 +360,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                 } catch (ViewWriterException ex) {
                     throw new CommitChangeException("Failed to write BigInteger?", ex);
                 }
+                return true;
             }
         };
     }

@@ -11,10 +11,10 @@ import java.util.List;
 
 public class WrittenInstanceHelper {
 
-    public Collection<Reference> getReferencesFromInstanceField(WrittenInstance writtenInstance, String referenceFieldName, long timestamp) {
+    public Collection<Reference> getReferencesFromInstanceField(WrittenInstance writtenInstance, String referenceFieldName) {
         ObjectId value = writtenInstance.getReferenceFieldValue(referenceFieldName);
         if (value != null) {
-            return Arrays.asList(new Reference(value, timestamp));
+            return Arrays.asList(new Reference(value, referenceFieldName));
         } else {
             ObjectId[] values = writtenInstance.getMultiReferenceFieldValue(referenceFieldName);
             if (values == null) {
@@ -22,7 +22,7 @@ public class WrittenInstanceHelper {
             } else {
                 List<Reference> references = new ArrayList<>(values.length);
                 for (ObjectId v : values) {
-                    references.add(new Reference(v, timestamp));
+                    references.add(new Reference(v, referenceFieldName));
                 }
                 return references;
             }

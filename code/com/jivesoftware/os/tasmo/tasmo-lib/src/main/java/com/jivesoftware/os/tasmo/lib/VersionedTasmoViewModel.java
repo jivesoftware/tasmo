@@ -10,7 +10,7 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.collect.ListMultimap;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
-import com.jivesoftware.os.tasmo.lib.process.EventProcessorDispatcher;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
 
 /**
  *
@@ -19,10 +19,10 @@ import com.jivesoftware.os.tasmo.lib.process.EventProcessorDispatcher;
 public class VersionedTasmoViewModel {
 
     private final ChainedVersion version;
-    private final ListMultimap<String, EventProcessorDispatcher> dispatchers;
+    private final ListMultimap<String, InitiateTraversal> dispatchers;
 
     public VersionedTasmoViewModel(ChainedVersion version,
-        ListMultimap<String, EventProcessorDispatcher> dispatchers) {
+        ListMultimap<String, InitiateTraversal> dispatchers) {
         this.version = version;
         this.dispatchers = dispatchers;
     }
@@ -31,7 +31,7 @@ public class VersionedTasmoViewModel {
         return version;
     }
 
-    public ListMultimap<String, EventProcessorDispatcher> getDispatchers() {
+    public ListMultimap<String, InitiateTraversal> getDispatchers() {
         return dispatchers;
     }
 

@@ -62,6 +62,8 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
@@ -274,15 +276,17 @@ public class BaseTasmoTest {
             }
         };
 
+        RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
+        ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrency);
         existenceStore = new ExistenceStore(existenceStorage);
-        eventValueStore = new EventValueStore(eventStore, cacheProvider);
+        eventValueStore = new EventValueStore(concurrencyStore, eventStore, cacheProvider);
 
         viewValueStore = new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), new ViewPathKeyProvider());
         viewValueWriter = new ViewValueWriter(viewValueStore);
         viewValueReader = new ViewValueReader(viewValueStore);
 
-        ReferenceStore referenceStore = new ReferenceStore(rowColumnValueStoreProvider.multiLinks(),
-            rowColumnValueStoreProvider.multiBackLinks());
+        ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, rowColumnValueStoreProvider.multiLinks(),
+                rowColumnValueStoreProvider.multiBackLinks());
 
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
         CommitChange commitChange = new CommitChange() {
@@ -291,18 +295,24 @@ public class BaseTasmoTest {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
+                        ReferenceWithTimestamp[] modelPathInstanceIds = change.getModelPathInstanceIds();
+                        ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];
+                        for (int i = 0; i < ids.length; i++) {
+                            ids[i] = modelPathInstanceIds[i].getObjectId();
+                        }
+
                         write.add(new ViewWriteFieldChange(
-                            change.getEventId(),
-                            -1,
-                            -1,
-                            tenantIdAndCentricId,
-                            change.getActorId(),
-                            ViewWriteFieldChange.Type.valueOf(change.getType().name()),
-                            change.getViewObjectId(),
-                            change.getModelPathId(),
-                            change.getModelPathInstanceIds(),
-                            mapper.writeValueAsString(change.getValue()),
-                            change.getTimestamp()));
+                                change.getEventId(),
+                                -1,
+                                -1,
+                                tenantIdAndCentricId,
+                                change.getActorId(),
+                                ViewWriteFieldChange.Type.valueOf(change.getType().name()),
+                                change.getViewObjectId(),
+                                change.getModelPathId(),
+                                ids,
+                                mapper.writeValueAsString(change.getValue()),
+                                change.getTimestamp()));
                     } catch (Exception ex) {
                         throw new CommitChangeException("Failed to add change for the following reason.", ex);
                     }
@@ -318,14 +328,13 @@ public class BaseTasmoTest {
 
         commitChange = new ExistenceCommitChange(existenceStore, commitChange);
 
-
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
-            new CallbackStream<List<BookkeepingEvent>>() {
-            @Override
-            public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
-                return value;
-            }
-        });
+                new CallbackStream<List<BookkeepingEvent>>() {
+                    @Override
+                    public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
+                        return value;
+                    }
+                });
 
         viewsProvider = new ViewsProvider() {
             @Override
@@ -340,15 +349,16 @@ public class BaseTasmoTest {
         };
 
         tasmoViewModel = new TasmoViewModel(
-            MASTER_TENANT_ID,
-            viewsProvider,
-            eventProvider,
-            referenceStore,
-            eventValueStore,
-            commitChange);
+                MASTER_TENANT_ID,
+                viewsProvider,
+                eventProvider,
+                concurrencyStore,
+                referenceStore,
+                eventValueStore,
+                commitChange);
 
         materializer = new TasmoViewMaterializer(existenceStore, tasmoEventBookkeeper,
-            tasmoViewModel, getViewChangeNotificationProcessor());
+                tasmoViewModel, getViewChangeNotificationProcessor());
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
     }
@@ -396,11 +406,11 @@ public class BaseTasmoTest {
         };
 
         viewProvider = new ViewProvider<>(viewPermissionChecker,
-            viewValueReader,
-            tenantViewsProvider,
-            viewAsObjectNode,
-            merger,
-            staleViewFieldStream);
+                viewValueReader,
+                tenantViewsProvider,
+                viewAsObjectNode,
+                merger,
+                staleViewFieldStream);
         return new Expectations(viewValueStore, newViews);
 
     }
@@ -464,11 +474,11 @@ public class BaseTasmoTest {
                 Set<String> destinationClassName = splitClassNames(memberParts[3].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
-                || pathMember.contains("." + ModelPathStepType.count + ".")
-                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
+                    || pathMember.contains("." + ModelPathStepType.count + ".")
+                    || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
                 // Example: Content.count.VersionedContent.ref_parent
@@ -479,7 +489,7 @@ public class BaseTasmoTest {
                 String refFieldName = memberParts[3].trim();
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else {
 
@@ -491,7 +501,7 @@ public class BaseTasmoTest {
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
+                        null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
 
             }
         } catch (Exception x) {

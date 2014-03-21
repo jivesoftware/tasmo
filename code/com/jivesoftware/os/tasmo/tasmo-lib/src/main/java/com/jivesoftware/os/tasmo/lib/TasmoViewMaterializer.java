@@ -15,16 +15,15 @@ import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceUpdate;
-import com.jivesoftware.os.tasmo.lib.process.EventBookKeeper;
-import com.jivesoftware.os.tasmo.lib.process.EventProcessorDispatcher;
-import com.jivesoftware.os.tasmo.lib.process.NoOpEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
+import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
 import com.jivesoftware.os.tasmo.model.process.InMemoryModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
+import com.jivesoftware.os.tasmo.reference.lib.concur.PathModifiedOutFromUnderneathMeException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -106,14 +105,47 @@ public class TasmoViewMaterializer {
                     throw new Exception("Cannot process an event until a model has been loaded.");
                 } else {
                     String className = writtenEvent.getWrittenInstance().getInstanceId().getClassName();
-                    ListMultimap<String, EventProcessorDispatcher> dispatchers = model.getDispatchers();
-                    for (EventProcessorDispatcher dispatcher : dispatchers.get(className)) {
-                        WrittenEventProcessor processorizer = dispatcher;
-                        if (processorizer == null) {
-                            processorizer = new NoOpEventProcessor();
+                    ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
+                    for (InitiateTraversal initiateTraversal : dispatchers.get(className)) {
+                        if (initiateTraversal == null) {
+                            LOG.warn("No traversal defined for className:{}", className);
+                            continue;
                         }
-                        if (new EventBookKeeper(processorizer).process(batchContext, writtenEvent)) {
-                            processed.add(writtenEvent);
+
+                        System.out.println(Thread.currentThread() + " |--> Processing:" + writtenEvent);
+
+                        int attempts = 0;
+                        int maxAttempts = 10;
+                        while (attempts < maxAttempts) {
+                            attempts++;
+                            if (attempts > 1) {
+                                LOG.info("attempts " + attempts);
+                            }
+                            try {
+                                EventBookKeeper eventBookKeeper = new EventBookKeeper(initiateTraversal);
+                                eventBookKeeper.process(batchContext, writtenEvent);
+                                processed.add(writtenEvent);
+                                break;
+                            } catch (Exception e) {
+                                boolean pathModifiedException = false;
+                                Throwable t = e;
+                                while (t != null) {
+                                    if (t instanceof PathModifiedOutFromUnderneathMeException) {
+                                        pathModifiedException = true;
+                                        System.out.println(t.toString());
+                                    }
+                                    t = t.getCause();
+                                }
+                                if (pathModifiedException) {
+                                    LOG.warn(e.toString());
+                                    Thread.sleep(1); // TODO is yield a better choice?
+                                } else {
+                                    throw e;
+                                }
+                            }
+                        }
+                        if (attempts >= maxAttempts) {
+                            throw new RuntimeException("Failed to reach stasis after " + maxAttempts + " attempts.");
                         }
                     }
                     viewChangeNotificationProcessor.process(batchContext, writtenEvent);
