@@ -83,7 +83,6 @@ public class InitiateValueTraversal implements EventProcessor {
                     if (!processedChains.contains(step)) {
 
                         ReferenceWithTimestamp ref = new ReferenceWithTimestamp(instancId, key.getTriggerFieldName(), timestamp);
-                        // TODO this is NOT right because we need to deal with all the fields we are updating timestamps
                         PathTraversalContext context = step.createContext(writtenEventContext, writtenEvent, writtenInstance.isDeletion());
                         context.setPathId(step.getPathIndex(), ref);
                         List<ReferenceWithTimestamp> versions = context.populateLeafNodeFields(eventValueStore, instancId, step.getInitialFieldNames());

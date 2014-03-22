@@ -22,7 +22,11 @@ import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.PathModifiedOutFromUnderneathMeException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author jonathan.colt
@@ -30,15 +34,18 @@ import java.util.Collection;
 public class InitiateRefTraversal implements EventProcessor {
 
     private final WrittenInstanceHelper writtenInstanceHelper;
+    private final ConcurrencyStore concurrencyStore;
     private final ReferenceStore referenceStore;
     private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> traversers;
     private final boolean idCentric;
 
     public InitiateRefTraversal(WrittenInstanceHelper writtenInstanceHelper,
+            ConcurrencyStore concurrencyStore,
             ReferenceStore referenceStore,
             ArrayListMultimap<InitiateTraverserKey, PathTraverser> steps,
             boolean idCentric) {
         this.writtenInstanceHelper = writtenInstanceHelper;
+        this.concurrencyStore = concurrencyStore;
         this.referenceStore = referenceStore;
         this.traversers = steps;
         this.idCentric = idCentric;
@@ -52,7 +59,7 @@ public class InitiateRefTraversal implements EventProcessor {
         }
 
         TenantId tenantId = writtenEvent.getTenantId();
-        long timestamp = writtenEvent.getEventId();
+        final long timestamp = writtenEvent.getEventId();
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         final ObjectId instanceId = writtenInstance.getInstanceId();
         final TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId,
@@ -66,8 +73,47 @@ public class InitiateRefTraversal implements EventProcessor {
 
                 final String refFieldName = key.getRefFieldName();
 
-                Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, refFieldName);
-                referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, refFieldName, tos);
+                final long highest = concurrencyStore.highest(tenantIdAndCentricId.getTenantId(), instanceId, refFieldName, timestamp);
+                if (timestamp > highest) {
+                    Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, refFieldName);
+                    referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, refFieldName, tos);
+                }
+
+
+                final Collection<PathTraverser> pathTraversers = traversers.get(key);
+                referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), instanceId, refFieldName,
+                        new CallbackStream<ReferenceWithTimestamp>() {
+                            @Override
+                            public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
+                                if (to != null && to.getTimestamp() < timestamp) {
+                                    for (PathTraverser pathTraverser : pathTraversers) {
+
+                                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, true);
+
+                                        context.setPathId(pathTraverser.getPathIndex(), new ReferenceWithTimestamp(
+                                                        instanceId,
+                                                        refFieldName,
+                                                        to.getTimestamp()));
+
+                                        context.addVersion(new ReferenceWithTimestamp(
+                                                        instanceId,
+                                                        refFieldName,
+                                                        to.getTimestamp()));
+
+                                        pathTraverser.travers(writtenEvent, context, to);
+                                        context.commit();
+                                    }
+                                }
+                                return to;
+                            }
+                        });
+
+                List<ConcurrencyStore.FieldVersion> want = Arrays.asList(new ConcurrencyStore.FieldVersion(instanceId, refFieldName, highest));
+                List<ConcurrencyStore.FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
+                if (got != want) {
+                    PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
+                    throw e;
+                }
 
                 for (final PathTraverser pathTraverser : traversers.get(key)) {
                     final PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, false);
@@ -95,6 +141,13 @@ public class InitiateRefTraversal implements EventProcessor {
                                 }
                             });
                     context.commit();
+
+                    got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
+                    if (got != want) {
+                        PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
+                        //System.out.println(Thread.currentThread() + " " + e.toString());
+                        throw e;
+                    }
                 }
             }
         }

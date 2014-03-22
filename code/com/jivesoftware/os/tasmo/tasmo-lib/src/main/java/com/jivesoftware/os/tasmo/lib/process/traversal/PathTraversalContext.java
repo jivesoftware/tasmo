@@ -177,8 +177,10 @@ public class PathTraversalContext {
     }
 
     public void commit() throws Exception { // TODO this method doesn't belong in this class
+        System.out.println("---------- Anything to write?:"+!changes.isEmpty() +" pathIds:"+Arrays.deepToString(modelPathIdState)+" versions:"+modelPathVersionState);
 
         if (!changes.isEmpty()) {
+            System.out.println("Wrote:"+changes);
             commitChange.commitChange(tenantIdAndCentricId, changes);
             changes.clear();
             modelPathVersionState.clear();

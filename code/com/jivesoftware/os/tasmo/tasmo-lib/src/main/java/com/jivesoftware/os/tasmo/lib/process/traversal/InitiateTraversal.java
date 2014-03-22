@@ -60,6 +60,8 @@ public class InitiateTraversal implements WrittenEventProcessor {
     @Override
     public void process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception {
 
+        // TODO write all values and refs before doing any traversal!?
+
         LOG.trace("Start:" + this.toString());
         invokeEventTraverser(batchContext, "values", valueTraverser, writtenEvent);
         invokeEventTraverser(batchContext, "refs", refTraverser, writtenEvent);
