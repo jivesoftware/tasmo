@@ -14,17 +14,9 @@ import java.util.List;
 public class ConcurrencyStore {
 
     private final RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> updatedStore;
-    private final RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> deletedStore;
 
-    public ConcurrencyStore(RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> updatedStore,
-            RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> deletedStore) {
+    public ConcurrencyStore(RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> updatedStore) {
         this.updatedStore = updatedStore;
-        this.deletedStore = deletedStore;
-    }
-
-    public void deleted(TenantId tenant, ObjectId objectId, String[] fields, long timestamp) {
-        //System.out.println("|||| Deleted:" + objectId + " fields:" + Arrays.deepToString(fields) + " t=" + timestamp + " " + Debug.caller(4));
-        updatedStore.multiRemove(tenant, objectId, fields, new ConstantTimestamper(timestamp));
     }
 
     public void updated(TenantId tenant, ObjectId objectId, String[] fields, long timestamp) {

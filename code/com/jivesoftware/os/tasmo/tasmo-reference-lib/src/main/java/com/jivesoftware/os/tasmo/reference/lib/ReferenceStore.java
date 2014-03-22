@@ -204,11 +204,6 @@ public class ReferenceStore {
         }
 
         concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName}, timestamp);
-
-         long highestTimestamp = 0;// get from store
-        if (timestamp < highestTimestamp) {
-            return; // throw up which cause a retry
-        }
     }
 
     public void unlink(final TenantIdAndCentricId tenantIdAndCentricId,
@@ -219,7 +214,7 @@ public class ReferenceStore {
 
         LOG.inc("unlink");
 
-        final ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp);
+        final ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp + 1);
         final ClassAndField_IdKey aClassAndField_aId = new ClassAndField_IdKey(from.getClassName(), fieldName, from);
 
         concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName}, timestamp);

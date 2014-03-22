@@ -34,12 +34,12 @@ import org.testng.annotations.Test;
  */
 public class ReferenceStoreConcurrencyTest {
 
-    @Test(invocationCount = 50)
+    @Test(invocationCount = 500, singleThreaded = false)
     public void testConcurrencyMultiRefStore() throws Exception {
 
+        //System.out.println("\n |--> BEGIN \n");
         RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> updated = new RowColumnValueStoreImpl<>();
-        RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> deleted = new RowColumnValueStoreImpl<>();
-        ConcurrencyStore concurrencyStore = new ConcurrencyStore(updated, deleted);
+        ConcurrencyStore concurrencyStore = new ConcurrencyStore(updated);
 
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks = new RowColumnValueStoreImpl<>();
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks = new RowColumnValueStoreImpl<>();
@@ -56,19 +56,19 @@ public class ReferenceStoreConcurrencyTest {
 
         final RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values = new RowColumnValueStoreImpl<>();
 
-        int eventCount = 20;
+        int eventCount = 50;
         Event[] events = new Event[eventCount];
         for (int i = 0; i < eventCount; i++) {
-
+            int time = i * 2;
             if (rand.nextBoolean()) {
-                events[i] = new Event(concurrencyStore, referenceStore, values, tenantIdAndCentricId, i, true, from, fromRefFieldName, new Reference[0], -1);
+                events[i] = new Event(concurrencyStore, referenceStore, values, tenantIdAndCentricId, time, true, from, fromRefFieldName, new Reference[0], -1);
             } else {
                 Reference[] tos = new Reference[1 + rand.nextInt(10)];
                 for (int j = 0; j < tos.length; j++) {
                     tos[j] = new Reference(new ObjectId("B", new Id(rand.nextInt(1000))), fromRefFieldName);
                 }
                 events[i] = new Event(concurrencyStore, referenceStore, values,
-                        tenantIdAndCentricId, i, false, from, fromRefFieldName, tos, Math.abs(rand.nextLong()));
+                        tenantIdAndCentricId, time, false, from, fromRefFieldName, tos, Math.abs(rand.nextLong()));
             }
         }
 
@@ -80,7 +80,7 @@ public class ReferenceStoreConcurrencyTest {
                 @Override
                 public void run() {
                     try {
-                        System.out.println(Thread.currentThread()+" "+e);
+                        //System.out.println(Thread.currentThread()+" |--> event "+e);
                         e.process();
                     } finally {
                         latch.countDown();
@@ -90,8 +90,8 @@ public class ReferenceStoreConcurrencyTest {
         }
 
         latch.await();
-        Thread.sleep(1000);
-        System.out.println("------------------------------------------------");
+        //Thread.sleep(1000);
+        //System.out.println("------------------------------------------------");
 
         final Event winner = events[events.length - 1];
         System.out.println("Is:");
@@ -135,8 +135,11 @@ public class ReferenceStoreConcurrencyTest {
             System.out.println("PASSED");
         } else {
             System.out.println("FAILED");
+            //System.out.println(" |--> FAILED");
+            //System.exit(0);
         }
-        Assert.assertTrue(passed, "Seed:" + seed+" Failed:"+failures.get());
+
+        Assert.assertTrue(passed, "Seed:" + seed + " Failed:" + failures.get());
     }
 
     static class Event {
@@ -197,11 +200,11 @@ public class ReferenceStoreConcurrencyTest {
 
         void process() {
             int attempts = 0;
-            int maxAttempts = 4;
+            int maxAttempts = 1000;
             while (attempts < maxAttempts) {
                 attempts++;
                 if (attempts > 1) {
-                    System.out.println(Thread.currentThread() + " attempts " + attempts);
+                    //System.out.println(Thread.currentThread() + " attempts " + attempts);
                 }
                 try {
 
@@ -209,13 +212,12 @@ public class ReferenceStoreConcurrencyTest {
 
                         referenceStore.unlink(tenantIdAndCentricId, timestamp, from, fromRefFieldName,
                                 new CallbackStream<ReferenceWithTimestamp>() {
-
                                     @Override
                                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
                                         if (v != null) {
                                             values.remove(tenantIdAndCentricId,
-                                                    v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp()));
-
+                                                    v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp() + 1));
+                                            //System.out.println(Thread.currentThread().getName()+" |--> remove "+v.getObjectId()+" "+v.getTimestamp());
                                         }
                                         return v;
                                     }
@@ -225,15 +227,15 @@ public class ReferenceStoreConcurrencyTest {
                         if (timestamp > highest) {
                             referenceStore.link(tenantIdAndCentricId, timestamp, from, fromRefFieldName, Arrays.asList(tos));
                         }
-
-                        referenceStore.unlink(tenantIdAndCentricId, timestamp, from, fromRefFieldName,
+                        // yield
+                        referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), from, fromRefFieldName,
                                 new CallbackStream<ReferenceWithTimestamp>() {
-
                                     @Override
                                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
                                         if (v != null) {
                                             values.remove(tenantIdAndCentricId,
-                                                    v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp()));
+                                                    v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp() + 1));
+                                            //System.out.println(Thread.currentThread().getName()+" |--> remove "+v.getObjectId()+" "+v.getTimestamp());
                                         }
                                         return v;
                                     }
@@ -243,7 +245,6 @@ public class ReferenceStoreConcurrencyTest {
                         List<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
                         if (got != want) {
                             PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
-                            System.out.println(Thread.currentThread() + " " + e.toString());
                             throw e;
                         }
 
@@ -258,9 +259,10 @@ public class ReferenceStoreConcurrencyTest {
                                             if (got == want) {
                                                 values.add(tenantIdAndCentricId, v.getObjectId(), fromRefFieldName, value, null,
                                                         new ConstantTimestamper(v.getTimestamp()));
+                                                //System.out.println(Thread.currentThread().getName()+" |--> add "+v.getObjectId()+" "+v.getTimestamp());
                                             } else {
                                                 PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
-                                                System.out.println(Thread.currentThread() + " " + e.toString());
+                                                //System.out.println(Thread.currentThread() + " " + e.toString());
                                                 throw e;
                                             }
                                         }
@@ -271,7 +273,7 @@ public class ReferenceStoreConcurrencyTest {
                         got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
                         if (got != want) {
                             PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
-                            System.out.println(Thread.currentThread() + " " + e.toString());
+                            //System.out.println(Thread.currentThread() + " " + e.toString());
                             throw e;
                         }
                     }
@@ -306,13 +308,15 @@ public class ReferenceStoreConcurrencyTest {
 
         private boolean contains(ObjectId id, Long timestamp) {
             if (this.timestamp != timestamp) {
+                System.out.println(" FUCK ME: failed to find:" + timestamp + " had:" + this.timestamp);
                 return false;
             }
-            for(Reference t:tos) {
+            for (Reference t : tos) {
                 if (t.getObjectId().equals(id)) {
                     return true;
                 }
             }
+            System.out.println(" FUCK ME: failed to find " + id + " " + timestamp + " " + this);
             return false;
         }
     }
