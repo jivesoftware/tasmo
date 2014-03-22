@@ -54,7 +54,6 @@ public class ViewValue {
 
     public String[] getValueFieldNames() {
         Set<String> fieldNames = new HashSet<>(step.getFieldNames());
-        fieldNames.add(ReservedFields.DELETED);
         return fieldNames.toArray(new String[fieldNames.size()]);
     }
     

@@ -148,7 +148,9 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
                 array.add(destinationNode);
                 nextLevel.put(destination, destinationNode);
             }
-            object.put(ALL_PREFIX + reference.getRefFieldName(), array);
+            if (array.size() > 0) {
+                object.put(ALL_PREFIX + reference.getRefFieldName(), array);
+            }
 
         } else if (ModelPathStepType.ref.equals(stepType)) {
             if (presentDestinations.isEmpty()) {
@@ -171,7 +173,9 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
                 array.add(destinationNode);
                 nextLevel.put(destination, destinationNode);
             }
-            object.put(reference.getRefFieldName(), array);
+            if (array.size() > 0) {
+                object.put(reference.getRefFieldName(), array);
+            }
 
         }
     }
