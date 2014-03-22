@@ -22,6 +22,7 @@ import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewId;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
+import java.util.Arrays;
 import javax.annotation.Nullable;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -34,214 +35,248 @@ public class TwoStepTest extends BaseTasmoViewTest {
     //VersionView::path1::Version.backRefs.Content.ref_versionedContent|Content.ref_originalAuthor.ref.User|User.firstName
 
     private static interface ContentView extends BaseView {
+
         @Nullable
         Container location();
-        
+
         interface Container {
+
             @Nullable
             String name();
-            
+
             @Nullable
             Long creationDate();
         }
-        
     }
     
+    private static interface VersionAuthorsView extends BaseView {
+        @Nullable
+        User[] authors();
+
+        interface User {
+
+            @Nullable
+            String userName();
+        }
+    }
+    
+    
     String eventModel =
-        "User:userName(value),creationDate(value),manager(ref)|Content:location(ref)|Version:parent(ref),authors(refs),subject(value),body(value)|" +
-        "Container:name(value),creationDate(value),owner(ref)";
+        "User:userName(value),creationDate(value),manager(ref)|Content:location(ref)|Version:parent(ref),authors(refs),subject(value),body(value)|"
+        + "Container:name(value),creationDate(value),owner(ref)";
 
     @Test
     public void testRefToValue() throws Exception {
         //add
         String viewModel = "ContentView::path1::Content.location.ref.Container|Container.name,creationDate";
         initModel(eventModel, viewModel);
-        
+
         ObjectId containerId = write(EventBuilder.create(idProvider, "Container", tenantId, actorId).
             set("name", "awesome").build());
-        
+
         ObjectId contentId = write(EventBuilder.create(idProvider, "Content", tenantId, actorId).
             set("location", containerId).build());
-        
+
         ViewId viewId = ViewId.ofId(contentId.getId(), ContentView.class);
         ViewResponse response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-        
+
         ContentView content = response.getView(ContentView.class);
         Assert.assertNotNull(content);
-        
+
         ContentView.Container container = content.location();
         Assert.assertNotNull(container);
-        
+
         Assert.assertNull(container.creationDate());
         Assert.assertEquals(container.name(), "awesome");
-        
+
         //update value
         write(EventBuilder.update(containerId, tenantId, actorId).set("name", "not awesome").set("creationDate", 12345l).build());
-        
+
         response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-        
+
         content = response.getView(ContentView.class);
         Assert.assertNotNull(content);
-        
+
         container = content.location();
         Assert.assertNotNull(container);
-        
+
         Assert.assertEquals(container.name(), "not awesome");
-        Assert.assertEquals(container.creationDate(), (Long)12345l);
-        
+        Assert.assertEquals(container.creationDate(), (Long) 12345l);
+
         write(EventBuilder.update(containerId, tenantId, actorId).clear("name").build());
-        
+
         response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-        
+
         content = response.getView(ContentView.class);
         Assert.assertNotNull(content);
-        
+
         container = content.location();
         Assert.assertNotNull(container);
-        
+
         Assert.assertNull(container.name());
-        Assert.assertEquals(container.creationDate(), (Long)12345l);
-        
+        Assert.assertEquals(container.creationDate(), (Long) 12345l);
+
         //clear value
         write(EventBuilder.update(containerId, tenantId, actorId).clear("name").build());
-        
+
         response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-        
+
         content = response.getView(ContentView.class);
         Assert.assertNotNull(content);
-        
+
         container = content.location();
         Assert.assertNotNull(container);
-        
+
         Assert.assertNull(container.name());
-        Assert.assertEquals(container.creationDate(), (Long)12345l);
-        
+        Assert.assertEquals(container.creationDate(), (Long) 12345l);
+
         //dereference
         write(EventBuilder.update(contentId, tenantId, actorId).clear("location").build());
-        
+
         response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-        
+
         content = response.getView(ContentView.class);
         Assert.assertNotNull(content);
-        
+
         container = content.location();
         Assert.assertNull(container);
-    
+
         //re-reference
         write(EventBuilder.update(contentId, tenantId, actorId).set("location", containerId).build());
-        
+
         response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-        
+
         content = response.getView(ContentView.class);
         Assert.assertNotNull(content);
-        
+
         container = content.location();
         Assert.assertNotNull(container);
-        
+
         Assert.assertNull(container.name());
-        Assert.assertEquals(container.creationDate(), (Long)12345l);
-        
+        Assert.assertEquals(container.creationDate(), (Long) 12345l);
+
         //delete value
         write(EventBuilder.update(containerId, tenantId, actorId).set(ReservedFields.DELETED, true).build());
         response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-        
+
         content = response.getView(ContentView.class);
         Assert.assertNotNull(content);
-        
+
         container = content.location();
         Assert.assertNull(container);
-        
-      
+
+
         //undelete
         write(EventBuilder.update(containerId, tenantId, actorId).set(ReservedFields.DELETED, false).build());
-        
+
         response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-        
+
         content = response.getView(ContentView.class);
         Assert.assertNotNull(content);
-        
+
         container = content.location();
         Assert.assertNotNull(container);
-        
+
         Assert.assertNull(container.name());
         Assert.assertNull(container.creationDate());
-        
+
         //invisible value
         permittedIds.add(contentId.getId()); //this will make container invisible
         response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-        
+
         content = response.getView(ContentView.class);
         Assert.assertNotNull(content);
-        
+
         container = content.location();
         Assert.assertNull(container);
-        
+
         //now all is visible
-       permittedIds.clear();
-       
-       //invisible root
-       permittedIds.add(containerId.getId());
-       response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+        permittedIds.clear();
+
+        //invisible root
+        permittedIds.add(containerId.getId());
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.FORBIDDEN);
-        
+
         permittedIds.clear();
-        
+
         //delete root
         write(EventBuilder.update(contentId, tenantId, actorId).set(ReservedFields.DELETED, true).build());
-        
+
         response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        
+
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.NOT_FOUND);
     }
-    
+
     @Test
-    public void testMultiRefToValue() {
+    public void testMultiRefToValue() throws Exception {
+        //add
+        String viewModel = "VersionAuthorsView::path1::Version.authors.refs.User|User.userName";
+        initModel(eventModel, viewModel);
+
+        ObjectId userId1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).
+            set("userName", "ted").build());
+
+        ObjectId versionId = write(EventBuilder.create(idProvider, "Version", tenantId, actorId).
+            set("authors", Arrays.asList(userId1)).build());
+
+        ViewId viewId = ViewId.ofId(versionId.getId(), VersionAuthorsView.class);
+        ViewResponse response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        VersionAuthorsView version = response.getView(VersionAuthorsView.class);
+        Assert.assertNotNull(version);
+
+        VersionAuthorsView.User[] authors = version.authors();
+        Assert.assertNotNull(authors);
+
+        Assert.assertEquals(authors.length, 1);
         
+        Assert.assertEquals(authors[0].userName(), "ted");
+
     }
-    
+
     @Test
     public void testBackRefsToValue() {
-        
     }
-    
+
     @Test
     public void testLatestBackRefToValue() {
-        
     }
-    
+
     @Test
     public void testBackRefCount() {
-        
     }
-    
 }
