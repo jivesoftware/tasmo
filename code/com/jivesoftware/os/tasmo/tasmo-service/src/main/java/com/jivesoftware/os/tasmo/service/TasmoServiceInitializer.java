@@ -11,19 +11,21 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.Cur
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.ByteArrayTypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
-import com.jivesoftware.os.tasmo.configuration.events.TenantEventsProvider;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
-import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
+import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
 import com.jivesoftware.os.tasmo.lib.DispatcherProvider;
+import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
+import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
+import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
@@ -61,57 +63,64 @@ public class TasmoServiceInitializer {
     }
 
     public static EventIngressCallbackStream initializeEventIngressCallbackStream(
-            TenantEventsProvider eventsProvider,
-            WrittenEventProvider eventProvider,
-            SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
-            CommitChange changeWriter,
-            ViewChangeNotificationProcessor viewChangeNotificationProcessor,
-            CallbackStream<List<BookkeepingEvent>> bookKeepingStream,
-            TasmoServiceConfig config) throws IOException {
+        TenantEventsProvider eventsProvider,
+        WrittenEventProvider eventProvider,
+        SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+        CommitChange changeWriter,
+        ViewChangeNotificationProcessor viewChangeNotificationProcessor,
+        CallbackStream<List<BookkeepingEvent>> bookKeepingStream,
+        TasmoServiceConfig config) throws IOException {
+
+        RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceTable =
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "existenceTable", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdMarshaller(),
+            new ObjectIdMarshaller(), new StringTypeMarshaller(),
+            new StringTypeMarshaller()), new CurrentTimestamper()));
 
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore =
-                new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "eventValueTable", "v",
-                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
-                new ObjectIdMarshaller(), new StringTypeMarshaller(),
-                (TypeMarshaller<OpaqueFieldValue>) eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "eventValueTable", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
+            new ObjectIdMarshaller(), new StringTypeMarshaller(),
+            (TypeMarshaller<OpaqueFieldValue>) eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
 
 
         EventValueStore eventValueStore = new EventValueStore(eventStore);
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks =
-                new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "multiLinkTable", "v",
-                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-                new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "multiLinkTable", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
+            new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
 
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks =
-                new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "multiBackLinkTable", "v",
-                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-                new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "multiBackLinkTable", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
+            new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
 
         ReferenceStore referenceStore = new ReferenceStore(multiLinks, multiBackLinks);
 
         TasmoEventBookkeeper bookkeeper =
-                new TasmoEventBookkeeper(bookKeepingStream);
+            new TasmoEventBookkeeper(bookKeepingStream);
         TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
+        ExistenceStore existenceStore = new ExistenceStore(existenceTable);
 
-        final DispatcherProvider tasmoViewModel = new DispatcherProvider(
-                eventsProvider,
-                referenceStore,
-                eventValueStore);
+        final DispatcherProvider dispatcherProvider = new DispatcherProvider(
+            eventsProvider,
+            referenceStore,
+            eventValueStore);
 
-        tasmoViewModel.loadModel(masterTenantId);
+        dispatcherProvider.loadModel(masterTenantId);
 
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
                 try {
-                    tasmoViewModel.reloadModels();
+                    dispatcherProvider.reloadModels();
                 } catch (Exception x) {
                     LOG.error("Scheduled reloadig of tasmo view model failed. ", x);
                 }
             }
         }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);
 
-        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper, tasmoViewModel, viewChangeNotificationProcessor);
+        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper, dispatcherProvider, existenceStore, viewChangeNotificationProcessor);
 
         return new EventIngressCallbackStream(materializer);
     }

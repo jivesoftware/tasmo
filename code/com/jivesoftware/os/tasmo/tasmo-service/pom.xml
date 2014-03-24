@@ -72,12 +72,6 @@
             <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
             <artifactId>row-column-value-store-marshall-primatives</artifactId>
         </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-configuration</artifactId>
-            <version>0.1</version>
-            <type>jar</type>
-        </dependency>
     </dependencies>
     <name>tasmo-service</name>
 </project>
