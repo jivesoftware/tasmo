@@ -81,6 +81,26 @@ public class TwoStepTest extends BaseTasmoViewTest {
             String body();
         }
     }
+
+    private static interface UserVersionsLatestView extends BaseView {
+
+        @Nullable
+        @BackRef(type = BackRefType.LATEST, via = "authors", from = VersionEvent.class)
+        Version authors();
+
+        interface Version {
+
+            @Nullable
+            String body();
+        }
+    }
+
+    private static interface UserVersionsCountView extends BaseView {
+
+        @Nullable
+        @BackRef(type = BackRefType.COUNT, via = "authors", from = VersionEvent.class)
+        int authors();
+    }
     String eventModel =
         "User:userName(value),creationDate(value),manager(ref)|Content:location(ref)|Version:parent(ref),authors(refs),subject(value),body(value)|"
         + "Container:name(value),creationDate(value),owner(ref)";
@@ -481,7 +501,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
 
         ObjectId userId1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).build());
 
-        ObjectId versionId = write(EventBuilder.create(idProvider, "Version", tenantId, actorId).
+        ObjectId versionId1 = write(EventBuilder.create(idProvider, "Version", tenantId, actorId).
             set("authors", Arrays.asList(userId1)).set("body", "body1").build());
 
         ViewId viewId = ViewId.ofId(userId1.getId(), UserVersionsView.class);
@@ -512,7 +532,6 @@ public class TwoStepTest extends BaseTasmoViewTest {
         versions = userVersion.authors();
         Assert.assertNotNull(versions);
 
-        Assert.assertNotNull(versions);
         Assert.assertEquals(versions.length, 2);
 
         Set<String> bodies = new HashSet<>();
@@ -522,14 +541,354 @@ public class TwoStepTest extends BaseTasmoViewTest {
 
         Assert.assertTrue(bodies.contains("body1"));
         Assert.assertTrue(bodies.contains("body2"));
+
+        //dereference one
+        write(EventBuilder.update(versionId1, tenantId, actorId).
+            clear("authors").build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsView.class);
+        Assert.assertNotNull(userVersion);
+
+        versions = userVersion.authors();
+        Assert.assertNotNull(versions);
+
+        Assert.assertEquals(versions.length, 1);
+
+        Assert.assertEquals(versions[0].body(), "body2");
+
+        //rereference
+        write(EventBuilder.update(versionId1, tenantId, actorId).
+            set("authors", Arrays.asList(userId1)).build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsView.class);
+        Assert.assertNotNull(userVersion);
+
+        versions = userVersion.authors();
+        Assert.assertNotNull(versions);
+
+        Assert.assertEquals(versions.length, 2);
+
+        bodies = new HashSet<>();
+        for (UserVersionsView.Version version : versions) {
+            bodies.add(version.body());
+        }
+
+        Assert.assertTrue(bodies.contains("body1"));
+        Assert.assertTrue(bodies.contains("body2"));
+
+        //delete one
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            set(ReservedFields.DELETED, true).build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsView.class);
+        Assert.assertNotNull(userVersion);
+
+        versions = userVersion.authors();
+        Assert.assertNotNull(versions);
+
+        Assert.assertEquals(versions.length, 1);
+
+        Assert.assertEquals(versions[0].body(), "body1");
+
+        //undelete
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            set(ReservedFields.DELETED, false).set("authors", Arrays.asList(userId1)).set("body", "body2").build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsView.class);
+        Assert.assertNotNull(userVersion);
+
+        versions = userVersion.authors();
+
+        Assert.assertNotNull(versions);
+        Assert.assertEquals(versions.length, 2);
+
+        bodies = new HashSet<>();
+        for (UserVersionsView.Version version : versions) {
+            bodies.add(version.body());
+        }
+
+        Assert.assertTrue(bodies.contains("body1"));
+        Assert.assertTrue(bodies.contains("body2"));
+
+        //delete both
+        write(EventBuilder.update(versionId1, tenantId, actorId).
+            set(ReservedFields.DELETED, true).build());
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            set(ReservedFields.DELETED, true).build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsView.class);
+        Assert.assertNotNull(userVersion);
+
+        versions = userVersion.authors();
+        Assert.assertNotNull(versions);
+
+        Assert.assertEquals(versions.length, 0);
+    }
+
+    @Test
+    public void testLatestBackRefToValue() throws Exception {
+        //add
+        String viewModel = "UserVersionsLatestView::path1::User.latest_backRef.Version.authors|Version.body";
+        initModel(eventModel, viewModel);
+
+        ObjectId userId1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).build());
+
+        ObjectId versionId1 = write(EventBuilder.create(idProvider, "Version", tenantId, actorId).
+            set("authors", Arrays.asList(userId1)).set("body", "body1").build());
+
+        ViewId viewId = ViewId.ofId(userId1.getId(), UserVersionsLatestView.class);
+        ViewResponse response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        UserVersionsLatestView userVersion = response.getView(UserVersionsLatestView.class);
+        Assert.assertNotNull(userVersion);
+
+        UserVersionsLatestView.Version version = userVersion.authors();
+        Assert.assertNotNull(version);
+        Assert.assertEquals(version.body(), "body1");
+
+        ObjectId versionId2 = write(EventBuilder.create(idProvider, "Version", tenantId, actorId).
+            set("authors", Arrays.asList(userId1)).set("body", "body2").build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsLatestView.class);
+        Assert.assertNotNull(userVersion);
+
+        version = userVersion.authors();
+        Assert.assertNotNull(version);
+        Assert.assertEquals(version.body(), "body2");
+
+        //clear latest and expose next latest
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            clear("authors").build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsLatestView.class);
+        Assert.assertNotNull(userVersion);
+
+        version = userVersion.authors();
+        Assert.assertNotNull(version);
+        Assert.assertEquals(version.body(), "body1");
+
+        //re-reference
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            set("authors", Arrays.asList(userId1)).build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsLatestView.class);
+        Assert.assertNotNull(userVersion);
+
+        version = userVersion.authors();
+        Assert.assertNotNull(version);
+        Assert.assertEquals(version.body(), "body2");
+
+        //delete latest and expose next latest
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            set(ReservedFields.DELETED, true).build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsLatestView.class);
+        Assert.assertNotNull(userVersion);
+
+        version = userVersion.authors();
+        Assert.assertNotNull(version);
+        Assert.assertEquals(version.body(), "body1");
+
+        //delete latest and expose next latest
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            set(ReservedFields.DELETED, false).set("authors", Arrays.asList(userId1)).set("body", "body2").build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsLatestView.class);
+        Assert.assertNotNull(userVersion);
+
+        version = userVersion.authors();
+        Assert.assertNotNull(version);
+        Assert.assertEquals(version.body(), "body2");
+
+        //delete both
+        write(EventBuilder.update(versionId1, tenantId, actorId).
+            set(ReservedFields.DELETED, true).build());
+
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            set(ReservedFields.DELETED, true).build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsLatestView.class);
+        Assert.assertNotNull(userVersion);
+
+        version = userVersion.authors();
+        Assert.assertNull(version);
+
+    }
+
+    @Test
+    public void testBackRefCount() throws Exception {
+        //add
+        String viewModel = "UserVersionsCountView::path1::User.count.Version.authors|Version.body";
+        initModel(eventModel, viewModel);
+
+        ObjectId userId1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).build());
+
+        ObjectId versionId1 = write(EventBuilder.create(idProvider, "Version", tenantId, actorId).
+            set("authors", Arrays.asList(userId1)).set("body", "body1").build());
+
+        ViewId viewId = ViewId.ofId(userId1.getId(), UserVersionsCountView.class);
+        ViewResponse response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        UserVersionsCountView userVersion = response.getView(UserVersionsCountView.class);
+        Assert.assertNotNull(userVersion);
+
+
+        Assert.assertEquals(userVersion.authors(), 1);
+
+        ObjectId versionId2 = write(EventBuilder.create(idProvider, "Version", tenantId, actorId).
+            set("authors", Arrays.asList(userId1)).set("body", "body2").build());
+
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsCountView.class);
+        Assert.assertNotNull(userVersion);
+
+
+        Assert.assertEquals(userVersion.authors(), 2);
+
+        //clear one
+        write(EventBuilder.update(versionId1, tenantId, actorId).
+            clear("authors").build());
+
+        ViewId.ofId(userId1.getId(), UserVersionsCountView.class);
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsCountView.class);
+        Assert.assertNotNull(userVersion);
+
+        Assert.assertEquals(userVersion.authors(), 1);
+
+        //rereference
+        write(EventBuilder.update(versionId1, tenantId, actorId).
+            set("authors", Arrays.asList(userId1)).build());
+
+        ViewId.ofId(userId1.getId(), UserVersionsCountView.class);
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsCountView.class);
+        Assert.assertNotNull(userVersion);
+
+        Assert.assertEquals(userVersion.authors(), 2);
         
-    }
+        //delete one
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            set(ReservedFields.DELETED, true).build());
 
-    @Test
-    public void testLatestBackRefToValue() {
-    }
+        ViewId.ofId(userId1.getId(), UserVersionsCountView.class);
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
 
-    @Test
-    public void testBackRefCount() {
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsCountView.class);
+        Assert.assertNotNull(userVersion);
+
+        Assert.assertEquals(userVersion.authors(), 1);
+        
+        //undelete
+         write(EventBuilder.update(versionId2, tenantId, actorId).set(ReservedFields.DELETED, false).
+            set("authors", Arrays.asList(userId1)).build());
+
+        ViewId.ofId(userId1.getId(), UserVersionsCountView.class);
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsCountView.class);
+        Assert.assertNotNull(userVersion);
+
+        Assert.assertEquals(userVersion.authors(), 2);
+        
+        //delete both
+        write(EventBuilder.update(versionId1, tenantId, actorId).
+            set(ReservedFields.DELETED, true).build());
+        
+        write(EventBuilder.update(versionId2, tenantId, actorId).
+            set(ReservedFields.DELETED, true).build());
+
+        ViewId.ofId(userId1.getId(), UserVersionsCountView.class);
+        response = viewReader.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
+
+        userVersion = response.getView(UserVersionsCountView.class);
+        Assert.assertNotNull(userVersion);
+
+        Assert.assertEquals(userVersion.authors(), 0);
+
     }
 }
