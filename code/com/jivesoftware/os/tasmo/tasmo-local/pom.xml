@@ -79,8 +79,6 @@
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-view-reader-lib</artifactId>
-            <version>0.2-SNAPSHOT</version>
-            <type>jar</type>
         </dependency>
     </dependencies>
 </project>
