@@ -113,16 +113,16 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
         if (initialId == null) {
             return ViewResponse.notFound();
         }
-        
+
         ViewAccumulator<ObjectNode> accumulator = new ViewAccumulator<>(initialId, binding.getModelPaths(), viewPermissionChecker, existenceChecker);
-        
+
         Multimap<String, ViewReference> requestsToMake;
-        
+
         while (!(requestsToMake = accumulator.buildNextViewLevel()).isEmpty()) {
             referenceGatherer.gatherReferenceResults(viewRequest.getTenantIdAndCentricId(), requestsToMake);
             accumulator.addRefResults(requestsToMake);
         }
-        
+
         valueGatherer.gatherValueResults(viewRequest.getTenantIdAndCentricId(), accumulator.getViewValues());
 
         ObjectNode responseBody = accumulator.formatResults(viewRequest.getTenantId(), viewRequest.getActorId(), viewFormatter);
@@ -133,21 +133,20 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
         }
 
     }
-    
+
     private ObjectId findInitialId(ViewDescriptor viewDescriptor, ViewBinding binding) throws Exception {
         Id rootId = viewDescriptor.getViewId().getId();
         Set<ObjectId> potentialRoots = new HashSet<>();
         for (String eventClass : binding.getModelPaths().get(0).getRootClassNames()) {
             potentialRoots.add(new ObjectId(eventClass, rootId));
         }
-        
+
         Set<ObjectId> foundRoots = valueGatherer.lookupEventIds(viewDescriptor.getTenantIdAndCentricId(), potentialRoots);
-        
+
         if (foundRoots.size() > 1) {
             LOG.warn("Unexpectedly found more than one root object for view id " + viewDescriptor.getViewId() + " found " + foundRoots);
         }
-        
+
         return foundRoots.isEmpty() ? null : foundRoots.iterator().next();
     }
-
 }

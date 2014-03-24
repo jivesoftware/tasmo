@@ -9,6 +9,7 @@
 
 package com.jivesoftware.os.tasmo.configuration;
 
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import java.util.Set;
 
 /**
@@ -17,7 +18,7 @@ import java.util.Set;
  */
 public interface PathCallback {
 
-    void push(Set<String> fieldType, ValueType valueType, String... fieldNames);
+    void push(Set<String> fieldType, ModelPathStepType valueType, String... fieldNames);
 
     void pop();
 

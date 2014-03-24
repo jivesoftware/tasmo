@@ -38,7 +38,7 @@ import java.util.StringTokenizer;
  * @author pete
  */
 public class ViewModelParser {
-    
+
     private final TenantId tenantId;
     private final ChainedVersion version;
 
@@ -46,24 +46,23 @@ public class ViewModelParser {
         this.tenantId = tenantId;
         this.version = version;
     }
-    
+
     public Views parse(String viewModel) {
         return parse(false, Arrays.asList(viewModel));
     }
-    
+
     public Views parse(boolean idCentric, String viewModel) {
         return parse(idCentric, Arrays.asList(viewModel));
     }
-    
+
     public Views parse(List<String> viewModel) {
         return parse(false, viewModel);
     }
-    
+
     public Views parse(boolean idCentric, List<String> viewModel) {
         List<ViewBinding> bindings = parseModelPathStrings(idCentric, viewModel);
         return new Views(tenantId, version, bindings);
     }
-   
 
     List<ViewBinding> parseModelPathStrings(boolean idCentric, List<String> simpleBindings) {
         ArrayListMultimap<String, ModelPath> viewBindings = ArrayListMultimap.create();
@@ -151,7 +150,7 @@ public class ViewModelParser {
             return Sets.newHashSet(classNames);
         }
     }
-    
+
     private String[] toStringArray(String string, String delim) {
         if (string == null || delim == null) {
             return new String[0];
@@ -165,5 +164,4 @@ public class ViewModelParser {
         }
         return tokens;
     }
-    
 }

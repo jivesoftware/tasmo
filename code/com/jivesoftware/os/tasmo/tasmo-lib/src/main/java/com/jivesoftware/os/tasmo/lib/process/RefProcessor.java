@@ -9,13 +9,13 @@
 package com.jivesoftware.os.tasmo.lib.process;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
-import com.jivesoftware.os.tasmo.configuration.EventModel;
-import com.jivesoftware.os.tasmo.configuration.EventsModel;
-import com.jivesoftware.os.tasmo.configuration.ValueType;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.model.EventDefinition;
+import com.jivesoftware.os.tasmo.model.EventFieldValueType;
+import com.jivesoftware.os.tasmo.model.EventsModel;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
@@ -52,15 +52,15 @@ public class RefProcessor implements EventProcessor {
         Id userId = writtenEvent.getCentricId();
         TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
         TenantIdAndCentricId globalTenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
-        EventModel event = eventsModel.getEvent(writtenEvent.getWrittenInstance().getInstanceId().getClassName());
+        EventDefinition event = eventsModel.getEvent(writtenEvent.getWrittenInstance().getInstanceId().getClassName());
 
 
 
         if (writtenEvent.getWrittenInstance().isDeletion()) {
-            for (Map.Entry<String, ValueType> entry : event.getEventFields().entrySet()) {
+            for (Map.Entry<String, EventFieldValueType> entry : event.getEventFields().entrySet()) {
                 //this handles things the deleted object references
-                ValueType fieldType = entry.getValue();
-                if (ValueType.ref.equals(fieldType) || ValueType.refs.equals(fieldType)) {
+                EventFieldValueType fieldType = entry.getValue();
+                if (EventFieldValueType.ref.equals(fieldType) || EventFieldValueType.refs.equals(fieldType)) {
                     referenceStore.remove_aId_aField(tenantIdAndCentricId, writtenOrderId - 1, objectInstanceId, entry.getKey(),
                         new CallbackStream<Reference>() {
                         @Override
@@ -87,9 +87,9 @@ public class RefProcessor implements EventProcessor {
             }
         } else {
             for (String fieldName : writtenEvent.getWrittenInstance().getFieldNames()) {
-                ValueType fieldType = event.getEventFields().get(fieldName);
+                EventFieldValueType fieldType = event.getEventFields().get(fieldName);
 
-                if (ValueType.ref.equals(fieldType) || ValueType.refs.equals(fieldType)) {
+                if (EventFieldValueType.ref.equals(fieldType) || EventFieldValueType.refs.equals(fieldType)) {
 //                if (writtenEvent.getWrittenInstance().isDeletion()) {
 //                    referenceStore.remove_aId_aField(tenantIdAndCentricId, writtenOrderId, objectInstanceId, fieldName,
 //                        new CallbackStream<Reference>() {

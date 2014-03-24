@@ -3,6 +3,7 @@ package com.jivesoftware.os.tasmo.configuration;
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.tasmo.model.EventsModel;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
@@ -31,34 +32,39 @@ public class BindingGenerator {
                 ModelPath.Builder builder = ModelPath.builder(pathId);
                 boolean isRoot = true;
                 for (int i = 0; i < path.size(); i++) {
-                    TypedField p = path.get(i);
+                    TypedField currentTypedField = path.get(i);
                     TypedField nextTypedField = null;
                     if (i + 1 < path.size()) {
                         nextTypedField = path.get(i + 1);
                     }
 
-                    if (p.getValueType() == ValueType.value) {
+                    if (currentTypedField.getValueType() == ModelPathStepType.value) {
                         builder.addPathMember(new ModelPathStep(isRoot,
-                            p.getFieldClasses(), null, ModelPathStepType.value, null, Arrays.asList(p.getFieldNames())));
+                            currentTypedField.getFieldClasses(), null, ModelPathStepType.value, null, Arrays.asList(currentTypedField.getFieldNames())));
                         ModelPath modelPath = builder.build();
                         LOG.info("Created:" + modelPath);
                         modelPaths.add(modelPath);
                     } else if (nextTypedField != null) {
-                        if (p.getValueType() == ValueType.ref) {
+                        if (currentTypedField.getValueType() == ModelPathStepType.ref) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.ref, nextTypedField.getFieldClasses(), null));
-                        } else if (p.getValueType() == ValueType.refs) {
+                                currentTypedField.getFieldClasses(), currentTypedField.getFieldNames()[0], ModelPathStepType.ref,
+                                nextTypedField.getFieldClasses(), null));
+                        } else if (currentTypedField.getValueType() == ModelPathStepType.refs) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.refs, nextTypedField.getFieldClasses(), null));
-                        } else if (p.getValueType() == ValueType.backrefs) {
+                                currentTypedField.getFieldClasses(), currentTypedField.getFieldNames()[0], ModelPathStepType.refs,
+                                nextTypedField.getFieldClasses(), null));
+                        } else if (currentTypedField.getValueType() == ModelPathStepType.backRefs) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.backRefs, p.getFieldClasses(), null));
-                        } else if (p.getValueType() == ValueType.count) {
+                                nextTypedField.getFieldClasses(), currentTypedField.getFieldNames()[0], ModelPathStepType.backRefs,
+                                currentTypedField.getFieldClasses(), null));
+                        } else if (currentTypedField.getValueType() == ModelPathStepType.count) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.count, p.getFieldClasses(), null));
-                        } else if (p.getValueType() == ValueType.latest_backref) {
+                                nextTypedField.getFieldClasses(), currentTypedField.getFieldNames()[0], ModelPathStepType.count,
+                                currentTypedField.getFieldClasses(), null));
+                        } else if (currentTypedField.getValueType() == ModelPathStepType.latest_backRef) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.latest_backRef, p.getFieldClasses(), null));
+                                nextTypedField.getFieldClasses(), currentTypedField.getFieldNames()[0], ModelPathStepType.latest_backRef,
+                                currentTypedField.getFieldClasses(), null));
                         }
                     }
                     isRoot = false;

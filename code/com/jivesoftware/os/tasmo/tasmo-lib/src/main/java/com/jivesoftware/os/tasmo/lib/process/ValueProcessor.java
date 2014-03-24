@@ -8,13 +8,13 @@
  */
 package com.jivesoftware.os.tasmo.lib.process;
 
-import com.jivesoftware.os.tasmo.configuration.EventsModel;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore.Transaction;
+import com.jivesoftware.os.tasmo.model.EventsModel;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;

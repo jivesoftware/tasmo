@@ -841,7 +841,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(userVersion);
 
         Assert.assertEquals(userVersion.authors(), 2);
-        
+
         //delete one
         write(EventBuilder.update(versionId2, tenantId, actorId).
             set(ReservedFields.DELETED, true).build());
@@ -856,9 +856,9 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(userVersion);
 
         Assert.assertEquals(userVersion.authors(), 1);
-        
+
         //undelete
-         write(EventBuilder.update(versionId2, tenantId, actorId).set(ReservedFields.DELETED, false).
+        write(EventBuilder.update(versionId2, tenantId, actorId).set(ReservedFields.DELETED, false).
             set("authors", Arrays.asList(userId1)).build());
 
         ViewId.ofId(userId1.getId(), UserVersionsCountView.class);
@@ -871,11 +871,11 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(userVersion);
 
         Assert.assertEquals(userVersion.authors(), 2);
-        
+
         //delete both
         write(EventBuilder.update(versionId1, tenantId, actorId).
             set(ReservedFields.DELETED, true).build());
-        
+
         write(EventBuilder.update(versionId2, tenantId, actorId).
             set(ReservedFields.DELETED, true).build());
 

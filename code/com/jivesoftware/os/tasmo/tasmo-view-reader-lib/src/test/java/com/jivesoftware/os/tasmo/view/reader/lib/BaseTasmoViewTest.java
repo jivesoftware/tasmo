@@ -25,11 +25,6 @@ import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
-import com.jivesoftware.os.tasmo.configuration.EventModel;
-import com.jivesoftware.os.tasmo.configuration.EventsModel;
-import com.jivesoftware.os.tasmo.configuration.ValueType;
-import com.jivesoftware.os.tasmo.configuration.events.TenantEventsProvider;
-import com.jivesoftware.os.tasmo.configuration.events.VersionedEventsModel;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
@@ -53,6 +48,11 @@ import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.model.EventDefinition;
+import com.jivesoftware.os.tasmo.model.EventFieldValueType;
+import com.jivesoftware.os.tasmo.model.EventsModel;
+import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
+import com.jivesoftware.os.tasmo.model.VersionedEventsModel;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
@@ -84,7 +84,8 @@ import org.testng.annotations.BeforeMethod;
  * @author pete
  */
 public class BaseTasmoViewTest {
-     public static final TenantId MASTER_TENANT_ID = new TenantId("master");
+
+    public static final TenantId MASTER_TENANT_ID = new TenantId("master");
     IdProvider idProvider;
     OrderIdProvider orderIdProvider;
     TenantId tenantId;
@@ -110,9 +111,6 @@ public class BaseTasmoViewTest {
     WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
     ViewReader<ViewResponse> viewReader;
     final Set<Id> permittedIds = new HashSet<>();
-    final Set<Id> existingIds = new HashSet<>();
-    
-    
 
     public ViewChangeNotificationProcessor getViewChangeNotificationProcessor() {
         // default is a no op processor
@@ -165,7 +163,6 @@ public class BaseTasmoViewTest {
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() throws Exception;
     }
 
-
     @BeforeClass
     public void setupPrimordialStuff() {
         orderIdProvider = idProvider();
@@ -183,10 +180,10 @@ public class BaseTasmoViewTest {
         RowColumnValueStoreProvider rowColumnValueStoreProvider = getRowColumnValueStoreProvider(uuid);
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore = rowColumnValueStoreProvider.eventStore();
         RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStorage = rowColumnValueStoreProvider.existenceStore();
-         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks =
-             rowColumnValueStoreProvider.multiLinks();
-         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks =
-             rowColumnValueStoreProvider.multiBackLinks();
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks =
+            rowColumnValueStoreProvider.multiLinks();
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks =
+            rowColumnValueStoreProvider.multiBackLinks();
 
         existenceStore = new ExistenceStore(existenceStorage);
         eventValueStore = new EventValueStore(eventStore);
@@ -218,9 +215,8 @@ public class BaseTasmoViewTest {
             dispatcherProvider, existenceStore, getViewChangeNotificationProcessor());
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
-        
-        ViewsProvider viewsProvider = new ViewsProvider() {
 
+        ViewsProvider viewsProvider = new ViewsProvider() {
             @Override
             public ChainedVersion getCurrentViewsVersion(TenantId tenantId) {
                 return currentVersion;
@@ -231,29 +227,26 @@ public class BaseTasmoViewTest {
                 return views.get();
             }
         };
-        
+
         ViewModelProvider viewModelProvider = new ViewModelProvider(tenantId, viewsProvider);
         BatchingReferenceStore batchingReferenceStore = new BatchingReferenceStore(
             multiLinks, multiBackLinks);
         BatchingEventValueStore batchingEventValueStore = new BatchingEventValueStore(eventStore);
-        
-        
+
+
         viewReader = new ReadTimeViewMaterializer(viewModelProvider, new ReferenceGatherer(batchingReferenceStore),
             new ValueGatherer(batchingEventValueStore), new JsonViewFormatter(mapper, eventProvider), viewPermissionChecker(), existenceChecker());
-        
+
         permittedIds.clear();
-        existingIds.clear();
-            
+
     }
-    
+
     private ViewPermissionChecker viewPermissionChecker() {
         return new ViewPermissionChecker() {
-
             @Override
             public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, final Set<Id> permissionCheckTheseIds) {
                 if (permittedIds.isEmpty()) {
                     return new ViewPermissionCheckResult() {
-
                         @Override
                         public Set<Id> allowed() {
                             return permissionCheckTheseIds;
@@ -271,7 +264,6 @@ public class BaseTasmoViewTest {
                     };
                 } else {
                     return new ViewPermissionCheckResult() {
-
                         @Override
                         public Set<Id> allowed() {
                             return permittedIds;
@@ -288,15 +280,14 @@ public class BaseTasmoViewTest {
                         }
                     };
                 }
-                
+
             }
         };
-        
+
     }
-    
+
     private ExistenceChecker existenceChecker() {
         return new ExistenceChecker() {
-
             @Override
             public Set<ObjectId> check(TenantId tenantId, Set<ObjectId> existenceCheckTheseIds) {
                 return existenceStore.getExistence(tenantId, existenceCheckTheseIds);
@@ -315,7 +306,7 @@ public class BaseTasmoViewTest {
                 throw new IllegalArgumentException();
             }
 
-            Map<String, ValueType> fields = new HashMap<>();
+            Map<String, EventFieldValueType> fields = new HashMap<>();
 
             for (String fieldDef : nameAndFields[1].split(",")) {
                 int idx = fieldDef.indexOf("(");
@@ -325,12 +316,12 @@ public class BaseTasmoViewTest {
                 String fieldName = fieldDef.substring(0, idx);
                 String fieldType = fieldDef.substring(idx + 1, fieldDef.indexOf(")"));
 
-                fields.put(fieldName, ValueType.valueOf(fieldType));
+                fields.put(fieldName, EventFieldValueType.valueOf(fieldType));
             }
 
-            model.addEvent(new EventModel(nameAndFields[0], fields));
+            model.addEvent(new EventDefinition(nameAndFields[0], fields));
         }
-        
+
         Views views = new ViewModelParser(MASTER_TENANT_ID, currentVersion).parse(viewModel);
 
         initModel(model, views);
@@ -339,7 +330,7 @@ public class BaseTasmoViewTest {
     protected void initModel(EventsModel eventsModel, Views viewModel) throws Exception {
         VersionedEventsModel newEvents = new VersionedEventsModel(currentVersion, eventsModel);
         events.set(newEvents);
-        
+
         views.set(viewModel);
 
     }
@@ -395,5 +386,4 @@ public class BaseTasmoViewTest {
         EventWriterResponse eventWriterResponse = writer.write(event);
         return eventWriterResponse.getObjectIds().get(0);
     }
-    
 }

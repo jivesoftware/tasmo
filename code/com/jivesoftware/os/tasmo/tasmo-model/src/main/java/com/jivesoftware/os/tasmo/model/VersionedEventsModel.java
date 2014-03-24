@@ -7,9 +7,8 @@
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
 
-package com.jivesoftware.os.tasmo.configuration.events;
+package com.jivesoftware.os.tasmo.model;
 
-import com.jivesoftware.os.tasmo.configuration.EventsModel;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 
 /**

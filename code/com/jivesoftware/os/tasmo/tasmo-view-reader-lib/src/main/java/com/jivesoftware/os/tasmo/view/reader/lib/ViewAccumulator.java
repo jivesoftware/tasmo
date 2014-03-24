@@ -68,25 +68,23 @@ public class ViewAccumulator<V> {
 
         refResults.add(referenceSteps);
     }
-    
+
     public boolean forbidden() {
         return forbidden;
     }
 
     public V formatResults(TenantId tenantId, Id actorId, ViewFormatter<V> formatter) {
         presentIds.retainAll(existenceChecker.check(tenantId, presentIds));
-       
+
         //visibility only using id is awkward
         Set<Id> visibleIds = viewPermissionChecker.check(tenantId, actorId,
-            Sets.newHashSet(Iterables.transform(presentIds, new Function<ObjectId, Id>(){
-
+            Sets.newHashSet(Iterables.transform(presentIds, new Function<ObjectId, Id>() {
             @Override
             public Id apply(ObjectId f) {
                 return f.getId();
             }
-            
         }))).allowed();
-        
+
         Set<ObjectId> toRemove = new HashSet<>();
         for (ObjectId objectId : presentIds) {
             if (!visibleIds.contains(objectId.getId())) {
@@ -95,9 +93,9 @@ public class ViewAccumulator<V> {
         }
         presentIds.removeAll(toRemove);
         forbidden = toRemove.contains(viewRoot);
-        
+
         if (presentIds.contains(viewRoot)) {
-            
+
             formatter.setRoot(viewRoot);
 
             for (ModelPath path : allPaths) {
@@ -105,18 +103,16 @@ public class ViewAccumulator<V> {
                     for (ViewReference reference : treeLevel.get(path.getId())) {
                         if (presentIds.contains(reference.getOriginId())) {
                             List<ObjectId> presentDestinations = Lists.newArrayList(Iterables.filter(reference.getDestinationIds(),
-                                new Predicate<ObjectId>(){
-
+                                new Predicate<ObjectId>() {
                                 @Override
                                 public boolean apply(ObjectId t) {
                                     return presentIds.contains(t);
                                 }
-                                
                             }));
                             formatter.addReferenceNode(reference, presentDestinations);
                         }
                     }
-                    
+
                     formatter.nextLevel();
                 }
 
@@ -125,16 +121,16 @@ public class ViewAccumulator<V> {
                         formatter.addValueNode(value);
                     }
                 }
-                
+
                 formatter.nextPath();
             }
-            
+
             return formatter.getView();
         } else {
-           return null;
+            return null;
         }
 
-        
+
     }
 
     public Multimap<String, ViewReference> buildNextViewLevel() {

@@ -8,6 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.configuration;
 
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,6 +23,7 @@ public class PathAccumulator implements PathCallback {
     final AccumlatedPath accumlatedPath;
 
     public static interface AccumlatedPath {
+
         void path(List<TypedField> path);
     }
 
@@ -34,7 +36,7 @@ public class PathAccumulator implements PathCallback {
     }
 
     @Override
-    public void push(Set<String> fieldType, ValueType valueType, String... fieldNames) {
+    public void push(Set<String> fieldType, ModelPathStepType valueType, String... fieldNames) {
         path.addLast(new TypedField(fieldType, fieldNames, valueType));
     }
 
@@ -43,5 +45,4 @@ public class PathAccumulator implements PathCallback {
         accumlatedPath.path(new ArrayList<>(path));
         path.removeLast();
     }
-
 }

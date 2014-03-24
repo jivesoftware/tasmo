@@ -9,7 +9,6 @@
 
 package com.jivesoftware.os.tasmo.model;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import java.util.List;
@@ -27,6 +26,6 @@ public interface EventsProvider {
      * @param eventsProcessorId
      * @return the current view or null
      */
-    List<ObjectNode> getEvents(EventsProcessorId eventsProcessorId);
+    List<EventDefinition> getEvents(EventsProcessorId eventsProcessorId);
 }
 

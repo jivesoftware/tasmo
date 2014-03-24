@@ -8,6 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.configuration;
 
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -15,9 +16,9 @@ public class TypedField {
 
     private final Set<String> fieldClass;
     private final String[] fieldNames;
-    private final ValueType valueType;
+    private final ModelPathStepType valueType;
 
-    public TypedField(Set<String> fieldClass, String[] fieldNames, ValueType valueType) {
+    public TypedField(Set<String> fieldClass, String[] fieldNames, ModelPathStepType valueType) {
         this.fieldClass = fieldClass;
         this.fieldNames = fieldNames;
         this.valueType = valueType;
@@ -31,7 +32,7 @@ public class TypedField {
         return fieldNames;
     }
 
-    public ValueType getValueType() {
+    public ModelPathStepType getValueType() {
         return valueType;
     }
 

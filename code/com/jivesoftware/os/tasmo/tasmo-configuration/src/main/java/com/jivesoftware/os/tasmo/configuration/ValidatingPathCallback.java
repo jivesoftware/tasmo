@@ -8,6 +8,10 @@
  */
 package com.jivesoftware.os.tasmo.configuration;
 
+import com.jivesoftware.os.tasmo.model.EventDefinition;
+import com.jivesoftware.os.tasmo.model.EventFieldValueType;
+import com.jivesoftware.os.tasmo.model.EventsModel;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,21 +29,25 @@ public class ValidatingPathCallback implements PathCallback {
         this.pathCallback = pathCallback;
     }
 
-    private void assertFieldIsPresent(Set<String> classNames, ValueType type, String[] fieldNames) throws IllegalArgumentException {
-        if (type != ValueType.backrefs && type != ValueType.latest_backref && type != ValueType.count) {
+    private void assertFieldIsPresent(Set<String> classNames, ModelPathStepType type, String[] fieldNames) throws IllegalArgumentException {
+        if (type != ModelPathStepType.backRefs && type != ModelPathStepType.latest_backRef && type != ModelPathStepType.count) {
             for (String fieldName : fieldNames) {
                 for (String className : classNames) {
-                    EventModel eventConfiguration = eventsModel.getEvent(className);
-                    Map<String, ValueType> event = eventConfiguration.getEventFields();
+                    EventDefinition eventConfiguration = eventsModel.getEvent(className);
+                    Map<String, EventFieldValueType> event = eventConfiguration.getEventFields();
                     if (event != null && event.containsKey(fieldName)) {
-                        if (event.get(fieldName).equals(type)) {
+                        EventFieldValueType eventFieldType = event.get(fieldName);
+                        if (eventFieldType == EventFieldValueType.ref && type == ModelPathStepType.ref) {
                             continue;
-                        } else {
-                            if (type == ValueType.value) {
-                                if (event.get(fieldName).equals(ValueType.ref)) {
+                        } else if (eventFieldType == EventFieldValueType.refs && type == ModelPathStepType.refs) {
+                            continue;
+                        } else if (eventFieldType == EventFieldValueType.value && type == ModelPathStepType.value) {
+                            continue;
+                        } else if (type == ModelPathStepType.value) {  {
+                                if (event.get(fieldName).equals(EventFieldValueType.ref)) {
                                     continue;
                                 }
-                                if (event.get(fieldName).equals(ValueType.refs)) {
+                                if (event.get(fieldName).equals(EventFieldValueType.refs)) {
                                     continue;
                                 }
                             }
@@ -57,7 +65,7 @@ public class ValidatingPathCallback implements PathCallback {
     }
 
     @Override
-        public void push(Set<String> fieldType, ValueType valueType, String... fieldNames) {
+        public void push(Set<String> fieldType, ModelPathStepType valueType, String... fieldNames) {
         assertFieldIsPresent(fieldType, valueType, fieldNames);
         pathCallback.push(fieldType, valueType, fieldNames);
     }

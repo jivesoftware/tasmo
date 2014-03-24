@@ -174,33 +174,6 @@ public class SingleStepTest extends BaseTasmoViewTest {
     }
 
     @Test
-    public void testNotExists() throws Exception {
-        String viewModel = "VersionView::path1::Version.subject,body";
-        initModel(eventModel, viewModel);
-
-        ObjectId objectId = write(EventBuilder.create(idProvider, "Version", tenantId, actorId, actorId).
-            set("subject", "awesome").set("body", "awesomer").build());
-        ViewResponse response = viewReader.readView(new ViewDescriptor(tenantId, actorId, new ObjectId("VersionView", objectId.getId())));
-
-        Assert.assertNotNull(response);
-        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
-
-        Version version = response.getView(Version.class);
-
-        Assert.assertNotNull(version);
-        Assert.assertEquals("awesome", version.subject());
-        Assert.assertEquals("awesomer", version.body());
-
-        existingIds.add(Id.NULL);
-
-        response = viewReader.readView(new ViewDescriptor(tenantId, actorId, new ObjectId("VersionView", objectId.getId())));
-
-        Assert.assertNotNull(response);
-        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.NOT_FOUND);
-
-    }
-
-    @Test
     public void testNotVisible() throws Exception {
         String viewModel = "VersionView::path1::Version.subject,body";
         initModel(eventModel, viewModel);
@@ -223,7 +196,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         response = viewReader.readView(new ViewDescriptor(tenantId, actorId, new ObjectId("VersionView", objectId.getId())));
 
         Assert.assertNotNull(response);
-        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.NOT_FOUND);
+        Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.FORBIDDEN);
     }
 
     @Test

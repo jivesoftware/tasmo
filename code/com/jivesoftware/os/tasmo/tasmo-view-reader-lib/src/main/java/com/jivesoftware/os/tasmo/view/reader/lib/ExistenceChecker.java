@@ -23,7 +23,6 @@ import java.util.Set;
  *
  */
 public interface ExistenceChecker {
-    
+
     Set<ObjectId> check(TenantId tenantId, Set<ObjectId> existenceCheckTheseIds);
-    
 }

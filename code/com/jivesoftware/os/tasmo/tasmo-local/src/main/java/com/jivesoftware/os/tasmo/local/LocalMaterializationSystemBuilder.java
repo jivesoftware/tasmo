@@ -14,9 +14,6 @@ import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
 import com.jivesoftware.os.tasmo.configuration.BindingGenerator;
 import com.jivesoftware.os.tasmo.configuration.ViewModel;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
@@ -29,48 +26,38 @@ import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.DispatcherProvider;
-import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
+import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
-import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
-import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
-import com.jivesoftware.os.tasmo.lib.write.ExistenceCommitChange;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
-import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
-import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
-import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
-import com.jivesoftware.os.tasmo.view.reader.service.StaleViewFieldStream;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewAsObjectNode;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionCheckResult;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewProvider;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
-import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
-import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
-import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriterException;
-import com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore;
+import com.jivesoftware.os.tasmo.view.reader.lib.BatchingEventValueStore;
+import com.jivesoftware.os.tasmo.view.reader.lib.BatchingReferenceStore;
+import com.jivesoftware.os.tasmo.view.reader.lib.ExistenceChecker;
+import com.jivesoftware.os.tasmo.view.reader.lib.JsonViewFormatter;
+import com.jivesoftware.os.tasmo.view.reader.lib.ReadTimeViewMaterializer;
+import com.jivesoftware.os.tasmo.view.reader.lib.ReferenceGatherer;
+import com.jivesoftware.os.tasmo.view.reader.lib.ValueGatherer;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewFormatter;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewModelProvider;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewPermissionCheckResult;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewPermissionChecker;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -115,6 +102,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
     public LocalMaterializationSystem build(Iterable<ObjectNode> viewDefinitions) throws Exception {
         TenantId masterTenantId = new TenantId("ephemeral");
 
+        TenantEventsProvider tenantEventsProvider = buildTenantEventsProvider();
         ViewsProvider viewsProvider = buildViewsProvider(masterTenantId, viewDefinitions);
 
         WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider = new JsonWrittenEventProvider();
@@ -122,16 +110,18 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         RowColumnValueStoreUtil rowColumnValueStoreUtil = new RowColumnValueStoreUtil();
 
         String uuid = UUID.randomUUID().toString();
-       
-       rowColumnValueStoreProvider = rowColumnValueStoreUtil.getInMemoryRowColumnValueStoreProvider(uuid, writtenEventProvider);
 
-        ViewValueStore viewValueStore = buildViewValueStore(rowColumnValueStoreProvider);
-        CommitChange commitChange = buildCommitChange(viewValueStore);
-        TasmoViewMaterializer viewMaterializer = buildViewMaterializer(viewsProvider, rowColumnValueStoreProvider,
-            writtenEventProvider, commitChange, masterTenantId);
+        rowColumnValueStoreProvider = rowColumnValueStoreUtil.getInMemoryRowColumnValueStoreProvider(uuid, writtenEventProvider);
+        ExistenceStore existenceStore = buildExistenceStore(rowColumnValueStoreProvider);
+        ReferenceStore referenceStore = buildReferenceStore(rowColumnValueStoreProvider);
+        EventValueStore eventValueStore = buildEventValueStore(rowColumnValueStoreProvider);
+
+        TasmoViewMaterializer viewMaterializer = buildViewMaterializer(tenantEventsProvider, masterTenantId,
+            existenceStore, referenceStore, eventValueStore);
 
         EventWriter eventWriter = buildEventWriter(viewMaterializer, writtenEventProvider);
-        ViewReader<ViewResponse> viewReader = buildViewReader(viewValueStore, viewsProvider, masterTenantId);
+        ViewReader<ViewResponse> viewReader = buildViewReader(writtenEventProvider, viewsProvider, masterTenantId, existenceStore,
+            rowColumnValueStoreProvider);
 
         return new LocalMaterializationSystem(eventWriter, viewReader, this);
     }
@@ -141,26 +131,15 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
     }
 
     private EventValueStore buildEventValueStore(RowColumnValueStoreProvider rowColumnValueStoreProvider) throws Exception {
-        return new EventValueStore(rowColumnValueStoreProvider.eventStore(), new EventValueCacheProvider() {
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> createValueStoreCache() {
-                return new RowColumnValueStoreImpl<>();
-            }
-        });
+        return new EventValueStore(rowColumnValueStoreProvider.eventStore());
     }
 
     private ExistenceStore buildExistenceStore(RowColumnValueStoreProvider rowColumnValueStoreProvider) throws Exception {
         return new ExistenceStore(rowColumnValueStoreProvider.existenceStore());
     }
 
-    private ViewValueStore buildViewValueStore(RowColumnValueStoreProvider rowColumnValueStoreProvider) throws Exception {
-        return new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), new ViewPathKeyProvider());
-    }
-
-    private TasmoViewMaterializer buildViewMaterializer(ViewsProvider viewsProvider,
-        RowColumnValueStoreProvider rowColumnValueStoreProvider,
-        WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider,
-        CommitChange commitChange, TenantId masterTenantId) throws Exception {
+    private TasmoViewMaterializer buildViewMaterializer(TenantEventsProvider eventsProvider, TenantId masterTenantId,
+        ExistenceStore existenceStore, ReferenceStore referenceStore, EventValueStore eventValueStore) throws Exception {
 
         TasmoEventBookkeeper materializerEventBookkeeper = new TasmoEventBookkeeper(new CallbackStream<List<BookkeepingEvent>>() {
             @Override
@@ -172,24 +151,20 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         if (viewChangeNotificationProcessor == null) {
             viewChangeNotificationProcessor = new ViewChangeNotificationProcessor() {
                 @Override
-                public void process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception {
+                public void process(ModifiedViewProvider modifiedViewProvider, WrittenEvent writtenEvent) throws Exception {
+                    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
                 }
             };
         }
 
-        ExistenceStore existenceStore = buildExistenceStore(rowColumnValueStoreProvider);
-        commitChange = new ExistenceCommitChange(existenceStore, commitChange);
+        DispatcherProvider dispatcherProvider = new DispatcherProvider(
+            eventsProvider,
+            referenceStore,
+            eventValueStore);
 
-        DispatcherProvider viewMaterializerModel = new DispatcherProvider(masterTenantId,
-            viewsProvider,
-            writtenEventProvider,
-            buildReferenceStore(rowColumnValueStoreProvider),
-            buildEventValueStore(rowColumnValueStoreProvider),
-            commitChange);
+        dispatcherProvider.loadModel(masterTenantId);
 
-        viewMaterializerModel.loadModel(masterTenantId);
-
-        return new TasmoViewMaterializer(existenceStore, materializerEventBookkeeper, viewMaterializerModel, viewChangeNotificationProcessor);
+        return new TasmoViewMaterializer(materializerEventBookkeeper, dispatcherProvider, existenceStore, viewChangeNotificationProcessor);
     }
 
     private EventWriter buildEventWriter(final TasmoViewMaterializer viewMaterializer,
@@ -233,13 +208,14 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         return new EventWriter(jsonEventWriter);
     }
 
-    private ViewReader<ViewResponse> buildViewReader(ViewValueStore viewValueStore, ViewsProvider viewsProvider, TenantId tenantId) {
-        ViewValueReader viewValueReader = new ViewValueReader(viewValueStore);
+    private ViewReader<ViewResponse> buildViewReader(WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider,
+        ViewsProvider viewsProvider, TenantId tenantId, final ExistenceStore existenceStore,
+        RowColumnValueStoreProvider rowColumnValueStoreProvider) throws Exception {
+
         ViewPermissionChecker viewPermissionChecker = new ViewPermissionChecker() {
             @Override
             public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, final Set<Id> permissionCheckTheseIds) {
                 return new ViewPermissionCheckResult() {
-
                     @Override
                     public Set<Id> allowed() {
                         return permissionCheckTheseIds;
@@ -247,7 +223,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
                     @Override
                     public Set<Id> denied() {
-                       return Collections.emptySet();
+                        return Collections.emptySet();
                     }
 
                     @Override
@@ -258,28 +234,29 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             }
         };
 
+        ExistenceChecker existenceChecker = new ExistenceChecker() {
+            @Override
+            public Set<ObjectId> check(TenantId tenantId, Set<ObjectId> existenceCheckTheseIds) {
+                return existenceStore.getExistence(tenantId, existenceCheckTheseIds);
+            }
+        };
+
         ObjectMapper viewObjectMapper = new ObjectMapper();
         viewObjectMapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
-        JsonViewMerger merger = new JsonViewMerger(viewObjectMapper);
-        ViewAsObjectNode viewAsObjectNode = new ViewAsObjectNode();
-
-        StaleViewFieldStream staleViewFieldStream = new StaleViewFieldStream() {
-            @Override
-            public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, String, Long> value) {
-                //no op
-            }
-        };
 
         TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(tenantId, viewsProvider);
         tenantViewsProvider.loadModel(tenantId);
 
-        return new ViewProvider<>(viewPermissionChecker,
-            viewValueReader,
-            tenantViewsProvider,
-            viewAsObjectNode,
-            merger,
-            staleViewFieldStream);
+        ReferenceGatherer refGatherer = new ReferenceGatherer(new BatchingReferenceStore(rowColumnValueStoreProvider.multiLinks(),
+            rowColumnValueStoreProvider.multiBackLinks()));
+
+        ValueGatherer valueGatherer = new ValueGatherer(new BatchingEventValueStore(rowColumnValueStoreProvider.eventStore()));
+
+        ViewFormatter<ObjectNode> viewFormatter = new JsonViewFormatter(viewObjectMapper, writtenEventProvider);
+
+        return new ReadTimeViewMaterializer(new ViewModelProvider(tenantId, viewsProvider), refGatherer, valueGatherer, viewFormatter,
+            viewPermissionChecker, existenceChecker);
     }
 
     private String getViewClassFromViewModel(ObjectNode viewNode) {
@@ -327,42 +304,8 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         };
     }
 
-    private CommitChange buildCommitChange(ViewValueStore viewValueStore) throws Exception {
-        final ObjectMapper mapper = new ObjectMapper();
-
-        ViewValueWriter viewValueWriter = new ViewValueWriter(viewValueStore);
-
-        final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
-        return new CommitChange() {
-            @Override
-            public void commitChange(TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
-                List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
-                for (ViewFieldChange change : changes) {
-                    try {
-                        write.add(new ViewWriteFieldChange(
-                            change.getEventId(),
-                            -1,
-                            -1,
-                            tenantIdAndCentricId,
-                            change.getActorId(),
-                            ViewWriteFieldChange.Type.valueOf(change.getType().name()),
-                            change.getViewObjectId(),
-                            change.getModelPathId(),
-                            change.getModelPathInstanceIds(),
-                            mapper.writeValueAsString(change.getValue()),
-                            change.getTimestamp()));
-                    } catch (Exception ex) {
-                        throw new CommitChangeException("Failed to add change for the following reason.", ex);
-                    }
-                }
-
-                try {
-                    writeToViewValueStore.write(tenantIdAndCentricId, write);
-                } catch (ViewWriterException ex) {
-                    throw new CommitChangeException("Failed to write BigInteger?", ex);
-                }
-            }
-        };
+    private TenantEventsProvider buildTenantEventsProvider() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override

@@ -23,17 +23,16 @@ import java.util.List;
  * @author pete
  */
 public interface ViewFormatter<V> {
-    
+
     V getView();
-    
+
     void addReferenceNode(ViewReference reference, List<ObjectId> presentDestinations);
-    
+
     void addValueNode(ViewValue value);
 
     void setRoot(ObjectId viewRoot);
-    
+
     void nextLevel();
 
     void nextPath();
-    
 }

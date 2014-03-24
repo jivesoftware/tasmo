@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -149,30 +150,30 @@ public class ViewObject {
 
     public void depthFirstTraverse(PathCallback pathCallback) {
         if (!valueFields.isEmpty()) {
-            pathCallback.push(classNames, ValueType.value, valueFields.toArray(new String[valueFields.size()]));
+            pathCallback.push(classNames, ModelPathStepType.value, valueFields.toArray(new String[valueFields.size()]));
             pathCallback.pop();
         }
         if (!arrayFields.isEmpty()) {
             for (Entry<String, ViewArray> arrayField : arrayFields.entrySet()) {
-                pathCallback.push(classNames, ValueType.refs, arrayField.getKey());
+                pathCallback.push(classNames, ModelPathStepType.refs, arrayField.getKey());
                 arrayField.getValue().depthFirstTravers(pathCallback);
                 pathCallback.pop();
             }
         }
         if (!refFields.isEmpty()) {
             for (Entry<String, ViewObject> refField : refFields.entrySet()) {
-                pathCallback.push(classNames, ValueType.ref, refField.getKey());
+                pathCallback.push(classNames, ModelPathStepType.ref, refField.getKey());
                 refField.getValue().depthFirstTraverse(pathCallback);
                 pathCallback.pop();
             }
         }
         if (!backRefFields.isEmpty()) {
             for (Entry<String, ViewArray> backRefsField : backRefFields.entrySet()) {
-                pathCallback.push(classNames, ValueType.backrefs, backRefsField.getKey());
+                pathCallback.push(classNames, ModelPathStepType.backRefs, backRefsField.getKey());
 
                 //We have no way to get the referring field type from the example json so we use refOrRefs value type
                 //ViewObject referringObject = backRefsField.getValue().element;
-                //pathCallback.push(referringObject.id.getClassName(), ValueType.refOrRefs, backRefsField.getKey());
+                //pathCallback.push(referringObject.id.getClassName(), EventFieldValueType.refOrRefs, backRefsField.getKey());
 
                 backRefsField.getValue().depthFirstTravers(pathCallback);
                 pathCallback.pop();
@@ -180,11 +181,11 @@ public class ViewObject {
         }
         if (!countFields.isEmpty()) {
             for (Entry<String, ViewArray> countField : countFields.entrySet()) {
-                pathCallback.push(classNames, ValueType.count, countField.getKey());
+                pathCallback.push(classNames, ModelPathStepType.count, countField.getKey());
 
                 //We have no way to get the referring field type from the example json so we use refOrRefs value type
                 //ViewObject referringObject = countField.getValue().element;
-                //pathCallback.push(referringObject.id.getClassName(), ValueType.refOrRefs, backRefsField.getKey());
+                //pathCallback.push(referringObject.id.getClassName(), EventFieldValueType.refOrRefs, backRefsField.getKey());
 
                 countField.getValue().depthFirstTravers(pathCallback);
                 pathCallback.pop();
@@ -192,7 +193,7 @@ public class ViewObject {
         }
         if (!latestBackRefFields.isEmpty()) {
             for (Entry<String, ViewObject> lastestBackRefField : latestBackRefFields.entrySet()) {
-                pathCallback.push(classNames, ValueType.latest_backref, lastestBackRefField.getKey());
+                pathCallback.push(classNames, ModelPathStepType.latest_backRef, lastestBackRefField.getKey());
                 lastestBackRefField.getValue().depthFirstTraverse(pathCallback);
                 pathCallback.pop();
             }

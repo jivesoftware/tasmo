@@ -6,9 +6,9 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.configuration;
+package com.jivesoftware.os.tasmo.model;
 
-public enum ValueType {
+public enum EventFieldValueType {
 
-    value, ref, latest_backref, refs, backrefs, count, unknown
+    value, ref, refs, unknown
 }

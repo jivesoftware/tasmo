@@ -58,16 +58,15 @@ public class ValueGatherer {
 
         valueStore.executeBatch();
     }
-    
+
     public Set<ObjectId> lookupEventIds(TenantIdAndCentricId tenantIdAndCentricId, Set<ObjectId> eventIds) throws Exception {
         final Set<ObjectId> results = new HashSet<>();
         String[] fields = new String[]{ReservedFields.INSTANCE_ID};
-        
+
         for (final ObjectId eventId : eventIds) {
             valueStore.addRequest(tenantIdAndCentricId, eventId, fields, new CallbackStream<ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>>() {
-
                 @Override
-                public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> callback(ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> value) 
+                public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> callback(ColumnValueAndTimestamp<String, OpaqueFieldValue, Long> value)
                     throws Exception {
                     if (value != null) {
                         if (value.getColumn().equals(ReservedFields.INSTANCE_ID)) {
@@ -78,11 +77,11 @@ public class ValueGatherer {
                 }
             });
         }
-        
+
         valueStore.executeBatch();
-        
+
         return results;
-        
-        
+
+
     }
 }

@@ -10,15 +10,15 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.configuration.EventsModel;
-import com.jivesoftware.os.tasmo.configuration.events.TenantEventsProvider;
-import com.jivesoftware.os.tasmo.configuration.events.VersionedEventsModel;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.EventProcessorDispatcher;
 import com.jivesoftware.os.tasmo.lib.process.RefProcessor;
 import com.jivesoftware.os.tasmo.lib.process.ValueProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
+import com.jivesoftware.os.tasmo.model.EventsModel;
+import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
+import com.jivesoftware.os.tasmo.model.VersionedEventsModel;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 
 public class DispatcherProvider {

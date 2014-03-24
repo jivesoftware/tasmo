@@ -15,7 +15,6 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.lib;
 
-import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
@@ -45,7 +44,7 @@ public class ViewValue {
         } else {
             throw new IllegalArgumentException("ViewValue can only be built with a value step");
         }
-       
+
     }
 
     public ObjectId getObjectId() {
@@ -56,7 +55,7 @@ public class ViewValue {
         Set<String> fieldNames = new HashSet<>(step.getFieldNames());
         return fieldNames.toArray(new String[fieldNames.size()]);
     }
-    
+
     public void addResult(String fieldName, OpaqueFieldValue value) {
         result.put(fieldName, value);
     }
@@ -64,9 +63,8 @@ public class ViewValue {
     public ModelPath getPath() {
         return path;
     }
-    
+
     public Map<String, OpaqueFieldValue> getResult() {
         return result;
-    } 
-    
+    }
 }

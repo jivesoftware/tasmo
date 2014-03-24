@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
+import com.jivesoftware.os.tasmo.model.EventDefinition;
+import com.jivesoftware.os.tasmo.model.EventsModel;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
@@ -34,29 +36,27 @@ public class BindingGeneratorTest {
     private final Set<String> container = Sets.newHashSet("Container");
     private final Set<String> user = Sets.newHashSet("User");
 
-
     @Test
     public void testBindingGeneration() throws Exception {
 
         ModelPath a = ModelPath.builder("Content.value").
-                addPathMember(new ModelPathStep(true, content, null, ModelPathStepType.value, null, Arrays.asList("title"))).build();
+            addPathMember(new ModelPathStep(true, content, null, ModelPathStepType.value, null, Arrays.asList("title"))).build();
         ModelPath b = ModelPath.builder("Content.parent.ref.Container.tags.refs.Tag.value").
-                addPathMember(new ModelPathStep(true, content, "parent", ModelPathStepType.ref, container, null)).
-                addPathMember(new ModelPathStep(false, container, "tags", ModelPathStepType.refs, tag, null)).
-                addPathMember(new ModelPathStep(false, tag, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
+            addPathMember(new ModelPathStep(true, content, "parent", ModelPathStepType.ref, container, null)).
+            addPathMember(new ModelPathStep(false, container, "tags", ModelPathStepType.refs, tag, null)).
+            addPathMember(new ModelPathStep(false, tag, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
 
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
         EventsModel eventsModel = new EventsModel();
-        eventsModel.addEvent(toObject("Event", new Container()));
-        eventsModel.addEvent(toObject("Event", new Content()));
-        eventsModel.addEvent(toObject("Event", new User()));
-        eventsModel.addEvent(toObject("Event", new Tag()));
+        eventsModel.addEvent(toEvent("Container", new Container()));
+        eventsModel.addEvent(toEvent("Content", new Content()));
+        eventsModel.addEvent(toEvent("User", new User()));
+        eventsModel.addEvent(toEvent("Tag", new Tag()));
 
         BindingGenerator bindingGenerator = new BindingGenerator();
 
-        ObjectNode contentView = toObject("View", new ContentView());
-        ViewModel viewConfiguration = ViewModel.builder(contentView).build();
+        ViewModel viewConfiguration = toView("View", new ContentView());
         ViewBinding generate = bindingGenerator.generate(eventsModel, viewConfiguration);
 
         Set<ModelPath> found = new HashSet<>(generate.getModelPaths());
@@ -70,8 +70,8 @@ public class BindingGeneratorTest {
     public void testBackRefBindingGeneration() throws Exception {
 
         ModelPath a = ModelPath.builder("Container.value").
-                addPathMember(new ModelPathStep(true, container, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
-//        ModelPath b = ModelPath.builder("Container.parent.backrefs.Content.authors.refs.User.value").
+            addPathMember(new ModelPathStep(true, container, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
+//        ModelPath b = ModelPath.builder("Container.parent.backRefs.Content.authors.refs.User.value").
 //                addPathMember(new ModelPathStep(true, content, "parent", ModelPathStepType.backRefs, container, null)).
 //                addPathMember(new ModelPathStep(false, content, "authors", ModelPathStepType.refs, user, null)).
 //                addPathMember(new ModelPathStep(false, user, null, ModelPathStepType.value, null, Arrays.asList("lastName", "firstName"))).build();
@@ -79,14 +79,13 @@ public class BindingGeneratorTest {
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
         EventsModel eventsModel = new EventsModel();
-        eventsModel.addEvent(toObject("Event", new Container()));
-        eventsModel.addEvent(toObject("Event", new Content()));
-        eventsModel.addEvent(toObject("Event", new User()));
+        eventsModel.addEvent(toEvent("Container", new Container()));
+        eventsModel.addEvent(toEvent("Content", new Content()));
+        eventsModel.addEvent(toEvent("User", new User()));
 
         BindingGenerator bindingGenerator = new BindingGenerator();
 
-        ObjectNode containerView = toObject("View", new ContainerView());
-        ViewModel viewConfiguration = ViewModel.builder(containerView).build();
+        ViewModel viewConfiguration = toView("View", new ContainerView());
         ViewBinding generated = bindingGenerator.generate(eventsModel, viewConfiguration);
 
         Set<ModelPath> found = new HashSet<>(generated.getModelPaths());
@@ -102,24 +101,24 @@ public class BindingGeneratorTest {
         ModelPath a = ModelPath.builder("User.value").
                 addPathMember(new ModelPathStep(true, user, null, ModelPathStepType.value, null, Arrays.asList("firstName"))).build();
 
-        ModelPath b = ModelPath.builder("User.authors.backrefs.Content.value").
-                addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null)).
-                addPathMember(new ModelPathStep(false, content, null, ModelPathStepType.value, null, Arrays.asList("title"))).build();
+        ModelPath b = ModelPath.builder("User.authors.backRefs.Content.value").
+            addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null)).
+            addPathMember(new ModelPathStep(false, content, null, ModelPathStepType.value, null, Arrays.asList("title"))).build();
 
-        ModelPath c = ModelPath.builder("User.authors.backrefs.Content.parent.ref.Container.parent.ref.Container.value").
+        ModelPath c = ModelPath.builder("User.authors.backRefs.Content.parent.ref.Container.parent.ref.Container.value").
                 addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null)).
                 addPathMember(new ModelPathStep(false, content, "parent", ModelPathStepType.ref, container, null)).
                 addPathMember(new ModelPathStep(false, container, "parent", ModelPathStepType.ref, container, null)).
                 addPathMember(new ModelPathStep(false, container, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
 
-        ModelPath d = ModelPath.builder("User.authors.backrefs.Content.parent.ref.Container.parent.ref.Container.tags.refs.Tag.value").
+        ModelPath d = ModelPath.builder("User.authors.backRefs.Content.parent.ref.Container.parent.ref.Container.tags.refs.Tag.value").
                 addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null)).
                 addPathMember(new ModelPathStep(false, content, "parent", ModelPathStepType.ref, container, null)).
                 addPathMember(new ModelPathStep(false, container, "parent", ModelPathStepType.ref, container, null)).
                 addPathMember(new ModelPathStep(false, container, "tags", ModelPathStepType.refs, tag, null)).
                 addPathMember(new ModelPathStep(false, tag, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
 
-        ModelPath e = ModelPath.builder("User.authors.backrefs.Content.parent.ref.Container.parent.ref.Container.tags.refs.Tag.author.ref.User.value").
+        ModelPath e = ModelPath.builder("User.authors.backRefs.Content.parent.ref.Container.parent.ref.Container.tags.refs.Tag.author.ref.User.value").
                 addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null)).
                 addPathMember(new ModelPathStep(false, content, "parent", ModelPathStepType.ref, container, null)).
                 addPathMember(new ModelPathStep(false, container, "parent", ModelPathStepType.ref, container, null)).
@@ -130,15 +129,14 @@ public class BindingGeneratorTest {
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
         EventsModel eventsModel = new EventsModel();
-        eventsModel.addEvent(toObject("Event", new Container()));
-        eventsModel.addEvent(toObject("Event", new Content()));
-        eventsModel.addEvent(toObject("Event", new User()));
-        eventsModel.addEvent(toObject("Event", new Tag()));
+        eventsModel.addEvent(toEvent("Container", new Container()));
+        eventsModel.addEvent(toEvent("Content", new Content()));
+        eventsModel.addEvent(toEvent("User", new User()));
+        eventsModel.addEvent(toEvent("Tag", new Tag()));
 
         BindingGenerator bindingGenerator = new BindingGenerator();
 
-        ObjectNode containerView = toObject("View", new UserView());
-        ViewModel viewConfiguration = ViewModel.builder(containerView).build();
+        ViewModel viewConfiguration = toView("View", new UserView());
         ViewBinding generated = bindingGenerator.generate(eventsModel, viewConfiguration);
 
         Set<ModelPath> found = new HashSet<>(generated.getModelPaths());
@@ -151,15 +149,25 @@ public class BindingGeneratorTest {
 
     }
 
-    private ObjectNode toObject(String label, Object instance) throws IOException {
+    private EventDefinition toEvent(String label, Object instance) throws IOException {
+        ObjectNode event = toObjectNode(label, instance);
+        return EventDefinition.builder(event, true).build();
+    }
+
+    private ViewModel toView(String viewclass, Object instance) throws IOException {
+        ObjectNode view = toObjectNode(viewclass, instance);
+        return ViewModel.builder(view).build();
+    }
+
+    private ObjectNode toObjectNode(String label, Object instance) throws IOException {
         ObjectNode convertValue = mapper.convertValue(instance, ObjectNode.class);
 
-        ObjectNode event = mapper.createObjectNode();
-        event.put(instance.getClass().getSimpleName(), convertValue);
+        ObjectNode node = mapper.createObjectNode();
+        node.put(label, convertValue);
         System.out.println(label);
-        System.out.println(mapper.writeValueAsString(event));
+        System.out.println(mapper.writeValueAsString(node));
         System.out.println();
 
-        return event;
+        return node;
     }
 }

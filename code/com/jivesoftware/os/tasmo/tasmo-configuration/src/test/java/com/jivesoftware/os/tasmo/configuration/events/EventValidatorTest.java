@@ -12,8 +12,12 @@ import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.tasmo.model.EventDefinition;
 import com.jivesoftware.os.tasmo.model.EventsProcessorId;
 import com.jivesoftware.os.tasmo.model.EventsProvider;
+import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
+import com.jivesoftware.os.tasmo.model.VersionedEventsModel;
+import java.io.IOException;
 import java.util.Arrays;
 import org.mockito.Mockito;
 import org.testng.Assert;
@@ -28,7 +32,7 @@ public class EventValidatorTest {
     private EventValidator eventValidator;
     private TenantId tenantId = new TenantId("master");
     private ChainedVersion version = new ChainedVersion("", "1");
-    private ObjectNode event;
+    private EventDefinition event;
     private JsonEventConventions jec = new JsonEventConventions();
 
     @BeforeMethod
@@ -43,14 +47,11 @@ public class EventValidatorTest {
         instance.put("refs_field", mapper.convertValue(Arrays.asList(new ObjectId("Baz", new Id(3)).toStringForm()), JsonNode.class));
         instance.put("all_field", mapper.convertValue(Arrays.asList(new ObjectId("Goo", new Id(4)).toStringForm()), JsonNode.class));
 
-        event = mapper.createObjectNode();
-        jec.setEventId(event, 1);
-        jec.setInstanceNode(event, "Foo", instance);
-
+        event = toEvent("Foo", instance);
     }
 
     @Test
-    public void testValidateEvent() {
+    public void testValidateEvent() throws IOException {
 
         ObjectNode instance = mapper.createObjectNode();
         instance.put("value", "value");
@@ -58,23 +59,25 @@ public class EventValidatorTest {
         instance.put("refs_field", mapper.convertValue(Arrays.asList(new ObjectId("Baz", new Id(3)).toStringForm()), JsonNode.class));
         instance.put("all_field", mapper.convertValue(Arrays.asList(new ObjectId("Goo", new Id(4)).toStringForm()), JsonNode.class));
 
-        ObjectNode event2 = mapper.createObjectNode();
-        jec.setEventId(event2, 1);
-        jec.setInstanceNode(event2, "Bar", instance);
+        ObjectNode firedEvent = mapper.createObjectNode();
+        jec.setEventId(firedEvent, 1);
+        jec.setInstanceNode(firedEvent, "Bar", instance);
+
+        EventDefinition definition2 = toEvent("Bar", instance);
 
         ChainedVersion version2 = new ChainedVersion("1", "2");
         Mockito.when(eventsProvider.getCurrentEventsVersion(tenantId))
             .thenReturn(version, version2);
         Mockito.when(eventsProvider.getEvents(Mockito.any(EventsProcessorId.class)))
-            .thenReturn(Arrays.asList(event), Arrays.asList(event2));
+            .thenReturn(Arrays.asList(event), Arrays.asList(definition2));
 
         VersionedEventsModel versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);
-        Validated validateEvent = eventValidator.validateEvent(versionedEventsModel, event2);
+        Validated validateEvent = eventValidator.validateEvent(versionedEventsModel, firedEvent);
         Assert.assertFalse(validateEvent.isValid());
 
         tenantEventsProvider.loadModel(tenantId);
         versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);
-        validateEvent = eventValidator.validateEvent(versionedEventsModel, event2);
+        validateEvent = eventValidator.validateEvent(versionedEventsModel, firedEvent);
         Assert.assertTrue(validateEvent.isValid());
 
     }
@@ -92,10 +95,10 @@ public class EventValidatorTest {
         instance.put("ref_field", mapper.convertValue(new ObjectId("Bar", new Id(2)).toStringForm(), JsonNode.class));
         instance.put("refs_field", mapper.convertValue(
             Arrays.asList(new ObjectId("Baz", new Id(3)).toStringForm(),
-                new ObjectId("Gaga", new Id(7)).toStringForm()), JsonNode.class));
+            new ObjectId("Gaga", new Id(7)).toStringForm()), JsonNode.class));
         instance.put("all_field", mapper.convertValue(
             Arrays.asList(new ObjectId("Goo", new Id(4)).toStringForm(),
-                new ObjectId("Gaga", new Id(7)).toStringForm()), JsonNode.class));
+            new ObjectId("Gaga", new Id(7)).toStringForm()), JsonNode.class));
 
         ObjectNode event2 = mapper.createObjectNode();
         jec.setEventId(event2, 1);
@@ -195,7 +198,7 @@ public class EventValidatorTest {
     }
 
     @Test
-    public void testModelUpdate() {
+    public void testModelUpdate() throws IOException {
 
         ObjectNode instance = mapper.createObjectNode();
         instance.put("value", "value");
@@ -207,11 +210,13 @@ public class EventValidatorTest {
         jec.setEventId(event2, 1);
         jec.setInstanceNode(event2, "OhLala", instance);
 
+        EventDefinition definition2 = toEvent("OhLala", instance);
+
         ChainedVersion version2 = new ChainedVersion("1", "2");
         Mockito.when(eventsProvider.getCurrentEventsVersion(tenantId))
             .thenReturn(version, version2);
         Mockito.when(eventsProvider.getEvents(Mockito.any(EventsProcessorId.class)))
-            .thenReturn(Arrays.asList(event), Arrays.asList(event2));
+            .thenReturn(Arrays.asList(event), Arrays.asList(definition2));
 
         tenantEventsProvider.loadModel(tenantId);
         VersionedEventsModel versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);
@@ -223,5 +228,22 @@ public class EventValidatorTest {
         versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);
         validateEvent = eventValidator.validateEvent(versionedEventsModel, event2);
         Assert.assertTrue(validateEvent.isValid());
+    }
+
+    private EventDefinition toEvent(String label, Object instance) throws IOException {
+        ObjectNode event = toObjectNode(label, instance);
+        return EventDefinition.builder(event, true).build();
+    }
+
+    private ObjectNode toObjectNode(String label, Object instance) throws IOException {
+        ObjectNode convertValue = mapper.convertValue(instance, ObjectNode.class);
+
+        ObjectNode node = mapper.createObjectNode();
+        node.put(label, convertValue);
+        System.out.println(label);
+        System.out.println(mapper.writeValueAsString(node));
+        System.out.println();
+
+        return node;
     }
 }

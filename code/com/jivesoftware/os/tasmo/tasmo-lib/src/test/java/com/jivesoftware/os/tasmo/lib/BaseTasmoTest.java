@@ -17,11 +17,6 @@ import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
-import com.jivesoftware.os.tasmo.configuration.EventModel;
-import com.jivesoftware.os.tasmo.configuration.EventsModel;
-import com.jivesoftware.os.tasmo.configuration.ValueType;
-import com.jivesoftware.os.tasmo.configuration.events.TenantEventsProvider;
-import com.jivesoftware.os.tasmo.configuration.events.VersionedEventsModel;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
@@ -43,6 +38,11 @@ import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.model.EventDefinition;
+import com.jivesoftware.os.tasmo.model.EventFieldValueType;
+import com.jivesoftware.os.tasmo.model.EventsModel;
+import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
+import com.jivesoftware.os.tasmo.model.VersionedEventsModel;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
@@ -278,7 +278,7 @@ public class BaseTasmoTest {
                 throw new IllegalArgumentException();
             }
 
-            Map<String, ValueType> fields = new HashMap<>();
+            Map<String, EventFieldValueType> fields = new HashMap<>();
 
             for (String fieldDef : nameAndFields[1].split(",")) {
                 int idx = fieldDef.indexOf("(");
@@ -288,10 +288,10 @@ public class BaseTasmoTest {
                 String fieldName = fieldDef.substring(0, idx);
                 String fieldType = fieldDef.substring(idx + 1, fieldDef.indexOf(")"));
 
-                fields.put(fieldName, ValueType.valueOf(fieldType));
+                fields.put(fieldName, EventFieldValueType.valueOf(fieldType));
             }
 
-            model.addEvent(new EventModel(nameAndFields[0], fields));
+            model.addEvent(new EventDefinition(nameAndFields[0], fields));
         }
 
         return initEventModel(model);

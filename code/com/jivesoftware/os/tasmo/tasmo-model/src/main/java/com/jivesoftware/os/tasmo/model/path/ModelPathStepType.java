@@ -14,7 +14,7 @@ package com.jivesoftware.os.tasmo.model.path;
  */
 public enum ModelPathStepType {
 
-    value(false), ref(false), latest_backRef(true), backRefs(true), count(true), refs(false);
+    value(false), ref(false), latest_backRef(true), backRefs(true), count(true), refs(false), unknown(false);
     private final boolean backReferenceType;
 
     private ModelPathStepType(boolean backReferenceType) {

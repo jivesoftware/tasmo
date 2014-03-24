@@ -1,19 +1,18 @@
-package com.jivesoftware.os.tasmo.configuration;
+package com.jivesoftware.os.tasmo.model;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class EventsModel {
 
-    private final Map<String, EventModel> pantheon = new HashMap<>();
+    private final Map<String, EventDefinition> pantheon = new HashMap<>();
 
     public boolean isEmpty() {
         return pantheon.isEmpty();
     }
 
-    public EventModel getEvent(String className) {
+    public EventDefinition getEvent(String className) {
         return pantheon.get(className);
     }
 
@@ -21,12 +20,14 @@ public class EventsModel {
         return pantheon.keySet();
     }
 
+    /*
     public void addEvent(ObjectNode eventNode) {
-        EventModel eventConfiguration = EventModel.builder(eventNode, true).build();
+        EventDefinition eventConfiguration = EventDefinition.builder(eventNode, true).build();
         pantheon.put(eventConfiguration.getEventClass(), eventConfiguration);
     }
+    */
 
-    public void addEvent(EventModel eventConfiguration) {
+    public void addEvent(EventDefinition eventConfiguration) {
         pantheon.put(eventConfiguration.getEventClass(), eventConfiguration);
     }
 }

@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.configuration;
+package com.jivesoftware.os.tasmo.model;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -10,22 +10,22 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class EventModel {
+public class EventDefinition {
 
     private final String eventClass;
-    private final Map<String, ValueType> eventFields;
+    private final Map<String, EventFieldValueType> eventFields;
 
-    public EventModel(String eventClass, Map<String, ValueType> eventFields) {
+    public EventDefinition(String eventClass, Map<String, EventFieldValueType> eventFields) {
         this.eventClass = eventClass;
         this.eventFields = eventFields;
-        this.eventFields.put(ReservedFields.INSTANCE_ID, ValueType.value);
+        this.eventFields.put(ReservedFields.INSTANCE_ID, EventFieldValueType.value);
     }
 
     public String getEventClass() {
         return eventClass;
     }
 
-    public Map<String, ValueType> getEventFields() {
+    public Map<String, EventFieldValueType> getEventFields() {
         return eventFields;
     }
 
@@ -39,16 +39,16 @@ public class EventModel {
      * @return true if other event model is compatible.
      * @throws ModelMasterException
      */
-    public void assertEventIsCompatible(EventModel other) throws Exception {
-        Map<String, ValueType> theseFields = this.getEventFields();
-        Map<String, ValueType> otherFields = other.getEventFields();
+    public void assertEventIsCompatible(EventDefinition other) throws Exception {
+        Map<String, EventFieldValueType> theseFields = this.getEventFields();
+        Map<String, EventFieldValueType> otherFields = other.getEventFields();
 
         for (String fieldName : theseFields.keySet()) {
-            ValueType otherFieldType = otherFields.get(fieldName);
+            EventFieldValueType otherFieldType = otherFields.get(fieldName);
             if (fieldIsStable(fieldName) && otherFieldType == null) {
                 throw new Exception("You cannot remove a stable field once it has been added. Field:" + fieldName);
             } else {
-                ValueType fieldType = theseFields.get(fieldName);
+                EventFieldValueType fieldType = theseFields.get(fieldName);
                 if (fieldIsStable(fieldName) && !fieldType.equals(otherFieldType)) {
                     throw new Exception("You cannot change a stable field's type once it has been added. Field:"
                             + fieldName + " " + otherFieldType);
@@ -62,24 +62,24 @@ public class EventModel {
         return "EventConfiguration{" + "eventClass=" + eventClass + ", eventFields=" + eventFields + '}';
     }
 
-    public static EventModelBuilder builder(ObjectNode exampleViewNode, boolean isExampleEvent) {
-        return new EventModelBuilder(exampleViewNode, isExampleEvent);
+    public static EventDefinitionBuilder builder(ObjectNode exampleViewNode, boolean isExampleEvent) {
+        return new EventDefinitionBuilder(exampleViewNode, isExampleEvent);
     }
 
-    public static class EventModelBuilder {
+    public static class EventDefinitionBuilder {
 
         private final ObjectNode eventNode;
         private final JsonEventConventions eventHelper = new JsonEventConventions(); // barf
         private final boolean isExampleEvent;
 
-        private EventModelBuilder(ObjectNode eventNode, boolean isExampleEvent) {
+        private EventDefinitionBuilder(ObjectNode eventNode, boolean isExampleEvent) {
             this.eventNode = eventNode;
             this.isExampleEvent = isExampleEvent;
         }
 
-        public EventModel build() {
+        public EventDefinition build() {
             String eventClass = eventHelper.getInstanceClassName(eventNode);
-            Map<String, ValueType> eventFields = new HashMap<>();
+            Map<String, EventFieldValueType> eventFields = new HashMap<>();
 
             ObjectNode instanceNode = eventHelper.getInstanceNode(eventNode, eventClass);
 
@@ -96,7 +96,7 @@ public class EventModel {
                 }
 
                 if (exampleValue.isTextual() && ObjectId.isStringForm(exampleValue.textValue())) {
-                    eventFields.put(eventFieldName, ValueType.ref);
+                    eventFields.put(eventFieldName, EventFieldValueType.ref);
                 } else if (exampleValue.isArray()) {
                     ArrayNode exampleArray = (ArrayNode) exampleValue;
                     if (isExampleEvent && (exampleArray.size() != 1)) {
@@ -112,24 +112,24 @@ public class EventModel {
                                 throw new IllegalArgumentException("Elements in event field value arrays can't be null. "
                                         + "The " + eventFieldName + " field holds an array with an empty json node as the sole element.");
                             } else {
-                                eventFields.put(eventFieldName, ValueType.unknown);
+                                eventFields.put(eventFieldName, EventFieldValueType.unknown);
                             }
                         } else {
                             if (element.isTextual() && ObjectId.isStringForm(element.textValue())) {
-                                eventFields.put(eventFieldName, ValueType.refs);
+                                eventFields.put(eventFieldName, EventFieldValueType.refs);
                             } else {
-                                eventFields.put(eventFieldName, ValueType.value);
+                                eventFields.put(eventFieldName, EventFieldValueType.value);
                             }
                         }
                     } else {
-                        eventFields.put(eventFieldName, ValueType.unknown);
+                        eventFields.put(eventFieldName, EventFieldValueType.unknown);
                     }
 
                 } else {
-                    eventFields.put(eventFieldName, ValueType.value);
+                    eventFields.put(eventFieldName, EventFieldValueType.value);
                 }
             }
-            return new EventModel(eventClass, eventFields);
+            return new EventDefinition(eventClass, eventFields);
         }
     }
 }
