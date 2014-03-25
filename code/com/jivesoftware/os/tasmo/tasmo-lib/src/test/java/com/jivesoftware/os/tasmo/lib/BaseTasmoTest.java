@@ -100,15 +100,6 @@ public class BaseTasmoTest {
         return base;
     }
 
-    public ViewChangeNotificationProcessor getViewChangeNotificationProcessor() {
-        // default is a no op processor
-        return new ViewChangeNotificationProcessor() {
-            @Override
-            public void process(ModifiedViewProvider modifiedViewProvider, WrittenEvent writtenEvent) throws Exception {
-            }
-        };
-    }
-
     public RowColumnValueStoreProvider getRowColumnValueStoreProvider(final String env) {
 //        if (useHBase) {
 //            final SetOfSortedMapsImplInitializer<Exception> hBase = new HBaseSetOfSortedMapsImplInitializer(
@@ -261,7 +252,7 @@ public class BaseTasmoTest {
             eventValueStore);
 
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
-            dispatcherProvider, existenceStore, getViewChangeNotificationProcessor());
+            dispatcherProvider, existenceStore);
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
     }

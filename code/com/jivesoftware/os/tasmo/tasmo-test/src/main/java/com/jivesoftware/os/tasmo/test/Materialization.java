@@ -32,7 +32,6 @@ import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
-import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.model.EventDefinition;
 import com.jivesoftware.os.tasmo.model.EventFieldValueType;
 import com.jivesoftware.os.tasmo.model.EventsModel;
@@ -43,7 +42,6 @@ import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
-import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
@@ -106,15 +104,6 @@ public class Materialization {
     WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
     ViewReader<ViewResponse> viewReader;
     final Set<Id> permittedIds = new HashSet<>();
-
-    public ViewChangeNotificationProcessor getViewChangeNotificationProcessor() {
-        // default is a no op processor
-        return new ViewChangeNotificationProcessor() {
-            @Override
-            public void process(ModifiedViewProvider modifiedViewProvider, WrittenEvent writtenEvent) throws Exception {
-            }
-        };
-    }
 
     public RowColumnValueStoreProvider getRowColumnValueStoreProvider(final String env) {
         return new RowColumnValueStoreProvider() {
@@ -207,7 +196,7 @@ public class Materialization {
             eventValueStore);
 
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
-            dispatcherProvider, existenceStore, getViewChangeNotificationProcessor());
+            dispatcherProvider, existenceStore);
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
 

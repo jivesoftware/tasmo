@@ -34,14 +34,12 @@ import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
-import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
-import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
@@ -75,13 +73,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
     private final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private Set<String> filterToTheseViewClasses;
     private RowColumnValueStoreProvider rowColumnValueStoreProvider;
-    private ViewChangeNotificationProcessor viewChangeNotificationProcessor;
     private OrderIdProvider orderIdProvider;
-
-    public LocalMaterializationSystemBuilder setViewChangeNotificationProcessor(ViewChangeNotificationProcessor viewChangeNotificationProcessor) {
-        this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
-        return this;
-    }
 
     public LocalMaterializationSystemBuilder setFilterToTheseViewClasses(Class... viewClasses) {
         this.filterToTheseViewClasses = Sets.newHashSet(Iterables.transform(Arrays.asList(viewClasses), new Function<Class, String>() {
@@ -148,15 +140,6 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             }
         });
 
-        if (viewChangeNotificationProcessor == null) {
-            viewChangeNotificationProcessor = new ViewChangeNotificationProcessor() {
-                @Override
-                public void process(ModifiedViewProvider modifiedViewProvider, WrittenEvent writtenEvent) throws Exception {
-                    throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-                }
-            };
-        }
-
         DispatcherProvider dispatcherProvider = new DispatcherProvider(
             eventsProvider,
             referenceStore,
@@ -164,7 +147,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
         dispatcherProvider.loadModel(masterTenantId);
 
-        return new TasmoViewMaterializer(materializerEventBookkeeper, dispatcherProvider, existenceStore, viewChangeNotificationProcessor);
+        return new TasmoViewMaterializer(materializerEventBookkeeper, dispatcherProvider, existenceStore);
     }
 
     private EventWriter buildEventWriter(final TasmoViewMaterializer viewMaterializer,

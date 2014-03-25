@@ -30,16 +30,13 @@ public class TasmoViewMaterializer {
     private final TasmoEventBookkeeper tasmoEventBookkeeper;
     private final ExistenceStore existenceStore;
     private final DispatcherProvider dispatcherProvider;
-    private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
 
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
         DispatcherProvider dispatcherProvider,
-        ExistenceStore existenceStore,
-        ViewChangeNotificationProcessor viewChangeNotificationProcessor) {
+        ExistenceStore existenceStore) {
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
         this.existenceStore = existenceStore;
         this.dispatcherProvider = dispatcherProvider;
-        this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
     }
 
     public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {

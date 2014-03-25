@@ -24,7 +24,6 @@ import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
@@ -66,7 +65,6 @@ public class TasmoServiceInitializer {
         TenantEventsProvider eventsProvider,
         WrittenEventProvider eventProvider,
         SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
-        CommitChange changeWriter,
         ViewChangeNotificationProcessor viewChangeNotificationProcessor,
         CallbackStream<List<BookkeepingEvent>> bookKeepingStream,
         TasmoServiceConfig config) throws IOException {
@@ -120,7 +118,7 @@ public class TasmoServiceInitializer {
             }
         }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);
 
-        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper, dispatcherProvider, existenceStore, viewChangeNotificationProcessor);
+        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper, dispatcherProvider, existenceStore);
 
         return new EventIngressCallbackStream(materializer);
     }
