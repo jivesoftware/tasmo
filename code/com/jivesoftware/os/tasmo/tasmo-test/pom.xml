@@ -36,10 +36,6 @@
             <artifactId>tasmo-view-reader-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-configuration</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.googlecode.combinatoricslib</groupId>
             <artifactId>combinatoricslib</artifactId>
         </dependency>
@@ -78,11 +74,11 @@
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-view-reader-service</artifactId>
+            <artifactId>tasmo-lib</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-lib</artifactId>
+            <artifactId>tasmo-view-reader-lib</artifactId>
         </dependency>
     </dependencies>
 </project>

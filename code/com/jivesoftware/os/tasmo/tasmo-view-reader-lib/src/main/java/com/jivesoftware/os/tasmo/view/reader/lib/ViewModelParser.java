@@ -71,7 +71,11 @@ public class ViewModelParser {
             String[] class_pathId_modelPath = toStringArray(simpleBinding, "::");
             List<ModelPath> bindings = viewBindings.get(class_pathId_modelPath[0].trim());
 
+            try {
             bindings.add(buildPath(class_pathId_modelPath[1].trim(), class_pathId_modelPath[2].trim()));
+            } catch (Throwable t) {
+                t.printStackTrace(System.out);
+            }
         }
 
         List<ViewBinding> viewBindingsList = Lists.newArrayList();

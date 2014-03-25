@@ -64,9 +64,11 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
 
     @Override
     public void nextLevel() {
-        level.clear();
-        level.putAll(nextLevel);
-        nextLevel.clear();
+        if (!nextLevel.isEmpty()) {
+            level.clear();
+            level.putAll(nextLevel);
+            nextLevel.clear();
+        }
     }
 
     @Override
@@ -105,10 +107,6 @@ public class JsonViewFormatter implements ViewFormatter<ObjectNode> {
     public void addValueNode(ViewValue value) {
         JsonNode node = level.get(value.getObjectId());
         if (node == null || !node.isObject()) {
-            LOG.warn("Expected object node when adding value with id " + value.getObjectId()
-                + ". Found " + (node != null ? node.getNodeType() : null) + " in model path "
-                + value.getPath().getId());
-
             return;
         }
 

@@ -4,45 +4,44 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
-import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
+import com.jivesoftware.os.tasmo.event.api.write.Event;
+import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
+import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.Id;
+import com.jivesoftware.os.tasmo.id.IdProvider;
+import com.jivesoftware.os.tasmo.id.IdProviderImpl;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.DispatcherProvider;
-import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
+import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
-import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.model.EventDefinition;
+import com.jivesoftware.os.tasmo.model.EventFieldValueType;
+import com.jivesoftware.os.tasmo.model.EventsModel;
+import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
+import com.jivesoftware.os.tasmo.model.VersionedEventsModel;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
-import com.jivesoftware.os.tasmo.model.path.ModelPath;
-import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
-import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
@@ -51,46 +50,53 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
+import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
-import com.jivesoftware.os.tasmo.view.reader.service.StaleViewFieldStream;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewAsObjectNode;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionCheckResult;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewProvider;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
-import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
-import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
-import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriterException;
-import com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore;
-import java.io.IOException;
+import com.jivesoftware.os.tasmo.view.reader.lib.BatchingEventValueStore;
+import com.jivesoftware.os.tasmo.view.reader.lib.BatchingReferenceStore;
+import com.jivesoftware.os.tasmo.view.reader.lib.ExistenceChecker;
+import com.jivesoftware.os.tasmo.view.reader.lib.JsonViewFormatter;
+import com.jivesoftware.os.tasmo.view.reader.lib.ReadTimeViewMaterializer;
+import com.jivesoftware.os.tasmo.view.reader.lib.ReferenceGatherer;
+import com.jivesoftware.os.tasmo.view.reader.lib.ValueGatherer;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewModelParser;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewModelProvider;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewPermissionCheckResult;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewPermissionChecker;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 
 public class Materialization {
 
     public static final TenantId MASTER_TENANT_ID = new TenantId("master");
+    IdProvider idProvider;
+    OrderIdProvider orderIdProvider;
+    TenantId tenantId;
+    TenantIdAndCentricId tenantIdAndCentricId;
+    Id actorId;
+    //UserIdentity userIdentity;
+    EventWriter writer;
     ExistenceStore existenceStore;
     EventValueStore eventValueStore;
-    ViewValueStore viewValueStore;
-    ViewValueWriter viewValueWriter;
-    ViewValueReader viewValueReader;
-    ViewProvider<ViewResponse> viewProvider;
-    DispatcherProvider tasmoViewModel;
+    ReferenceStore referenceStore;
+    DispatcherProvider dispatcherProvider;
     TasmoViewMaterializer materializer;
-    final ChainedVersion currentVersion = new ChainedVersion("0", "1");
-    final AtomicReference<Views> views = new AtomicReference<>();
-    ViewsProvider viewsProvider;
-    boolean useHBase = false;
+    public static ChainedVersion currentVersion = new ChainedVersion("0", "1");
+    AtomicReference<VersionedEventsModel> events = new AtomicReference<>();
+    TenantEventsProvider eventsProvider;
+    AtomicReference<Views> views = new AtomicReference<>();
     ObjectMapper mapper = new ObjectMapper();
 
     {
@@ -98,68 +104,19 @@ public class Materialization {
 
     }
     WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
+    ViewReader<ViewResponse> viewReader;
+    final Set<Id> permittedIds = new HashSet<>();
 
     public ViewChangeNotificationProcessor getViewChangeNotificationProcessor() {
         // default is a no op processor
         return new ViewChangeNotificationProcessor() {
-
             @Override
             public void process(ModifiedViewProvider modifiedViewProvider, WrittenEvent writtenEvent) throws Exception {
-                
             }
-            
         };
     }
 
     public RowColumnValueStoreProvider getRowColumnValueStoreProvider(final String env) {
-//        if (useHBase) {
-//            final SetOfSortedMapsImplInitializer<Exception> hBase = new HBaseSetOfSortedMapsImplInitializer(
-//                embeddedHBase.getConfiguration());
-//            return new RowColumnValueStoreProvider() {
-//
-//                @Override
-//                public RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore() throws IOException {
-//                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "existenceTable", "v",
-//                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdMarshaller(),
-//                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-//                        new StringTypeMarshaller()), new CurrentTimestamper()));
-//                }
-//
-//                @Override
-//                public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() throws IOException {
-//                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "eventValueTable", "v",
-//                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
-//                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-//                        eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
-//                }
-//
-//                @Override
-//                public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore()
-//                    throws IOException {
-//                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "viewValueTable", "v",
-//                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
-//                        new ImmutableByteArrayMarshaller(), new ImmutableByteArrayMarshaller(), new StringTypeMarshaller()),
-//                        new CurrentTimestamper()));
-//                }
-//
-//                @Override
-//                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks()
-//                    throws IOException {
-//                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "multiLinkTable", "v",
-//                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-//                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
-//                }
-//
-//                @Override
-//                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks()
-//                    throws IOException {
-//                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "multiBackLinkTable", "v",
-//                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-//                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
-//                }
-//            };
-//
-//        } else {
         return new RowColumnValueStoreProvider() {
             @Override
             public RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore() {
@@ -186,7 +143,6 @@ public class Materialization {
                 return new RowColumnValueStoreImpl<>();
             }
         };
-        //}
     }
 
     public static interface RowColumnValueStoreProvider {
@@ -201,271 +157,191 @@ public class Materialization {
 
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() throws Exception;
     }
-    //private static EmbeddedHBase embeddedHBase = new EmbeddedHBase();
 
-    public void startHBase() throws Exception {
-        if (useHBase) {
-            //embeddedHBase.start(true);
-        }
+    @BeforeClass
+    public void setupPrimordialStuff() {
+        orderIdProvider = idProvider();
+        idProvider = new IdProviderImpl(orderIdProvider);
+        tenantId = new TenantId("test");
+        tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
+        actorId = new Id(1L);
     }
 
-    public void stopHBase() throws Exception {
-        if (useHBase) {
-            //embeddedHBase.stop();
-        }
-    }
-
+    @BeforeMethod
     public void setupModelAndMaterializer() throws Exception {
 
-
         String uuid = UUID.randomUUID().toString();
-        //        Logger logger = Logger.getLogger("com.jivesoftware.soa.modules");
-        //        logger.setLevel(Level.TRACE);
 
         RowColumnValueStoreProvider rowColumnValueStoreProvider = getRowColumnValueStoreProvider(uuid);
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore = rowColumnValueStoreProvider.eventStore();
         RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStorage = rowColumnValueStoreProvider.existenceStore();
-
-        EventValueCacheProvider cacheProvider = new EventValueCacheProvider() {
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> createValueStoreCache() {
-                return new RowColumnValueStoreImpl<>();
-            }
-        };
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks =
+            rowColumnValueStoreProvider.multiLinks();
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks =
+            rowColumnValueStoreProvider.multiBackLinks();
 
         existenceStore = new ExistenceStore(existenceStorage);
-        eventValueStore = new EventValueStore(eventStore, cacheProvider);
+        eventValueStore = new EventValueStore(eventStore);
 
-        viewValueStore = new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), new ViewPathKeyProvider());
-        viewValueWriter = new ViewValueWriter(viewValueStore);
-        viewValueReader = new ViewValueReader(viewValueStore);
-
-        ReferenceStore referenceStore = new ReferenceStore(rowColumnValueStoreProvider.multiLinks(),
-                rowColumnValueStoreProvider.multiBackLinks());
-
-        final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
-        CommitChange commitChange = new CommitChange() {
-            @Override
-            public void commitChange(TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
-                List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
-                for (ViewFieldChange change : changes) {
-                    try {
-                        write.add(new ViewWriteFieldChange(
-                                change.getEventId(),
-                                -1,
-                                -1,
-                                tenantIdAndCentricId,
-                                change.getActorId(),
-                                ViewWriteFieldChange.Type.valueOf(change.getType().name()),
-                                change.getViewObjectId(),
-                                change.getModelPathId(),
-                                change.getModelPathInstanceIds(),
-                                mapper.writeValueAsString(change.getValue()),
-                                change.getTimestamp()));
-                    } catch (Exception ex) {
-                        throw new CommitChangeException("Failed to add change for the following reason.", ex);
-                    }
-                }
-
-                try {
-                    writeToViewValueStore.write(tenantIdAndCentricId, write);
-                } catch (ViewWriterException ex) {
-                    throw new CommitChangeException("Failed to write BigInteger?", ex);
-                }
-            }
-        };
-
-        commitChange = new ExistenceCommitChange(existenceStore, commitChange);
+        referenceStore = new ReferenceStore(multiLinks, multiBackLinks);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
-                new CallbackStream<List<BookkeepingEvent>>() {
+            new CallbackStream<List<BookkeepingEvent>>() {
             @Override
             public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
                 return value;
             }
         });
 
-        viewsProvider = new ViewsProvider() {
+        eventsProvider = new TenantEventsProvider(MASTER_TENANT_ID, null) {
             @Override
-            public Views getViews(ViewsProcessorId viewsProcessorId) {
-                return views.get();
+            public VersionedEventsModel getVersionedEventsModel(TenantId tenantId) {
+                return events.get();
             }
+        };
 
+
+        dispatcherProvider = new DispatcherProvider(
+            eventsProvider,
+            referenceStore,
+            eventValueStore);
+
+        materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
+            dispatcherProvider, existenceStore, getViewChangeNotificationProcessor());
+
+        writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
+
+        ViewsProvider viewsProvider = new ViewsProvider() {
             @Override
             public ChainedVersion getCurrentViewsVersion(TenantId tenantId) {
                 return currentVersion;
             }
+
+            @Override
+            public Views getViews(ViewsProcessorId viewsProcessorId) {
+                return views.get();
+            }
         };
 
-        tasmoViewModel = new DispatcherProvider(
-                MASTER_TENANT_ID,
-                viewsProvider,
-                eventProvider,
-                referenceStore,
-                eventValueStore,
-                commitChange);
+        ViewModelProvider viewModelProvider = new ViewModelProvider(tenantId, viewsProvider);
+        BatchingReferenceStore batchingReferenceStore = new BatchingReferenceStore(
+            multiLinks, multiBackLinks);
+        BatchingEventValueStore batchingEventValueStore = new BatchingEventValueStore(eventStore);
 
-        materializer = new TasmoViewMaterializer(existenceStore, tasmoEventBookkeeper,
-                tasmoViewModel, getViewChangeNotificationProcessor());
 
+        viewReader = new ReadTimeViewMaterializer(viewModelProvider, new ReferenceGatherer(batchingReferenceStore),
+            new ValueGatherer(batchingEventValueStore), new JsonViewFormatter(mapper, eventProvider), viewPermissionChecker(), existenceChecker());
+
+        permittedIds.clear();
 
     }
 
-    Expectations initModelPaths(TenantId tenantId, List<ViewBinding> bindings) throws Exception {
-        Views newViews = new Views(tenantId, currentVersion, bindings);
-        views.set(newViews);
-
-        tasmoViewModel.loadModel(MASTER_TENANT_ID);
-
-        JsonViewMerger merger = new JsonViewMerger(new ObjectMapper());
-        ViewAsObjectNode viewAsObjectNode = new ViewAsObjectNode();
-
-        ViewPermissionChecker viewPermissionChecker = new ViewPermissionChecker() {
+    private ViewPermissionChecker viewPermissionChecker() {
+        return new ViewPermissionChecker() {
             @Override
             public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, final Set<Id> permissionCheckTheseIds) {
-                System.out.println("NO-OP permisions check for (" + permissionCheckTheseIds.size() + ") ids.");
-                return new ViewPermissionCheckResult() {
-                    @Override
-                    public Set<Id> allowed() {
-                        return permissionCheckTheseIds;
-                    }
+                if (permittedIds.isEmpty()) {
+                    return new ViewPermissionCheckResult() {
+                        @Override
+                        public Set<Id> allowed() {
+                            return permissionCheckTheseIds;
+                        }
 
-                    @Override
-                    public Set<Id> denied() {
-                        return new HashSet<>();
-                    }
+                        @Override
+                        public Set<Id> denied() {
+                            return Collections.emptySet();
+                        }
 
-                    @Override
-                    public Set<Id> unknown() {
-                        return new HashSet<>();
-                    }
-                };
-            }
-        };
-        TenantId masterTenantId = new TenantId("master");
-        TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(masterTenantId, viewsProvider);
-        tenantViewsProvider.loadModel(masterTenantId);
+                        @Override
+                        public Set<Id> unknown() {
+                            return Collections.emptySet();
+                        }
+                    };
+                } else {
+                    return new ViewPermissionCheckResult() {
+                        @Override
+                        public Set<Id> allowed() {
+                            return permittedIds;
+                        }
 
-        StaleViewFieldStream staleViewFieldStream = new StaleViewFieldStream() {
-            @Override
-            public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, String, Long> value) {
-                System.out.println("Encounterd stale fields for:" + viewDescriptor + " value:" + value);
-            }
-        };
+                        @Override
+                        public Set<Id> denied() {
+                            return Sets.difference(permissionCheckTheseIds, permittedIds);
+                        }
 
-        viewProvider = new ViewProvider<>(viewPermissionChecker,
-                viewValueReader,
-                tenantViewsProvider,
-                viewAsObjectNode,
-                merger,
-                staleViewFieldStream);
-        return new Expectations(viewValueStore, newViews);
-
-    }
-
-    List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {
-        return parseModelPathStrings(simpleBindings.toArray(new String[ simpleBindings.size() ]));
-    }
-
-    List<ViewBinding> parseModelPathStrings(String... simpleBindings) {
-        return parseModelPathStrings(false, simpleBindings);
-    }
-
-    List<ViewBinding> parseModelPathStrings(boolean idCentric, String... simpleBindings) {
-        ArrayListMultimap<String, ModelPath> viewBindings = ArrayListMultimap.create();
-
-        for (String simpleBinding : simpleBindings) {
-            String[] class_pathId_modelPath = toStringArray(simpleBinding, "::");
-            List<ModelPath> bindings = viewBindings.get(class_pathId_modelPath[0].trim());
-
-            bindings.add(buildPath(class_pathId_modelPath[1].trim(), class_pathId_modelPath[2].trim()));
-        }
-
-        List<ViewBinding> viewBindingsList = Lists.newArrayList();
-        for (Map.Entry<String, Collection<ModelPath>> entry : viewBindings.asMap().entrySet()) {
-            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, idCentric, false, null));
-        }
-
-        return viewBindingsList;
-    }
-
-    Expectations initModelPaths(TenantId tenantId, String... simpleBindings) throws Exception {
-        List<ViewBinding> viewBindingsList = parseModelPathStrings(simpleBindings);
-        return initModelPaths(tenantId, viewBindingsList);
-    }
-
-    Expectations initModelPaths(TenantId tenantId, boolean idCentric, String... simpleBindings) throws Exception {
-        List<ViewBinding> viewBindingsList = parseModelPathStrings(idCentric, simpleBindings);
-        return initModelPaths(tenantId, viewBindingsList);
-    }
-
-    ModelPath buildPath(String id, String path) {
-        String[] pathMembers = toStringArray(path, "|");
-        ModelPath.Builder builder = ModelPath.builder(id);
-        int i = 0;
-        for (String pathMember : pathMembers) {
-            builder.addPathMember(toModelPathMember(i, pathMember.trim()));
-            i++;
-        }
-        return builder.build();
-    }
-
-    ModelPathStep toModelPathMember(int sortPrecedence, String pathMember) {
-
-        try {
-            String[] memberParts = toStringArray(pathMember, ".");
-            if (pathMember.contains("." + ModelPathStepType.ref + ".") || pathMember.contains("." + ModelPathStepType.refs + ".")) {
-                // Example: Content.ref_originalAuthor.ref.User
-                Set<String> originClassName = splitClassNames(memberParts[0].trim());
-                String refFieldName = memberParts[1].trim();
-                ModelPathStepType stepType = ModelPathStepType.valueOf(memberParts[2].trim());
-                Set<String> destinationClassName = splitClassNames(memberParts[3].trim());
-
-                return new ModelPathStep(sortPrecedence == 0, originClassName,
-                        refFieldName, stepType, destinationClassName, null);
-
-            } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
-                    || pathMember.contains("." + ModelPathStepType.count + ".")
-                    || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
-
-                // Example: Content.backRefs.VersionedContent.ref_parent
-                // Example: Content.count.VersionedContent.ref_parent
-                // Example: Content.latest_backRef.VersionedContent.ref_parent
-                Set<String> destinationClassName = splitClassNames(memberParts[0].trim());
-                ModelPathStepType stepType = ModelPathStepType.valueOf(memberParts[1].trim());
-                Set<String> originClassName = splitClassNames(memberParts[2].trim());
-                String refFieldName = memberParts[3].trim();
-
-                return new ModelPathStep(sortPrecedence == 0, originClassName,
-                        refFieldName, stepType, destinationClassName, null);
-
-            } else {
-
-                // Example: User.firstName
-                String[] valueFieldNames = toStringArray(memberParts[1], ",");
-                for (int i = 0; i < valueFieldNames.length; i++) {
-                    valueFieldNames[i] = valueFieldNames[i].trim();
+                        @Override
+                        public Set<Id> unknown() {
+                            return Collections.emptySet();
+                        }
+                    };
                 }
-                Set<String> originClassName = splitClassNames(memberParts[0].trim());
-
-                return new ModelPathStep(sortPrecedence == 0, originClassName,
-                        null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
 
             }
-        } catch (Exception x) {
-            throw new RuntimeException("fail to parse " + pathMember, x);
-        }
+        };
+
     }
 
-    private Set<String> splitClassNames(String classNames) {
-        if (classNames.startsWith("[")) {
-            classNames = classNames.replace("[", "");
-            classNames = classNames.replace("]", "");
+    private ExistenceChecker existenceChecker() {
+        return new ExistenceChecker() {
+            @Override
+            public Set<ObjectId> check(TenantId tenantId, Set<ObjectId> existenceCheckTheseIds) {
+                return existenceStore.getExistence(tenantId, existenceCheckTheseIds);
+            }
+        };
+    }
 
-            return Sets.newHashSet(classNames.split("\\^"));
-        } else {
-            return Sets.newHashSet(classNames);
+    public static Views parseViewModel(List<String> viewPaths) {
+        return new ViewModelParser(MASTER_TENANT_ID, currentVersion).parse(viewPaths);
+    }
+
+    public static EventsModel parseEventModel(String events) {
+        StringTokenizer tokenizer = new StringTokenizer(events, "|");
+        EventsModel model = new EventsModel();
+
+        while (tokenizer.hasMoreTokens()) {
+            String eventDef = tokenizer.nextToken();
+            String[] nameAndFields = eventDef.split(":");
+            if (nameAndFields.length != 2) {
+                throw new IllegalArgumentException();
+            }
+
+            Map<String, EventFieldValueType> fields = new HashMap<>();
+
+            for (String fieldDef : nameAndFields[1].split(",")) {
+                int idx = fieldDef.indexOf("(");
+                if (idx < 0 || !fieldDef.endsWith(")")) {
+                    throw new IllegalArgumentException("Field definitions require the form name(type)");
+                }
+                String fieldName = fieldDef.substring(0, idx);
+                String fieldType = fieldDef.substring(idx + 1, fieldDef.indexOf(")"));
+
+                fields.put(fieldName, EventFieldValueType.valueOf(fieldType));
+            }
+
+            model.addEvent(new EventDefinition(nameAndFields[0], fields));
         }
+
+        return model;
+
+    }
+
+    protected void initModel(EventsModel eventsModel, ViewBinding viewModel) throws Exception {
+        Views viewsModel = new Views(tenantId, currentVersion, Arrays.asList(viewModel));
+        VersionedEventsModel newEvents = new VersionedEventsModel(currentVersion, eventsModel);
+        events.set(newEvents);
+
+        views.set(viewsModel);
+    }
+
+    OrderIdProvider idProvider() {
+        return new OrderIdProvider() {
+            private final AtomicLong id = new AtomicLong();
+
+            @Override
+            public long nextId() {
+                return id.addAndGet(2); // Have to move by twos so there is room for add vs remove differentiation.
+            }
+        };
     }
 
     JsonEventWriter jsonEventWriter(final TasmoViewMaterializer tasmoViewMaterializer, final OrderIdProvider idProvider) {
@@ -498,30 +374,22 @@ public class Materialization {
                     return new EventWriterResponse(eventIds, objectIds);
 
                 } catch (Exception ex) {
-                    ex.printStackTrace();
                     throw new JsonEventWriteException("sad trombone", ex);
                 }
             }
         };
     }
 
-    protected ObjectNode readView(TenantIdAndCentricId tenantIdAndCentricId, Id actorId, ObjectId viewId) throws IOException {
-        ViewResponse viewResponse = viewProvider.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
-        // kinda patch to refrain from refactoring dozens of tests... readView used to return null in case of a non-existing view
-        return viewResponse.getStatusCode() == ViewResponse.StatusCode.OK ? viewResponse.getViewBody() : null;
+    ObjectId write(Event event) throws EventWriteException {
+        EventWriterResponse eventWriterResponse = writer.write(event);
+        return eventWriterResponse.getObjectIds().get(0);
     }
 
-    private String[] toStringArray(String string, String delim) {
-        if (string == null || delim == null) {
-            return new String[ 0 ];
-        }
-        StringTokenizer tokenizer = new StringTokenizer(string, delim);
-        int tokenCount = tokenizer.countTokens();
+    public ObjectNode readView(TenantIdAndCentricId tenantIdAndCentricId, Id actorId, ObjectId viewId) throws Exception {
+        return readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+    }
 
-        String[] tokens = new String[ tokenCount ];
-        for (int i = 0; i < tokenCount; i++) {
-            tokens[i] = tokenizer.nextToken();
-        }
-        return tokens;
+    public ObjectNode readView(ViewDescriptor viewDescriptor) throws Exception {
+        return viewReader.readView(viewDescriptor).getViewBody();
     }
 }
