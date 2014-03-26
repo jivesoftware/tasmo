@@ -20,11 +20,14 @@ public class VersionedTasmoViewModel {
 
     private final ChainedVersion version;
     private final ListMultimap<String, InitiateTraversal> dispatchers;
+    private final ListMultimap<String, TasmoViewModel.FieldNameAndType> eventModel;
 
     public VersionedTasmoViewModel(ChainedVersion version,
-        ListMultimap<String, InitiateTraversal> dispatchers) {
+            ListMultimap<String, InitiateTraversal> dispatchers,
+            ListMultimap<String, TasmoViewModel.FieldNameAndType> eventModel) {
         this.version = version;
         this.dispatchers = dispatchers;
+        this.eventModel = eventModel;
     }
 
     public ChainedVersion getVersion() {
@@ -35,11 +38,15 @@ public class VersionedTasmoViewModel {
         return dispatchers;
     }
 
+    public ListMultimap<String, TasmoViewModel.FieldNameAndType> getEventModel() {
+        return eventModel;
+    }
+
     @Override
     public String toString() {
         return "VersionedViewTasmoModel{"
-            + "version=" + version
-            + ", dispatchers=" + dispatchers
-            + '}';
+                + "version=" + version
+                + ", dispatchers=" + dispatchers
+                + '}';
     }
 }

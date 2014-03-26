@@ -37,16 +37,18 @@ import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
+import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
+import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
-import com.jivesoftware.os.tasmo.lib.write.ExistenceCommitChange;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -62,7 +64,6 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -250,18 +251,15 @@ public class BaseTasmoTest {
         }
     }
 
-    @BeforeClass
-    public void setupPrimordialStuff() {
+    @BeforeMethod
+    public void setupModelAndMaterializer() throws Exception {
+
         orderIdProvider = idProvider();
         idProvider = new IdProviderImpl(orderIdProvider);
         tenantId = new TenantId("test");
         tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
         //userIdentity = whoami();
         actorId = new Id(1L);
-    }
-
-    @BeforeMethod
-    public void setupModelAndMaterializer() throws Exception {
 
         String uuid = UUID.randomUUID().toString();
 
@@ -295,7 +293,7 @@ public class BaseTasmoTest {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
-                        ReferenceWithTimestamp[] modelPathInstanceIds = change.getModelPathInstanceIds();
+                        PathId[] modelPathInstanceIds = change.getModelPathInstanceIds();
                         ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];
                         for (int i = 0; i < ids.length; i++) {
                             ids[i] = modelPathInstanceIds[i].getObjectId();
@@ -326,7 +324,7 @@ public class BaseTasmoTest {
             }
         };
 
-        commitChange = new ExistenceCommitChange(existenceStore, commitChange);
+        commitChange = new ConcurrencyAndExistanceCommitChange(concurrencyStore, existenceStore, commitChange);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
                 new CallbackStream<List<BookkeepingEvent>>() {
@@ -353,12 +351,15 @@ public class BaseTasmoTest {
                 viewsProvider,
                 eventProvider,
                 concurrencyStore,
+                existenceStore,
                 referenceStore,
                 eventValueStore,
                 commitChange);
 
         materializer = new TasmoViewMaterializer(existenceStore, tasmoEventBookkeeper,
-                tasmoViewModel, getViewChangeNotificationProcessor());
+                tasmoViewModel, getViewChangeNotificationProcessor(),
+                new WrittenInstanceHelper(),
+                concurrencyStore, eventValueStore, referenceStore);
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
     }

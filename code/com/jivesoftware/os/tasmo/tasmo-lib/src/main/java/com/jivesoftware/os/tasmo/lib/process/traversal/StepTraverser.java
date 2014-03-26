@@ -9,7 +9,7 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 
 /**
  *
@@ -18,6 +18,6 @@ public interface StepTraverser {
 
     void process(TenantIdAndCentricId tenantIdAndCentricId,
         PathTraversalContext viewFieldContext,
-        ReferenceWithTimestamp referenceWithTimestamp,
+        PathId pathId,
         StepStream streamTo) throws Exception;
 }

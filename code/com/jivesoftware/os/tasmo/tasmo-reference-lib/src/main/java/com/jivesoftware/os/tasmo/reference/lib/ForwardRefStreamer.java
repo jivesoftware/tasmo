@@ -35,4 +35,9 @@ public class ForwardRefStreamer extends BaseRefStreamer {
     public boolean isBackRefStreamer() {
         return false;
     }
+
+    @Override
+    public String toString() {
+        return "ForwardRefStreamer{" + "referringClassNames=" + referringClassNames + ", referringFieldName=" + referringFieldName + '}';
+    }
 }

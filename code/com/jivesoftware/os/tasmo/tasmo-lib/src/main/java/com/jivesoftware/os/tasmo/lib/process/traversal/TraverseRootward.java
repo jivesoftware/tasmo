@@ -10,6 +10,7 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Set;
@@ -32,24 +33,24 @@ class TraverseRootward implements StepTraverser {
     @Override
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
             final PathTraversalContext context,
-            final ReferenceWithTimestamp from,
+            final PathId from,
             final StepStream streamTo) throws Exception {
 
-        context.setPathId(pathIndex, from);
+        context.setPathId(pathIndex, from.getObjectId(), from.getTimestamp());
         streamer.stream(tenantIdAndCentricId, from.getObjectId(),
                 new CallbackStream<ReferenceWithTimestamp>() {
             @Override
             public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                 if (to != null && isValidUpStreamObject(to)) {
 
-                    context.setPathId(pathIndex, to);
+                    context.setPathId(pathIndex, to.getObjectId(), to.getTimestamp());
 
                     ReferenceWithTimestamp ref = new ReferenceWithTimestamp(
                                     (streamer.isBackRefStreamer()) ? to.getObjectId() : from.getObjectId(),
                                     to.getFieldName(),
                                     to.getTimestamp());
                     context.addVersion(ref);
-                    streamTo.stream(to);
+                    streamTo.stream(new PathId(to.getObjectId(), to.getTimestamp()));
                 }
                 return to;
             }
@@ -59,4 +60,10 @@ class TraverseRootward implements StepTraverser {
     private boolean isValidUpStreamObject(ReferenceWithTimestamp ref) {
         return validUpstreamTypes == null || validUpstreamTypes.isEmpty() || validUpstreamTypes.contains(ref.getObjectId().getClassName());
     }
+
+    @Override
+    public String toString() {
+        return "Rootward(" + "streamer=" + streamer + ", pathIndex=" + pathIndex + ')';
+    }
+
 }

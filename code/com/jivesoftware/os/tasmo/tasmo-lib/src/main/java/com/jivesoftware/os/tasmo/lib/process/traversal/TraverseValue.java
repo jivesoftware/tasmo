@@ -10,6 +10,7 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.List;
 
@@ -34,12 +35,19 @@ public class TraverseValue implements StepTraverser {
     @Override
     public void process(TenantIdAndCentricId tenantIdAndCentricId,
             PathTraversalContext context,
-            ReferenceWithTimestamp from,
+            PathId from,
             StepStream streamTo) throws Exception {
 
-        context.setPathId(pathIndex, from);
+        context.setPathId(pathIndex, from.getObjectId(), from.getTimestamp());
         List<ReferenceWithTimestamp> versions = context.populateLeafNodeFields(eventValueStore, from.getObjectId(), fieldNames);
         context.addVersions(versions);
-        streamTo.stream(context.getPathId(processingPathIndex));
+        PathId to = context.getPathId(processingPathIndex);
+        streamTo.stream(to);
     }
+
+    @Override
+    public String toString() {
+        return "Value(fieldNames=" + fieldNames + ", processingPathIndex=" + processingPathIndex + ", pathIndex=" + pathIndex + ')';
+    }
+
 }

@@ -26,6 +26,7 @@ public class BackRef2Test extends BaseTasmoTest {
         ObjectId contentId = write(EventBuilder.create(idProvider, "Content", tenantId, actorId).set("ref_originalAuthor", userId).build()); //4
         ObjectId versionId = write(EventBuilder.create(idProvider, "VersionedContent", tenantId, actorId).build()); //6
         write(EventBuilder.update(contentId, tenantId, actorId).set("ref_versionedContent", versionId).build()); //7
+        // User2, Content4 -> User2, Versioned6, Content4 -> Versions6
         //7
         ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId("VersionView", versionId.getId()));
         System.out.println("view=" + mapper.writeValueAsString(view));

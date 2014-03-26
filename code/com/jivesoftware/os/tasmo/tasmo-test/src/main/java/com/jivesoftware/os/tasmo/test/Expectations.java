@@ -57,7 +57,7 @@ public class Expectations {
                 ObjectId[] branchIds = viewBranch.getBranchIds();
 
                 System.out.println("Adding view path expecation: " + binding.getModelPaths().get(0).getId()
-                        + Arrays.toString(branchIds) + ":" + entry.getKey() + "->" + entry.getValue());
+                        + Arrays.toString(branchIds) + ":" + entry.getKey() + "->" + (viewBranch.isDeleted() ? null : entry.getValue()));
 
                 expectations.addExpectation(testCase, branchIds[0], binding.getViewClassName(),
                         binding.getModelPaths().get(0).getId(), branchIds, entry.getKey(),
@@ -275,8 +275,16 @@ public class Expectations {
 
         @Override
         public String toString() {
-            return "Expectation{" + "testCase=" + testCase + ", viewId=" + viewId + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathId + ", path=" + path
-                    + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds) + ", fieldName=" + fieldName + ", value=" + value + '}';
+            return "Expectation{"
+                    + "testCase=" + testCase
+                    + ", viewId=" + viewId
+                    + ", viewClassName=" + viewClassName
+                    + ", modelPathId=" + modelPathId
+                    + ", path=" + path
+                    + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
+                    + ", fieldName=" + fieldName
+                    + ", value=" + value
+                    + '}';
         }
 
         @Override

@@ -62,7 +62,6 @@ public class ReferenceStore {
 
         final ClassAndField_IdKey aClassAndField_aId = new ClassAndField_IdKey(className, fieldName, id);
         LOG.trace(" |--> Get bIds Tenant={} A={}", tenantIdAndCentricId, aClassAndField_aId);
-        //System.out.println(Thread.currentThread() + " |--> streamForwardRefs " + className + "." + fieldName + "." + id);
 
         multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
                 new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
@@ -76,9 +75,6 @@ public class ReferenceStore {
                             ReferenceWithTimestamp reference = new ReferenceWithTimestamp(bId.getColumn(), fieldName, bId.getTimestamp());
                             LOG.trace(" |--> Got bIds Tenant={} A={} B={} Timestamp={}", new Object[]{
                                 tenantIdAndCentricId, aClassAndField_aId, bId.getColumn(), bId.getTimestamp()});
-
-                            //System.out.println(Thread.currentThread() + " |--> streamForwardRefs " + className + "." + fieldName + "." + id
-                            //        + "->" + bId.getColumn() + " t=" + bId.getTimestamp());
 
                             ReferenceWithTimestamp returned = forwardRefs.callback(reference);
                             if (returned == reference) {
@@ -99,7 +95,6 @@ public class ReferenceStore {
             final CallbackStream<ReferenceWithTimestamp> backRefs) throws Exception {
 
         LOG.inc("get_aIds");
-        //System.out.println(Thread.currentThread() + " |--> streamBackRefs " + classNames + "." + fieldName + "." + id);
 
         List<KeyedColumnValueCallbackStream<ClassAndField_IdKey, ObjectId, byte[], Long>> callbacks = new ArrayList<>(classNames.size());
         for (String className : classNames) {
@@ -114,9 +109,6 @@ public class ReferenceStore {
                                         fieldName, backRef.getTimestamp());
                                 LOG.trace(" |--> Got aIds Tenant={} B={} A={} Timestamp={}", new Object[]{
                                     tenantIdAndCentricId, aClassAndField_bId, backRef.getColumn(), backRef.getTimestamp()});
-
-                                //System.out.println(Thread.currentThread() + " |--> streamBackRefs " + classNames + "." + fieldName + "." + id
-                                //        + "->" + backRef.getColumn() + " t=" + backRef.getTimestamp());
 
                                 ReferenceWithTimestamp returned = backRefs.callback(reference);
                                 if (returned != reference) {
@@ -138,7 +130,6 @@ public class ReferenceStore {
             final CallbackStream<ReferenceWithTimestamp> lastestBackRefs) throws Exception {
 
         LOG.inc("get_latest_aId");
-        //System.out.println(Thread.currentThread() + " |--> streamLatestBackRef " + classNames + "." + fieldName + "." + id);
 
         final AtomicReference<ColumnValueAndTimestamp<ObjectId, byte[], Long>> latestBackRef = new AtomicReference<>();
 
@@ -165,8 +156,6 @@ public class ReferenceStore {
 
         ColumnValueAndTimestamp<ObjectId, byte[], Long> latest = latestBackRef.get();
         if (latest != null) {
-            //System.out.println(Thread.currentThread() + " |--> streamBackRefs " + classNames + "." + fieldName + "." + id
-            //        + "->" + latest.getColumn() + " t=" + latest.getTimestamp());
             lastestBackRefs.callback(new ReferenceWithTimestamp(latest.getColumn(), fieldName, latest.getTimestamp()));
         }
         lastestBackRefs.callback(null); // eos
@@ -184,8 +173,8 @@ public class ReferenceStore {
         try {
             for (Reference to : tos) {
 
-                //System.out.println(Thread.currentThread() + " |--> link " + from.getClassName() + "." + fieldName + "." + from
-                //        + "->" + to.getObjectId() + " t=" + timestamp);
+                LOG.trace("|--> link {}.{}.{}->{} t={}",
+                        new Object[]{from.getClassName(), fieldName, from, to.getObjectId(), timestamp});
 
                 ClassAndField_IdKey classAndField_from = new ClassAndField_IdKey(from.getClassName(), fieldName, from);
                 ClassAndField_IdKey classAndField_to = new ClassAndField_IdKey(from.getClassName(), fieldName, to.getObjectId());
@@ -211,6 +200,8 @@ public class ReferenceStore {
             final ObjectId from,
             final String fieldName,
             final CallbackStream<ReferenceWithTimestamp> removedTos) throws Exception {
+
+        LOG.trace("|--> un-link {}.{}.{} t={}", new Object[]{from.getClassName(), fieldName, from, timestamp});
 
         LOG.inc("unlink");
 
@@ -242,7 +233,6 @@ public class ReferenceStore {
                 });
 
         removedTos.callback(null); // EOS
-
 
     }
 }

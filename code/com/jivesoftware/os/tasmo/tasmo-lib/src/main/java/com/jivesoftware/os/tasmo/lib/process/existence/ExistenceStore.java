@@ -6,7 +6,7 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.lib.exists;
+package com.jivesoftware.os.tasmo.lib.process.existence;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -27,10 +27,10 @@ import java.util.Set;
 public class ExistenceStore {
 
     private static final String existenceColumnKey = "existence"; // Uck
-    private final RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> eventValueStore;
+    private final RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore;
 
-    public ExistenceStore(RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> classFieldValueStore) {
-        this.eventValueStore = classFieldValueStore;
+    public ExistenceStore(RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore) {
+        this.existenceStore = existenceStore;
     }
 
     public void addObjectId(List<ExistenceUpdate> existenceUpdates) {
@@ -42,7 +42,7 @@ public class ExistenceStore {
                     Boolean.TRUE.toString(),
                     new ConstantTimestamper(existenceUpdate.timestamp)));
         }
-        eventValueStore.multiRowsMultiAdd(batch);
+        existenceStore.multiRowsMultiAdd(batch);
     }
 
     public void removeObjectId(List<ExistenceUpdate> existenceUpdates) {
@@ -52,7 +52,7 @@ public class ExistenceStore {
                     existenceUpdate.objectId, existenceColumnKey,
                     new ConstantTimestamper(existenceUpdate.timestamp)));
         }
-        eventValueStore.multiRowsMultiRemove(batch);
+        existenceStore.multiRowsMultiRemove(batch);
     }
 
     public Set<ObjectId> getExistence(List<ExistenceUpdate> existenceUpdates) {
@@ -65,7 +65,7 @@ public class ExistenceStore {
         Set<ObjectId> existence = new HashSet<>();
         for (TenantId tenantId : tenantIdsObjectIds.keySet()) {
             List<ObjectId> orderObjectIds = tenantIdsObjectIds.get(tenantId);
-            List<String> multiRowGet = eventValueStore.multiRowGet(tenantId, orderObjectIds, existenceColumnKey, null, null);
+            List<String> multiRowGet = existenceStore.multiRowGet(tenantId, orderObjectIds, existenceColumnKey, null, null);
             for (int i = 0; i < orderObjectIds.size(); i++) {
                 if (multiRowGet.get(i) != null) {
                     existence.add(orderObjectIds.get(i));
@@ -77,7 +77,7 @@ public class ExistenceStore {
 
     public Set<ObjectId> getExistence(TenantId tenantId, Set<ObjectId> objectIds) {
         List<ObjectId> orderObjectIds = new ArrayList<>(objectIds);
-        List<String> multiRowGet = eventValueStore.multiRowGet(tenantId, orderObjectIds, existenceColumnKey, null, null);
+        List<String> multiRowGet = existenceStore.multiRowGet(tenantId, orderObjectIds, existenceColumnKey, null, null);
         Set<ObjectId> existence = new HashSet<>();
         for (int i = 0; i < orderObjectIds.size(); i++) {
             if (multiRowGet.get(i) != null) {

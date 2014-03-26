@@ -217,14 +217,13 @@ public class ReferenceStoreConcurrencyTest {
                                         if (v != null) {
                                             values.remove(tenantIdAndCentricId,
                                                     v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp() + 1));
-                                            //System.out.println(Thread.currentThread().getName()+" |--> remove "+v.getObjectId()+" "+v.getTimestamp());
                                         }
                                         return v;
                                     }
                                 });
                     } else {
                         final long highest = concurrencyStore.highest(tenantIdAndCentricId.getTenantId(), from, fromRefFieldName, timestamp);
-                        if (timestamp > highest) {
+                        if (timestamp >= highest) {
                             referenceStore.link(tenantIdAndCentricId, timestamp, from, fromRefFieldName, Arrays.asList(tos));
                         }
                         // yield
@@ -235,7 +234,6 @@ public class ReferenceStoreConcurrencyTest {
                                         if (v != null) {
                                             values.remove(tenantIdAndCentricId,
                                                     v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp() + 1));
-                                            //System.out.println(Thread.currentThread().getName()+" |--> remove "+v.getObjectId()+" "+v.getTimestamp());
                                         }
                                         return v;
                                     }

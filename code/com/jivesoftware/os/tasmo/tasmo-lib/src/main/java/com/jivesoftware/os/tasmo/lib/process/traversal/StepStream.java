@@ -8,7 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 
 /**
  *
@@ -16,7 +16,7 @@ import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
  */
 public interface StepStream {
 
-    void stream(ReferenceWithTimestamp reference) throws Exception; // TODO: Consider batching?
+    void stream(PathId pathId) throws Exception; // TODO: Consider batching?
 
     int getStepIndex();
 }

@@ -39,4 +39,9 @@ public class LatestBackRefStreamer extends BaseRefStreamer {
     public boolean isBackRefStreamer() {
         return true;
     }
+
+    @Override
+    public String toString() {
+        return "LatestBackRefStreamer{" + "referringClassNames=" + referringClassNames + ", referringFieldName=" + referringFieldName + '}';
+    }
 }

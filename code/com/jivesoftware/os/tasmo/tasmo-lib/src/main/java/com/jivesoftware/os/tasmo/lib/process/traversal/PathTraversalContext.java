@@ -8,12 +8,15 @@
  */
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
+import com.jivesoftware.os.jive.utils.logger.MetricLogger;
+import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange.ViewFieldChangeType;
 import com.jivesoftware.os.tasmo.model.process.LeafNodeFields;
@@ -34,12 +37,14 @@ import java.util.List;
  */
 public class PathTraversalContext {
 
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+
     private final WrittenEvent writtenEvent;
     final TenantIdAndCentricId tenantIdAndCentricId;
     private final WrittenEventProvider writtenEventProvider;
     private final CommitChange commitChange;
     private final Id alternateViewId;
-    private final ReferenceWithTimestamp[] modelPathIdState;
+    private final PathId[] modelPathIdState;
     private final List<ReferenceWithTimestamp> modelPathVersionState;
     private long leafNodeTimestamp;
     private final boolean removalContext;
@@ -59,7 +64,7 @@ public class PathTraversalContext {
         this.writtenEventProvider = writtenEventProvider;
         this.commitChange = commitChange;
         this.alternateViewId = alternateViewId;
-        this.modelPathIdState = new ReferenceWithTimestamp[numberOfPathIds];
+        this.modelPathIdState = new PathId[numberOfPathIds];
         this.modelPathVersionState = new ArrayList<>();
         this.removalContext = removalContext;
 
@@ -70,21 +75,20 @@ public class PathTraversalContext {
         return tenantIdAndCentricId;
     }
 
-    public void setPathId(int pathIndex, ReferenceWithTimestamp id) {
-        //System.out.println(Debug.caller(10) + " |||| SetPath:" + pathIndex + " |||| " + versionObjectId);
-        this.modelPathIdState[pathIndex] = id;
+    public void setPathId(int pathIndex, ObjectId id, long timestamp) {
+        LOG.trace("!!!!!!!!---------- SetPath:" + pathIndex + " |||| " + id + " @ " + timestamp + " " + " remove:" + removalContext);
+        this.modelPathIdState[pathIndex] = new PathId(id, timestamp);
     }
 
     public void addVersion(ReferenceWithTimestamp version) {
-        //System.out.println(Debug.caller(10) + " |||| SetPath:" + pathIndex + " |||| " + versionObjectId);
         this.modelPathVersionState.add(version);
     }
+
     public void addVersions(Collection<ReferenceWithTimestamp> versions) {
-        //System.out.println(Debug.caller(10) + " |||| SetPath:" + pathIndex + " |||| " + versionObjectId);
         this.modelPathVersionState.addAll(versions);
     }
 
-    public ReferenceWithTimestamp getPathId(int pathIndex) {
+    public PathId getPathId(int pathIndex) {
         return this.modelPathIdState[pathIndex];
     }
 
@@ -170,20 +174,62 @@ public class PathTraversalContext {
 
     private long getHighWaterTimestamp() {
         long highwaterTimestamp = leafNodeTimestamp;
-        for (ReferenceWithTimestamp reference : modelPathIdState) {
+        for (PathId reference : modelPathIdState) {
             highwaterTimestamp = Math.max(highwaterTimestamp, reference.getTimestamp());
         }
         return highwaterTimestamp;
     }
 
-    public void commit() throws Exception { // TODO this method doesn't belong in this class
-        System.out.println("---------- Anything to write?:"+!changes.isEmpty() +" pathIds:"+Arrays.deepToString(modelPathIdState)+" versions:"+modelPathVersionState);
+    public void commit(PathTraverser traverser) throws Exception { // TODO this method doesn't belong in this class
 
         if (!changes.isEmpty()) {
-            System.out.println("Wrote:"+changes);
+            int i = 1;
+            for (ViewFieldChange change : changes) {
+                LOG.trace("!!!!!!!!----------" + i + "." + ((removalContext) ? "REMOVABLE" : "ADDABLE")
+                        + " PATH:" + Arrays.toString(change.getModelPathInstanceIds())
+                        + " versions:" + modelPathIdStateAsString(change.getModelPathVersions(), true)
+                        + " v=" + change.getValue() + " t=" + change.getTimestamp() + " traverse: [");
+                for (String t : pathTraverserAsString(traverser)) {
+                    LOG.trace(t);
+                }
+            }
+
             commitChange.commitChange(tenantIdAndCentricId, changes);
-            changes.clear();
-            modelPathVersionState.clear();
+
+        } else {
+            LOG.trace("!!!!!!!!---------- DIDN'T " + ((removalContext) ? "REMOVE" : "ADD")
+                    + " INCOMPLETE PATH:" + Arrays.toString(modelPathIdState)
+                    + " versions:" + modelPathIdStateAsString(modelPathVersionState, true) + " traverse: [");
+            for (String t : pathTraverserAsString(traverser)) {
+                LOG.trace(t);
+            }
         }
+        changes.clear();
+        modelPathVersionState.clear();
+    }
+
+    List<String> pathTraverserAsString(PathTraverser pathTraverser) {
+        List<String> lines = new ArrayList<>();
+        for (StepTraverser stepTraverser : pathTraverser.getStepTraversers()) {
+            lines.add("!!!!!!!!----------  " + stepTraverser + ", ");
+        }
+        lines.add("!!!!!!!!----------  ]");
+        return lines;
+    }
+
+    String modelPathIdStateAsString(List<ReferenceWithTimestamp> path, boolean fields) {
+        String s = "[";
+        for (ReferenceWithTimestamp p : path) {
+            if (p == null) {
+                s += "null, ";
+            } else {
+                s += p.getObjectId().getClassName() + "." + p.getObjectId().getId().toStringForm();
+                if (fields) {
+                    s += "." + p.getFieldName();
+                }
+                s += "." + p.getTimestamp() + ", ";
+            }
+        }
+        return s + ']';
     }
 }

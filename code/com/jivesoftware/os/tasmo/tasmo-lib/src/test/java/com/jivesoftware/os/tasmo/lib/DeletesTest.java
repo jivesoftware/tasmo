@@ -169,12 +169,14 @@ public class DeletesTest extends BaseTasmoTest {
         expectations.clear();
 
         ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
+        System.out.println("Expect Not Null:" + view);
         Assert.assertNotNull(view);
 
         // - 3
         write(EventBuilder.update(content1, tenantId, actorId).set(ReservedFields.DELETED, true).build());
 
         view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
+        System.out.println("Expect Null:" + view);
         Assert.assertNull(view);
 
     }

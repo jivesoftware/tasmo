@@ -7,13 +7,13 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.List;
 
 public class PathTraverser {
@@ -38,10 +38,10 @@ public class PathTraverser {
 
     public void travers(WrittenEvent writtenEvent,
             PathTraversalContext context,
-            ReferenceWithTimestamp referenceWithTimestamp) throws Exception {
+            PathId pathId) throws Exception {
 
         StepStreamer stepStreamer = new StepStreamer(context.getTenantIdAndCentricId(), context, stepTraversers, 0);
-        stepStreamer.stream(referenceWithTimestamp);
+        stepStreamer.stream(pathId);
 
     }
 
@@ -133,4 +133,17 @@ public class PathTraverser {
     public int getPathIndex() {
         return initialStepContext.getPathIndex();
     }
+
+    public List<StepTraverser> getStepTraversers() {
+        return stepTraversers;
+    }
+
+    @Override
+    public String toString() {
+        return "PathTraverser{"
+                + "stepTraversers=" + stepTraversers
+                + ", initialStepContext=" + initialStepContext
+                + ", pathTraverserConfig=" + pathTraverserConfig + '}';
+    }
+
 }

@@ -6,6 +6,7 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
@@ -25,7 +26,9 @@ public class WriteChangeSerializationTest {
         ViewFieldChange.ViewFieldChangeType type = ViewFieldChange.ViewFieldChangeType.add;
         ObjectId viewId = new ObjectId("radical", new Id(234));
         String viewFieldName = "stuff";
-        ReferenceWithTimestamp[] modelPathIds = new ReferenceWithTimestamp[]{new ReferenceWithTimestamp(new ObjectId("radParent", new Id(768)), "foo", 1)};
+        PathId[] modelPathIds = new PathId[]{new PathId(new ObjectId("radParent", new Id(768)), 1)};
+        ReferenceWithTimestamp[] modelPathVersionIds = new ReferenceWithTimestamp[]{
+            new ReferenceWithTimestamp(new ObjectId("radParent", new Id(768)), "foo", 1)};
 
         ObjectNode value = mapper.createObjectNode();
         value.put("wow", "this should work");
@@ -38,7 +41,7 @@ public class WriteChangeSerializationTest {
         ViewFieldChange viewFieldChange = new ViewFieldChange(
                 1, -1, -1,
                 new TenantIdAndCentricId(tenant, Id.NULL),
-                new Id(1234), type, viewId, viewFieldName, modelPathIds, Arrays.asList(modelPathIds), valAsString, now);
+                new Id(1234), type, viewId, viewFieldName, modelPathIds, Arrays.asList(modelPathVersionIds), valAsString, now);
 
         System.out.println("Serializing:\n" + mapper.writeValueAsString(viewFieldChange));
 

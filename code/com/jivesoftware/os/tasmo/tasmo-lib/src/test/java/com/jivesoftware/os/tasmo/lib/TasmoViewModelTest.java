@@ -12,6 +12,7 @@ import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
+import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -44,6 +45,7 @@ public class TasmoViewModelTest {
     private TasmoViewModel tasmoViewModel;
     private WrittenEventProvider writtenEventProvider;
     private ConcurrencyStore concurrencyStore;
+    private ExistenceStore existenceStore;
     private ReferenceStore referenceStore;
     private EventValueStore eventValueStore;
     private CommitChange changeWriter;
@@ -53,18 +55,20 @@ public class TasmoViewModelTest {
 
         viewsProvider = Mockito.mock(ViewsProvider.class);
         concurrencyStore = Mockito.mock(ConcurrencyStore.class);
+        existenceStore = Mockito.mock(ExistenceStore.class);
         writtenEventProvider = Mockito.mock(WrittenEventProvider.class);
         referenceStore = Mockito.mock(ReferenceStore.class);
         eventValueStore = Mockito.mock(EventValueStore.class);
         changeWriter = Mockito.mock(CommitChange.class);
         tasmoViewModel = new TasmoViewModel(
-            tenantId,
-            viewsProvider,
-            writtenEventProvider,
-            concurrencyStore,
-            referenceStore,
-            eventValueStore,
-            changeWriter);
+                tenantId,
+                viewsProvider,
+                writtenEventProvider,
+                concurrencyStore,
+                existenceStore,
+                referenceStore,
+                eventValueStore,
+                changeWriter);
     }
 
     @AfterMethod
@@ -89,7 +93,6 @@ public class TasmoViewModelTest {
         instance.put("k", "k");
         instance.put("l", "l");
 
-
         JsonEventConventions jec = new JsonEventConventions();
         jec.setActorId(event, new Id(1));
         jec.setUserId(event, new Id(1));
@@ -99,10 +102,8 @@ public class TasmoViewModelTest {
         jec.setInstanceId(event, new Id(3), "Bar");
         jec.setInstanceNode(event, "Bar", instance);
 
-
         Mockito.when(viewsProvider.getCurrentViewsVersion(tenantId)).thenReturn(version1, version2);
         Mockito.when(viewsProvider.getViews(Mockito.any(ViewsProcessorId.class))).thenReturn(views1, views2);
-
 
         tasmoViewModel.loadModel(tenantId);
         VersionedTasmoViewModel first = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
@@ -117,14 +118,13 @@ public class TasmoViewModelTest {
         Assert.assertFalse(second.getDispatchers().get("B").isEmpty());
         Assert.assertTrue(second.getDispatchers().get("A").isEmpty());
 
-
     }
 
     private Views makeViews(String className, ChainedVersion version, String pathName, String... fieldNames) {
         List<ModelPath> modelPaths = new ArrayList<>();
         modelPaths.add(ModelPath.builder(pathName)
-            .addPathMember(new ModelPathStep(true, Sets.newHashSet(pathName), null, ModelPathStepType.value, null, Arrays.asList(fieldNames)))
-            .build());
+                .addPathMember(new ModelPathStep(true, Sets.newHashSet(pathName), null, ModelPathStepType.value, null, Arrays.asList(fieldNames)))
+                .build());
         ViewBinding viewBinding = new ViewBinding(className, modelPaths, false, false, false, null);
         List<ViewBinding> viewBindings = new ArrayList<>();
         viewBindings.add(viewBinding);

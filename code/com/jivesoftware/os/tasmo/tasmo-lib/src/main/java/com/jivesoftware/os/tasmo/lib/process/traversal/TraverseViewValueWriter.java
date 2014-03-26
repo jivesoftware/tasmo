@@ -9,7 +9,7 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 
 /**
  *
@@ -27,13 +27,14 @@ public class TraverseViewValueWriter implements StepTraverser {
     @Override
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
             PathTraversalContext context,
-            ReferenceWithTimestamp objectInstanceId,
+            PathId pathId,
             StepStream streamTo) throws Exception {
-        context.writeViewFields(viewClassName, modelPathId, objectInstanceId.getObjectId());
+        context.writeViewFields(viewClassName, modelPathId, pathId.getObjectId());
     }
 
     @Override
     public String toString() {
-        return "ViewValueWriterStep{" + "viewClassName=" + viewClassName + ", modelPathId=" + modelPathId + '}';
+        return "Writer(" + "viewClassName=" + viewClassName + ", modelPathId=" + modelPathId + ')';
     }
+
 }

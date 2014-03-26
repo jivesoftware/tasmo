@@ -14,49 +14,44 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
 import com.jivesoftware.os.tasmo.lib.process.EventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
-import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.PathModifiedOutFromUnderneathMeException;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author jonathan.colt
  */
 public class InitiateRefTraversal implements EventProcessor {
 
-    private final WrittenInstanceHelper writtenInstanceHelper;
-    private final ConcurrencyStore concurrencyStore;
+    private final ConcurrencyChecker concurrencyChecker;
     private final ReferenceStore referenceStore;
-    private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> traversers;
+    private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers;
+    private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers;
     private final boolean idCentric;
 
-    public InitiateRefTraversal(WrittenInstanceHelper writtenInstanceHelper,
-            ConcurrencyStore concurrencyStore,
+    public InitiateRefTraversal(ConcurrencyChecker concurrencyChecker,
             ReferenceStore referenceStore,
-            ArrayListMultimap<InitiateTraverserKey, PathTraverser> steps,
+            ArrayListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers,
+            ArrayListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers,
             boolean idCentric) {
-        this.writtenInstanceHelper = writtenInstanceHelper;
-        this.concurrencyStore = concurrencyStore;
+        this.concurrencyChecker = concurrencyChecker;
         this.referenceStore = referenceStore;
-        this.traversers = steps;
+        this.forwardRefTraversers = forwardRefTraversers;
+        this.backRefTraversers = backRefTraversers;
         this.idCentric = idCentric;
     }
 
     @Override
     public void process(final WrittenEventContext writtenEventContext, final WrittenEvent writtenEvent) throws Exception {
-
-        if (traversers == null || traversers.isEmpty()) {
-            return;
-        }
 
         TenantId tenantId = writtenEvent.getTenantId();
         final long timestamp = writtenEvent.getEventId();
@@ -65,58 +60,33 @@ public class InitiateRefTraversal implements EventProcessor {
         final TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId,
                 (idCentric) ? writtenEvent.getCentricId() : Id.NULL);
 
-        for (InitiateTraverserKey key : traversers.keySet()) {
-            if (key.isDelete()) {
-                continue;
-            }
-            if (writtenInstance.hasField(key.getTriggerFieldName()) && writtenInstance.hasField(key.getRefFieldName())) {
+        Set<InitiateTraverserKey> allKeys = new HashSet();
+        allKeys.addAll(forwardRefTraversers.keySet());
+        allKeys.addAll(backRefTraversers.keySet());
+
+        for (final InitiateTraverserKey key : allKeys) {
+            if (writtenInstance.hasField(key.getTriggerFieldName())
+                    && (writtenInstance.hasField(key.getRefFieldName()) || writtenInstance.isDeletion())) {
 
                 final String refFieldName = key.getRefFieldName();
 
-                final long highest = concurrencyStore.highest(tenantIdAndCentricId.getTenantId(), instanceId, refFieldName, timestamp);
-                if (timestamp > highest) {
-                    Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, refFieldName);
-                    referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, refFieldName, tos);
-                }
+                long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId.getTenantId(), instanceId, refFieldName, timestamp);
 
-
-                final Collection<PathTraverser> pathTraversers = traversers.get(key);
                 referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), instanceId, refFieldName,
                         new CallbackStream<ReferenceWithTimestamp>() {
                             @Override
                             public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                 if (to != null && to.getTimestamp() < timestamp) {
-                                    for (PathTraverser pathTraverser : pathTraversers) {
-
-                                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, true);
-
-                                        context.setPathId(pathTraverser.getPathIndex(), new ReferenceWithTimestamp(
-                                                        instanceId,
-                                                        refFieldName,
-                                                        to.getTimestamp()));
-
-                                        context.addVersion(new ReferenceWithTimestamp(
-                                                        instanceId,
-                                                        refFieldName,
-                                                        to.getTimestamp()));
-
-                                        pathTraverser.travers(writtenEvent, context, to);
-                                        context.commit();
-                                    }
+                                    travers(writtenEventContext, writtenEvent, key, instanceId, refFieldName, to, true);
                                 }
                                 return to;
                             }
                         });
 
-                List<ConcurrencyStore.FieldVersion> want = Arrays.asList(new ConcurrencyStore.FieldVersion(instanceId, refFieldName, highest));
-                List<ConcurrencyStore.FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
-                if (got != want) {
-                    PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
-                    throw e;
-                }
+                concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId,
+                        Arrays.asList(new FieldVersion(instanceId, refFieldName, highest)));
 
-                for (final PathTraverser pathTraverser : traversers.get(key)) {
-                    final PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, false);
+                if (!writtenInstance.isDeletion()) {
 
                     referenceStore.streamForwardRefs(tenantIdAndCentricId, instanceId.getClassName(), refFieldName, instanceId,
                             new CallbackStream<ReferenceWithTimestamp>() {
@@ -124,32 +94,48 @@ public class InitiateRefTraversal implements EventProcessor {
                                 @Override
                                 public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                     if (to != null) {
-
-                                        context.setPathId(pathTraverser.getPathIndex(), new ReferenceWithTimestamp(
-                                                        instanceId,
-                                                        refFieldName,
-                                                        to.getTimestamp()));
-
-                                        context.addVersion(new ReferenceWithTimestamp(
-                                                        instanceId,
-                                                        refFieldName,
-                                                        to.getTimestamp()));
-
-                                        pathTraverser.travers(writtenEvent, context, to);
+                                        travers(writtenEventContext, writtenEvent, key, instanceId, refFieldName, to, false);
                                     }
                                     return to;
                                 }
                             });
-                    context.commit();
 
-                    got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
-                    if (got != want) {
-                        PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
-                        //System.out.println(Thread.currentThread() + " " + e.toString());
-                        throw e;
-                    }
+                    concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId,
+                            Arrays.asList(new FieldVersion(instanceId, refFieldName, highest)));
                 }
             }
+        }
+    }
+
+    private void travers(WrittenEventContext writtenEventContext,
+            WrittenEvent writtenEvent,
+            InitiateTraverserKey key,
+            ObjectId instanceId,
+            String refFieldName,
+            ReferenceWithTimestamp to,
+            boolean removal) throws Exception {
+
+        ReferenceWithTimestamp from = new ReferenceWithTimestamp(instanceId,
+                refFieldName, to.getTimestamp());
+
+        for (PathTraverser pathTraverser : forwardRefTraversers.get(key)) {
+
+            PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, removal);
+            context.setPathId(pathTraverser.getPathIndex(), from.getObjectId(), from.getTimestamp());
+            context.addVersion(from);
+
+            pathTraverser.travers(writtenEvent, context, new PathId(to.getObjectId(), to.getTimestamp()));
+            context.commit(pathTraverser);
+        }
+
+        for (PathTraverser pathTraverser : backRefTraversers.get(key)) {
+
+            PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, removal);
+            context.setPathId(pathTraverser.getPathIndex(), to.getObjectId(), to.getTimestamp());
+            context.addVersion(from);
+
+            pathTraverser.travers(writtenEvent, context, new PathId(instanceId, to.getTimestamp()));
+            context.commit(pathTraverser);
         }
     }
 

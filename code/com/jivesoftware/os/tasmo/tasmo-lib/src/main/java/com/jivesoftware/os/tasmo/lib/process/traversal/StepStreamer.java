@@ -1,7 +1,7 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import java.util.List;
 
 /**
@@ -26,8 +26,8 @@ class StepStreamer implements StepStream {
     }
 
     @Override
-    public void stream(ReferenceWithTimestamp reference) throws Exception {
-        steps.get(stepIndex).process(tenantIdAndCentricId, context, reference, nextStepStreamer());
+    public void stream(PathId pathId) throws Exception {
+        steps.get(stepIndex).process(tenantIdAndCentricId, context, pathId, nextStepStreamer());
     }
 
     @Override

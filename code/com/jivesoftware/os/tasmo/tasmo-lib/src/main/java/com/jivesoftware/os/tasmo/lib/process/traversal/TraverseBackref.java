@@ -10,6 +10,7 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.reference.lib.BackRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
@@ -37,7 +38,7 @@ public class TraverseBackref implements StepTraverser {
     @Override
     public void process(TenantIdAndCentricId tenantIdAndCentricId,
             final PathTraversalContext context,
-            final ReferenceWithTimestamp from,
+            final PathId from,
             final StepStream streamTo) throws Exception {
 
         final RefStreamer streamer = new BackRefStreamer(referenceStore,
@@ -49,7 +50,7 @@ public class TraverseBackref implements StepTraverser {
                     @Override
                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                         if (to != null && isValidDownStreamObject(to)) {
-                            streamTo.stream(to);
+                            streamTo.stream(new PathId(to.getObjectId(), to.getTimestamp()));
                         }
                         return to;
                     }
@@ -58,6 +59,11 @@ public class TraverseBackref implements StepTraverser {
 
     private boolean isValidDownStreamObject(ReferenceWithTimestamp ref) {
         return validDownStreamTypes == null || validDownStreamTypes.isEmpty() || validDownStreamTypes.contains(ref.getObjectId().getClassName());
+    }
+
+    @Override
+    public String toString() {
+        return "TraverseBackref." + initialModelPathMember;
     }
 
 }

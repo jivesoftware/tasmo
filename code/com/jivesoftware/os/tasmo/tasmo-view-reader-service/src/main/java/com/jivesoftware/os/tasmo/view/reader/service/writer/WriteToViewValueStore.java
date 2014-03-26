@@ -30,12 +30,16 @@ public class WriteToViewValueStore implements ViewWriter {
             Transaction transaction = viewValueStore.begin(tenantIdAndCentricId);
             for (ViewWriteFieldChange fieldChange : fieldChanges) {
                 if (fieldChange.getType() == ViewWriteFieldChange.Type.add) {
+                    System.out.println(">>>>>> VVS ADD:" + fieldChange);
+
                     transaction.set(fieldChange.getViewObjectId(),
                         fieldChange.getModelPathId(),
                         fieldChange.getModelPathInstanceIds(),
                         fieldChange.getValue(),
                         fieldChange.getTimestamp());
                 } else if (fieldChange.getType() == ViewWriteFieldChange.Type.remove) {
+                    System.out.println(">>>>>> VVS REMOVE:" + fieldChange);
+
                     transaction.remove(fieldChange.getViewObjectId(),
                         fieldChange.getModelPathId(),
                         fieldChange.getModelPathInstanceIds(),

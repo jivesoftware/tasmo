@@ -12,37 +12,41 @@ import com.google.common.collect.ArrayListMultimap;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.events.EventValueStore.Transaction;
 import com.jivesoftware.os.tasmo.lib.process.EventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
-import java.util.HashSet;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author jonathan.colt
  */
 public class InitiateValueTraversal implements EventProcessor {
 
+    private final ConcurrencyChecker concurrencyChecker;
     private final EventValueStore eventValueStore;
-    private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> steps;
+    private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> traversers;
     private final boolean idCentric;
 
-    public InitiateValueTraversal(EventValueStore eventValueStore, ArrayListMultimap<InitiateTraverserKey, PathTraverser> steps,
+    public InitiateValueTraversal(ConcurrencyChecker concurrencyChecker,
+            EventValueStore eventValueStore,
+            ArrayListMultimap<InitiateTraverserKey, PathTraverser> traversers,
             boolean idCentric) {
+        this.concurrencyChecker = concurrencyChecker;
         this.eventValueStore = eventValueStore;
-        this.steps = steps;
+        this.traversers = traversers;
         this.idCentric = idCentric;
     }
 
     @Override
     public void process(final WrittenEventContext writtenEventContext, WrittenEvent writtenEvent) throws Exception {
-        if (steps == null || steps.isEmpty()) {
+        if (traversers == null || traversers.isEmpty()) {
             return;
         }
 
@@ -51,46 +55,40 @@ public class InitiateValueTraversal implements EventProcessor {
                 (idCentric) ? writtenEvent.getCentricId() : Id.NULL);
 
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
-        ObjectId instancId = writtenInstance.getInstanceId();
+        ObjectId instanceId = writtenInstance.getInstanceId();
 
-        if (writtenInstance.isDeletion()) {
-            eventValueStore.removeObjectId(tenantIdAndCentricId, timestamp, instancId);
-        } else {
-            Transaction transaction = eventValueStore.begin(tenantIdAndCentricId,
-                    timestamp,
-                    timestamp,
-                    instancId);
-            for (InitiateTraverserKey key : steps.keySet()) {
-                if (writtenEvent.getWrittenInstance().hasField(key.getTriggerFieldName())) {
-                    OpaqueFieldValue got = writtenInstance.getFieldValue(key.getTriggerFieldName());
-                    if (got == null || got.isNull()) {
-                        transaction.remove(key.getTriggerFieldName());
-                    } else {
-                        transaction.set(key.getTriggerFieldName(), got);
+        for (InitiateTraverserKey key : traversers.keySet()) {
+            if (writtenInstance.hasField(key.getTriggerFieldName())) {
+
+                if (writtenInstance.isDeletion()) {
+                    for (PathTraverser pathTraverser : traversers.get(key)) {
+                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, true);
+                        context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
+                        List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(eventValueStore,
+                                instanceId, pathTraverser.getInitialFieldNames());
+                        context.addVersions(valueVersions);
+                        pathTraverser.travers(writtenEvent, context, new PathId(instanceId, timestamp));
+                        context.commit(pathTraverser);
                     }
-                }
-            }
-            eventValueStore.commit(transaction);
-        }
+                } else {
 
-        Set<PathTraverser> processedChains = new HashSet<>();
+                    //long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId.getTenantId(), instanceId, refFieldName, timestamp);
+                    for (PathTraverser pathTraverser : traversers.get(key)) {
+                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, false);
+                        List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(eventValueStore,
+                                instanceId, pathTraverser.getInitialFieldNames());
 
-        for (InitiateTraverserKey key : steps.keySet()) {
-            if (writtenEvent.getWrittenInstance().hasField(key.getTriggerFieldName())) {
+                        context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
+                        context.addVersions(valueVersions);
+                        pathTraverser.travers(writtenEvent, context, new PathId(instanceId, timestamp));
+                        context.commit(pathTraverser);
 
-                for (PathTraverser step : steps.get(key)) {
+                        List<FieldVersion> want = new ArrayList<>();
+                        for (ReferenceWithTimestamp valueVersion : valueVersions) {
+                            want.add(new FieldVersion(instanceId, valueVersion.getFieldName(), valueVersion.getTimestamp()));
+                        }
 
-                    if (!processedChains.contains(step)) {
-
-                        ReferenceWithTimestamp ref = new ReferenceWithTimestamp(instancId, key.getTriggerFieldName(), timestamp);
-                        PathTraversalContext context = step.createContext(writtenEventContext, writtenEvent, writtenInstance.isDeletion());
-                        context.setPathId(step.getPathIndex(), ref);
-                        List<ReferenceWithTimestamp> versions = context.populateLeafNodeFields(eventValueStore, instancId, step.getInitialFieldNames());
-                        context.addVersions(versions);
-                        step.travers(writtenEvent, context, ref);
-                        context.commit();
-
-                        processedChains.add(step);
+                        concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId, want);
                     }
                 }
             }

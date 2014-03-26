@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -41,7 +42,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.log4j.Appender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.PatternLayout;
 import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -61,32 +67,51 @@ public class CombinatorialMaterializerTest {
         }
     }
 
-    @Test(dataProvider = "totalOrderAdds", invocationCount = 10, singleThreaded = true)
-    public void testMultiThreadedTotalOrderAdds(InputCase inputCase)
-            throws Throwable {
-        assertCombination(inputCase, null, true);
+    @BeforeClass
+    public void logger() {
+        String PATTERN = "%t %m%n";
+
+        Enumeration allAppenders = LogManager.getRootLogger().getAllAppenders();
+        while (allAppenders.hasMoreElements()) {
+            Appender appender = (Appender)allAppenders.nextElement();
+            appender.setLayout(new PatternLayout(PATTERN));
+        }
+        LogManager.getLogger("com.jivesoftware.os.tasmo.lib").setLevel(Level.TRACE);
     }
 
     @Test(dataProvider = "totalOrderAdds", invocationCount = 1)
-    public void testTotalOrderAdds(InputCase inputCase)
+    public void testSingleThreadedTotalOrderAdds(InputCase inputCase)
             throws Throwable {
         assertCombination(inputCase, null, false);
     }
 
-    @Test(dataProvider = "unorderedAdds", invocationCount = 100)
-    public void testUnorderedAdds(InputCase inputCase)
+    @Test(dataProvider = "unorderedAdds", invocationCount = 1)
+    public void testSingleThreadedUnorderedAdds(InputCase inputCase)
             throws Throwable {
         assertCombination(inputCase, null, false);
     }
 
-    @Test(dataProvider = "addsThenRemoves")
-    public void testAddsThenRemoves(InputCase inputCase)
+    @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
+    public void testMultiThreadedAddsOnly(InputCase inputCase)
             throws Throwable {
         assertCombination(inputCase, null, true);
     }
 
-    @Test(dataProvider = "addsThenRemovesThenAdds")
-    public void testAddsThenRemovesThenAdds(InputCase inputCase)
+    @Test(dataProvider = "addsThenRemoves", invocationCount = 1)
+    public void testSingleThreadedAddsThenRemoves(InputCase inputCase)
+            throws Throwable {
+        assertCombination(inputCase, null, false);
+    }
+
+    @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
+    public void testMultiThreadedAddsThenRemoves(InputCase inputCase)
+            throws Throwable {
+
+        assertCombination(inputCase, null, true);
+    }
+
+    @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1)
+    public void testSingleThreadedAddsThenRemovesThenAdds(InputCase inputCase)
             throws Throwable {
         assertCombination(inputCase, null, false);
     }
@@ -96,9 +121,6 @@ public class CombinatorialMaterializerTest {
             if (onlyRunTestId != null && onlyRunTestId != ic.testId) {
                 return;
             }
-
-            System.out.println(Thread.currentThread() + " |--> BOOOOOOOOOOOOOOOOOYA");
-
             println("***** category:" + ic.category + " testId:" + ic.testId + " BINDING *****");
             println(ic.binding);
             Expectations expectations = ic.materialization.initModelPaths(tenantIdAndCentricId.getTenantId(), Arrays.asList(ic.binding));
@@ -111,19 +133,11 @@ public class CombinatorialMaterializerTest {
 
             println("***** category:" + ic.category + " testId:" + ic.testId + " FIRING EVENTS (" + firedEvents.size() + ") *****");
             if (multiThreadWrites) {
-                List<Event> batch = new ArrayList<>();
-                for(final Event e : firedEvents) {
-                    if (e == null && batch.size() > 0) {
-                        fireEventInParallel(batch, ic);
-                        batch.clear();
-                    }
-                }
-                if (batch.size() > 0) {
-                    fireEventInParallel(batch, ic);
-                }
-
+                fireEventInParallel(firedEvents, ic);
             } else {
-                ic.eventWriterProvider.eventWriter().write(firedEvents);
+                for (Event evt : firedEvents) {
+                    ic.eventWriterProvider.eventWriter().write(evt);
+                }
             }
 
             println("***** category:" + ic.category + " testId:" + ic.testId + " BUILDING ASSERTIONS *****");
@@ -147,6 +161,8 @@ public class CombinatorialMaterializerTest {
             }
 
             System.out.println("***** category:" + ic.category + " testId:" + ic.testId + " PASSED *****");
+            System.out.println("\n\n");
+
         } catch (Throwable t) {
             System.out.println("Test:testAllModelPathCombinationsAndEventFireCombinations: category:" + ic.category
                     + " testId:" + ic.testId + " seed:" + seed + " Failed.");
@@ -237,7 +253,6 @@ public class CombinatorialMaterializerTest {
         sb.append(']');
         return sb.toString();
     }
-
 
     private final OrderIdProviderGenerator orderIdProviderGenerator = new OrderIdProviderGenerator();
     private final TenantId tenantId = new TenantId("test");
@@ -389,8 +404,13 @@ public class CombinatorialMaterializerTest {
 
                         List<Event> allEvents = new ArrayList<>();
                         allEvents.addAll(events);
-                        allEvents.add(null);
                         allEvents.addAll(deleteEvents);
+
+                        // We have to allocate eventIds up front for determinism
+                        JsonEventConventions jec = new JsonEventConventions();
+                        for (Event e : allEvents) {
+                            jec.setEventId(e.toJson(), idProvider.nextId());
+                        }
 
                         eventFire = new EventFire(viewId,
                                 allEvents,
@@ -463,10 +483,14 @@ public class CombinatorialMaterializerTest {
 
                         List<Event> allEvents = new ArrayList<>();
                         allEvents.addAll(events);
-                        allEvents.add(null);
                         allEvents.addAll(deleteEvents);
-                        allEvents.add(null);
                         allEvents.addAll(undeletes);
+
+                        // We have to allocate eventIds up front for determinism
+                        jec = new JsonEventConventions();
+                        for (Event e : allEvents) {
+                            jec.setEventId(e.toJson(), idProvider.nextId());
+                        }
 
                         eventFire = new EventFire(viewId,
                                 allEvents,

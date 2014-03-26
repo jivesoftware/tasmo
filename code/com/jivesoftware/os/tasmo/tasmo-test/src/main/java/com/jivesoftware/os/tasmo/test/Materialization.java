@@ -26,17 +26,18 @@ import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
-import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyCommitChange;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
+import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
+import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
-import com.jivesoftware.os.tasmo.lib.write.ExistenceCommitChange;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -52,7 +53,6 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -220,7 +220,6 @@ public class Materialization {
 
     public void setupModelAndMaterializer() throws Exception {
 
-
         String uuid = UUID.randomUUID().toString();
         //        Logger logger = Logger.getLogger("com.jivesoftware.soa.modules");
         //        logger.setLevel(Level.TRACE);
@@ -256,7 +255,7 @@ public class Materialization {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
-                        ReferenceWithTimestamp[] modelPathInstanceIds = change.getModelPathInstanceIds();
+                        PathId[] modelPathInstanceIds = change.getModelPathInstanceIds();
                         ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];
                         for (int i = 0; i < ids.length; i++) {
                             ids[i] = modelPathInstanceIds[i].getObjectId();
@@ -287,17 +286,15 @@ public class Materialization {
             }
         };
 
-        commitChange = new ExistenceCommitChange(existenceStore, commitChange);
-
-        commitChange = new ConcurrencyCommitChange(concurrencyStore, commitChange);
+        commitChange = new ConcurrencyAndExistanceCommitChange(concurrencyStore, existenceStore, commitChange);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
                 new CallbackStream<List<BookkeepingEvent>>() {
-            @Override
-            public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
-                return value;
-            }
-        });
+                    @Override
+                    public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
+                        return value;
+                    }
+                });
 
         viewsProvider = new ViewsProvider() {
             @Override
@@ -316,13 +313,19 @@ public class Materialization {
                 viewsProvider,
                 eventProvider,
                 concurrencyStore,
+                existenceStore,
                 referenceStore,
                 eventValueStore,
                 commitChange);
 
-        materializer = new TasmoViewMaterializer(existenceStore, tasmoEventBookkeeper,
-                tasmoViewModel, getViewChangeNotificationProcessor());
-
+        materializer = new TasmoViewMaterializer(existenceStore,
+                tasmoEventBookkeeper,
+                tasmoViewModel,
+                getViewChangeNotificationProcessor(),
+                new WrittenInstanceHelper(),
+                concurrencyStore,
+                eventValueStore,
+                referenceStore);
 
     }
 
@@ -379,7 +382,7 @@ public class Materialization {
     }
 
     List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {
-        return parseModelPathStrings(simpleBindings.toArray(new String[ simpleBindings.size() ]));
+        return parseModelPathStrings(simpleBindings.toArray(new String[simpleBindings.size()]));
     }
 
     List<ViewBinding> parseModelPathStrings(String... simpleBindings) {
@@ -493,9 +496,13 @@ public class Materialization {
                     List<ObjectId> objectIds = Lists.newArrayList();
                     List<Long> eventIds = Lists.newArrayList();
                     for (ObjectNode w : events) {
-                        long eventId = idProvider.nextId();
+
+                        long eventId = jsonEventConventions.getEventId(w);
+                        if (eventId == 0) {
+                            eventId = idProvider.nextId();
+                            jsonEventConventions.setEventId(w, eventId);
+                        }
                         eventIds.add(eventId);
-                        jsonEventConventions.setEventId(w, eventId);
 
                         String instanceClassname = jsonEventConventions.getInstanceClassName(w);
                         ObjectId objectId = new ObjectId(instanceClassname, jsonEventConventions.getInstanceId(w, instanceClassname));
@@ -528,12 +535,12 @@ public class Materialization {
 
     private String[] toStringArray(String string, String delim) {
         if (string == null || delim == null) {
-            return new String[ 0 ];
+            return new String[0];
         }
         StringTokenizer tokenizer = new StringTokenizer(string, delim);
         int tokenCount = tokenizer.countTokens();
 
-        String[] tokens = new String[ tokenCount ];
+        String[] tokens = new String[tokenCount];
         for (int i = 0; i < tokenCount; i++) {
             tokens[i] = tokenizer.nextToken();
         }

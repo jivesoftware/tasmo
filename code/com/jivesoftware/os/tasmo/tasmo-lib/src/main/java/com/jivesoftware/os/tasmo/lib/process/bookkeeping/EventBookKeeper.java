@@ -35,16 +35,19 @@ public class EventBookKeeper implements WrittenEventProcessor {
             LOG.startTimer("processed");
 
             if (LOG.isTraceEnabled()) {
-                LOG.trace("************* Processing: " + writtenEvent + " ******************");
+                LOG.trace("PROCESSING {} EVENT-ID:{} EVENT:{}",
+                        new Object[]{
+                            ((writtenEvent.getWrittenInstance().isDeletion()) ? "DELETE" : "UPDATE"),
+                            writtenEvent.getEventId(),
+                            writtenEvent});
             }
-
 
             processorizer.process(batchContext, writtenEvent);
 
             LOG.inc("processed>" + instanceClass);
             LOG.inc("processed");
 
-            LOG.info("Processed event :{} Instance:{} {}", new Object[]{
+            LOG.info("DONE PROCESSING EVENT-ID:{} Instance:{} {}", new Object[]{
                 writtenEvent.getEventId(),
                 instanceClass,
                 instanceId.getId()});

@@ -19,14 +19,14 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
+import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
-import com.jivesoftware.os.tasmo.lib.write.ExistenceCommitChange;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
@@ -104,7 +104,7 @@ public class TasmoServiceInitializer {
                 new TasmoEventBookkeeper(bookKeepingStream);
         TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
         ExistenceStore existenceStore = new ExistenceStore(existenceTable);
-        ExistenceCommitChange existenceCommitChange = new ExistenceCommitChange(existenceStore, changeWriter);
+        ConcurrencyAndExistanceCommitChange existenceCommitChange = new ConcurrencyAndExistanceCommitChange(null, existenceStore, changeWriter);
 
         final TasmoViewModel tasmoViewModel = new TasmoViewModel(
                 masterTenantId,

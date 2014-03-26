@@ -10,6 +10,7 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Set;
@@ -32,10 +33,10 @@ class TraverseLeafward implements StepTraverser {
     @Override
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
             final PathTraversalContext context,
-            final ReferenceWithTimestamp from,
+            final PathId from,
             final StepStream streamTo) throws Exception {
 
-        context.setPathId(pathIndex, from);
+        context.setPathId(pathIndex, from.getObjectId(), from.getTimestamp());
         streamer.stream(tenantIdAndCentricId, from.getObjectId(),
                 new CallbackStream<ReferenceWithTimestamp>() {
                     @Override
@@ -48,7 +49,7 @@ class TraverseLeafward implements StepTraverser {
                                     to.getTimestamp());
 
                             context.addVersion(ref);
-                            streamTo.stream(to);
+                            streamTo.stream(new PathId(to.getObjectId(), to.getTimestamp()));
                         }
                         return to;
                     }
@@ -57,5 +58,10 @@ class TraverseLeafward implements StepTraverser {
 
     private boolean isValidDownStreamObject(ReferenceWithTimestamp ref) {
         return validDownStreamTypes == null || validDownStreamTypes.isEmpty() || validDownStreamTypes.contains(ref.getObjectId().getClassName());
+    }
+
+    @Override
+    public String toString() {
+        return "Leafward(" + "streamer=" + streamer + ", pathIndex=" + pathIndex + ")";
     }
 }

@@ -25,10 +25,11 @@ public class CirculareRefTest extends BaseTasmoTest {
         Expectations expectations = initModelPaths(viewClassName + "::" + viewFieldName + "::Content.ref_parent.ref.Content|Content.name");
         ObjectId parent1 = write(EventBuilder.create(idProvider, "Content", tenantId, actorId).set("name", "ted").build());
         ObjectId content1 = write(EventBuilder.create(idProvider, "Content", tenantId, actorId).set("ref_parent", parent1).build());
+        ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, parent1.getId()));
+        System.out.println("\nView:" + mapper.writeValueAsString(view) + "\n");
+
         expectations.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, parent1 }, "name", "ted");
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();
-        ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, parent1.getId()));
-        System.out.println(mapper.writeValueAsString(view));
     }
 }

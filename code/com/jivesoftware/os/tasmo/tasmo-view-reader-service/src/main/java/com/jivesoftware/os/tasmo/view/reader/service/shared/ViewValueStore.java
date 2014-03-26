@@ -21,7 +21,6 @@ import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -122,8 +121,7 @@ public class ViewValueStore {
                     change.getValue(),
                     new ConstantTimestamper(change.getTimestamp()));
 
-            LOG.debug(" |--> Adding {}", change);
-            System.out.println(Thread.currentThread() + " |--> add " + Arrays.toString(change.getModelPathInstanceIds()) + " " + change.getValue() + " " + change.getTimestamp());
+            LOG.debug("VVS:ADD {}", change);
         }
         List<RowColumValueTimestampAdd<ImmutableByteArray, ImmutableByteArray, String>> took = rawAdds.take();
         viewValueStore.multiRowsMultiAdd(tenantIdAndCentricId, took);
@@ -137,8 +135,7 @@ public class ViewValueStore {
                             change.getModelPathInstanceIds()),
                     new ConstantTimestamper(change.getTimestamp()));
 
-            LOG.debug(" |--> Removing {}", change);
-            System.out.println(Thread.currentThread() + " |--> remove " + Arrays.toString(change.getModelPathInstanceIds()) + " " + change.getValue() + " " + change.getTimestamp());
+            LOG.debug("VVS:REMOVED {}", change);
         }
         List<RowColumnTimestampRemove<ImmutableByteArray, ImmutableByteArray>> took = rawRemoves.take();
         viewValueStore.multiRowsMultiRemove(tenantIdAndCentricId, took);

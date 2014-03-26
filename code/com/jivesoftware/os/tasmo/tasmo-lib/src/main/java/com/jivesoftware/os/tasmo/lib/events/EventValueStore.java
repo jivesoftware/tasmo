@@ -124,14 +124,14 @@ public class EventValueStore {
 
     public void removeObjectId(TenantIdAndCentricId tenantIdAndCentricId,
             long removeAtTimestamp,
-            ObjectId objectId) {
+            ObjectId objectId,
+            String[] fieldNames) {
         caches.remove(); // TODO should we also clear caching after a successful remove?
-        eventValueStore.removeRow(tenantIdAndCentricId, objectId, new ConstantTimestamper(removeAtTimestamp));
+        eventValueStore.removeRow(tenantIdAndCentricId, objectId, new ConstantTimestamper(removeAtTimestamp + 1));
         //caches.remove(); // TODO should we also clear caching after a successful remove?
 
         // TODO where do we get the field names from?
-        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), objectId, new String[]{"??"}, removeAtTimestamp);
-        System.out.println("UNIMPLEMETED concurrencyStore.updated");
+        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), objectId, fieldNames, removeAtTimestamp);
     }
 
     public Transaction begin(TenantIdAndCentricId tenantIdAndCentricId,
@@ -158,12 +158,6 @@ public class EventValueStore {
                     takeAddedValues,
                     null, new ConstantTimestamper(transaction.addAtTimestamp));
 
-            if (LOG.isTraceEnabled()) {
-                for (int i = 0; i < takeAddedFieldNames.length; i++) {
-                    LOG.trace(" |--> Set: Tenant={} Instance={} Field={} Value={} Time={}", new Object[]{
-                        transaction.tenantIdAndCentricId, objectInstanceId, takeAddedFieldNames[i], takeAddedValues[i], transaction.addAtTimestamp});
-                }
-            }
         }
         String[] takeRemovedFieldNames = null;
         if (!transaction.removedFieldNames.isEmpty()) {
@@ -176,13 +170,6 @@ public class EventValueStore {
                     new ConstantTimestamper(transaction.removeAtTimestamp));
 
             concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, takeRemovedFieldNames, transaction.removeAtTimestamp);
-
-            if (LOG.isTraceEnabled()) {
-                for (String takeRemovedFieldName : takeRemovedFieldNames) {
-                    LOG.trace(" |--> Remove: Tenant={} Instance={} Field={} Time={}",
-                            new Object[]{transaction.tenantIdAndCentricId, objectInstanceId, takeRemovedFieldName});
-                }
-            }
 
         }
 

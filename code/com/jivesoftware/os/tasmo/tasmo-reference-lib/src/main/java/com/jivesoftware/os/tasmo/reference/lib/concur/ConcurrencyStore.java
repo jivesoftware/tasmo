@@ -22,7 +22,6 @@ public class ConcurrencyStore {
     public void updated(TenantId tenant, ObjectId objectId, String[] fields, long timestamp) {
         Long[] values = new Long[fields.length];
         Arrays.fill(values, timestamp);
-        //System.out.println("|||| Update:" + objectId + " fields:" + Arrays.deepToString(fields) + " t=" + timestamp + " " + Debug.caller(4));
         updatedStore.multiAdd(tenant, objectId, fields, values, null, new ConstantTimestamper(timestamp));
     }
 

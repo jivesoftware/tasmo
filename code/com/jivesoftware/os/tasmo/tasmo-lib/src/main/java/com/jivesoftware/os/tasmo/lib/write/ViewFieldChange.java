@@ -44,7 +44,7 @@ public class ViewFieldChange {
     private final ViewFieldChangeType type;
     private final ObjectId viewObjectId;
     private final String modelPathId;
-    private final ReferenceWithTimestamp[] modelPathInstanceIds;
+    private final PathId[] modelPathInstanceIds;
     private final List<ReferenceWithTimestamp> modelPathVersions;
     private final String value;
     private final long timestamp;
@@ -59,7 +59,7 @@ public class ViewFieldChange {
             @JsonProperty("type") ViewFieldChangeType type,
             @JsonProperty("viewObjectId") ObjectId viewObjectId,
             @JsonProperty("modelPathId") String modelPathId,
-            @JsonProperty("modelPathInstanceIds") ReferenceWithTimestamp[] modelPathInstanceIds,
+            @JsonProperty("modelPathInstanceIds") PathId[] modelPathInstanceIds,
             @JsonProperty("modelPathVersions") List<ReferenceWithTimestamp> modelPathVersions,
             @JsonProperty("value") String value,
             @JsonProperty("timestamp") long timestamp) {
@@ -117,7 +117,7 @@ public class ViewFieldChange {
         return modelPathId;
     }
 
-    public ReferenceWithTimestamp[] getModelPathInstanceIds() {
+    public PathId[] getModelPathInstanceIds() {
         return modelPathInstanceIds;
     }
 

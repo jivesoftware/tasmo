@@ -34,16 +34,16 @@ import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
+import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
-import com.jivesoftware.os.tasmo.lib.write.ExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -177,7 +177,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         }
 
         ExistenceStore existenceStore = buildExistenceStore(rowColumnValueStoreProvider);
-        commitChange = new ExistenceCommitChange(existenceStore, commitChange);
+        commitChange = new ConcurrencyAndExistanceCommitChange(existenceStore, commitChange);
 
         TasmoViewModel viewMaterializerModel = new TasmoViewModel(masterTenantId,
             viewsProvider,
