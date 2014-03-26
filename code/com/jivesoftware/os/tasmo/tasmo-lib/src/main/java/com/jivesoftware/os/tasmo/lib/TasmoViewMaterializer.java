@@ -18,7 +18,6 @@ import com.jivesoftware.os.tasmo.lib.process.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.EventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.NoOpEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
-import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;

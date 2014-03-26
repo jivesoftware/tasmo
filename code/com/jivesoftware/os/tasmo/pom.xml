@@ -25,6 +25,7 @@
         <module>tasmo-test</module>
         <module>tasmo-service</module>
         <module>tasmo-view-notification-api</module>
+        <module>tasmo-view-notification-lib</module>
         <module>tasmo-view-reader-api</module>
         <module>tasmo-view-reader-lib</module>
         <module>tasmo-view-reader-service</module>

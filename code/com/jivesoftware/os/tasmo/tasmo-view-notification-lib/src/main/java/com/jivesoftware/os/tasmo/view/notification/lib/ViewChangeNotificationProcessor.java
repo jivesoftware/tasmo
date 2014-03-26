@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib.process.notification;
+package com.jivesoftware.os.tasmo.view.notification.lib;
 
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;

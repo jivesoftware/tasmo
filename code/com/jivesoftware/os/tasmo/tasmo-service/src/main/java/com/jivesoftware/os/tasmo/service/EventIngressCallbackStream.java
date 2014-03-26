@@ -19,16 +19,24 @@ import java.util.List;
 public class EventIngressCallbackStream implements CallbackStream<List<WrittenEvent>> {
 
     final TasmoViewMaterializer materializer;
+    final CallbackStream<List<WrittenEvent>> forkedOutput;
 
     public EventIngressCallbackStream(TasmoViewMaterializer materializer) {
+        this(materializer, null);
+    }
+    
+    public EventIngressCallbackStream(TasmoViewMaterializer materializer, CallbackStream<List<WrittenEvent>> forkedOutput) {
         this.materializer = materializer;
+        this.forkedOutput = forkedOutput;
     }
 
     @Override
     public List<WrittenEvent> callback(List<WrittenEvent> value) throws Exception {
         if (value != null) {
             materializer.process(value);
+            forkedOutput.callback(value);
         }
+        
 
         return value;
     }
