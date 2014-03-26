@@ -13,6 +13,7 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.model.EventDefinition;
 import com.jivesoftware.os.tasmo.model.EventFieldValueType;
 import com.jivesoftware.os.tasmo.model.EventsModel;
@@ -39,10 +40,11 @@ public class RefProcessor implements EventProcessor {
     }
 
     @Override
-    public boolean process(WrittenEvent writtenEvent) throws Exception {
+    public boolean process(final EventWrite write) throws Exception {
 
         boolean wasProcessed = false;
 
+        WrittenEvent writtenEvent = write.getWrittenEvent();
         TenantId tenantId = writtenEvent.getTenantId();
         long writtenOrderId = writtenEvent.getEventId();
         ObjectId objectId = writtenEvent.getWrittenInstance().getInstanceId();
@@ -50,22 +52,29 @@ public class RefProcessor implements EventProcessor {
         Reference objectInstanceId = new Reference(objectId, writtenOrderId);
 
         Id userId = writtenEvent.getCentricId();
-        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
-        TenantIdAndCentricId globalTenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
+        final TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
+        final TenantIdAndCentricId globalTenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
         EventDefinition event = eventsModel.getEvent(writtenEvent.getWrittenInstance().getInstanceId().getClassName());
 
 
 
         if (writtenEvent.getWrittenInstance().isDeletion()) {
             for (Map.Entry<String, EventFieldValueType> entry : event.getEventFields().entrySet()) {
+                final String refField = entry.getKey();
                 //this handles things the deleted object references
                 EventFieldValueType fieldType = entry.getValue();
+
                 if (EventFieldValueType.ref.equals(fieldType) || EventFieldValueType.refs.equals(fieldType)) {
+
                     referenceStore.remove_aId_aField(tenantIdAndCentricId, writtenOrderId - 1, objectInstanceId, entry.getKey(),
                         new CallbackStream<Reference>() {
                         @Override
                         public Reference callback(Reference bId) throws Exception {
-                            return null;
+                            if (bId != null) {
+                                write.addDereferencedObjects(tenantIdAndCentricId.getCentricId(), refField, bId.getObjectId());
+                            }
+
+                            return bId;
                         }
                     });
 
@@ -73,7 +82,11 @@ public class RefProcessor implements EventProcessor {
                         new CallbackStream<Reference>() {
                         @Override
                         public Reference callback(Reference bId) throws Exception {
-                            return null;
+                            if (bId != null) {
+                                write.addDereferencedObjects(globalTenantIdAndCentricId.getCentricId(), refField, bId.getObjectId());
+                            }
+
+                            return bId;
                         }
                     });
                 }
@@ -86,7 +99,7 @@ public class RefProcessor implements EventProcessor {
                 //this is why we still want existence store to assert stuff doesn't exist.
             }
         } else {
-            for (String fieldName : writtenEvent.getWrittenInstance().getFieldNames()) {
+            for (final String fieldName : writtenEvent.getWrittenInstance().getFieldNames()) {
                 EventFieldValueType fieldType = event.getEventFields().get(fieldName);
 
                 if (EventFieldValueType.ref.equals(fieldType) || EventFieldValueType.refs.equals(fieldType)) {
@@ -125,7 +138,11 @@ public class RefProcessor implements EventProcessor {
                         new CallbackStream<Reference>() {
                         @Override
                         public Reference callback(Reference bId) throws Exception {
-                            return null;
+                            if (bId != null) {
+                                write.addDereferencedObjects(tenantIdAndCentricId.getCentricId(), fieldName, bId.getObjectId());
+                            }
+
+                            return bId;
                         }
                     });
 
@@ -133,7 +150,11 @@ public class RefProcessor implements EventProcessor {
                         new CallbackStream<Reference>() {
                         @Override
                         public Reference callback(Reference bId) throws Exception {
-                            return null;
+                            if (bId != null) {
+                                write.addDereferencedObjects(globalTenantIdAndCentricId.getCentricId(), fieldName, bId.getObjectId());
+                            }
+
+                            return bId;
                         }
                     });
 

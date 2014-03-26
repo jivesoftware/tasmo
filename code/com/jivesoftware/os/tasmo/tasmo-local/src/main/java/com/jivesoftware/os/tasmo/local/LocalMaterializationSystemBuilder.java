@@ -29,6 +29,7 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.DispatcherProvider;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
@@ -40,7 +41,6 @@ import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
@@ -164,7 +164,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                     JsonEventConventions jsonEventConventions = new JsonEventConventions();
                     List<ObjectId> objectIds = Lists.newArrayList();
                     List<Long> eventIds = Lists.newArrayList();
-                    List<WrittenEvent> writtenEvents = new ArrayList<>();
+                    List<EventWrite> writtenEvents = new ArrayList<>();
 
                     for (ObjectNode w : events) {
                         long eventId = idProvider.nextId();
@@ -177,7 +177,8 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
                     }
                     for (ObjectNode eventNode : events) {
-                        writtenEvents.add(writtenEventProvider.convertEvent(eventNode));
+                        EventWrite eventWrite = new EventWrite(writtenEventProvider.convertEvent(eventNode));
+                        writtenEvents.add(eventWrite);
                     }
                     viewMaterializer.process(writtenEvents);
                     return new EventWriterResponse(eventIds, objectIds);

@@ -9,8 +9,10 @@
 package com.jivesoftware.os.tasmo.service;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,13 +21,13 @@ import java.util.List;
 public class EventIngressCallbackStream implements CallbackStream<List<WrittenEvent>> {
 
     final TasmoViewMaterializer materializer;
-    final CallbackStream<List<WrittenEvent>> forkedOutput;
+    final CallbackStream<List<EventWrite>> forkedOutput;
 
     public EventIngressCallbackStream(TasmoViewMaterializer materializer) {
         this(materializer, null);
     }
-    
-    public EventIngressCallbackStream(TasmoViewMaterializer materializer, CallbackStream<List<WrittenEvent>> forkedOutput) {
+
+    public EventIngressCallbackStream(TasmoViewMaterializer materializer, CallbackStream<List<EventWrite>> forkedOutput) {
         this.materializer = materializer;
         this.forkedOutput = forkedOutput;
     }
@@ -33,10 +35,14 @@ public class EventIngressCallbackStream implements CallbackStream<List<WrittenEv
     @Override
     public List<WrittenEvent> callback(List<WrittenEvent> value) throws Exception {
         if (value != null) {
-            materializer.process(value);
-            forkedOutput.callback(value);
+            List<EventWrite> eventBatch = new ArrayList<>();
+            for (WrittenEvent writtenEvent : value) {
+                eventBatch.add(new EventWrite(writtenEvent));
+            }
+            materializer.process(eventBatch);
+            forkedOutput.callback(eventBatch);
         }
-        
+
 
         return value;
     }

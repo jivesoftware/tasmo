@@ -8,9 +8,9 @@
  */
 package com.jivesoftware.os.tasmo.lib.process;
 
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 
 public interface EventProcessor {
 
-    boolean process(WrittenEvent writtenEvent) throws Exception;
+    boolean process(EventWrite writtenEvent) throws Exception;
 }

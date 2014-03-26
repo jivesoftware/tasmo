@@ -44,7 +44,6 @@ import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
 import com.jivesoftware.os.tasmo.model.VersionedEventsModel;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
@@ -328,9 +327,10 @@ public class BaseTasmoTest {
 
                     }
 
-                    List<WrittenEvent> writtenEvents = new ArrayList<>();
+                    List<EventWrite> writtenEvents = new ArrayList<>();
                     for (ObjectNode eventNode : events) {
-                        writtenEvents.add(eventProvider.convertEvent(eventNode));
+                        EventWrite eventWrite = new EventWrite(eventProvider.convertEvent(eventNode));
+                        writtenEvents.add(eventWrite);
                     }
 
                     tasmoViewMaterializer.process(writtenEvents);

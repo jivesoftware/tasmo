@@ -42,6 +42,7 @@ import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.DispatcherProvider;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
@@ -57,7 +58,6 @@ import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
@@ -355,9 +355,10 @@ public class BaseTasmoViewTest {
 
                     }
 
-                    List<WrittenEvent> writtenEvents = new ArrayList<>();
+                    List<EventWrite> writtenEvents = new ArrayList<>();
                     for (ObjectNode eventNode : events) {
-                        writtenEvents.add(eventProvider.convertEvent(eventNode));
+                        EventWrite write = new EventWrite(eventProvider.convertEvent(eventNode));
+                        writtenEvents.add(write);
                     }
 
                     tasmoViewMaterializer.process(writtenEvents);

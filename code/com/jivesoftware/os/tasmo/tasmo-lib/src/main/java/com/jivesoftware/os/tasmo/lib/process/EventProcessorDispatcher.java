@@ -10,7 +10,7 @@ package com.jivesoftware.os.tasmo.lib.process;
 
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 
 public class EventProcessorDispatcher implements EventProcessor {
 
@@ -27,12 +27,12 @@ public class EventProcessorDispatcher implements EventProcessor {
     }
 
     @Override
-    public boolean process(WrittenEvent writtenEvent) throws Exception {
+    public boolean process(EventWrite write) throws Exception {
 
         LOG.trace("Start:" + this.toString());
         boolean wasProcessed = false;
-        wasProcessed |= invokeEventProcessor("values", valueProcessor, writtenEvent);
-        wasProcessed |= invokeEventProcessor("refs", refProcessor, writtenEvent);
+        wasProcessed |= invokeEventProcessor("values", valueProcessor, write);
+        wasProcessed |= invokeEventProcessor("refs", refProcessor, write);
         LOG.trace("End:" + this.toString());
         return wasProcessed;
     }
@@ -40,11 +40,11 @@ public class EventProcessorDispatcher implements EventProcessor {
     private boolean invokeEventProcessor(
         String processorName,
         EventProcessor eventProcessor,
-        WrittenEvent writtenEvent) throws Exception {
+        EventWrite write) throws Exception {
         if (eventProcessor != null) {
             LOG.startTimer(processorName);
             try {
-                return eventProcessor.process(writtenEvent);
+                return eventProcessor.process(write);
             } finally {
                 LOG.stopTimer(processorName);
             }

@@ -11,6 +11,7 @@ package com.jivesoftware.os.tasmo.lib.process;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 
 public class EventBookKeeper implements EventProcessor {
@@ -23,8 +24,9 @@ public class EventBookKeeper implements EventProcessor {
     }
 
     @Override
-    public boolean process(WrittenEvent writtenEvent) throws Exception {
+    public boolean process(EventWrite write) throws Exception {
 
+        WrittenEvent writtenEvent = write.getWrittenEvent();
         ObjectId instanceId = writtenEvent.getWrittenInstance().getInstanceId();
         String instanceClass = instanceId.getClassName();
 
@@ -37,7 +39,7 @@ public class EventBookKeeper implements EventProcessor {
             }
 
 
-            boolean processed = processorizer.process(writtenEvent);
+            boolean processed = processorizer.process(write);
 
             LOG.inc("processed>" + instanceClass);
             LOG.inc("processed");

@@ -18,21 +18,21 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
 import com.jivesoftware.os.tasmo.lib.DispatcherProvider;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
-import com.jivesoftware.os.tasmo.view.notification.lib.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.model.TenantEventsProvider;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.view.notification.lib.NotifiableViewModelProvider;
+import com.jivesoftware.os.tasmo.view.notification.lib.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.view.notification.lib.ViewChangeNotifier;
 import com.jivesoftware.os.tasmo.view.notification.lib.ViewRootLocator;
 import java.io.IOException;
@@ -129,17 +129,17 @@ public class TasmoServiceInitializer {
         NotifiableViewModelProvider notifiableViewModelProvider = new NotifiableViewModelProvider(masterTenantId, viewsProvider);
         ViewRootLocator viewRootLocator = new ViewRootLocator(referenceStore);
         ViewChangeNotifier viewChangeNotifier = new ViewChangeNotifier(notifiableViewModelProvider, viewRootLocator);
-        CallbackStream<List<WrittenEvent>> viewNotificationInput = buildViewNotificationInput(viewChangeNotifier, viewChangeNotificationProcessor);
+        CallbackStream<List<EventWrite>> viewNotificationInput = buildViewNotificationInput(viewChangeNotifier, viewChangeNotificationProcessor);
 
         EventIngressCallbackStream eventStream = new EventIngressCallbackStream(materializer, viewNotificationInput);
         return eventStream;
     }
 
-    private static CallbackStream<List<WrittenEvent>> buildViewNotificationInput(final ViewChangeNotifier viewChangeNotifier,
+    private static CallbackStream<List<EventWrite>> buildViewNotificationInput(final ViewChangeNotifier viewChangeNotifier,
         final ViewChangeNotificationProcessor viewChangeNotificationProcessor) {
-        CallbackStream<List<WrittenEvent>> callback = new CallbackStream<List<WrittenEvent>>() {
+        CallbackStream<List<EventWrite>> callback = new CallbackStream<List<EventWrite>>() {
             @Override
-            public List<WrittenEvent> callback(List<WrittenEvent> value) throws Exception {
+            public List<EventWrite> callback(List<EventWrite> value) throws Exception {
                 if (value != null) {
                     viewChangeNotifier.notifyChangedViews(value, viewChangeNotificationProcessor);
                 }

@@ -18,7 +18,6 @@ import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.EventDefinition;
-import com.jivesoftware.os.tasmo.model.EventFieldValueType;
 import com.jivesoftware.os.tasmo.model.EventsModel;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -132,7 +131,7 @@ public class CombinatorialMaterializerTest {
 
     @DataProvider(name = "totalOrderAdds")
     public Iterator<Object[]> provideTotalOrderAdds() throws Exception {
-        seed = 1395718895998L;//System.currentTimeMillis();
+        seed = 1395718895998L; //System.currentTimeMillis();
         ViewBinding binding = buildBindings(stepTypes, 4);
 
         List<Object[]> paramList = new ArrayList<>();
@@ -170,7 +169,7 @@ public class CombinatorialMaterializerTest {
 
     @DataProvider(name = "unorderedAdds")
     public Iterator<Object[]> provideUnorderedAdds() throws Exception {
-        seed =1395769724973L; //System.currentTimeMillis();
+        seed = 1395769724973L; //System.currentTimeMillis();
         ViewBinding viewBinding = buildBindings(stepTypes, 4);
 
         List<Object[]> paramList = new ArrayList<>();
@@ -427,7 +426,7 @@ public class CombinatorialMaterializerTest {
 
         return eventsModel;
     }
-    
+
     private EventDefinition mergeEventDefinitions(EventDefinition existing, EventDefinition definition) {
         if (existing == null) {
             return definition;

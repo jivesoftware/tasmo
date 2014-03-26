@@ -38,8 +38,7 @@ public class TasmoViewMaterializer {
         this.dispatcherProvider = dispatcherProvider;
     }
 
-    public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
-        List<WrittenEvent> processed = new ArrayList<>(writtenEvents.size());
+    public void process(List<EventWrite> writtenEvents) throws Exception {
         try {
             LOG.startTimer("processWrittenEvents");
             tasmoEventBookkeeper.begin(writtenEvents);
@@ -47,13 +46,13 @@ public class TasmoViewMaterializer {
             List<ExistenceUpdate> exist = new ArrayList<>();
             List<ExistenceUpdate> noLongerExist = new ArrayList<>();
 
-            for (WrittenEvent writtenEvent : writtenEvents) {
-                if (writtenEvent == null) {
+            for (EventWrite write : writtenEvents) {
+                if (write == null) {
                     LOG.warn("some one is sending null events.");
-                    processed.add(null);
                     continue;
                 }
 
+                WrittenEvent writtenEvent = write.getWrittenEvent();
                 TenantId tenantId = writtenEvent.getTenantId();
                 long timestamp = writtenEvent.getEventId();
                 WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
@@ -69,10 +68,7 @@ public class TasmoViewMaterializer {
                 if (processorizer == null) {
                     processorizer = new NoOpEventProcessor();
                 }
-                if (new EventBookKeeper(processorizer).process(writtenEvent)) {
-                    processed.add(writtenEvent);
-                }
-                //viewChangeNotificationProcessor.process(writtenEvent); //TODO - ruh roh!
+                new EventBookKeeper(processorizer).process(write);
             }
 
             if (!exist.isEmpty()) {
@@ -96,6 +92,5 @@ public class TasmoViewMaterializer {
             long elapse = LOG.stopTimer("processWrittenEvents");
             LOG.debug("Processed: " + writtenEvents.size() + " events in " + elapse + "millis.");
         }
-        return processed;
     }
 }

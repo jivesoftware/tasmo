@@ -8,7 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.lib.process;
 
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 
 /**
  *
@@ -17,7 +17,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 public class NoOpEventProcessor implements EventProcessor {
 
     @Override
-    public boolean process(WrittenEvent writtenEvent) throws Exception {
+    public boolean process(EventWrite writtenEvent) throws Exception {
         return false;
     }
 }

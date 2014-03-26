@@ -12,6 +12,7 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore.Transaction;
 import com.jivesoftware.os.tasmo.model.EventsModel;
@@ -33,10 +34,11 @@ public class ValueProcessor implements EventProcessor {
     }
 
     @Override
-    public boolean process(WrittenEvent writtenEvent) throws Exception {
+    public boolean process(EventWrite write) throws Exception {
         boolean wasProcessed = false;
 
 
+        WrittenEvent writtenEvent = write.getWrittenEvent();
         TenantId tenantId = writtenEvent.getTenantId();
         Id userId = writtenEvent.getCentricId();
         long writtenOrderId = writtenEvent.getEventId();

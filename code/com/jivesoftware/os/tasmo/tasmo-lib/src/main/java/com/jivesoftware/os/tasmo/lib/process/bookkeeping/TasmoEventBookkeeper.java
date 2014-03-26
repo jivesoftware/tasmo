@@ -11,6 +11,7 @@ package com.jivesoftware.os.tasmo.lib.process.bookkeeping;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,15 +31,16 @@ public class TasmoEventBookkeeper {
         };
     }
 
-    public void begin(List<WrittenEvent> writtenEvents) throws Exception {
+    public void begin(List<EventWrite> writtenEvents) throws Exception {
 
         Session session = bookkeepingSession.get();
         List<BookkeepingEvent> initialStatus = new ArrayList<>();
 
-        for (WrittenEvent writtenEvent : writtenEvents) {
-            if (writtenEvent == null) {
+        for (EventWrite write : writtenEvents) {
+            if (write == null) {
                 continue;
             }
+            WrittenEvent writtenEvent = write.getWrittenEvent();
             TenantId tenantId = writtenEvent.getTenantId();
             Id actorId = writtenEvent.getActorId();
             long eventId = writtenEvent.getEventId();

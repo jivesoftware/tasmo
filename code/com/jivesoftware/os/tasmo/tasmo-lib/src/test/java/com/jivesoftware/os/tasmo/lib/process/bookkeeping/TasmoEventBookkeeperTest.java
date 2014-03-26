@@ -9,6 +9,7 @@ import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ public class TasmoEventBookkeeperTest {
         };
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(callback);
 
-        List<WrittenEvent> events = getEvents(35);
+        List<EventWrite> events = getEvents(35);
 
         tasmoEventBookkeeper.begin(events);
 
@@ -84,10 +85,10 @@ public class TasmoEventBookkeeperTest {
 
     }
 
-    private List<WrittenEvent> getEvents(int numEvents) {
-        List<WrittenEvent> events = new ArrayList<>();
+    private List<EventWrite> getEvents(int numEvents) {
+        List<EventWrite> events = new ArrayList<>();
         for (int i = 0; i < numEvents; i++) {
-            events.add(genEvent());
+            events.add(new EventWrite(genEvent()));
         }
         return events;
 

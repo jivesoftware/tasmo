@@ -19,6 +19,7 @@ import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
@@ -45,13 +46,13 @@ public class ViewChangeNotifier {
         this.rootLocator = rootLocator;
     }
 
-    public void notifyChangedViews(List<WrittenEvent> eventBatch, ViewChangeNotificationProcessor viewChangeNotificationProcessor) throws Exception {
-        for (WrittenEvent event : eventBatch) {
-            viewChangeNotificationProcessor.process(detectModifiedViews(event), event);
+    public void notifyChangedViews(List<EventWrite> eventBatch, ViewChangeNotificationProcessor viewChangeNotificationProcessor) throws Exception {
+        for (EventWrite write : eventBatch) {
+            viewChangeNotificationProcessor.process(detectModifiedViews(write), write.getWrittenEvent());
         }
     }
 
-    private ModifiedViewProvider detectModifiedViews(WrittenEvent event) {
+    private ModifiedViewProvider detectModifiedViews(EventWrite write) {
         final ModifiedViewProvider provider = new ModifiedViewProvider() {
             private final Set<ModifiedViewInfo> modified = new HashSet<>();
 
@@ -66,7 +67,7 @@ public class ViewChangeNotifier {
             }
         };
 
-        for (ViewBinding binding : viewsProvider.getNotifiableBindings(event)) {
+        for (ViewBinding binding : viewsProvider.getNotifiableBindings(write.getWrittenEvent())) {
             CallbackStream<ModifiedViewInfo> modificationStream = new CallbackStream<ModifiedViewInfo>() {
                 @Override
                 public ModifiedViewInfo callback(ModifiedViewInfo value) throws Exception {
@@ -77,13 +78,14 @@ public class ViewChangeNotifier {
                 }
             };
 
-            detectChangedViewsForBinding(event, binding, modificationStream);
+            detectChangedViewsForBinding(write, binding, modificationStream);
         }
 
         return provider;
     }
 
-    private void detectChangedViewsForBinding(WrittenEvent event, ViewBinding binding, CallbackStream<ModifiedViewInfo> modificationStream) {
+    private void detectChangedViewsForBinding(EventWrite write, ViewBinding binding, CallbackStream<ModifiedViewInfo> modificationStream) {
+        WrittenEvent event = write.getWrittenEvent();
         WrittenInstance writtenInstance = event.getWrittenInstance();
         ObjectId instanceId = writtenInstance.getInstanceId();
         String eventClass = instanceId.getClassName();
@@ -91,6 +93,8 @@ public class ViewChangeNotifier {
         Id centricId = actorId.equals(event.getCentricId()) ? Id.NULL : event.getCentricId();
         TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(event.getTenantId(), centricId);
 
+
+        //TODO handle global and centric, etc and pull dereferenced objects out of event write
         for (ModelPath path : binding.getModelPaths()) {
             for (ModelPathStep step : path.getPathMembers()) {
                 if (step.getOriginClassNames().contains(eventClass)) {
