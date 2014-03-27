@@ -11,6 +11,7 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
@@ -36,17 +37,20 @@ public class PathTraversersFactory {
     private final ModelPath modelPath;
     private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
+    private final OrderIdProvider idProvider;
 
     public PathTraversersFactory(
             String viewClassName,
             ModelPath modelPath,
             EventValueStore eventValueStore,
-            ReferenceStore referenceStore) {
+            ReferenceStore referenceStore,
+            OrderIdProvider idProvider) {
         this.viewClassName = viewClassName;
         this.modelPathId = modelPath.getId();
         this.modelPath = modelPath;
         this.eventValueStore = eventValueStore;
         this.referenceStore = referenceStore;
+        this.idProvider = idProvider;
     }
 
     public List<PathTraverser> buildPathTraversers(PathTraverserConfig pathTraverserConfig) {
@@ -80,7 +84,7 @@ public class PathTraversersFactory {
         }
         LOG.trace("");
 
-        return new PathTraverser(firstStep, steps, pathTraverserConfig);
+        return new PathTraverser(firstStep, steps, pathTraverserConfig, idProvider);
     }
 
     public List<PathTraverser> buildBackPathTraversers(PathTraverserConfig pathTraverserConfig) {
@@ -139,7 +143,7 @@ public class PathTraversersFactory {
             }
             LOG.trace("");
 
-            return new PathTraverser(firstStep, steps, pathTraverserConfig);
+            return new PathTraverser(firstStep, steps, pathTraverserConfig, idProvider);
         } else {
             return null;
         }

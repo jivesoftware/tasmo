@@ -4,7 +4,6 @@ import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
@@ -27,14 +26,11 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final ConcurrencyStore concurrencyStore;
-    private final ExistenceStore existenceStore;
     private final CommitChange commitChange;
 
     public ConcurrencyAndExistanceCommitChange(ConcurrencyStore concurrencyStore,
-            ExistenceStore existenceStore,
             CommitChange commitChange) {
         this.concurrencyStore = concurrencyStore;
-        this.existenceStore = existenceStore;
         this.commitChange = commitChange;
     }
 
@@ -46,20 +42,14 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
             for (PathId ref : change.getModelPathInstanceIds()) {
                 check.add(ref.getObjectId());
             }
-            for (ReferenceWithTimestamp ref : change.getModelPathVersions()) {
-                check.add(ref.getObjectId());
-            }
         }
 
-        Set<ObjectId> existence = existenceStore.getExistence(tenantIdAndCentricId.getTenantId(), check);
+        Set<ObjectId> existence = concurrencyStore.getExistence(tenantIdAndCentricId.getTenantId(), check);
 
         List<ViewFieldChange> acceptableChanges = new ArrayList<>();
         for (ViewFieldChange fieldChange : changes) {
             Set<ObjectId> ids = new HashSet<>();
             for (PathId ref : fieldChange.getModelPathInstanceIds()) {
-                ids.add(ref.getObjectId());
-            }
-            for (ReferenceWithTimestamp ref : fieldChange.getModelPathVersions()) {
                 ids.add(ref.getObjectId());
             }
 

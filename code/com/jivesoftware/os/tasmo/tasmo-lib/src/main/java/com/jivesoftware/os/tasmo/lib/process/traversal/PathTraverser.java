@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
@@ -21,13 +22,16 @@ public class PathTraverser {
     private final InitiateTraversalContext initialStepContext;
     private final List<StepTraverser> stepTraversers;
     private final PathTraverserConfig pathTraverserConfig;
+    private final OrderIdProvider idProvider;
 
     public PathTraverser(InitiateTraversalContext initialStepContext,
             List<StepTraverser> stepTraversers,
-            PathTraverserConfig pathTraverserConfig) {
+            PathTraverserConfig pathTraverserConfig,
+            OrderIdProvider idProvider) {
         this.initialStepContext = initialStepContext;
         this.stepTraversers = stepTraversers;
         this.pathTraverserConfig = pathTraverserConfig;
+        this.idProvider = idProvider;
     }
 
     public PathTraversalContext createContext(WrittenEventContext writtenEventContext,
@@ -87,6 +91,7 @@ public class PathTraverser {
                 notificationsAfterCommitingChanges,
                 alternateViewId,
                 step.getMembersSize(),
+                idProvider.nextId(),
                 removalContext);
         return context;
     }

@@ -87,7 +87,6 @@ public class InitiateValueTraversal implements EventProcessor {
                         for (ReferenceWithTimestamp valueVersion : valueVersions) {
                             want.add(new FieldVersion(instanceId, valueVersion.getFieldName(), valueVersion.getTimestamp()));
                         }
-
                         concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId, want);
                     }
                 }

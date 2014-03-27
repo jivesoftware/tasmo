@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
@@ -33,7 +34,6 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
-import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
@@ -83,7 +83,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Materialization {
 
     public static final TenantId MASTER_TENANT_ID = new TenantId("master");
-    ExistenceStore existenceStore;
     EventValueStore eventValueStore;
     ViewValueStore viewValueStore;
     ViewValueWriter viewValueWriter;
@@ -237,7 +236,6 @@ public class Materialization {
 
         RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
         ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrency);
-        existenceStore = new ExistenceStore(existenceStorage);
         eventValueStore = new EventValueStore(concurrencyStore, eventStore, cacheProvider);
 
         rawViewValueStore = rowColumnValueStoreProvider.viewValueStore();
@@ -286,7 +284,7 @@ public class Materialization {
             }
         };
 
-        commitChange = new ConcurrencyAndExistanceCommitChange(concurrencyStore, existenceStore, commitChange);
+        commitChange = new ConcurrencyAndExistanceCommitChange(concurrencyStore, commitChange);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
                 new CallbackStream<List<BookkeepingEvent>>() {
@@ -309,17 +307,16 @@ public class Materialization {
         };
 
         tasmoViewModel = new TasmoViewModel(
+                new OrderIdProviderImpl(1),
                 MASTER_TENANT_ID,
                 viewsProvider,
                 eventProvider,
                 concurrencyStore,
-                existenceStore,
                 referenceStore,
                 eventValueStore,
                 commitChange);
 
-        materializer = new TasmoViewMaterializer(existenceStore,
-                tasmoEventBookkeeper,
+        materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoViewModel,
                 getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),

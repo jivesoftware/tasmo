@@ -8,6 +8,8 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.service.writer;
 
+import com.jivesoftware.os.jive.utils.logger.MetricLogger;
+import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter.Transaction;
 import java.io.IOException;
@@ -17,6 +19,8 @@ import java.util.List;
  *
  */
 public class WriteToViewValueStore implements ViewWriter {
+
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final ViewValueWriter viewValueStore;
 
@@ -30,20 +34,20 @@ public class WriteToViewValueStore implements ViewWriter {
             Transaction transaction = viewValueStore.begin(tenantIdAndCentricId);
             for (ViewWriteFieldChange fieldChange : fieldChanges) {
                 if (fieldChange.getType() == ViewWriteFieldChange.Type.add) {
-                    System.out.println(">>>>>> VVS ADD:" + fieldChange);
+                    LOG.trace(" >>>>>> VVS ADD:{}", fieldChange);
 
                     transaction.set(fieldChange.getViewObjectId(),
-                        fieldChange.getModelPathId(),
-                        fieldChange.getModelPathInstanceIds(),
-                        fieldChange.getValue(),
-                        fieldChange.getTimestamp());
+                            fieldChange.getModelPathId(),
+                            fieldChange.getModelPathInstanceIds(),
+                            fieldChange.getValue(),
+                            fieldChange.getTimestamp());
                 } else if (fieldChange.getType() == ViewWriteFieldChange.Type.remove) {
-                    System.out.println(">>>>>> VVS REMOVE:" + fieldChange);
+                    LOG.trace(" >>>>>> VVS REMOVE:{}", fieldChange);
 
                     transaction.remove(fieldChange.getViewObjectId(),
-                        fieldChange.getModelPathId(),
-                        fieldChange.getModelPathInstanceIds(),
-                        fieldChange.getTimestamp());
+                            fieldChange.getModelPathId(),
+                            fieldChange.getModelPathInstanceIds(),
+                            fieldChange.getTimestamp());
                 } else {
                     throw new ViewWriterException("Unknown change type." + fieldChange.getType());
                 }

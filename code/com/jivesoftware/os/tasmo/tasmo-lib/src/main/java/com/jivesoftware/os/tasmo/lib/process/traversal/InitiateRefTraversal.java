@@ -83,10 +83,11 @@ public class InitiateRefTraversal implements EventProcessor {
                             }
                         });
 
-                concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId,
-                        Arrays.asList(new FieldVersion(instanceId, refFieldName, highest)));
+
 
                 if (!writtenInstance.isDeletion()) {
+                    concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId,
+                        Arrays.asList(new FieldVersion(instanceId, refFieldName, highest)));
 
                     referenceStore.streamForwardRefs(tenantIdAndCentricId, instanceId.getClassName(), refFieldName, instanceId,
                             new CallbackStream<ReferenceWithTimestamp>() {

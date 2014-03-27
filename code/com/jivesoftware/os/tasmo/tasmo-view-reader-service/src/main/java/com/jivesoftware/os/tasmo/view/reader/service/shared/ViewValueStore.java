@@ -101,8 +101,8 @@ public class ViewValueStore {
     }
 
     public void multiGet(List<? extends ViewCollector> viewCollectors) throws IOException {
-        List<TenantKeyedColumnValueCallbackStream<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, Long>> keyCallbackPairs
-                = Lists.newArrayList();
+        List<TenantKeyedColumnValueCallbackStream<TenantIdAndCentricId,
+                ImmutableByteArray, ImmutableByteArray, String, Long>> keyCallbackPairs = Lists.newArrayList();
         for (ViewCollector viewCollector : viewCollectors) {
             ViewDescriptor viewDescriptor = viewCollector.getViewDescriptor();
             keyCallbackPairs.add(new TenantKeyedColumnValueCallbackStream<>(viewDescriptor.getTenantIdAndCentricId(),

@@ -7,12 +7,12 @@ package com.jivesoftware.os.tasmo.lib;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -45,7 +45,6 @@ public class TasmoViewModelTest {
     private TasmoViewModel tasmoViewModel;
     private WrittenEventProvider writtenEventProvider;
     private ConcurrencyStore concurrencyStore;
-    private ExistenceStore existenceStore;
     private ReferenceStore referenceStore;
     private EventValueStore eventValueStore;
     private CommitChange changeWriter;
@@ -55,17 +54,16 @@ public class TasmoViewModelTest {
 
         viewsProvider = Mockito.mock(ViewsProvider.class);
         concurrencyStore = Mockito.mock(ConcurrencyStore.class);
-        existenceStore = Mockito.mock(ExistenceStore.class);
         writtenEventProvider = Mockito.mock(WrittenEventProvider.class);
         referenceStore = Mockito.mock(ReferenceStore.class);
         eventValueStore = Mockito.mock(EventValueStore.class);
         changeWriter = Mockito.mock(CommitChange.class);
         tasmoViewModel = new TasmoViewModel(
+                new OrderIdProviderImpl(1),
                 tenantId,
                 viewsProvider,
                 writtenEventProvider,
                 concurrencyStore,
-                existenceStore,
                 referenceStore,
                 eventValueStore,
                 changeWriter);

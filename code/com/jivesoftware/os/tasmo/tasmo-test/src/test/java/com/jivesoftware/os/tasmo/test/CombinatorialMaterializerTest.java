@@ -59,7 +59,9 @@ public class CombinatorialMaterializerTest {
     //private long seed = System.currentTimeMillis();
     private final long seed = 1389045159990L;
     private final boolean verbose = true;
-    private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
+    private final int maxStepDepth = 2; // TODO change back to 4
+    private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
+    //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
 
     private void println(Object line) {
         if (verbose) {
@@ -69,14 +71,14 @@ public class CombinatorialMaterializerTest {
 
     @BeforeClass
     public void logger() {
-        String PATTERN = "%t %m%n";
+        String PATTERN = ""; //%t %m%n";
 
         Enumeration allAppenders = LogManager.getRootLogger().getAllAppenders();
         while (allAppenders.hasMoreElements()) {
             Appender appender = (Appender)allAppenders.nextElement();
             appender.setLayout(new PatternLayout(PATTERN));
         }
-        LogManager.getLogger("com.jivesoftware.os.tasmo.lib").setLevel(Level.TRACE);
+        LogManager.getLogger("com.jivesoftware.os.tasmo").setLevel(Level.TRACE);
     }
 
     @Test(dataProvider = "totalOrderAdds", invocationCount = 1)
@@ -103,7 +105,7 @@ public class CombinatorialMaterializerTest {
         assertCombination(inputCase, null, false);
     }
 
-    @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
+    @Test(dataProvider = "addsThenRemoves", invocationCount = 100, singleThreaded = true)
     public void testMultiThreadedAddsThenRemoves(InputCase inputCase)
             throws Throwable {
 
@@ -263,7 +265,7 @@ public class CombinatorialMaterializerTest {
 
     @DataProvider(name = "totalOrderAdds")
     public Iterator<Object[]> provideTotalOrderAdds() throws Exception {
-        List<ViewBinding> viewBindings = buildBindings(stepTypes, 4);
+        List<ViewBinding> viewBindings = buildBindings(stepTypes, maxStepDepth);
 
         final ViewBinding binding = viewBindings.get(0);
 
@@ -307,7 +309,7 @@ public class CombinatorialMaterializerTest {
 
     @DataProvider(name = "unorderedAdds")
     public Iterator<Object[]> provideUnorderedAdds() throws Exception {
-        List<ViewBinding> viewBindings = buildBindings(stepTypes, 4);
+        List<ViewBinding> viewBindings = buildBindings(stepTypes, maxStepDepth);
 
         final ViewBinding binding = viewBindings.get(0);
         final int randomBatchSize = 2;
@@ -361,7 +363,7 @@ public class CombinatorialMaterializerTest {
 
     @DataProvider(name = "addsThenRemoves")
     public Iterator<Object[]> provideAddsThenRemoves() throws Exception {
-        List<ViewBinding> viewBindings = buildBindings(stepTypes, 4);
+        List<ViewBinding> viewBindings = buildBindings(stepTypes, maxStepDepth);
 
         List<Object[]> paramList = new ArrayList<>();
         ViewBinding binding = viewBindings.get(0);
@@ -430,7 +432,7 @@ public class CombinatorialMaterializerTest {
 
     @DataProvider(name = "addsThenRemovesThenAdds")
     public Iterator<Object[]> provideAddsThenRemovesThenAdds() throws Exception {
-        List<ViewBinding> viewBindings = buildBindings(stepTypes, 4);
+        List<ViewBinding> viewBindings = buildBindings(stepTypes, maxStepDepth);
 
         List<Object[]> paramList = new ArrayList<>();
         ViewBinding binding = viewBindings.get(0);

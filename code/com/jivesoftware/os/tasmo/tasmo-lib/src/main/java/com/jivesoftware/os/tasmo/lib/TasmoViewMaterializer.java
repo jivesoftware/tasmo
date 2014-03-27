@@ -21,8 +21,6 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
-import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
-import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceUpdate;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
@@ -33,6 +31,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ExistenceUpdate;
 import com.jivesoftware.os.tasmo.reference.lib.concur.PathModifiedOutFromUnderneathMeException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,7 +42,6 @@ import java.util.Set;
 public class TasmoViewMaterializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-    private final ExistenceStore existenceStore;
     private final TasmoEventBookkeeper tasmoEventBookkeeper;
     private final TasmoViewModel tasmoViewModel;
     private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
@@ -52,7 +50,7 @@ public class TasmoViewMaterializer {
     private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
 
-    public TasmoViewMaterializer(ExistenceStore existenceStore, TasmoEventBookkeeper tasmoEventBookkeeper,
+    public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
             TasmoViewModel tasmoViewModel,
             ViewChangeNotificationProcessor viewChangeNotificationProcessor,
             WrittenInstanceHelper writtenInstanceHelper,
@@ -60,7 +58,6 @@ public class TasmoViewMaterializer {
             EventValueStore eventValueStore,
             ReferenceStore referenceStore
     ) {
-        this.existenceStore = existenceStore;
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
         this.tasmoViewModel = tasmoViewModel;
         this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
@@ -91,10 +88,10 @@ public class TasmoViewMaterializer {
             }
 
             if (!exist.isEmpty()) {
-                existenceStore.addObjectId(exist);
+                concurrencyStore.addObjectId(exist);
             }
             if (!noLongerExist.isEmpty()) {
-                existenceStore.removeObjectId(noLongerExist);
+                concurrencyStore.removeObjectId(noLongerExist);
             }
 
             for (WrittenEvent writtenEvent : writtenEvents) {
@@ -187,7 +184,8 @@ public class TasmoViewMaterializer {
                                 while (t != null) {
                                     if (t instanceof PathModifiedOutFromUnderneathMeException) {
                                         pathModifiedException = true;
-                                        LOG.trace("** RETRY ** " + t.toString());
+                                        LOG.trace("** RETRY ** " + t.toString(), t);
+
                                     }
                                     t = t.getCause();
                                 }

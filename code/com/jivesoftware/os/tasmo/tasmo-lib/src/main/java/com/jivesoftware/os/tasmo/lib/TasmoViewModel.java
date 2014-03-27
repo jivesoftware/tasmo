@@ -13,12 +13,12 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
-import com.jivesoftware.os.tasmo.lib.process.existence.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateRefTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraverserKey;
@@ -46,31 +46,31 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TasmoViewModel {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+    private final OrderIdProvider idProvider;
     private final TenantId masterTenantId;
     private final ViewsProvider viewsProvider;
     private final WrittenEventProvider writtenEventProvider;
     private final ConcurrentHashMap<TenantId, VersionedTasmoViewModel> versionedViewModels;
     private final ConcurrencyStore concurrencyStore;
-    private final ExistenceStore existenceStore;
     private final ReferenceStore referenceStore;
     private final EventValueStore eventValueStore;
     private final CommitChange changeWriter;
     private final WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
 
     public TasmoViewModel(
+            OrderIdProvider idProvider,
             TenantId masterTenantId,
             ViewsProvider viewsProvider,
             WrittenEventProvider writtenEventProvider,
             ConcurrencyStore concurrencyStore,
-            ExistenceStore existenceStore,
             ReferenceStore referenceStore,
             EventValueStore eventValueStore,
             CommitChange changeWriter) {
+        this.idProvider = idProvider;
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.writtenEventProvider = writtenEventProvider;
         this.concurrencyStore = concurrencyStore;
-        this.existenceStore = existenceStore;
         this.referenceStore = referenceStore;
         this.eventValueStore = eventValueStore;
         this.changeWriter = changeWriter;
@@ -201,7 +201,8 @@ public class TasmoViewModel {
                     throw new IllegalArgumentException("you have already created this binding:" + factoryKey);
                 }
                 LOG.trace("MODELPATH " + modelPath);
-                PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName, modelPath, eventValueStore, referenceStore);
+                PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName,
+                        modelPath, eventValueStore, referenceStore, idProvider);
 
                 LOG.info("Bind:{}", factoryKey);
                 allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
@@ -247,7 +248,7 @@ public class TasmoViewModel {
             if (typedSteps.get(ModelPathStepType.count) != null) {
                 backRefTraversers.putAll(typedSteps.get(ModelPathStepType.count));
             }
-            ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore, existenceStore);
+            ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore);
 
             InitiateTraversal initialStepDispatcher = new InitiateTraversal(className,
                     new InitiateValueTraversal(concurrencyChecker, eventValueStore, typedSteps.get(ModelPathStepType.value), idCentric),

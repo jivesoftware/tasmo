@@ -44,6 +44,7 @@ public class PathTraversalContext {
     private final WrittenEventProvider writtenEventProvider;
     private final CommitChange commitChange;
     private final Id alternateViewId;
+    private final long threadTimestamp;
     private final PathId[] modelPathIdState;
     private final List<ReferenceWithTimestamp> modelPathVersionState;
     private long leafNodeTimestamp;
@@ -58,12 +59,14 @@ public class PathTraversalContext {
             CommitChange commitChange,
             Id alternateViewId,
             int numberOfPathIds,
+            long threadTimestamp,
             boolean removalContext) {
         this.writtenEvent = writtenEvent;
         this.tenantIdAndCentricId = tenantIdAndCentricId;
         this.writtenEventProvider = writtenEventProvider;
         this.commitChange = commitChange;
         this.alternateViewId = alternateViewId;
+        this.threadTimestamp = threadTimestamp;
         this.modelPathIdState = new PathId[numberOfPathIds];
         this.modelPathVersionState = new ArrayList<>();
         this.removalContext = removalContext;
@@ -168,7 +171,7 @@ public class PathTraversalContext {
                 Arrays.copyOf(modelPathIdState, modelPathIdState.length),
                 new ArrayList<>(modelPathVersionState),
                 leafNodeFields.toStringForm(),
-                getHighWaterTimestamp());
+                threadTimestamp); //getHighWaterTimestamp());
         changes.add(update);
     }
 

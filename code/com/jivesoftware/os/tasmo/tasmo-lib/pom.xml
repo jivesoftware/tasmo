@@ -54,7 +54,8 @@
         <dependency>
             <groupId>com.jivesoftware.os.jive.utils</groupId>
             <artifactId>ordered-id</artifactId>
-            <scope>test</scope>
+            <version>0.3-SNAPSHOT</version>
+            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
