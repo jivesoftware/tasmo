@@ -75,8 +75,10 @@
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-view-notification-lib</artifactId>
-            <version>0.2-SNAPSHOT</version>
-            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.tasmo</groupId>
+            <artifactId>tasmo-view-reader-lib</artifactId>
         </dependency>
     </dependencies>
     <name>tasmo-service</name>

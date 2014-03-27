@@ -8,6 +8,9 @@
  */
 package com.jivesoftware.os.tasmo.lib.process;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
@@ -71,7 +74,7 @@ public class RefProcessor implements EventProcessor {
                         @Override
                         public Reference callback(Reference bId) throws Exception {
                             if (bId != null) {
-                                write.addDereferencedObjects(tenantIdAndCentricId.getCentricId(), refField, bId.getObjectId());
+                                write.addDereferencedObject(tenantIdAndCentricId.getCentricId(), refField, bId.getObjectId());
                             }
 
                             return bId;
@@ -83,7 +86,7 @@ public class RefProcessor implements EventProcessor {
                         @Override
                         public Reference callback(Reference bId) throws Exception {
                             if (bId != null) {
-                                write.addDereferencedObjects(globalTenantIdAndCentricId.getCentricId(), refField, bId.getObjectId());
+                                write.addDereferencedObject(globalTenantIdAndCentricId.getCentricId(), refField, bId.getObjectId());
                             }
 
                             return bId;
@@ -130,6 +133,23 @@ public class RefProcessor implements EventProcessor {
                     if (bIds != null && !bIds.isEmpty()) {
                         referenceStore.link_aId_aField_to_bIds(tenantIdAndCentricId, writtenOrderId, objectInstanceId, fieldName, bIds);
                         referenceStore.link_aId_aField_to_bIds(globalTenantIdAndCentricId, writtenOrderId, objectInstanceId, fieldName, bIds);
+
+                        //add centric referenced objects
+                        write.addReferencedObjects(userId, fieldName, Lists.newArrayList(Iterables.transform(bIds,
+                            new Function<Reference, ObjectId>() {
+                            @Override
+                            public ObjectId apply(Reference f) {
+                                return f.getObjectId();
+                            }
+                        })));
+                        //add global referenced objects
+                        write.addReferencedObjects(Id.NULL, fieldName, Lists.newArrayList(Iterables.transform(bIds,
+                            new Function<Reference, ObjectId>() {
+                            @Override
+                            public ObjectId apply(Reference f) {
+                                return f.getObjectId();
+                            }
+                        })));
                         wasProcessed |= true;
                     }
 
@@ -139,7 +159,7 @@ public class RefProcessor implements EventProcessor {
                         @Override
                         public Reference callback(Reference bId) throws Exception {
                             if (bId != null) {
-                                write.addDereferencedObjects(tenantIdAndCentricId.getCentricId(), fieldName, bId.getObjectId());
+                                write.addDereferencedObject(tenantIdAndCentricId.getCentricId(), fieldName, bId.getObjectId());
                             }
 
                             return bId;
@@ -151,7 +171,7 @@ public class RefProcessor implements EventProcessor {
                         @Override
                         public Reference callback(Reference bId) throws Exception {
                             if (bId != null) {
-                                write.addDereferencedObjects(globalTenantIdAndCentricId.getCentricId(), fieldName, bId.getObjectId());
+                                write.addDereferencedObject(globalTenantIdAndCentricId.getCentricId(), fieldName, bId.getObjectId());
                             }
 
                             return bId;

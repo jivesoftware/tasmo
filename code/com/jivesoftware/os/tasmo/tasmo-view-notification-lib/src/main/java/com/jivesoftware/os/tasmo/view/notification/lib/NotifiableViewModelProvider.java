@@ -101,6 +101,9 @@ public class NotifiableViewModelProvider {
                 for (ModelPath path : binding.getModelPaths()) {
                     for (ModelPathStep step : path.getPathMembers()) {
                         eventClasses.addAll(step.getOriginClassNames());
+                        if (step.getDestinationClassNames() != null) {
+                            eventClasses.addAll(step.getDestinationClassNames());
+                        }
                     }
                 }
                 for (String className : eventClasses) {

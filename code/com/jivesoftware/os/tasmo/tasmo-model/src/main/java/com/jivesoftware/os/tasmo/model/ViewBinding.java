@@ -35,10 +35,10 @@ public class ViewBinding {
     public ViewBinding(
         @JsonProperty("viewClassName") String viewClassName,
         @JsonProperty("modelPaths") List<ModelPath> modelPaths,
-        @JsonProperty("persistChanges") boolean persistChanges,
+        @JsonProperty("persistChanges") boolean persistChanges, //deprecated
         @JsonProperty("idCentric") boolean idCentric,
         @JsonProperty("notifiable") boolean notifiable,
-        @JsonProperty("viewIdFieldName") String viewIdFieldName) {
+        @JsonProperty("viewIdFieldName") String viewIdFieldName) { //deprecated
         if (viewClassName == null || viewClassName.length() == 0) {
             throw new IllegalArgumentException("viewClassName cannot be null or an empty string.");
         }

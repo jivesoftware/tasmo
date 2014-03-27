@@ -15,9 +15,12 @@
  */
 package com.jivesoftware.os.tasmo.view.notification.lib;
 
+import com.google.common.collect.Sets;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.EventWrite;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
@@ -28,6 +31,7 @@ import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -48,11 +52,14 @@ public class ViewChangeNotifier {
 
     public void notifyChangedViews(List<EventWrite> eventBatch, ViewChangeNotificationProcessor viewChangeNotificationProcessor) throws Exception {
         for (EventWrite write : eventBatch) {
-            viewChangeNotificationProcessor.process(detectModifiedViews(write), write.getWrittenEvent());
+            ModifiedViewProvider modifiedViewProvider = detectModifiedViews(write);
+            if (!modifiedViewProvider.getModifiedViews().isEmpty()) {
+                viewChangeNotificationProcessor.process(modifiedViewProvider, write.getWrittenEvent());
+            }
         }
     }
 
-    private ModifiedViewProvider detectModifiedViews(EventWrite write) {
+    private ModifiedViewProvider detectModifiedViews(EventWrite write) throws Exception {
         final ModifiedViewProvider provider = new ModifiedViewProvider() {
             private final Set<ModifiedViewInfo> modified = new HashSet<>();
 
@@ -84,76 +91,72 @@ public class ViewChangeNotifier {
         return provider;
     }
 
-    private void detectChangedViewsForBinding(EventWrite write, ViewBinding binding, CallbackStream<ModifiedViewInfo> modificationStream) {
+    private void detectChangedViewsForBinding(EventWrite write, ViewBinding binding, CallbackStream<ModifiedViewInfo> modificationStream) throws Exception {
         WrittenEvent event = write.getWrittenEvent();
         WrittenInstance writtenInstance = event.getWrittenInstance();
         ObjectId instanceId = writtenInstance.getInstanceId();
         String eventClass = instanceId.getClassName();
-        Id actorId = event.getActorId();
-        Id centricId = actorId.equals(event.getCentricId()) ? Id.NULL : event.getCentricId();
-        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(event.getTenantId(), centricId);
+        TenantId tenantId = event.getTenantId();
+        Id userId = event.getCentricId();
+        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
+        TenantIdAndCentricId globalTenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
 
-
-        //TODO handle global and centric, etc and pull dereferenced objects out of event write
         for (ModelPath path : binding.getModelPaths()) {
-            for (ModelPathStep step : path.getPathMembers()) {
-                if (step.getOriginClassNames().contains(eventClass)) {
-                    for (String fieldName : event.getWrittenInstance().getFieldNames()) {
-                        if (step.getStepType().equals(ModelPathStepType.ref) || step.getStepType().equals(ModelPathStepType.refs)) {
-                            if (step.getRefFieldName().equals(fieldName)) {
-                                //build chain to root from step above starting with get_aids if above is ref, get_bids if backref
-                                //need instance id, ref field name of step above, path, and step above
-                                //if root, just add view id
-                                rootLocator.locateViewRoots(tenantIdAndCentricId, actorId,
-                                    instanceId, step, path, new ViewModficationStream(tenantIdAndCentricId, modificationStream));
 
-                            }
-                        } else if (step.getStepType().equals(ModelPathStepType.value)) {
-                            if (step.getFieldNames().contains(fieldName)) {
-                                //build chain to root from step above starting with get_aids if above is ref, get_bids if backref
-                                //need instance id, ref field name of step above, path, and step above
-                                //if root, just add view id
-                                rootLocator.locateViewRoots(tenantIdAndCentricId, actorId,
-                                    instanceId, step, path, new ViewModficationStream(tenantIdAndCentricId, modificationStream));
-                            }
-                        } else {
-                            //all backref types
-                            if (step.getRefFieldName().equals(fieldName)) {
-                                //build chain to root from this step above starting with get_aids
-                                //need instance id, ref field name of step, path, and step
-                                //if root, just add view id for each bid in the field value
-                                //problem - by the time this is run, the old relationships are toast, so we can't notify of removal
-                                rootLocator.locateViewRoots(tenantIdAndCentricId, actorId,
-                                    instanceId, step, path, new ViewModficationStream(tenantIdAndCentricId, modificationStream));
-                            }
-                        }
+            for (int pathIdx = 0; pathIdx < path.getPathMemberSize(); pathIdx++) {
+                ModelPathStep step = path.getPathMembers().get(pathIdx);
+                Set<String> writtenFields = Sets.newHashSet(writtenInstance.getFieldNames());
+
+                if (step.getOriginClassNames().contains(eventClass) && (!Collections.disjoint(writtenFields, getAllStepFields(step)))) {
+
+                    if (step.getStepType().equals(ModelPathStepType.value)) {
+
+                        rootLocator.locateViewRoots(binding.getViewClassName(), tenantIdAndCentricId, globalTenantIdAndCentricId,
+                            instanceId, pathIdx, path, modificationStream);
+
+                    } else if (step.getStepType().equals(ModelPathStepType.ref) || step.getStepType().equals(ModelPathStepType.refs)) {
+
+                        rootLocator.locateViewRoots(binding.getViewClassName(), tenantIdAndCentricId, globalTenantIdAndCentricId,
+                            instanceId, pathIdx, path, modificationStream);
+                    } else {
+                        //all backref types
+
+                        Set<ObjectId> affectedCentricObjects = buildAffectedBackReferencedObjects(write, step.getRefFieldName(),
+                            tenantIdAndCentricId.getCentricId());
+                        Set<ObjectId> affectedGlobalcObjects = buildAffectedBackReferencedObjects(write, step.getRefFieldName(),
+                            globalTenantIdAndCentricId.getCentricId());
+
+                        rootLocator.locateViewRoots(binding.getViewClassName(), tenantIdAndCentricId, globalTenantIdAndCentricId,
+                            affectedCentricObjects, affectedGlobalcObjects,
+                            pathIdx, path, modificationStream);
                     }
+                } else if (pathIdx == 0 && step.getStepType().isBackReferenceType() && step.getDestinationClassNames().contains(eventClass) &&
+                    writtenInstance.getFieldNames().contains(ReservedFields.DELETED)) {
+                    //good old initial backref delete case
+                    rootLocator.locateViewRoots(binding.getViewClassName(), tenantIdAndCentricId, globalTenantIdAndCentricId,
+                            instanceId, pathIdx, path, modificationStream);
                 }
             }
-
         }
     }
 
-    private static class ViewModficationStream implements CallbackStream<ObjectId> {
-
-        private final CallbackStream<ModifiedViewInfo> infoStream;
-        private final TenantIdAndCentricId tenantIdAndCentricId;
-
-        public ViewModficationStream(TenantIdAndCentricId tenantIdAndCentricId, CallbackStream<ModifiedViewInfo> infoStream) {
-            this.tenantIdAndCentricId = tenantIdAndCentricId;
-            this.infoStream = infoStream;
+    private Set<String> getAllStepFields(ModelPathStep step) {
+        Set<String> allStepFields = new HashSet<>();
+        if (step.getStepType().equals(ModelPathStepType.value)) {
+            allStepFields.addAll(step.getFieldNames());
+        } else {
+            allStepFields.add(step.getRefFieldName());
         }
+        allStepFields.add(ReservedFields.DELETED);
 
-        @Override
-        public ObjectId callback(ObjectId value) throws Exception {
-            ModifiedViewInfo viewInfo = null;
-            if (value != null) {
-                viewInfo = new ModifiedViewInfo(tenantIdAndCentricId, value);
-            }
+        return allStepFields;
+    }
 
-            infoStream.callback(viewInfo);
+    private Set<ObjectId> buildAffectedBackReferencedObjects(EventWrite write, String refField, Id centricId) {
+        Set<ObjectId> affected = new HashSet<>();
+        affected.addAll(write.getDereferencedObjects(centricId, refField));
+        affected.addAll(write.getReferencedObjects(centricId, refField));
 
-            return value;
-        }
+        return affected;
     }
 }

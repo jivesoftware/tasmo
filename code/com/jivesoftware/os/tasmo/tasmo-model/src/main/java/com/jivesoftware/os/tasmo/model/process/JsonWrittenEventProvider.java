@@ -16,6 +16,7 @@ import com.jivesoftware.os.tasmo.id.TenantId;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -151,7 +152,7 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
         }
 
         @Override
-        public Iterable<String> getFieldNames() {
+        public Collection<String> getFieldNames() {
             return Lists.newArrayList(instanceNode.fieldNames());
         }
 

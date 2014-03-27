@@ -2,6 +2,7 @@ package com.jivesoftware.os.tasmo.model.process;
 
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
+import java.util.Collection;
 
 /**
  * Represents the logical object instance being modified by an incoming event. This contains the actual data object fields being modified as well as the
@@ -11,7 +12,7 @@ public interface WrittenInstance {
 
     ObjectId getInstanceId();
 
-    Iterable<String> getFieldNames();
+    Collection<String> getFieldNames();
 
     OpaqueFieldValue getFieldValue(String fieldName);
 

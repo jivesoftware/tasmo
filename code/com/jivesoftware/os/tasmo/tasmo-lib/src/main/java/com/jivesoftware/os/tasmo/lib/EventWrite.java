@@ -20,7 +20,7 @@ import com.google.common.collect.Multimap;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
-import java.util.Arrays;
+import java.util.Collection;
 import java.util.Objects;
 
 /**
@@ -30,7 +30,8 @@ import java.util.Objects;
 public class EventWrite {
 
     private final WrittenEvent writtenEvent;
-    private final Multimap<DereferencedKey, ObjectId> dereferencedObjects = ArrayListMultimap.create();
+    private final Multimap<ReferencedObjectKey, ObjectId> dereferencedObjects = ArrayListMultimap.create();
+    private final Multimap<ReferencedObjectKey, ObjectId> referencedObjects = ArrayListMultimap.create();
 
     public EventWrite(WrittenEvent writtenEvent) {
         this.writtenEvent = writtenEvent;
@@ -40,20 +41,36 @@ public class EventWrite {
         return writtenEvent;
     }
 
-    public void addDereferencedObjects(Id centricId, String refField, ObjectId... objectIds) {
-        dereferencedObjects.putAll(new DereferencedKey(refField, centricId), Arrays.asList(objectIds));
+    public void addDereferencedObjects(Id centricId, String refField, Collection<ObjectId> objectIds) {
+        dereferencedObjects.putAll(new ReferencedObjectKey(refField, centricId), objectIds);
     }
 
-    public Iterable<ObjectId> getDereferencedObjects(Id centricId, String refField) {
-        return dereferencedObjects.get(new DereferencedKey(refField, centricId));
+    public void addDereferencedObject(Id centricId, String refField, ObjectId objectId) {
+        dereferencedObjects.put(new ReferencedObjectKey(refField, centricId), objectId);
     }
 
-    private static class DereferencedKey {
+    public void addReferencedObjects(Id centricId, String refField, Collection<ObjectId> objectIds) {
+        referencedObjects.putAll(new ReferencedObjectKey(refField, centricId), objectIds);
+    }
+
+    public void addReferencedObject(Id centricId, String refField, ObjectId objectId) {
+        referencedObjects.put(new ReferencedObjectKey(refField, centricId), objectId);
+    }
+
+    public Collection<ObjectId> getDereferencedObjects(Id centricId, String refField) {
+        return dereferencedObjects.get(new ReferencedObjectKey(refField, centricId));
+    }
+
+    public Collection<ObjectId> getReferencedObjects(Id centricId, String refField) {
+        return referencedObjects.get(new ReferencedObjectKey(refField, centricId));
+    }
+
+    private static class ReferencedObjectKey {
 
         private final String refField;
         private final Id centricId;
 
-        public DereferencedKey(String refField, Id centricId) {
+        public ReferencedObjectKey(String refField, Id centricId) {
             this.refField = refField;
             this.centricId = centricId;
         }
@@ -74,7 +91,7 @@ public class EventWrite {
             if (getClass() != obj.getClass()) {
                 return false;
             }
-            final DereferencedKey other = (DereferencedKey) obj;
+            final ReferencedObjectKey other = (ReferencedObjectKey) obj;
             if (!Objects.equals(this.refField, other.refField)) {
                 return false;
             }

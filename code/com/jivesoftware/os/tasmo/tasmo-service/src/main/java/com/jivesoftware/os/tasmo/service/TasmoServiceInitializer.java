@@ -32,9 +32,11 @@ import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.view.notification.lib.NotifiableViewModelProvider;
+import com.jivesoftware.os.tasmo.view.notification.lib.ViewChangeInputStream;
 import com.jivesoftware.os.tasmo.view.notification.lib.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.view.notification.lib.ViewChangeNotifier;
 import com.jivesoftware.os.tasmo.view.notification.lib.ViewRootLocator;
+import com.jivesoftware.os.tasmo.view.reader.lib.BatchingReferenceStore;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -127,28 +129,12 @@ public class TasmoServiceInitializer {
         TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper, dispatcherProvider, existenceStore);
 
         NotifiableViewModelProvider notifiableViewModelProvider = new NotifiableViewModelProvider(masterTenantId, viewsProvider);
-        ViewRootLocator viewRootLocator = new ViewRootLocator(referenceStore);
+        ViewRootLocator viewRootLocator = new ViewRootLocator(new BatchingReferenceStore(multiLinks, multiBackLinks));
         ViewChangeNotifier viewChangeNotifier = new ViewChangeNotifier(notifiableViewModelProvider, viewRootLocator);
-        CallbackStream<List<EventWrite>> viewNotificationInput = buildViewNotificationInput(viewChangeNotifier, viewChangeNotificationProcessor);
+        CallbackStream<List<EventWrite>> viewNotificationInput = new ViewChangeInputStream(viewChangeNotifier, viewChangeNotificationProcessor);
 
         EventIngressCallbackStream eventStream = new EventIngressCallbackStream(materializer, viewNotificationInput);
         return eventStream;
     }
 
-    private static CallbackStream<List<EventWrite>> buildViewNotificationInput(final ViewChangeNotifier viewChangeNotifier,
-        final ViewChangeNotificationProcessor viewChangeNotificationProcessor) {
-        CallbackStream<List<EventWrite>> callback = new CallbackStream<List<EventWrite>>() {
-            @Override
-            public List<EventWrite> callback(List<EventWrite> value) throws Exception {
-                if (value != null) {
-                    viewChangeNotifier.notifyChangedViews(value, viewChangeNotificationProcessor);
-                }
-                return value;
-            }
-        };
-
-        return callback;
-
-
-    }
 }
