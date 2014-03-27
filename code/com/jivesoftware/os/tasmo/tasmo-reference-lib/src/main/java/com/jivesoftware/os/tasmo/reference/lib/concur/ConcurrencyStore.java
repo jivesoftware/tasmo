@@ -2,6 +2,8 @@ package com.jivesoftware.os.tasmo.reference.lib.concur;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.jivesoftware.os.jive.utils.logger.MetricLogger;
+import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantRowColumValueTimestampAdd;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantRowColumnTimestampRemove;
@@ -19,6 +21,7 @@ import java.util.Set;
  */
 public class ConcurrencyStore {
 
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private static final String EXISTS = "*exists*";
 
     private final RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> updatedStore;
@@ -41,6 +44,7 @@ public class ConcurrencyStore {
                     existenceUpdate.objectId, EXISTS,
                     existenceUpdate.timestamp,
                     new ConstantTimestamper(existenceUpdate.timestamp)));
+            LOG.trace("Object EXISTS:{} time:{}", new Object[]{existenceUpdate.objectId, existenceUpdate.timestamp});
         }
         updatedStore.multiRowsMultiAdd(batch);
     }
@@ -51,6 +55,7 @@ public class ConcurrencyStore {
             batch.add(new TenantRowColumnTimestampRemove<>(existenceUpdate.tenantId,
                     existenceUpdate.objectId, EXISTS,
                     new ConstantTimestamper(existenceUpdate.timestamp)));
+            LOG.trace("Object REMOVED:{} time:{}", new Object[]{existenceUpdate.objectId, existenceUpdate.timestamp});
         }
         updatedStore.multiRowsMultiRemove(batch);
     }
@@ -69,6 +74,9 @@ public class ConcurrencyStore {
             for (int i = 0; i < orderObjectIds.size(); i++) {
                 if (multiRowGet.get(i) != null) {
                     existence.add(orderObjectIds.get(i));
+                    LOG.trace("Check existence {} TRUE", new Object[]{orderObjectIds.get(i)});
+                } else {
+                    LOG.trace("Check existence {} FALSE", new Object[]{orderObjectIds.get(i)});
                 }
             }
         }
@@ -82,6 +90,9 @@ public class ConcurrencyStore {
         for (int i = 0; i < orderObjectIds.size(); i++) {
             if (multiRowGet.get(i) != null) {
                 existence.add(orderObjectIds.get(i));
+                LOG.trace("Check existence {} TRUE", new Object[]{orderObjectIds.get(i)});
+            } else {
+                LOG.trace("Check existence {} FALSE", new Object[]{orderObjectIds.get(i)});
             }
         }
         return existence;
@@ -123,7 +134,6 @@ public class ConcurrencyStore {
                 } else {
                     was.add(e);
                 }
-
 
             }
         }

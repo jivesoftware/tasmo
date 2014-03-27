@@ -31,20 +31,21 @@ public class InitiateTraversal implements WrittenEventProcessor {
     }
 
     @Override
-    public void process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception {
+    public void process(WrittenEventContext batchContext, WrittenEvent writtenEvent, long threadTimestamp) throws Exception {
 
-        invokeEventTraverser(batchContext, "values", valueTraverser, writtenEvent);
-        invokeEventTraverser(batchContext, "refs", refTraverser, writtenEvent);
+        invokeEventTraverser(batchContext, "values", valueTraverser, writtenEvent, threadTimestamp);
+        invokeEventTraverser(batchContext, "refs", refTraverser, writtenEvent, threadTimestamp);
 
     }
 
     private void invokeEventTraverser(WrittenEventContext batchContext,
             String processorName,
             EventProcessor eventProcessor,
-            WrittenEvent writtenEvent) throws Exception {
+            WrittenEvent writtenEvent,
+            long threadTimestamp) throws Exception {
         LOG.startTimer(processorName);
         try {
-            eventProcessor.process(batchContext, writtenEvent);
+            eventProcessor.process(batchContext, writtenEvent, threadTimestamp);
         } finally {
             LOG.stopTimer(processorName);
         }

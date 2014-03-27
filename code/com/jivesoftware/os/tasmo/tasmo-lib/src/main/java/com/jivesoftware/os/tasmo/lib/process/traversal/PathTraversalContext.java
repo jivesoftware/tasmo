@@ -74,6 +74,10 @@ public class PathTraversalContext {
         // A.a -> B
     }
 
+    public long getThreadTimestamp() {
+        return threadTimestamp;
+    }
+
     public TenantIdAndCentricId getTenantIdAndCentricId() {
         return tenantIdAndCentricId;
     }

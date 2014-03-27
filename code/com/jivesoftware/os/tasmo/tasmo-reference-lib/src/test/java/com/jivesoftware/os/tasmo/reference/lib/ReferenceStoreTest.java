@@ -61,17 +61,17 @@ public class ReferenceStoreTest {
             versionResults.add(new ReferenceWithTimestamp(bId.getObjectId(), bId.getFieldName(), 0));
         }
 
-        referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, new ObjectIdResults());
+        referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, 0, new ObjectIdResults());
         referenceStore.link(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, bIds);
 
         ObjectIdResults results = new ObjectIdResults();
         Set<String> aClassNames = Sets.newHashSet(aClassName);
 
-        referenceStore.streamBackRefs(tenantIdAndCentricId, bId3.getObjectId(), aClassNames, aFieldName, results);
+        referenceStore.streamBackRefs(tenantIdAndCentricId, bId3.getObjectId(), aClassNames, aFieldName, 0, results);
         Assert.assertTrue(equal(results.results, Arrays.asList(new ReferenceWithTimestamp(aId.getObjectId(), aId.getFieldName(), 0))));
         results.results.clear();
 
-        referenceStore.streamForwardRefs(tenantIdAndCentricId, aClassName, aFieldName, aId.getObjectId(), results);
+        referenceStore.streamForwardRefs(tenantIdAndCentricId, aClassName, aFieldName, aId.getObjectId(), 0, results);
         //in memory reference store will return ascending sorted lists
         Assert.assertTrue(equal(results.results, versionResults));
         results.results.clear();
@@ -82,19 +82,19 @@ public class ReferenceStoreTest {
         for (Reference bId : bIds) {
             versionResults.add(new ReferenceWithTimestamp(bId.getObjectId(), bId.getFieldName(), 0));
         }
-        referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, new ObjectIdResults());
+        referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, 0, new ObjectIdResults());
         referenceStore.link(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, bIds);
 
-        referenceStore.streamBackRefs(tenantIdAndCentricId, bId3.getObjectId(), aClassNames, aFieldName, results);
+        referenceStore.streamBackRefs(tenantIdAndCentricId, bId3.getObjectId(), aClassNames, aFieldName, 0, results);
         Assert.assertTrue(equal(results.results, Arrays.asList(new ReferenceWithTimestamp(aId.getObjectId(), aId.getFieldName(), 0))));
         results.results.clear();
 
         //bid2 is no longer linked to by aId
-        referenceStore.streamBackRefs(tenantIdAndCentricId, bId2.getObjectId(), aClassNames, aFieldName, results);
+        referenceStore.streamBackRefs(tenantIdAndCentricId, bId2.getObjectId(), aClassNames, aFieldName, 0, results);
         Assert.assertTrue(equal(results.results, Collections.<ReferenceWithTimestamp>emptyList()));
         results.results.clear();
 
-        referenceStore.streamForwardRefs(tenantIdAndCentricId, aClassName, aFieldName, aId.getObjectId(), results);
+        referenceStore.streamForwardRefs(tenantIdAndCentricId, aClassName, aFieldName, aId.getObjectId(), 0, results);
         //in memory reference store will return ascending sorted lists
         Assert.assertTrue(equal(results.results, versionResults));
         results.results.clear();
@@ -105,15 +105,15 @@ public class ReferenceStoreTest {
         for (Reference bId : bIds) {
             versionResults.add(new ReferenceWithTimestamp(bId.getObjectId(), bId.getFieldName(), 0));
         }
-        referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, new ObjectIdResults());
+        referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, 0, new ObjectIdResults());
         referenceStore.link(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, bIds);
 
         //bid1 is no longer linked to by aId
-        referenceStore.streamBackRefs(tenantIdAndCentricId, bId1.getObjectId(), aClassNames, aFieldName, results);
+        referenceStore.streamBackRefs(tenantIdAndCentricId, bId1.getObjectId(), aClassNames, aFieldName, 0, results);
         Assert.assertTrue(equal(results.results, Collections.<ReferenceWithTimestamp>emptyList()));
         results.results.clear();
 
-        referenceStore.streamForwardRefs(tenantIdAndCentricId, aClassName, aFieldName, aId.getObjectId(), results);
+        referenceStore.streamForwardRefs(tenantIdAndCentricId, aClassName, aFieldName, aId.getObjectId(), 0, results);
         //in memory reference store will return ascending sorted lists
         Assert.assertTrue(equal(results.results, Collections.<ReferenceWithTimestamp>emptyList()));
         results.results.clear();

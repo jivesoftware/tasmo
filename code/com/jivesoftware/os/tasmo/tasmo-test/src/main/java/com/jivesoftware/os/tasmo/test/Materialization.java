@@ -322,7 +322,8 @@ public class Materialization {
                 new WrittenInstanceHelper(),
                 concurrencyStore,
                 eventValueStore,
-                referenceStore);
+                referenceStore,
+                new OrderIdProviderImpl(1));
 
     }
 

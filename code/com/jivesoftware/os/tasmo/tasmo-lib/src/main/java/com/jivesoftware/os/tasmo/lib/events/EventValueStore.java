@@ -43,7 +43,9 @@ public class EventValueStore {
             long removeAtTimestamp,
             ObjectId objectId,
             String[] fieldNames) {
-        eventValueStore.multiRemove(tenantIdAndCentricId, objectId, fieldNames, new ConstantTimestamper(removeAtTimestamp + 1));
+        if (fieldNames != null && fieldNames.length > 0) {
+            eventValueStore.multiRemove(tenantIdAndCentricId, objectId, fieldNames, new ConstantTimestamper(removeAtTimestamp + 1));
+        }
 
         String[] fields = Arrays.copyOf(fieldNames, fieldNames.length + 1);
         fields[fields.length - 1] = "deleted";

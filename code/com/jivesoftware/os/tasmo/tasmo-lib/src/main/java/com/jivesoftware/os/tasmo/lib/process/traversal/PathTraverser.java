@@ -1,6 +1,5 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
@@ -22,22 +21,20 @@ public class PathTraverser {
     private final InitiateTraversalContext initialStepContext;
     private final List<StepTraverser> stepTraversers;
     private final PathTraverserConfig pathTraverserConfig;
-    private final OrderIdProvider idProvider;
 
     public PathTraverser(InitiateTraversalContext initialStepContext,
             List<StepTraverser> stepTraversers,
-            PathTraverserConfig pathTraverserConfig,
-            OrderIdProvider idProvider) {
+            PathTraverserConfig pathTraverserConfig) {
         this.initialStepContext = initialStepContext;
         this.stepTraversers = stepTraversers;
         this.pathTraverserConfig = pathTraverserConfig;
-        this.idProvider = idProvider;
     }
 
     public PathTraversalContext createContext(WrittenEventContext writtenEventContext,
             WrittenEvent writtenEvent,
+            long threadTimestamp,
             boolean removalContext) {
-        return createContext(writtenEventContext, writtenEvent, initialStepContext, removalContext);
+        return createContext(writtenEventContext, writtenEvent, initialStepContext, threadTimestamp, removalContext);
     }
 
     public void travers(WrittenEvent writtenEvent,
@@ -61,6 +58,7 @@ public class PathTraverser {
             final WrittenEventContext writtenEventContext,
             WrittenEvent writtenEvent,
             InitiateTraversalContext step,
+            long threadTimestamp,
             boolean removalContext) {
 
         TenantId tenantId = writtenEvent.getTenantId();
@@ -91,7 +89,7 @@ public class PathTraverser {
                 notificationsAfterCommitingChanges,
                 alternateViewId,
                 step.getMembersSize(),
-                idProvider.nextId(),
+                threadTimestamp,
                 removalContext);
         return context;
     }

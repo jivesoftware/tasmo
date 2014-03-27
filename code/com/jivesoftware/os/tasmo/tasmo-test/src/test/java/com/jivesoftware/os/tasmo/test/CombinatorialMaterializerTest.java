@@ -59,9 +59,9 @@ public class CombinatorialMaterializerTest {
     //private long seed = System.currentTimeMillis();
     private final long seed = 1389045159990L;
     private final boolean verbose = true;
-    private final int maxStepDepth = 2; // TODO change back to 4
-    private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
-    //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
+    private final int maxStepDepth = 3; // TODO change back to 4
+    //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
+    private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
 
     private void println(Object line) {
         if (verbose) {
@@ -71,23 +71,24 @@ public class CombinatorialMaterializerTest {
 
     @BeforeClass
     public void logger() {
-        String PATTERN = ""; //%t %m%n";
+        String PATTERN = "%t %m%n";
 
         Enumeration allAppenders = LogManager.getRootLogger().getAllAppenders();
         while (allAppenders.hasMoreElements()) {
-            Appender appender = (Appender)allAppenders.nextElement();
+            Appender appender = (Appender) allAppenders.nextElement();
             appender.setLayout(new PatternLayout(PATTERN));
         }
-        LogManager.getLogger("com.jivesoftware.os.tasmo").setLevel(Level.TRACE);
+        //LogManager.getLogger("com.jivesoftware.os.tasmo").setLevel(Level.TRACE);
+        LogManager.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore").setLevel(Level.TRACE);
     }
 
-    @Test(dataProvider = "totalOrderAdds", invocationCount = 1)
+    @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
     public void testSingleThreadedTotalOrderAdds(InputCase inputCase)
             throws Throwable {
         assertCombination(inputCase, null, false);
     }
 
-    @Test(dataProvider = "unorderedAdds", invocationCount = 1)
+    @Test(dataProvider = "unorderedAdds", invocationCount = 1, singleThreaded = true)
     public void testSingleThreadedUnorderedAdds(InputCase inputCase)
             throws Throwable {
         assertCombination(inputCase, null, false);
@@ -99,7 +100,7 @@ public class CombinatorialMaterializerTest {
         assertCombination(inputCase, null, true);
     }
 
-    @Test(dataProvider = "addsThenRemoves", invocationCount = 1)
+    @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
     public void testSingleThreadedAddsThenRemoves(InputCase inputCase)
             throws Throwable {
         assertCombination(inputCase, null, false);
@@ -109,15 +110,14 @@ public class CombinatorialMaterializerTest {
     public void testMultiThreadedAddsThenRemoves(InputCase inputCase)
             throws Throwable {
 
-        assertCombination(inputCase, null, true);
+        assertCombination(inputCase, null, true); //382L
     }
 
-    @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1)
-    public void testSingleThreadedAddsThenRemovesThenAdds(InputCase inputCase)
-            throws Throwable {
-        assertCombination(inputCase, null, false);
-    }
-
+//    @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
+//    public void testSingleThreadedAddsThenRemovesThenAdds(InputCase inputCase)
+//            throws Throwable {
+//        assertCombination(inputCase, null, false);
+//    }
     private void assertCombination(final InputCase ic, Long onlyRunTestId, boolean multiThreadWrites) throws Throwable {
         try {
             if (onlyRunTestId != null && onlyRunTestId != ic.testId) {
@@ -211,11 +211,13 @@ public class CombinatorialMaterializerTest {
         final CountDownLatch latch = new CountDownLatch(batch.size());
         final AtomicLong errors = new AtomicLong();
         Executor executor = Executors.newCachedThreadPool();
+        final JsonEventConventions jec = new JsonEventConventions();
         for (final Event b : batch) {
             executor.execute(new Runnable() {
 
                 @Override
                 public void run() {
+                    Thread.currentThread().setName("thread-for-event-" + jec.getEventId(b.toJson()));
                     try {
                         ic.eventWriterProvider.eventWriter().write(Arrays.asList(b));
                     } catch (EventWriteException ex) {

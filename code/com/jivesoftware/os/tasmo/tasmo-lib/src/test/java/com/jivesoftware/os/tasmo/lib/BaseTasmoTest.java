@@ -357,7 +357,7 @@ public class BaseTasmoTest {
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoViewModel, getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),
-                concurrencyStore, eventValueStore, referenceStore);
+                concurrencyStore, eventValueStore, referenceStore, new OrderIdProviderImpl(1));
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
     }

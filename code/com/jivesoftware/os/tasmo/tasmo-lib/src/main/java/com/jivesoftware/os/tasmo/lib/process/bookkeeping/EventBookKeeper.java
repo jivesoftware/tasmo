@@ -25,7 +25,7 @@ public class EventBookKeeper implements WrittenEventProcessor {
     }
 
     @Override
-    public void process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception {
+    public void process(WrittenEventContext batchContext, WrittenEvent writtenEvent, long threadTimestamp) throws Exception {
 
         ObjectId instanceId = writtenEvent.getWrittenInstance().getInstanceId();
         String instanceClass = instanceId.getClassName();
@@ -35,14 +35,15 @@ public class EventBookKeeper implements WrittenEventProcessor {
             LOG.startTimer("processed");
 
             if (LOG.isTraceEnabled()) {
-                LOG.trace("PROCESSING {} EVENT-ID:{} EVENT:{}",
+                LOG.trace("PROCESSING TIME:{} {} EVENT-ID:{} EVENT:{}",
                         new Object[]{
+                            threadTimestamp,
                             ((writtenEvent.getWrittenInstance().isDeletion()) ? "DELETE" : "UPDATE"),
                             writtenEvent.getEventId(),
                             writtenEvent});
             }
 
-            processorizer.process(batchContext, writtenEvent);
+            processorizer.process(batchContext, writtenEvent, threadTimestamp);
 
             LOG.inc("processed>" + instanceClass);
             LOG.inc("processed");

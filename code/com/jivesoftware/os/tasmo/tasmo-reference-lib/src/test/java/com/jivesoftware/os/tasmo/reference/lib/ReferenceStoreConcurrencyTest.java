@@ -210,7 +210,7 @@ public class ReferenceStoreConcurrencyTest {
 
                     if (delete) {
 
-                        referenceStore.unlink(tenantIdAndCentricId, timestamp, from, fromRefFieldName,
+                        referenceStore.unlink(tenantIdAndCentricId, timestamp, from, fromRefFieldName, 0,
                                 new CallbackStream<ReferenceWithTimestamp>() {
                                     @Override
                                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
@@ -227,7 +227,7 @@ public class ReferenceStoreConcurrencyTest {
                             referenceStore.link(tenantIdAndCentricId, timestamp, from, fromRefFieldName, Arrays.asList(tos));
                         }
                         // yield
-                        referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), from, fromRefFieldName,
+                        referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), from, fromRefFieldName, 0,
                                 new CallbackStream<ReferenceWithTimestamp>() {
                                     @Override
                                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
@@ -246,7 +246,7 @@ public class ReferenceStoreConcurrencyTest {
                             throw e;
                         }
 
-                        referenceStore.streamForwardRefs(tenantIdAndCentricId, from.getClassName(), fromRefFieldName, from,
+                        referenceStore.streamForwardRefs(tenantIdAndCentricId, from.getClassName(), fromRefFieldName, from, 0,
                                 new CallbackStream<ReferenceWithTimestamp>() {
 
                                     @Override

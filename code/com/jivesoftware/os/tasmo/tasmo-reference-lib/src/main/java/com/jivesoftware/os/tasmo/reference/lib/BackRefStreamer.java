@@ -27,12 +27,14 @@ public class BackRefStreamer extends BaseRefStreamer {
     @Override
     public void stream(TenantIdAndCentricId tenantIdAndCentricId,
             ObjectId referringObjectId,
+            long readTime,
             final CallbackStream<ReferenceWithTimestamp> froms) throws Exception {
 
         referenceStore.streamBackRefs(tenantIdAndCentricId,
                 referringObjectId,
                 referringClassNames,
                 referringFieldName,
+                readTime,
                 froms);
     }
 

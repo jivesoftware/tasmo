@@ -11,6 +11,7 @@ package com.jivesoftware.os.tasmo.lib;
 import com.google.common.collect.ListMultimap;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
@@ -35,6 +36,7 @@ import com.jivesoftware.os.tasmo.reference.lib.concur.ExistenceUpdate;
 import com.jivesoftware.os.tasmo.reference.lib.concur.PathModifiedOutFromUnderneathMeException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -49,6 +51,7 @@ public class TasmoViewMaterializer {
     private final ConcurrencyStore concurrencyStore;
     private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
+    private final OrderIdProvider threadTime;
 
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
             TasmoViewModel tasmoViewModel,
@@ -56,7 +59,8 @@ public class TasmoViewMaterializer {
             WrittenInstanceHelper writtenInstanceHelper,
             ConcurrencyStore concurrencyStore,
             EventValueStore eventValueStore,
-            ReferenceStore referenceStore
+            ReferenceStore referenceStore,
+            OrderIdProvider threadTime
     ) {
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
         this.tasmoViewModel = tasmoViewModel;
@@ -65,6 +69,7 @@ public class TasmoViewMaterializer {
         this.concurrencyStore = concurrencyStore;
         this.eventValueStore = eventValueStore;
         this.referenceStore = referenceStore;
+        this.threadTime = threadTime;
     }
 
     public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
@@ -125,9 +130,7 @@ public class TasmoViewMaterializer {
                                 fieldNames.add(fieldName);
                             }
                         }
-                        if (!fieldNames.isEmpty()) {
-                            eventValueStore.removeObjectId(tenantIdAndCentricId, timestamp, instanceId, fieldNames.toArray(new String[fieldNames.size()]));
-                        }
+                        eventValueStore.removeObjectId(tenantIdAndCentricId, timestamp, instanceId, fieldNames.toArray(new String[fieldNames.size()]));
                     } else {
 
                         EventValueStore.Transaction transaction = eventValueStore.begin(tenantIdAndCentricId,
@@ -142,8 +145,13 @@ public class TasmoViewMaterializer {
                                 if (fieldNameAndType.getFieldType() == ModelPathStepType.ref) {
                                     long highest = concurrencyStore.highest(tenantIdAndCentricId.getTenantId(), instanceId, fieldName, timestamp);
                                     if (timestamp >= highest) {
-                                        Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, fieldName);
-                                        referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, fieldName, tos);
+                                        OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
+                                        if (fieldValue.isNull()) {
+                                            referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, fieldName, Collections.EMPTY_LIST);
+                                        } else {
+                                            Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, fieldName);
+                                            referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, fieldName, tos);
+                                        }
                                     }
                                 } else {
                                     OpaqueFieldValue got = writtenInstance.getFieldValue(fieldName);
@@ -175,7 +183,7 @@ public class TasmoViewMaterializer {
                             }
                             try {
                                 EventBookKeeper eventBookKeeper = new EventBookKeeper(initiateTraversal);
-                                eventBookKeeper.process(batchContext, writtenEvent);
+                                eventBookKeeper.process(batchContext, writtenEvent, threadTime.nextId());
                                 processed.add(writtenEvent);
                                 break;
                             } catch (Exception e) {

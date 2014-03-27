@@ -56,12 +56,13 @@ public class ReferenceStore {
             final String className,
             final String fieldName,
             final ObjectId id,
+            final long threadTimestamp,
             final CallbackStream<ReferenceWithTimestamp> forwardRefs) {
 
         LOG.inc("get_bIds");
 
         final ClassAndField_IdKey aClassAndField_aId = new ClassAndField_IdKey(className, fieldName, id);
-        LOG.trace(" |--> Get bIds Tenant={} A={}", tenantIdAndCentricId, aClassAndField_aId);
+        LOG.trace(System.currentTimeMillis() + " |--> Get bIds Tenant={} A={}", tenantIdAndCentricId, aClassAndField_aId);
 
         multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
                 new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
@@ -73,8 +74,8 @@ public class ReferenceStore {
                         } else {
 
                             ReferenceWithTimestamp reference = new ReferenceWithTimestamp(bId.getColumn(), fieldName, bId.getTimestamp());
-                            LOG.trace(" |--> Got bIds Tenant={} A={} B={} Timestamp={}", new Object[]{
-                                tenantIdAndCentricId, aClassAndField_aId, bId.getColumn(), bId.getTimestamp()});
+                            LOG.trace(System.currentTimeMillis() + " |--> {} Got bIds Tenant={} a={} b={} Timestamp={}", new Object[]{
+                                threadTimestamp, tenantIdAndCentricId, aClassAndField_aId, bId.getColumn(), bId.getTimestamp()});
 
                             ReferenceWithTimestamp returned = forwardRefs.callback(reference);
                             if (returned == reference) {
@@ -92,6 +93,7 @@ public class ReferenceStore {
             final ObjectId id,
             final Set<String> classNames,
             final String fieldName,
+            final long threadTimestamp,
             final CallbackStream<ReferenceWithTimestamp> backRefs) throws Exception {
 
         LOG.inc("get_aIds");
@@ -107,8 +109,8 @@ public class ReferenceStore {
                             if (backRef != null) {
                                 ReferenceWithTimestamp reference = new ReferenceWithTimestamp(backRef.getColumn(),
                                         fieldName, backRef.getTimestamp());
-                                LOG.trace(" |--> Got aIds Tenant={} B={} A={} Timestamp={}", new Object[]{
-                                    tenantIdAndCentricId, aClassAndField_bId, backRef.getColumn(), backRef.getTimestamp()});
+                                LOG.trace(System.currentTimeMillis() + " |--> {} Got aIds Tenant={} b={} a={} Timestamp={}", new Object[]{
+                                    threadTimestamp, tenantIdAndCentricId, aClassAndField_bId, backRef.getColumn(), backRef.getTimestamp()});
 
                                 ReferenceWithTimestamp returned = backRefs.callback(reference);
                                 if (returned != reference) {
@@ -127,6 +129,7 @@ public class ReferenceStore {
             ObjectId id,
             Set<String> classNames,
             String fieldName,
+            final long threadTimestamp,
             final CallbackStream<ReferenceWithTimestamp> lastestBackRefs) throws Exception {
 
         LOG.inc("get_latest_aId");
@@ -173,19 +176,18 @@ public class ReferenceStore {
         try {
             for (Reference to : tos) {
 
-                LOG.trace("|--> link {}.{}.{}->{} t={}",
-                        new Object[]{from.getClassName(), fieldName, from, to.getObjectId(), timestamp});
-
+                //LOG.trace("|--> link {}.{}.{}->{} t={}",
+                //        new Object[]{from.getClassName(), fieldName, from, to.getObjectId(), timestamp});
                 ClassAndField_IdKey classAndField_from = new ClassAndField_IdKey(from.getClassName(), fieldName, from);
                 ClassAndField_IdKey classAndField_to = new ClassAndField_IdKey(from.getClassName(), fieldName, to.getObjectId());
 
                 ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp);
                 multiLinks.add(tenantIdAndCentricId, classAndField_from, to.getObjectId(), EMPTY, null, constantTimestamper);
-                multiBackLinks.add(tenantIdAndCentricId, classAndField_to, from, EMPTY, null, constantTimestamper);
-
-                LOG.trace(" |--> Set Links Tenant={} from={} to={} Timestamp={}",
+                LOG.trace(System.currentTimeMillis() + " |--> Set Links Tenant={} from={} to={} Timestamp={}",
                         new Object[]{tenantIdAndCentricId, classAndField_from, to, timestamp});
-                LOG.trace(" |--> Set BackLinks Tenant={} to={} from={} Timestamp={}",
+
+                multiBackLinks.add(tenantIdAndCentricId, classAndField_to, from, EMPTY, null, constantTimestamper);
+                LOG.trace(System.currentTimeMillis() + " |--> Set BackLinks Tenant={} to={} from={} Timestamp={}",
                         new Object[]{tenantIdAndCentricId, classAndField_to, from, timestamp});
             }
         } finally {
@@ -199,10 +201,10 @@ public class ReferenceStore {
             final long timestamp,
             final ObjectId from,
             final String fieldName,
+            final long threadTimestamp,
             final CallbackStream<ReferenceWithTimestamp> removedTos) throws Exception {
 
-        LOG.trace("|--> un-link {}.{}.{} t={}", new Object[]{from.getClassName(), fieldName, from, timestamp});
-
+        //LOG.trace("|--> un-link {}.{}.{} t={}", new Object[]{from.getClassName(), fieldName, from, timestamp});
         LOG.inc("unlink");
 
         final ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp + 1);
@@ -224,8 +226,20 @@ public class ReferenceStore {
                                 removedTos.callback(new ReferenceWithTimestamp(to.getColumn(), fieldName, to.getTimestamp()));
 
                                 multiBackLinks.remove(tenantIdAndCentricId, aClassAndField_bId, from, constantTimestamper);
+                                LOG.trace(System.currentTimeMillis() + "|--> {} removed back link {}.{}.{} t={}", new Object[]{threadTimestamp,
+                                    aClassAndField_bId.getClassName(),
+                                    aClassAndField_bId.getFieldName(),
+                                    aClassAndField_bId.getObjectId(),
+                                    constantTimestamper.get()
+                                });
                                 multiLinks.remove(tenantIdAndCentricId, aClassAndField_aId, to.getColumn(), constantTimestamper);
 
+                                LOG.trace(System.currentTimeMillis() + "|--> {} removed forward link {}.{}.{} t={}", new Object[]{threadTimestamp,
+                                    aClassAndField_aId.getClassName(),
+                                    aClassAndField_aId.getFieldName(),
+                                    aClassAndField_aId.getObjectId(),
+                                    constantTimestamper.get()
+                                });
                             }
                         }
                         return to;

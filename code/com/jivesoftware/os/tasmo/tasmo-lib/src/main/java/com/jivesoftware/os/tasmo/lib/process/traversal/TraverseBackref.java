@@ -45,7 +45,7 @@ public class TraverseBackref implements StepTraverser {
                 initialModelPathMember.getOriginClassNames(),
                 initialModelPathMember.getRefFieldName());
 
-        streamer.stream(tenantIdAndCentricId, from.getObjectId(),
+        streamer.stream(tenantIdAndCentricId, from.getObjectId(), context.getThreadTimestamp(),
                 new CallbackStream<ReferenceWithTimestamp>() {
                     @Override
                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {

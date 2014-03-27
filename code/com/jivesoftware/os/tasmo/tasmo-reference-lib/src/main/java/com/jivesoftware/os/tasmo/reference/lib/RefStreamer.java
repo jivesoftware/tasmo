@@ -19,6 +19,7 @@ public interface RefStreamer {
 
     void stream(TenantIdAndCentricId tenantIdAndCentricId,
             ObjectId referringObjectId,
+            long readTime,
             CallbackStream<ReferenceWithTimestamp> referencedIdsStream) throws Exception;
 
     boolean isBackRefStreamer();

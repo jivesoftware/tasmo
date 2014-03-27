@@ -51,7 +51,7 @@ public class InitiateRefTraversal implements EventProcessor {
     }
 
     @Override
-    public void process(final WrittenEventContext writtenEventContext, final WrittenEvent writtenEvent) throws Exception {
+    public void process(final WrittenEventContext writtenEventContext, final WrittenEvent writtenEvent,final long threadTimestamp) throws Exception {
 
         TenantId tenantId = writtenEvent.getTenantId();
         final long timestamp = writtenEvent.getEventId();
@@ -72,12 +72,12 @@ public class InitiateRefTraversal implements EventProcessor {
 
                 long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId.getTenantId(), instanceId, refFieldName, timestamp);
 
-                referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), instanceId, refFieldName,
+                referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), instanceId, refFieldName, threadTimestamp,
                         new CallbackStream<ReferenceWithTimestamp>() {
                             @Override
                             public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                 if (to != null && to.getTimestamp() < timestamp) {
-                                    travers(writtenEventContext, writtenEvent, key, instanceId, refFieldName, to, true);
+                                    travers(writtenEventContext, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, true);
                                 }
                                 return to;
                             }
@@ -89,13 +89,13 @@ public class InitiateRefTraversal implements EventProcessor {
                     concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId,
                         Arrays.asList(new FieldVersion(instanceId, refFieldName, highest)));
 
-                    referenceStore.streamForwardRefs(tenantIdAndCentricId, instanceId.getClassName(), refFieldName, instanceId,
+                    referenceStore.streamForwardRefs(tenantIdAndCentricId, instanceId.getClassName(), refFieldName, instanceId, threadTimestamp,
                             new CallbackStream<ReferenceWithTimestamp>() {
 
                                 @Override
                                 public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                     if (to != null) {
-                                        travers(writtenEventContext, writtenEvent, key, instanceId, refFieldName, to, false);
+                                        travers(writtenEventContext, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, false);
                                     }
                                     return to;
                                 }
@@ -114,6 +114,7 @@ public class InitiateRefTraversal implements EventProcessor {
             ObjectId instanceId,
             String refFieldName,
             ReferenceWithTimestamp to,
+            long threadTimestamp,
             boolean removal) throws Exception {
 
         ReferenceWithTimestamp from = new ReferenceWithTimestamp(instanceId,
@@ -121,7 +122,7 @@ public class InitiateRefTraversal implements EventProcessor {
 
         for (PathTraverser pathTraverser : forwardRefTraversers.get(key)) {
 
-            PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, removal);
+            PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, removal);
             context.setPathId(pathTraverser.getPathIndex(), from.getObjectId(), from.getTimestamp());
             context.addVersion(from);
 
@@ -131,7 +132,7 @@ public class InitiateRefTraversal implements EventProcessor {
 
         for (PathTraverser pathTraverser : backRefTraversers.get(key)) {
 
-            PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, removal);
+            PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, removal);
             context.setPathId(pathTraverser.getPathIndex(), to.getObjectId(), to.getTimestamp());
             context.addVersion(from);
 

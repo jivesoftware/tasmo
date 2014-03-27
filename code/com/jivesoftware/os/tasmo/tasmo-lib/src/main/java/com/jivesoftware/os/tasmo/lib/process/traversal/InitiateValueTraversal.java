@@ -45,7 +45,7 @@ public class InitiateValueTraversal implements EventProcessor {
     }
 
     @Override
-    public void process(final WrittenEventContext writtenEventContext, WrittenEvent writtenEvent) throws Exception {
+    public void process(final WrittenEventContext writtenEventContext, WrittenEvent writtenEvent, long threadTimestamp) throws Exception {
         if (traversers == null || traversers.isEmpty()) {
             return;
         }
@@ -62,7 +62,7 @@ public class InitiateValueTraversal implements EventProcessor {
 
                 if (writtenInstance.isDeletion()) {
                     for (PathTraverser pathTraverser : traversers.get(key)) {
-                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, true);
+                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, true);
                         context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
                         List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(eventValueStore,
                                 instanceId, pathTraverser.getInitialFieldNames());
@@ -74,7 +74,7 @@ public class InitiateValueTraversal implements EventProcessor {
 
                     //long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId.getTenantId(), instanceId, refFieldName, timestamp);
                     for (PathTraverser pathTraverser : traversers.get(key)) {
-                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, false);
+                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, false);
                         List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(eventValueStore,
                                 instanceId, pathTraverser.getInitialFieldNames());
 

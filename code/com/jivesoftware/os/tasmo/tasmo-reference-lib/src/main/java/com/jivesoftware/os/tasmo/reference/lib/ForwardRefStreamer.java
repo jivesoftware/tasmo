@@ -22,12 +22,14 @@ public class ForwardRefStreamer extends BaseRefStreamer {
     @Override
     public void stream(TenantIdAndCentricId tenantIdAndCentricId,
             ObjectId referringObjectId,
+            long readTime,
             final CallbackStream<ReferenceWithTimestamp> tos) throws Exception {
 
         referenceStore.streamForwardRefs(tenantIdAndCentricId,
                 referringObjectId.getClassName(),
                 referringFieldName,
                 referringObjectId,
+                readTime,
                 tos);
     }
 
