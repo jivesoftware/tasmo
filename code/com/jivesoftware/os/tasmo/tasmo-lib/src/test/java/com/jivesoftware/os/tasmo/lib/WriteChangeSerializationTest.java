@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
@@ -39,8 +38,7 @@ public class WriteChangeSerializationTest {
         String valAsString = mapper.writeValueAsString(value);
 
         ViewFieldChange viewFieldChange = new ViewFieldChange(
-                1, -1, -1,
-                new TenantIdAndCentricId(tenant, Id.NULL),
+                1,
                 new Id(1234), type, viewId, viewFieldName, modelPathIds, Arrays.asList(modelPathVersionIds), valAsString, now);
 
         System.out.println("Serializing:\n" + mapper.writeValueAsString(viewFieldChange));
@@ -52,7 +50,6 @@ public class WriteChangeSerializationTest {
 
         Assert.assertNotNull(change);
 
-        Assert.assertEquals(change.getTenantIdAndCentricId(), viewFieldChange.getTenantIdAndCentricId());
         Assert.assertEquals(change.getType().name(), viewFieldChange.getType().name());
         boolean what = change.getViewObjectId().equals(viewFieldChange.getViewObjectId());
         Assert.assertEquals(change.getViewObjectId(), viewFieldChange.getViewObjectId());

@@ -40,21 +40,18 @@ public class PathTraversalContext {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final WrittenEvent writtenEvent;
-    final TenantIdAndCentricId tenantIdAndCentricId;
     private final WrittenEventProvider writtenEventProvider;
     private final CommitChange commitChange;
     private final Id alternateViewId;
     private final long threadTimestamp;
     private final PathId[] modelPathIdState;
     private final List<ReferenceWithTimestamp> modelPathVersionState;
-    private long leafNodeTimestamp;
     private final boolean removalContext;
     private LeafNodeFields leafNodeFields; // uck
     private int addIsRemovingFields = 0; // uck
     private final List<ViewFieldChange> changes = new ArrayList<>(); // uck
 
     public PathTraversalContext(WrittenEvent writtenEvent,
-            TenantIdAndCentricId tenantIdAndCentricId,
             WrittenEventProvider writtenEventProvider,
             CommitChange commitChange,
             Id alternateViewId,
@@ -62,7 +59,6 @@ public class PathTraversalContext {
             long threadTimestamp,
             boolean removalContext) {
         this.writtenEvent = writtenEvent;
-        this.tenantIdAndCentricId = tenantIdAndCentricId;
         this.writtenEventProvider = writtenEventProvider;
         this.commitChange = commitChange;
         this.alternateViewId = alternateViewId;
@@ -76,10 +72,6 @@ public class PathTraversalContext {
 
     public long getThreadTimestamp() {
         return threadTimestamp;
-    }
-
-    public TenantIdAndCentricId getTenantIdAndCentricId() {
-        return tenantIdAndCentricId;
     }
 
     public void setPathId(int pathIndex, ObjectId id, long timestamp) {
@@ -108,7 +100,8 @@ public class PathTraversalContext {
                 + '}';
     }
 
-    public List<ReferenceWithTimestamp> populateLeafNodeFields(EventValueStore eventValueStore, ObjectId objectInstanceId, List<String> fieldNames) {
+    public List<ReferenceWithTimestamp> populateLeafNodeFields(TenantIdAndCentricId tenantIdAndCentricId,
+            EventValueStore eventValueStore, ObjectId objectInstanceId, List<String> fieldNames) {
         LeafNodeFields fieldsToPopulate = writtenEventProvider.createLeafNodeFields();
         long latestTimestamp = writtenEvent.getEventId();
         List<ReferenceWithTimestamp> versions = new ArrayList<>();
@@ -147,7 +140,6 @@ public class PathTraversalContext {
         }
 
         this.leafNodeFields = fieldsToPopulate;
-        this.leafNodeTimestamp = latestTimestamp;
         return versions;
     }
 
@@ -165,9 +157,6 @@ public class PathTraversalContext {
         }
 
         ViewFieldChange update = new ViewFieldChange(writtenEvent.getEventId(),
-                0, // Deprecated
-                0, // Deprecated
-                tenantIdAndCentricId,
                 writtenEvent.getActorId(),
                 (removalContext) ? ViewFieldChangeType.remove : ViewFieldChangeType.add, // uck
                 new ObjectId(viewClassName, viewId),
@@ -179,15 +168,7 @@ public class PathTraversalContext {
         changes.add(update);
     }
 
-    private long getHighWaterTimestamp() {
-        long highwaterTimestamp = leafNodeTimestamp;
-        for (PathId reference : modelPathIdState) {
-            highwaterTimestamp = Math.max(highwaterTimestamp, reference.getTimestamp());
-        }
-        return highwaterTimestamp;
-    }
-
-    public void commit(PathTraverser traverser) throws Exception { // TODO this method doesn't belong in this class
+    public void commit(TenantIdAndCentricId tenantIdAndCentricId, PathTraverser traverser) throws Exception { // TODO this method doesn't belong in this class
 
         if (!changes.isEmpty()) {
             int i = 1;

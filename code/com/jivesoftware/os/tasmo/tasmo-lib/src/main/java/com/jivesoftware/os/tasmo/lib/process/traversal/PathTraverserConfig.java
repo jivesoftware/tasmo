@@ -19,7 +19,6 @@ public class PathTraverserConfig {
     public final WrittenEventProvider writtenEventProvider;
     public final CommitChange commitChange;
     public final String viewIdFieldName;
-    public final boolean idCentric;
     public final boolean notificationRequired;
 
     public PathTraverserConfig(
@@ -31,7 +30,6 @@ public class PathTraverserConfig {
         this.writtenEventProvider = writtenEventProvider;
         this.commitChange = commitChange;
         this.viewIdFieldName = viewIdFieldName;
-        this.idCentric = idCentric;
         this.notificationRequired = notificationRequired;
     }
 

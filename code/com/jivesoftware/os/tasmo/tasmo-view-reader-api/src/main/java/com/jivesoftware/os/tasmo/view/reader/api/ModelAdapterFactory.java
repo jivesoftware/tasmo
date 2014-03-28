@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
-import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
@@ -46,7 +45,7 @@ public class ModelAdapterFactory {
     static String getFieldName(Method method) {
         String fieldName = method.getName();
         if (fieldName.equals(ModelingConstants.VIEW_BASE_ALIAS)) {
-            fieldName = ReservedFields.VIEW_OBJECT_ID;
+            fieldName = "objectId";
         } else if (method.isAnnotationPresent(BackRef.class)) {
             BackRef backRefAnnotation = method.getAnnotation(BackRef.class);
             fieldName = backRefAnnotation.type().getFieldNamePrefix() + backRefAnnotation.via();

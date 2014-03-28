@@ -273,7 +273,7 @@ public class BaseTasmoTest {
             }
         };
 
-        RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
         ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrency);
         eventValueStore = new EventValueStore(concurrencyStore, eventStore, cacheProvider);
 
@@ -343,7 +343,6 @@ public class BaseTasmoTest {
         };
 
         tasmoViewModel = new TasmoViewModel(
-                new OrderIdProviderImpl(1),
                 MASTER_TENANT_ID,
                 viewsProvider,
                 eventProvider,

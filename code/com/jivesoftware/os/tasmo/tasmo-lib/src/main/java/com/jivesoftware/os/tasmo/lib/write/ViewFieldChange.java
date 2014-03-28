@@ -12,7 +12,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Arrays;
 import java.util.List;
@@ -29,17 +28,6 @@ public class ViewFieldChange {
         add, remove
     }
     private final long eventId;
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    private final long sessionId;
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    private final long changeId;
-    private final TenantIdAndCentricId tenantIdAndCentricId;
     private final Id actorId;
     private final ViewFieldChangeType type;
     private final ObjectId viewObjectId;
@@ -52,9 +40,6 @@ public class ViewFieldChange {
     @JsonCreator
     public ViewFieldChange(
             @JsonProperty("eventId") long eventId,
-            @JsonProperty("sessionId") long sessionId,
-            @JsonProperty("changeId") long changeId,
-            @JsonProperty("tenantIdAndCentricId") TenantIdAndCentricId tenantIdAndCentricId,
             @JsonProperty("actorId") Id actorId,
             @JsonProperty("type") ViewFieldChangeType type,
             @JsonProperty("viewObjectId") ObjectId viewObjectId,
@@ -64,9 +49,6 @@ public class ViewFieldChange {
             @JsonProperty("value") String value,
             @JsonProperty("timestamp") long timestamp) {
         this.eventId = eventId;
-        this.sessionId = sessionId;
-        this.changeId = changeId;
-        this.tenantIdAndCentricId = tenantIdAndCentricId;
         this.actorId = actorId;
         this.type = type;
         this.viewObjectId = viewObjectId;
@@ -79,26 +61,6 @@ public class ViewFieldChange {
 
     public long getEventId() {
         return eventId;
-    }
-
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    public long getSessionId() {
-        return sessionId;
-    }
-
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    public long getChangeId() {
-        return changeId;
-    }
-
-    public TenantIdAndCentricId getTenantIdAndCentricId() {
-        return tenantIdAndCentricId;
     }
 
     public Id getActorId() {
@@ -137,7 +99,6 @@ public class ViewFieldChange {
     public String toString() {
         return "ViewFieldChange{"
                 + "eventId=" + eventId
-                + ", tenantIdAndCentricId=" + tenantIdAndCentricId
                 + ", actorId=" + actorId
                 + ", type=" + type
                 + ", viewObjectId=" + viewObjectId
@@ -151,9 +112,6 @@ public class ViewFieldChange {
     public int hashCode() {
         int hash = 5;
         hash = 97 * hash + (int) (this.eventId ^ (this.eventId >>> 32));
-        hash = 97 * hash + (int) (this.sessionId ^ (this.sessionId >>> 32));
-        hash = 97 * hash + (int) (this.changeId ^ (this.changeId >>> 32));
-        hash = 97 * hash + Objects.hashCode(this.tenantIdAndCentricId);
         hash = 97 * hash + Objects.hashCode(this.actorId);
         hash = 97 * hash + (this.type != null ? this.type.hashCode() : 0);
         hash = 97 * hash + Objects.hashCode(this.viewObjectId);
@@ -174,15 +132,6 @@ public class ViewFieldChange {
         }
         final ViewFieldChange other = (ViewFieldChange) obj;
         if (this.eventId != other.eventId) {
-            return false;
-        }
-        if (this.sessionId != other.sessionId) {
-            return false;
-        }
-        if (this.changeId != other.changeId) {
-            return false;
-        }
-        if (!Objects.equals(this.tenantIdAndCentricId, other.tenantIdAndCentricId)) {
             return false;
         }
         if (!Objects.equals(this.actorId, other.actorId)) {

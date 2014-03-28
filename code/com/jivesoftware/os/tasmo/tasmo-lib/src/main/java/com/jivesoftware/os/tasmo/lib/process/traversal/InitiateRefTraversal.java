@@ -10,9 +10,7 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
-import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
 import com.jivesoftware.os.tasmo.lib.process.EventProcessor;
@@ -36,29 +34,24 @@ public class InitiateRefTraversal implements EventProcessor {
     private final ReferenceStore referenceStore;
     private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers;
     private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers;
-    private final boolean idCentric;
 
     public InitiateRefTraversal(ConcurrencyChecker concurrencyChecker,
             ReferenceStore referenceStore,
             ArrayListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers,
-            ArrayListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers,
-            boolean idCentric) {
+            ArrayListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers) {
         this.concurrencyChecker = concurrencyChecker;
         this.referenceStore = referenceStore;
         this.forwardRefTraversers = forwardRefTraversers;
         this.backRefTraversers = backRefTraversers;
-        this.idCentric = idCentric;
     }
 
     @Override
-    public void process(final WrittenEventContext writtenEventContext, final WrittenEvent writtenEvent, final long threadTimestamp) throws Exception {
+    public void process(final WrittenEventContext writtenEventContext,
+            final TenantIdAndCentricId tenantIdAndCentricId, final WrittenEvent writtenEvent, final long threadTimestamp) throws Exception {
 
-        TenantId tenantId = writtenEvent.getTenantId();
         final long timestamp = writtenEvent.getEventId();
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         final ObjectId instanceId = writtenInstance.getInstanceId();
-        final TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId,
-                (idCentric) ? writtenEvent.getCentricId() : Id.NULL);
 
         Set<InitiateTraverserKey> allKeys = new HashSet();
         allKeys.addAll(forwardRefTraversers.keySet());
@@ -70,14 +63,14 @@ public class InitiateRefTraversal implements EventProcessor {
 
                 final String refFieldName = key.getRefFieldName();
 
-                long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId.getTenantId(), instanceId, refFieldName, timestamp);
+                long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId, instanceId, refFieldName, timestamp);
 
                 referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), instanceId, refFieldName, threadTimestamp,
                         new CallbackStream<ReferenceWithTimestamp>() {
                             @Override
                             public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                 if (to != null && to.getTimestamp() < timestamp) {
-                                    travers(writtenEventContext, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, true);
+                                    travers(writtenEventContext, tenantIdAndCentricId, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, true);
                                 }
                                 return to;
                             }
@@ -93,7 +86,8 @@ public class InitiateRefTraversal implements EventProcessor {
                                 @Override
                                 public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                     if (to != null) {
-                                        travers(writtenEventContext, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, false);
+                                        travers(writtenEventContext,
+                                                tenantIdAndCentricId, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, false);
                                     }
                                     return to;
                                 }
@@ -107,6 +101,7 @@ public class InitiateRefTraversal implements EventProcessor {
     }
 
     private void travers(WrittenEventContext writtenEventContext,
+            TenantIdAndCentricId tenantIdAndCentricId,
             WrittenEvent writtenEvent,
             InitiateTraverserKey key,
             ObjectId instanceId,
@@ -124,8 +119,8 @@ public class InitiateRefTraversal implements EventProcessor {
             context.setPathId(pathTraverser.getPathIndex(), from.getObjectId(), from.getTimestamp());
             context.addVersion(from);
 
-            pathTraverser.travers(writtenEvent, context, new PathId(to.getObjectId(), to.getTimestamp()));
-            context.commit(pathTraverser);
+            pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(to.getObjectId(), to.getTimestamp()));
+            context.commit(tenantIdAndCentricId, pathTraverser);
         }
 
         for (PathTraverser pathTraverser : backRefTraversers.get(key)) {
@@ -134,8 +129,8 @@ public class InitiateRefTraversal implements EventProcessor {
             context.setPathId(pathTraverser.getPathIndex(), to.getObjectId(), to.getTimestamp());
             context.addVersion(from);
 
-            pathTraverser.travers(writtenEvent, context, new PathId(instanceId, to.getTimestamp()));
-            context.commit(pathTraverser);
+            pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(instanceId, to.getTimestamp()));
+            context.commit(tenantIdAndCentricId, pathTraverser);
         }
     }
 

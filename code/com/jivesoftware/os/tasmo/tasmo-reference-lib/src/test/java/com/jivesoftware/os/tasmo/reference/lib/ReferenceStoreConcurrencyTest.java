@@ -38,7 +38,7 @@ public class ReferenceStoreConcurrencyTest {
     public void testConcurrencyMultiRefStore() throws Exception {
 
         //System.out.println("\n |--> BEGIN \n");
-        RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> updated = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> updated = new RowColumnValueStoreImpl<>();
         ConcurrencyStore concurrencyStore = new ConcurrencyStore(updated);
 
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks = new RowColumnValueStoreImpl<>();
@@ -222,7 +222,7 @@ public class ReferenceStoreConcurrencyTest {
                                     }
                                 });
                     } else {
-                        final long highest = concurrencyStore.highest(tenantIdAndCentricId.getTenantId(), from, fromRefFieldName, timestamp);
+                        final long highest = concurrencyStore.highest(tenantIdAndCentricId, from, fromRefFieldName, timestamp);
                         if (timestamp >= highest) {
                             referenceStore.link(tenantIdAndCentricId, timestamp, from, fromRefFieldName, Arrays.asList(tos));
                         }
@@ -240,7 +240,7 @@ public class ReferenceStoreConcurrencyTest {
                                 });
 
                         List<FieldVersion> want = Arrays.asList(new FieldVersion(from, fromRefFieldName, highest));
-                        List<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
+                        List<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
                         if (got != want) {
                             PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
                             throw e;
@@ -253,7 +253,7 @@ public class ReferenceStoreConcurrencyTest {
                                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
                                         if (v != null) {
                                             List<FieldVersion> want = Arrays.asList(new FieldVersion(from, fromRefFieldName, v.getTimestamp()));
-                                            List<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
+                                            List<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
                                             if (got == want) {
                                                 values.add(tenantIdAndCentricId, v.getObjectId(), fromRefFieldName, value, null,
                                                         new ConstantTimestamper(v.getTimestamp()));
@@ -268,7 +268,7 @@ public class ReferenceStoreConcurrencyTest {
                                     }
                                 });
 
-                        got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
+                        got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
                         if (got != want) {
                             PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
                             //System.out.println(Thread.currentThread() + " " + e.toString());

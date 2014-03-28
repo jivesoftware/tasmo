@@ -41,7 +41,7 @@ public class EventValueStoreTest {
                 return new RowColumnValueStoreImpl<>();
             }
         };
-        RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
         concurrencyStore = new ConcurrencyStore(concurrency);
         eventValueStore = new EventValueStore(concurrencyStore,
                 new RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue>(), cacheProvider);

@@ -2,7 +2,6 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
@@ -37,11 +36,12 @@ public class PathTraverser {
         return createContext(writtenEventContext, writtenEvent, initialStepContext, threadTimestamp, removalContext);
     }
 
-    public void travers(WrittenEvent writtenEvent,
+    public void travers(TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEvent writtenEvent,
             PathTraversalContext context,
             PathId pathId) throws Exception {
 
-        StepStreamer stepStreamer = new StepStreamer(context.getTenantIdAndCentricId(), context, stepTraversers, 0);
+        StepStreamer stepStreamer = new StepStreamer(tenantIdAndCentricId, context, stepTraversers, 0);
         stepStreamer.stream(pathId);
 
     }
@@ -61,15 +61,8 @@ public class PathTraverser {
             long threadTimestamp,
             boolean removalContext) {
 
-        TenantId tenantId = writtenEvent.getTenantId();
-        Id userId = Id.NULL;
-        if (pathTraverserConfig.idCentric) {
-            userId = writtenEvent.getCentricId();
-        }
 
         Id alternateViewId = buildAlternateViewId(writtenEvent);
-        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
-
         CommitChange notificationsAfterCommitingChanges = pathTraverserConfig.commitChange;
         if (pathTraverserConfig.notificationRequired) {
             notificationsAfterCommitingChanges = new CommitChange() {
@@ -84,7 +77,6 @@ public class PathTraverser {
             };
         }
         PathTraversalContext context = new PathTraversalContext(writtenEvent,
-                tenantIdAndCentricId,
                 pathTraverserConfig.writtenEventProvider,
                 notificationsAfterCommitingChanges,
                 alternateViewId,

@@ -45,7 +45,7 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
             }
         }
 
-        Set<ObjectId> existence = concurrencyStore.getExistence(tenantIdAndCentricId.getTenantId(), check);
+        Set<ObjectId> existence = concurrencyStore.getExistence(tenantIdAndCentricId, check);
         List<ViewFieldChange> acceptableChanges = new ArrayList<>();
         for (ViewFieldChange c : changes) {
             Set<ObjectId> ids = new HashSet<>();
@@ -57,9 +57,6 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
             } else {
                 traceLogging(ids, existence, c);
                 acceptableChanges.add(new ViewFieldChange(c.getEventId(),
-                        c.getSessionId(),
-                        c.getChangeId(),
-                        c.getTenantIdAndCentricId(),
                         c.getActorId(),
                         ViewFieldChangeType.remove,
                         c.getViewObjectId(),
@@ -81,7 +78,7 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
                     expected.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
                 }
             }
-            List<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), expected);
+            List<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId, expected);
 
             if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
                 if (expected != was) {
@@ -89,15 +86,6 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
                     PathModifiedOutFromUnderneathMeException pmofume = new PathModifiedOutFromUnderneathMeException(expected, was);
                     throw pmofume;
                 }
-            } else {
-//                for (FieldVersion w:was) {
-//                    if (w.getVersion() % 2 == 0) {
-//                        // TODO change
-//                        LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY DELETE is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
-//                        PathModifiedOutFromUnderneathMeException pmofume = new PathModifiedOutFromUnderneathMeException(expected, was);
-//                        throw pmofume;
-//                    }
-//                }
             }
         }
 

@@ -10,6 +10,7 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.process.EventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
@@ -31,21 +32,25 @@ public class InitiateTraversal implements WrittenEventProcessor {
     }
 
     @Override
-    public void process(WrittenEventContext batchContext, WrittenEvent writtenEvent, long threadTimestamp) throws Exception {
+    public void process(WrittenEventContext batchContext,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEvent writtenEvent,
+            long threadTimestamp) throws Exception {
 
-        invokeEventTraverser(batchContext, "values", valueTraverser, writtenEvent, threadTimestamp);
-        invokeEventTraverser(batchContext, "refs", refTraverser, writtenEvent, threadTimestamp);
+        invokeEventTraverser(batchContext, "values", valueTraverser, tenantIdAndCentricId, writtenEvent, threadTimestamp);
+        invokeEventTraverser(batchContext, "refs", refTraverser, tenantIdAndCentricId, writtenEvent, threadTimestamp);
 
     }
 
     private void invokeEventTraverser(WrittenEventContext batchContext,
             String processorName,
             EventProcessor eventProcessor,
+            TenantIdAndCentricId tenantIdAndCentricId,
             WrittenEvent writtenEvent,
             long threadTimestamp) throws Exception {
         LOG.startTimer(processorName);
         try {
-            eventProcessor.process(batchContext, writtenEvent, threadTimestamp);
+            eventProcessor.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTimestamp);
         } finally {
             LOG.stopTimer(processorName);
         }

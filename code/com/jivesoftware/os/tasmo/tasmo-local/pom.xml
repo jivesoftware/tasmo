@@ -15,6 +15,19 @@
         <module.type>shared_lib</module.type>
     </properties>
     <dependencies>
+
+        <dependency>
+            <groupId>com.jivesoftware.os.jive.utils</groupId>
+            <artifactId>logger</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
+            <artifactId>row-column-value-store-inmemory</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
+            <artifactId>row-column-value-store-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-view-reader-service</artifactId>

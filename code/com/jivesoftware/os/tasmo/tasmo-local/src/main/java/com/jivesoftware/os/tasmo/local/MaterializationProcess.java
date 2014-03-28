@@ -13,7 +13,6 @@ import com.jivesoftware.os.tasmo.view.reader.api.ViewId;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReaderException;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-
 import java.io.IOException;
 
 /**

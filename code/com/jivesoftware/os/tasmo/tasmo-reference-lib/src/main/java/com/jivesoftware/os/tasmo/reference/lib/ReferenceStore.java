@@ -173,7 +173,7 @@ public class ReferenceStore {
         LOG.inc("link");
         LOG.startTimer("link");
 
-        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName, "deleted"}, timestamp - 1);
+        concurrencyStore.updated(tenantIdAndCentricId, from, new String[]{fieldName, "deleted"}, timestamp - 1);
 
         try {
             for (Reference to : tos) {
@@ -194,7 +194,7 @@ public class ReferenceStore {
             LOG.stopTimer("link");
         }
 
-        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName, "deleted"}, timestamp);
+        concurrencyStore.updated(tenantIdAndCentricId, from, new String[]{fieldName, "deleted"}, timestamp);
     }
 
     public void unlink(final TenantIdAndCentricId tenantIdAndCentricId,
@@ -210,7 +210,7 @@ public class ReferenceStore {
         final ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp + 1);
         final ClassAndField_IdKey aClassAndField_aId = new ClassAndField_IdKey(from.getClassName(), fieldName, from);
 
-        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName, "deleted"}, timestamp - 1);
+        concurrencyStore.updated(tenantIdAndCentricId, from, new String[]{fieldName, "deleted"}, timestamp - 1);
 
         multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
                 new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
@@ -245,7 +245,7 @@ public class ReferenceStore {
                     }
                 });
 
-        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName, "deleted"}, timestamp);
+        concurrencyStore.updated(tenantIdAndCentricId, from, new String[]{fieldName, "deleted"}, timestamp);
 
         removedTos.callback(null); // EOS
 

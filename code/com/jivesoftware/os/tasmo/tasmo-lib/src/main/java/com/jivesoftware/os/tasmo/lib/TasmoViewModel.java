@@ -13,12 +13,10 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateRefTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraverserKey;
@@ -46,7 +44,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TasmoViewModel {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-    private final OrderIdProvider idProvider;
     private final TenantId masterTenantId;
     private final ViewsProvider viewsProvider;
     private final WrittenEventProvider writtenEventProvider;
@@ -55,10 +52,8 @@ public class TasmoViewModel {
     private final ReferenceStore referenceStore;
     private final EventValueStore eventValueStore;
     private final CommitChange changeWriter;
-    private final WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
 
     public TasmoViewModel(
-            OrderIdProvider idProvider,
             TenantId masterTenantId,
             ViewsProvider viewsProvider,
             WrittenEventProvider writtenEventProvider,
@@ -66,7 +61,6 @@ public class TasmoViewModel {
             ReferenceStore referenceStore,
             EventValueStore eventValueStore,
             CommitChange changeWriter) {
-        this.idProvider = idProvider;
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.writtenEventProvider = writtenEventProvider;
@@ -125,20 +119,19 @@ public class TasmoViewModel {
     private ListMultimap<String, FieldNameAndType> bindEventFieldTypes(Views views) throws IllegalArgumentException {
         ListMultimap<String, FieldNameAndType> eventModel = ArrayListMultimap.create();
         for (ViewBinding viewBinding : views.getViewBindings()) {
+            boolean idCentric = viewBinding.isIdCentric();
             for (ModelPath modelPath : viewBinding.getModelPaths()) {
                 for (ModelPathStep modelPathStep : modelPath.getPathMembers()) {
                     String refFieldName = modelPathStep.getRefFieldName();
                     if (refFieldName != null) {
                         for (String className : modelPathStep.getOriginClassNames()) {
-                            eventModel.put(className, new FieldNameAndType(refFieldName, ModelPathStepType.ref));
-                            //System.out.println(className + "." + refFieldName + ".ref");
+                            eventModel.put(className, new FieldNameAndType(refFieldName, ModelPathStepType.ref, idCentric));
                         }
 
                     } else {
                         for (String fieldName : modelPathStep.getFieldNames()) {
                             for (String className : modelPathStep.getOriginClassNames()) {
-                                eventModel.put(className, new FieldNameAndType(fieldName, ModelPathStepType.value));
-                                //System.out.println(className+"."+fieldName+".value");
+                                eventModel.put(className, new FieldNameAndType(fieldName, ModelPathStepType.value, idCentric));
                             }
                         }
                     }
@@ -152,10 +145,12 @@ public class TasmoViewModel {
 
         private final String fieldName;
         private final ModelPathStepType fieldType;
+        private final boolean idCentric;
 
-        public FieldNameAndType(String fieldName, ModelPathStepType fieldType) {
+        public FieldNameAndType(String fieldName, ModelPathStepType fieldType, boolean idCentric) {
             this.fieldName = fieldName;
             this.fieldType = fieldType;
+            this.idCentric = idCentric;
         }
 
         public String getFieldName() {
@@ -164,6 +159,10 @@ public class TasmoViewModel {
 
         public ModelPathStepType getFieldType() {
             return fieldType;
+        }
+
+        public boolean isIdCentric() {
+            return idCentric;
         }
 
     }
@@ -218,14 +217,13 @@ public class TasmoViewModel {
 
         }
         ListMultimap<String, InitiateTraversal> all = ArrayListMultimap.create();
-        all.putAll(buildInitialStepDispatchers(groupSteps, false));
-        //all.putAll(buildInitialStepDispatchers(groupIdCentricSteps, true)); // TODO re-enable userCentric!
+        all.putAll(buildInitialStepDispatchers(groupSteps));
         return all;
     }
 
     private ListMultimap<String, InitiateTraversal> buildInitialStepDispatchers(
-            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, PathTraverser>>> groupSteps,
-            boolean idCentric) {
+            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, PathTraverser>>> groupSteps) {
+
         ListMultimap<String, InitiateTraversal> all = ArrayListMultimap.create();
         for (String className : groupSteps.keySet()) {
             Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, PathTraverser>> typedSteps = groupSteps.get(className);
@@ -251,8 +249,8 @@ public class TasmoViewModel {
             ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore);
 
             InitiateTraversal initialStepDispatcher = new InitiateTraversal(className,
-                    new InitiateValueTraversal(concurrencyChecker, eventValueStore, typedSteps.get(ModelPathStepType.value), idCentric),
-                    new InitiateRefTraversal(concurrencyChecker, referenceStore, refTraversers, backRefTraversers, idCentric));
+                    new InitiateValueTraversal(concurrencyChecker, eventValueStore, typedSteps.get(ModelPathStepType.value)),
+                    new InitiateRefTraversal(concurrencyChecker, referenceStore, refTraversers, backRefTraversers));
             all.put(className, initialStepDispatcher);
 
             LOG.trace("---- Traversers for class:" + className);

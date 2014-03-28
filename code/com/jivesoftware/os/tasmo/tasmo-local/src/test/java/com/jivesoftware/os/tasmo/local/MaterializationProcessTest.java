@@ -1,13 +1,5 @@
 package com.jivesoftware.os.tasmo.local;
 
-import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.IdProvider;
-import com.jivesoftware.os.tasmo.id.IdProviderImpl;
-import com.jivesoftware.os.tasmo.id.TenantId;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
 /**
  *
  */

@@ -1,12 +1,9 @@
 package com.jivesoftware.os.tasmo.local;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
 import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
@@ -20,8 +17,9 @@ public class RowColumnValueStoreUtil {
 
     public RowColumnValueStoreProvider getInMemoryRowColumnValueStoreProvider(String env, WrittenEventProvider writtenEventProvider) {
         return new RowColumnValueStoreProvider() {
+
             @Override
-            public RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore()  {
+            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyStore() {
                 return new RowColumnValueStoreImpl<>();
             }
 

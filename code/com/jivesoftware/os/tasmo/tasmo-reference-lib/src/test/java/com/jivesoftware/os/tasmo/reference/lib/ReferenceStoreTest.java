@@ -34,7 +34,7 @@ public class ReferenceStoreTest {
 
     @BeforeTest
     public void setUp() {
-        RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> updated = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> updated = new RowColumnValueStoreImpl<>();
         concurrencyStore = new ConcurrencyStore(updated);
 
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks = new RowColumnValueStoreImpl<>();

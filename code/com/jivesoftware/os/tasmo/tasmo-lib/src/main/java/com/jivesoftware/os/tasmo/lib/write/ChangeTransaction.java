@@ -27,10 +27,6 @@ public class ChangeTransaction {
     }
 
     public void change(ViewFieldChange change) throws CommitChangeException {
-        if (!change.getTenantIdAndCentricId().equals(tenantIdAndCentricId)) {
-            throw new CommitChangeException("tenant " + change.getTenantIdAndCentricId()
-                + " does not match tenant " + tenantIdAndCentricId + " of transaction");
-        }
         changes.add(change);
     }
 

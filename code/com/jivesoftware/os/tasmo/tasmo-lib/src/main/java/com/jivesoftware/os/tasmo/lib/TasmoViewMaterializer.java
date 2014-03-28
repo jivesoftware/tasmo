@@ -83,124 +83,45 @@ public class TasmoViewMaterializer {
 
             for (WrittenEvent writtenEvent : writtenEvents) {
                 WrittenEventContext batchContext = new WrittenEventContext(new InMemoryModifiedViewProvider());
-
                 if (writtenEvent == null) {
                     LOG.warn("some one is sending null events.");
                     processed.add(null);
                     continue;
                 }
-                VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(writtenEvent.getTenantId());
+                TenantId tenantId = writtenEvent.getTenantId();
+                VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
                 if (model == null) {
                     LOG.error("Cannot process an event until a model has been loaded.");
                     throw new Exception("Cannot process an event until a model has been loaded.");
                 } else {
                     WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
+                    String className = writtenInstance.getInstanceId().getClassName();
+
+                    List<TenantIdAndCentricId> tenantIdAndCentricIds = buildTenantIdAndCentricIds(model, className, tenantId, writtenEvent);
+                    ObjectId instanceId = writtenInstance.getInstanceId();
+                    long timestamp = writtenEvent.getEventId();
+
                     synchronized (instanceIdLocks.lock(writtenInstance.getInstanceId())) {
-                        long timestamp = writtenEvent.getEventId();
-                        TenantId tenantId = writtenEvent.getTenantId();
-                        ObjectId objectId = writtenInstance.getInstanceId();
-                        if (writtenInstance.isDeletion()) {
-                            concurrencyStore.removeObjectId(Arrays.asList(new ExistenceUpdate(tenantId, timestamp, objectId)));
-                        } else {
-                            concurrencyStore.addObjectId(Arrays.asList(new ExistenceUpdate(tenantId, timestamp, objectId)));
+
+                        for (TenantIdAndCentricId tenantIdAndCentricId : tenantIdAndCentricIds) {
+                            if (writtenInstance.isDeletion()) {
+                                concurrencyStore.removeObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
+                                removeValueFields(model, className, tenantIdAndCentricId, timestamp, instanceId);
+                            } else {
+                                concurrencyStore.addObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
+                                updateValueFields(tenantIdAndCentricId, timestamp, instanceId, model, className, writtenInstance);
+                            }
+
+                            ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
+                            for (InitiateTraversal initiateTraversal : dispatchers.get(className)) {
+                                if (initiateTraversal == null) {
+                                    LOG.warn("No traversal defined for className:{}", className);
+                                    continue;
+                                }
+                                traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent, processed);
+                            }
+                            viewChangeNotificationProcessor.process(batchContext, writtenEvent);
                         }
-
-                        String className = writtenInstance.getInstanceId().getClassName();
-
-                        // Bad Hacky! Begin
-                        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(writtenEvent.getTenantId(),
-                                Id.NULL); // TODO handle centric (idCentric) ? writtenEvent.getCentricId() :
-                        ObjectId instanceId = writtenInstance.getInstanceId();
-
-                        if (writtenInstance.isDeletion()) {
-                            ListMultimap<String, FieldNameAndType> eventModel = model.getEventModel();
-                            Set<String> fieldNames = new HashSet<>();
-                            for (FieldNameAndType fieldNameAndType : eventModel.get(className)) {
-                                if (fieldNameAndType.getFieldType() == ModelPathStepType.value) {
-                                    String fieldName = fieldNameAndType.getFieldName();
-                                    fieldNames.add(fieldName);
-                                }
-                            }
-                            eventValueStore.removeObjectId(tenantIdAndCentricId, timestamp, instanceId, fieldNames.toArray(new String[fieldNames.size()]));
-                        } else {
-
-                            EventValueStore.Transaction transaction = eventValueStore.begin(tenantIdAndCentricId,
-                                    timestamp,
-                                    timestamp,
-                                    instanceId);
-
-                            ListMultimap<String, FieldNameAndType> eventModel = model.getEventModel();
-                            for (FieldNameAndType fieldNameAndType : eventModel.get(className)) {
-                                String fieldName = fieldNameAndType.getFieldName();
-                                if (writtenInstance.hasField(fieldName)) {
-                                    if (fieldNameAndType.getFieldType() == ModelPathStepType.ref) {
-                                        long highest = concurrencyStore.highest(tenantIdAndCentricId.getTenantId(), instanceId, fieldName, timestamp);
-                                        if (timestamp >= highest) {
-                                            OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
-                                            if (fieldValue.isNull()) {
-                                                referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, fieldName, Collections.EMPTY_LIST);
-                                            } else {
-                                                Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, fieldName);
-                                                referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, fieldName, tos);
-                                            }
-                                        }
-                                    } else {
-                                        OpaqueFieldValue got = writtenInstance.getFieldValue(fieldName);
-                                        if (got == null || got.isNull()) {
-                                            transaction.remove(fieldName);
-                                        } else {
-                                            transaction.set(fieldName, got);
-                                        }
-                                    }
-                                }
-                            }
-                            eventValueStore.commit(transaction);
-                        }
-                        // Bad Hacky! End
-
-                        
-                        ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
-                        for (InitiateTraversal initiateTraversal : dispatchers.get(className)) {
-                            if (initiateTraversal == null) {
-                                LOG.warn("No traversal defined for className:{}", className);
-                                continue;
-                            }
-
-                            int attempts = 0;
-                            int maxAttempts = 10;
-                            while (attempts < maxAttempts) {
-                                attempts++;
-                                if (attempts > 1) {
-                                    LOG.info("attempts " + attempts);
-                                }
-                                try {
-                                    EventBookKeeper eventBookKeeper = new EventBookKeeper(initiateTraversal);
-                                    eventBookKeeper.process(batchContext, writtenEvent, threadTime.nextId());
-                                    processed.add(writtenEvent);
-                                    break;
-                                } catch (Exception e) {
-                                    boolean pathModifiedException = false;
-                                    Throwable t = e;
-                                    while (t != null) {
-                                        if (t instanceof PathModifiedOutFromUnderneathMeException) {
-                                            pathModifiedException = true;
-                                            LOG.trace("** RETRY ** " + t.toString(), t);
-
-                                        }
-                                        t = t.getCause();
-                                    }
-                                    if (pathModifiedException) {
-                                        Thread.sleep(1); // TODO is yield a better choice?
-                                    } else {
-                                        throw e;
-                                    }
-                                }
-                            }
-                            if (attempts >= maxAttempts) {
-                                throw new RuntimeException("Failed to reach stasis after " + maxAttempts + " attempts.");
-                            }
-                        }
-                        viewChangeNotificationProcessor.process(batchContext, writtenEvent);
                     }
                 }
             }
@@ -221,5 +142,119 @@ public class TasmoViewMaterializer {
             LOG.debug("Processed: " + writtenEvents.size() + " events in " + elapse + "millis.");
         }
         return processed;
+    }
+
+    private List<TenantIdAndCentricId> buildTenantIdAndCentricIds(VersionedTasmoViewModel model,
+            String className,
+            TenantId tenantId,
+            WrittenEvent writtenEvent) {
+
+        List<TenantIdAndCentricId> tenantIdAndCentricIds = new ArrayList<>();
+        tenantIdAndCentricIds.add(new TenantIdAndCentricId(tenantId, Id.NULL));
+        for (FieldNameAndType fieldNameAndType : model.getEventModel().get(className)) {
+            if (fieldNameAndType.isIdCentric()) {
+                tenantIdAndCentricIds.add(new TenantIdAndCentricId(tenantId, writtenEvent.getCentricId()));
+                break;
+            }
+        }
+        return tenantIdAndCentricIds;
+    }
+
+    private void traverseEvent(InitiateTraversal initiateTraversal,
+            WrittenEventContext batchContext,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEvent writtenEvent,
+            List<WrittenEvent> processed) throws RuntimeException, Exception {
+
+        int attempts = 0;
+        int maxAttempts = 10;
+        while (attempts < maxAttempts) {
+            attempts++;
+            if (attempts > 1) {
+                LOG.info("attempts " + attempts);
+            }
+            try {
+                EventBookKeeper eventBookKeeper = new EventBookKeeper(initiateTraversal);
+                eventBookKeeper.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+                processed.add(writtenEvent);
+                break;
+            } catch (Exception e) {
+                boolean pathModifiedException = false;
+                Throwable t = e;
+                while (t != null) {
+                    if (t instanceof PathModifiedOutFromUnderneathMeException) {
+                        pathModifiedException = true;
+                        LOG.trace("** RETRY ** " + t.toString(), t);
+
+                    }
+                    t = t.getCause();
+                }
+                if (pathModifiedException) {
+                    Thread.sleep(1); // TODO is yield a better choice?
+                } else {
+                    throw e;
+                }
+            }
+        }
+        if (attempts >= maxAttempts) {
+            throw new RuntimeException("Failed to reach stasis after " + maxAttempts + " attempts.");
+        }
+    }
+
+    private void removeValueFields(VersionedTasmoViewModel model,
+            String className,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            long timestamp,
+            ObjectId instanceId) {
+
+        ListMultimap<String, FieldNameAndType> eventModel = model.getEventModel();
+        Set<String> fieldNames = new HashSet<>();
+        for (FieldNameAndType fieldNameAndType : eventModel.get(className)) {
+            if (fieldNameAndType.getFieldType() == ModelPathStepType.value) {
+                String fieldName = fieldNameAndType.getFieldName();
+                fieldNames.add(fieldName);
+            }
+        }
+        eventValueStore.removeObjectId(tenantIdAndCentricId, timestamp, instanceId, fieldNames.toArray(new String[fieldNames.size()]));
+    }
+
+    private void updateValueFields(TenantIdAndCentricId tenantIdAndCentricId,
+            long timestamp,
+            ObjectId instanceId,
+            VersionedTasmoViewModel model,
+            String className,
+            WrittenInstance writtenInstance) throws Exception {
+
+        EventValueStore.Transaction transaction = eventValueStore.begin(tenantIdAndCentricId,
+                timestamp,
+                timestamp,
+                instanceId);
+
+        ListMultimap<String, FieldNameAndType> eventModel = model.getEventModel();
+        for (FieldNameAndType fieldNameAndType : eventModel.get(className)) {
+            String fieldName = fieldNameAndType.getFieldName();
+            if (writtenInstance.hasField(fieldName)) {
+                if (fieldNameAndType.getFieldType() == ModelPathStepType.ref) {
+                    long highest = concurrencyStore.highest(tenantIdAndCentricId, instanceId, fieldName, timestamp);
+                    if (timestamp >= highest) {
+                        OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
+                        if (fieldValue.isNull()) {
+                            referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, fieldName, Collections.EMPTY_LIST);
+                        } else {
+                            Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, fieldName);
+                            referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, fieldName, tos);
+                        }
+                    }
+                } else {
+                    OpaqueFieldValue got = writtenInstance.getFieldValue(fieldName);
+                    if (got == null || got.isNull()) {
+                        transaction.remove(fieldName);
+                    } else {
+                        transaction.set(fieldName, got);
+                    }
+                }
+            }
+        }
+        eventValueStore.commit(transaction);
     }
 }

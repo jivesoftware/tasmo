@@ -8,9 +8,13 @@
  */
 package com.jivesoftware.os.tasmo.lib.process;
 
+import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 
 public interface WrittenEventProcessor {
 
-    void process(WrittenEventContext batchContext, WrittenEvent writtenEvent, long threadTimestamp) throws Exception;
+    void process(WrittenEventContext batchContext,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEvent writtenEvent,
+            long threadTimestamp) throws Exception;
 }

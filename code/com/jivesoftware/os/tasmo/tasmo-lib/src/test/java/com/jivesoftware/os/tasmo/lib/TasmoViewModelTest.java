@@ -7,7 +7,6 @@ package com.jivesoftware.os.tasmo.lib;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
-import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.Id;
@@ -59,7 +58,6 @@ public class TasmoViewModelTest {
         eventValueStore = Mockito.mock(EventValueStore.class);
         changeWriter = Mockito.mock(CommitChange.class);
         tasmoViewModel = new TasmoViewModel(
-                new OrderIdProviderImpl(1),
                 tenantId,
                 viewsProvider,
                 writtenEventProvider,

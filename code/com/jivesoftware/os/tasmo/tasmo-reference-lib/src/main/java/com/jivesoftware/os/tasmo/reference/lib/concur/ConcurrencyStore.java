@@ -9,7 +9,7 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantRowColumV
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantRowColumnTimestampRemove;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.ConstantTimestamper;
 import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -24,21 +24,21 @@ public class ConcurrencyStore {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private static final String EXISTS = "*exists*";
 
-    private final RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> updatedStore;
+    private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> updatedStore;
 
-    public ConcurrencyStore(RowColumnValueStore<TenantId, ObjectId, String, Long, RuntimeException> updatedStore) {
+    public ConcurrencyStore(RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> updatedStore) {
         this.updatedStore = updatedStore;
     }
 
-    public void updated(TenantId tenant, ObjectId objectId, String[] fields, long timestamp) {
+    public void updated(TenantIdAndCentricId tenantIdAndCentricId, ObjectId objectId, String[] fields, long timestamp) {
         Long[] values = new Long[fields.length];
         Arrays.fill(values, timestamp);
-        updatedStore.multiAdd(tenant, objectId, fields, values, null, new ConstantTimestamper(timestamp));
+        updatedStore.multiAdd(tenantIdAndCentricId, objectId, fields, values, null, new ConstantTimestamper(timestamp));
     }
 
     public void addObjectId(List<ExistenceUpdate> existenceUpdates) {
 
-        List<TenantRowColumValueTimestampAdd<TenantId, ObjectId, String, Long>> batch = new ArrayList<>();
+        List<TenantRowColumValueTimestampAdd<TenantIdAndCentricId, ObjectId, String, Long>> batch = new ArrayList<>();
         for (ExistenceUpdate existenceUpdate : existenceUpdates) {
             batch.add(new TenantRowColumValueTimestampAdd<>(existenceUpdate.tenantId,
                     existenceUpdate.objectId, EXISTS,
@@ -50,7 +50,7 @@ public class ConcurrencyStore {
     }
 
     public void removeObjectId(List<ExistenceUpdate> existenceUpdates) {
-        List<TenantRowColumnTimestampRemove<TenantId, ObjectId, String>> batch = new ArrayList<>();
+        List<TenantRowColumnTimestampRemove<TenantIdAndCentricId, ObjectId, String>> batch = new ArrayList<>();
         for (ExistenceUpdate existenceUpdate : existenceUpdates) {
             batch.add(new TenantRowColumnTimestampRemove<>(existenceUpdate.tenantId,
                     existenceUpdate.objectId, EXISTS,
@@ -62,13 +62,13 @@ public class ConcurrencyStore {
 
     public Set<ObjectId> getExistence(List<ExistenceUpdate> existenceUpdates) {
 
-        ListMultimap<TenantId, ObjectId> tenantIdsObjectIds = ArrayListMultimap.create();
+        ListMultimap<TenantIdAndCentricId, ObjectId> tenantIdsObjectIds = ArrayListMultimap.create();
         for (ExistenceUpdate existenceUpdate : existenceUpdates) {
             tenantIdsObjectIds.put(existenceUpdate.tenantId, existenceUpdate.objectId);
         }
 
         Set<ObjectId> existence = new HashSet<>();
-        for (TenantId tenantId : tenantIdsObjectIds.keySet()) {
+        for (TenantIdAndCentricId tenantId : tenantIdsObjectIds.keySet()) {
             List<ObjectId> orderObjectIds = tenantIdsObjectIds.get(tenantId);
             List<Long> multiRowGet = updatedStore.multiRowGet(tenantId, orderObjectIds, EXISTS, null, null);
             for (int i = 0; i < orderObjectIds.size(); i++) {
@@ -83,7 +83,7 @@ public class ConcurrencyStore {
         return existence;
     }
 
-    public Set<ObjectId> getExistence(TenantId tenantId, Set<ObjectId> objectIds) {
+    public Set<ObjectId> getExistence(TenantIdAndCentricId tenantId, Set<ObjectId> objectIds) {
         List<ObjectId> orderObjectIds = new ArrayList<>(objectIds);
         List<Long> multiRowGet = updatedStore.multiRowGet(tenantId, orderObjectIds, EXISTS, null, null);
         Set<ObjectId> existence = new HashSet<>();
@@ -98,8 +98,8 @@ public class ConcurrencyStore {
         return existence;
     }
 
-    public long highest(TenantId tenant, ObjectId objectId, String field, long defaultTimestamp) {
-        Long got = updatedStore.get(tenant, objectId, field, null, null);
+    public long highest(TenantIdAndCentricId tenantIdAndCentricId, ObjectId objectId, String field, long defaultTimestamp) {
+        Long got = updatedStore.get(tenantIdAndCentricId, objectId, field, null, null);
         if (got == null) {
             return defaultTimestamp;
         }
@@ -112,7 +112,7 @@ public class ConcurrencyStore {
      * @param expected
      * @return expected instance if no instance was modified.
      */
-    public List<FieldVersion> checkIfModified(TenantId tenantId, List<FieldVersion> expected) {
+    public List<FieldVersion> checkIfModified(TenantIdAndCentricId tenantId, List<FieldVersion> expected) {
         // TODO add multi get support.
         List<FieldVersion> was = new ArrayList<>(expected.size());
         for (FieldVersion e : expected) {
@@ -169,6 +169,5 @@ public class ConcurrencyStore {
         public String toString() { // Hacked for human readability when in a list.
             return objectId + "." + fieldName + "=" + version;
         }
-
     }
 }
