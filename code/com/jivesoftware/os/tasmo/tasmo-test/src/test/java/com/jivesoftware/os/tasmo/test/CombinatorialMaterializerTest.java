@@ -61,6 +61,7 @@ public class CombinatorialMaterializerTest {
     private final int maxStepDepth = 4; // TODO change back to 4
     //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
     private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
+    private final Executor executor = Executors.newCachedThreadPool();
 
     private void println(Object line) {
         if (verbose) {
@@ -118,6 +119,12 @@ public class CombinatorialMaterializerTest {
     public void testSingleThreadedAddsThenRemovesThenAdds(InputCase inputCase)
             throws Throwable {
         assertCombination(inputCase, null, false);
+    }
+
+    @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 2, singleThreaded = true)
+    public void testMultiThreadedAddsThenRemovesThenAdds(InputCase inputCase)
+            throws Throwable {
+        assertCombination(inputCase, null, true);
     }
 
     private void assertCombination(final InputCase ic, Long onlyRunTestId, boolean multiThreadWrites) throws Throwable {
@@ -212,7 +219,6 @@ public class CombinatorialMaterializerTest {
     private void fireEventInParallel(List<Event> batch, final InputCase ic) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(batch.size());
         final AtomicLong errors = new AtomicLong();
-        Executor executor = Executors.newCachedThreadPool();
         final JsonEventConventions jec = new JsonEventConventions();
         for (final Event b : batch) {
             executor.execute(new Runnable() {
