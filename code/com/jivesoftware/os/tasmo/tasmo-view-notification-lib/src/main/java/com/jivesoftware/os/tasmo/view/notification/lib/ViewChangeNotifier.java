@@ -130,9 +130,9 @@ public class ViewChangeNotifier {
                             affectedCentricObjects, affectedGlobalcObjects,
                             pathIdx, path, modificationStream);
                     }
-                } else if (pathIdx == 0 && step.getStepType().isBackReferenceType() && step.getDestinationClassNames().contains(eventClass) &&
+                } else if (step.getStepType().isBackReferenceType() && step.getDestinationClassNames().contains(eventClass) &&
                     writtenInstance.getFieldNames().contains(ReservedFields.DELETED)) {
-                    //good old initial backref delete case
+                    //good old backref delete case
                     rootLocator.locateViewRoots(binding.getViewClassName(), tenantIdAndCentricId, globalTenantIdAndCentricId,
                             instanceId, pathIdx, path, modificationStream);
                 }

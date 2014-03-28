@@ -17,14 +17,9 @@ package com.jivesoftware.os.tasmo.view.notification.lib;
 
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
-import com.jivesoftware.os.tasmo.id.BaseEvent;
-import com.jivesoftware.os.tasmo.id.BaseView;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
-import com.jivesoftware.os.tasmo.view.reader.api.BackRef;
-import com.jivesoftware.os.tasmo.view.reader.api.BackRefType;
 import java.util.Arrays;
-import javax.annotation.Nullable;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -34,72 +29,11 @@ import org.testng.annotations.Test;
  */
 public class ViewChangeNotificationTest extends BaseViewNotificationTest {
 
-    private static interface ContentView extends BaseView {
-
-        @Nullable
-        Container location();
-
-        interface Container {
-
-            @Nullable
-            String name();
-
-            @Nullable
-            Long creationDate();
-        }
-    }
-
-    private static interface VersionEvent extends BaseEvent {
-    }
-
-    private static interface VersionAuthorsView extends BaseView {
-
-        @Nullable
-        User[] authors();
-
-        interface User {
-
-            @Nullable
-            String userName();
-        }
-    }
-
-    private static interface UserVersionsView extends BaseView {
-
-        @Nullable
-        @BackRef(type = BackRefType.ALL, via = "authors", from = VersionEvent.class)
-        Version[] authors();
-
-        interface Version {
-
-            @Nullable
-            String body();
-        }
-    }
-
-    private static interface UserVersionsLatestView extends BaseView {
-
-        @Nullable
-        @BackRef(type = BackRefType.LATEST, via = "authors", from = VersionEvent.class)
-        Version authors();
-
-        interface Version {
-
-            @Nullable
-            String body();
-        }
-    }
-
-    private static interface UserVersionsCountView extends BaseView {
-
-        @Nullable
-        @BackRef(type = BackRefType.COUNT, via = "authors", from = VersionEvent.class)
-        int authors();
-    }
     String eventModel =
         "User:userName(value),creationDate(value),manager(ref)|Content:location(ref)|Version:parent(ref),authors(refs),subject(value),body(value)|"
         + "Container:name(value),creationDate(value),owner(ref)";
 
+    //TODO - longer path test and existence transition support
     @Test
     public void testRefValue() throws Exception {
         String viewModel = "VersionAuthorsView::pathId1::Version.authors.refs.User|User.username";
@@ -205,8 +139,6 @@ public class ViewChangeNotificationTest extends BaseViewNotificationTest {
 
         Assert.assertTrue(getModifiedViews().contains(expectedUser1));
         Assert.assertTrue(getModifiedViews().contains(expectedGlobalUser1));
-        Assert.assertTrue(getModifiedViews().contains(expectedUser2));
-        Assert.assertTrue(getModifiedViews().contains(expectedGlobalUser2));
         getModifiedViews().clear();
 
         write(EventBuilder.update(versionId, tenantId, actorId).set(ReservedFields.DELETED, true).build());
@@ -216,5 +148,52 @@ public class ViewChangeNotificationTest extends BaseViewNotificationTest {
         Assert.assertFalse(getModifiedViews().contains(expectedUser2));
         Assert.assertFalse(getModifiedViews().contains(expectedGlobalUser2));
         getModifiedViews().clear();
+    }
+
+    @Test
+    public void testRefsLatestBackrefValue() throws Exception {
+        String viewModel = "VersionAuthorContainerOwner::path1::Version.authors.refs.User|User.latest_backRef.Container.owner|Container.name";
+        initModel(eventModel, viewModel);
+
+        ObjectId user1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).build());
+        ObjectId user2 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).build());
+
+        ObjectId container1 = write(EventBuilder.create(idProvider, "Container", tenantId, actorId).set("name", "awesome").build());
+        ObjectId container2 = write(EventBuilder.create(idProvider, "Container", tenantId, actorId).set("name", "lame").build());
+
+        Assert.assertTrue(getModifiedViews().isEmpty());
+
+        ObjectId version1 = write(EventBuilder.create(idProvider, "Version", tenantId, actorId).set("authors", Arrays.asList(user1, user2)).build());
+
+        ModifiedViewInfo centricViewInfo = new ModifiedViewInfo(tenantIdAndCentricId, new ObjectId("VersionAuthorContainerOwner", version1.getId()));
+        ModifiedViewInfo globalViewInfo = new ModifiedViewInfo(tenantIdAndCentricId, new ObjectId("VersionAuthorContainerOwner", version1.getId()));
+        Assert.assertTrue(getModifiedViews().contains(centricViewInfo));
+        Assert.assertTrue(getModifiedViews().contains(globalViewInfo));
+        getModifiedViews().clear();
+
+        write(EventBuilder.update(container1, tenantId, actorId).set("owner", user1).build());
+
+        Assert.assertTrue(getModifiedViews().contains(centricViewInfo));
+        Assert.assertTrue(getModifiedViews().contains(globalViewInfo));
+        getModifiedViews().clear();
+
+        write(EventBuilder.update(container2, tenantId, actorId).set("owner", user2).build());
+
+        Assert.assertTrue(getModifiedViews().contains(centricViewInfo));
+        Assert.assertTrue(getModifiedViews().contains(globalViewInfo));
+        getModifiedViews().clear();
+
+        write(EventBuilder.update(container1, tenantId, actorId).clear("owner").build());
+
+        Assert.assertTrue(getModifiedViews().contains(centricViewInfo));
+        Assert.assertTrue(getModifiedViews().contains(globalViewInfo));
+        getModifiedViews().clear();
+
+        write(EventBuilder.update(user1, tenantId, actorId).set(ReservedFields.DELETED, true).build());
+
+        Assert.assertTrue(getModifiedViews().contains(centricViewInfo));
+        Assert.assertTrue(getModifiedViews().contains(globalViewInfo));
+        getModifiedViews().clear();
+
     }
 }

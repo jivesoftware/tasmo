@@ -405,15 +405,15 @@ public class BaseViewNotificationTest {
         EventWriterResponse eventWriterResponse = writer.write(event);
         return eventWriterResponse.getObjectIds().get(0);
     }
-    
+
     Set<ModifiedViewInfo> getModifiedViews() {
         return modifiedViews;
     }
-    
+
     TenantIdAndCentricId tenantIdAndCentricId() {
         return new TenantIdAndCentricId(tenantIdAndCentricId.getTenantId(), actorId);
     }
-    
+
     TenantIdAndCentricId globalTenantIdAndCentricId() {
         return tenantIdAndCentricId;
     }
