@@ -8,6 +8,7 @@ import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange.ViewFieldChangeType;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
@@ -45,41 +46,63 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
         }
 
         Set<ObjectId> existence = concurrencyStore.getExistence(tenantIdAndCentricId.getTenantId(), check);
-
         List<ViewFieldChange> acceptableChanges = new ArrayList<>();
-        for (ViewFieldChange fieldChange : changes) {
+        for (ViewFieldChange c : changes) {
             Set<ObjectId> ids = new HashSet<>();
-            for (PathId ref : fieldChange.getModelPathInstanceIds()) {
+            for (PathId ref : c.getModelPathInstanceIds()) {
                 ids.add(ref.getObjectId());
             }
-
-            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.remove || existence.containsAll(ids)) {
-                acceptableChanges.add(fieldChange);
+            if (c.getType() == ViewFieldChange.ViewFieldChangeType.remove || existence.containsAll(ids)) {
+                acceptableChanges.add(c);
             } else {
-                traceLogging(ids, existence, fieldChange);
+                traceLogging(ids, existence, c);
+                acceptableChanges.add(new ViewFieldChange(c.getEventId(),
+                        c.getSessionId(),
+                        c.getChangeId(),
+                        c.getTenantIdAndCentricId(),
+                        c.getActorId(),
+                        ViewFieldChangeType.remove,
+                        c.getViewObjectId(),
+                        c.getModelPathId(),
+                        c.getModelPathInstanceIds(),
+                        c.getModelPathVersions(),
+                        c.getValue(),
+                        c.getTimestamp()));
+            }
+        }
+
+
+        // TODO re-write to use batching!
+        for (ViewFieldChange fieldChange : acceptableChanges) {
+            List<FieldVersion> expected = new ArrayList<>();
+            List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
+            for (ReferenceWithTimestamp version : versions) {
+                if (version != null) {
+                    expected.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
+                }
+            }
+            List<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), expected);
+
+            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+                if (expected != was) {
+                    LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
+                    PathModifiedOutFromUnderneathMeException pmofume = new PathModifiedOutFromUnderneathMeException(expected, was);
+                    throw pmofume;
+                }
+            } else {
+//                for (FieldVersion w:was) {
+//                    if (w.getVersion() % 2 == 0) {
+//                        // TODO change
+//                        LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY DELETE is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
+//                        PathModifiedOutFromUnderneathMeException pmofume = new PathModifiedOutFromUnderneathMeException(expected, was);
+//                        throw pmofume;
+//                    }
+//                }
             }
         }
 
         commitChange.commitChange(tenantIdAndCentricId, acceptableChanges);
 
-        // TODO re-write to use batching!
-        for (ViewFieldChange fieldChange : acceptableChanges) {
-            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
-                List<FieldVersion> expected = new ArrayList<>();
-                List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
-                for (ReferenceWithTimestamp version : versions) {
-                    if (version != null) {
-                        expected.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
-                    }
-                }
-                List<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), expected);
-                if (expected != was) {
-                    PathModifiedOutFromUnderneathMeException pmofume = new PathModifiedOutFromUnderneathMeException(expected, was);
-                    //pmofume.printStackTrace();
-                    throw pmofume;
-                }
-            }
-        }
     }
 
     private void traceLogging(Set<ObjectId> ids, Set<ObjectId> existence, ViewFieldChange fieldChange) {

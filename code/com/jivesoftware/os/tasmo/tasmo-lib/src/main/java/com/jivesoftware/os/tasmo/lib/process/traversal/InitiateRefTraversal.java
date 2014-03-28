@@ -51,7 +51,7 @@ public class InitiateRefTraversal implements EventProcessor {
     }
 
     @Override
-    public void process(final WrittenEventContext writtenEventContext, final WrittenEvent writtenEvent,final long threadTimestamp) throws Exception {
+    public void process(final WrittenEventContext writtenEventContext, final WrittenEvent writtenEvent, final long threadTimestamp) throws Exception {
 
         TenantId tenantId = writtenEvent.getTenantId();
         final long timestamp = writtenEvent.getEventId();
@@ -83,11 +83,9 @@ public class InitiateRefTraversal implements EventProcessor {
                             }
                         });
 
-
-
                 if (!writtenInstance.isDeletion()) {
                     concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId,
-                        Arrays.asList(new FieldVersion(instanceId, refFieldName, highest)));
+                            Arrays.asList(new FieldVersion(instanceId, refFieldName, highest)));
 
                     referenceStore.streamForwardRefs(tenantIdAndCentricId, instanceId.getClassName(), refFieldName, instanceId, threadTimestamp,
                             new CallbackStream<ReferenceWithTimestamp>() {

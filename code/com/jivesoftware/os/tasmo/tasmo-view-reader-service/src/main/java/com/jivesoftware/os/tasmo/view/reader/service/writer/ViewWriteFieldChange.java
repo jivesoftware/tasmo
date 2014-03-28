@@ -27,16 +27,6 @@ public class ViewWriteFieldChange {
         add, remove
     }
     private final long eventId;
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    private final long sessionId;
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    private final long changeId;
     private final TenantIdAndCentricId tenantIdAndCentricId;
     private final Id actorId;
     private final Type type;
@@ -49,8 +39,6 @@ public class ViewWriteFieldChange {
     @JsonCreator
     public ViewWriteFieldChange(
         @JsonProperty("eventId") long eventId,
-        @JsonProperty("sessionId") long sessionId,
-        @JsonProperty("changeId") long changeId,
         @JsonProperty("tenantIdAndCentricId") TenantIdAndCentricId tenantIdAndCentricId,
         @JsonProperty("actorId") Id actorId,
         @JsonProperty("type") Type type,
@@ -60,8 +48,6 @@ public class ViewWriteFieldChange {
         @JsonProperty("value") String value,
         @JsonProperty("timestamp") long timestamp) {
         this.eventId = eventId;
-        this.sessionId = sessionId;
-        this.changeId = changeId;
         this.tenantIdAndCentricId = tenantIdAndCentricId;
         this.actorId = actorId;
         this.type = type;
@@ -74,22 +60,6 @@ public class ViewWriteFieldChange {
 
     public long getEventId() {
         return eventId;
-    }
-
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    public long getSessionId() {
-        return sessionId;
-    }
-
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    public long getChangeId() {
-        return changeId;
     }
 
     public TenantIdAndCentricId getTenantIdAndCentricId() {
@@ -142,8 +112,6 @@ public class ViewWriteFieldChange {
     public int hashCode() {
         int hash = 5;
         hash = 67 * hash + (int) (this.eventId ^ (this.eventId >>> 32));
-        hash = 67 * hash + (int) (this.sessionId ^ (this.sessionId >>> 32));
-        hash = 67 * hash + (int) (this.changeId ^ (this.changeId >>> 32));
         hash = 67 * hash + Objects.hashCode(this.tenantIdAndCentricId);
         hash = 67 * hash + Objects.hashCode(this.actorId);
         hash = 67 * hash + (this.type != null ? this.type.hashCode() : 0);
@@ -165,12 +133,6 @@ public class ViewWriteFieldChange {
         }
         final ViewWriteFieldChange other = (ViewWriteFieldChange) obj;
         if (this.eventId != other.eventId) {
-            return false;
-        }
-        if (this.sessionId != other.sessionId) {
-            return false;
-        }
-        if (this.changeId != other.changeId) {
             return false;
         }
         if (!Objects.equals(this.tenantIdAndCentricId, other.tenantIdAndCentricId)) {

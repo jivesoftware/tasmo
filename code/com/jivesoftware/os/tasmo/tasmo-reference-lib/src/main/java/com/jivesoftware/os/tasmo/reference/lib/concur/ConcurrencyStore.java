@@ -119,12 +119,6 @@ public class ConcurrencyStore {
             if (e == null) { // TODO resolve: got == null should be impossible
                 was.add(e);
             } else {
-//                Long got = updatedStore.get(tenantId, e.objectId, EXISTS, null, null);
-//                if (got == null || got < e.version) {
-//                    was.add(new FieldVersion(e.objectId, EXISTS, -1L)); // Shitty -1 means deleted!
-//                    return was; // Means epected has been modified
-//                }
-
                 Long got = updatedStore.get(tenantId, e.objectId, e.fieldName, null, null);
                 if (got == null) { // TODO resolve: got == null should be impossible
                     was.add(e);

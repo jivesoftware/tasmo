@@ -85,8 +85,6 @@ public class ViewValueWriter {
             }
             adds.add(new ViewWriteFieldChange(
                 0, // not used,
-                -1, //deprecated
-                -1, //deprecated
                 tenantIdAndCentricId,
                 new Id(0), // not used
                 ViewWriteFieldChange.Type.add,
@@ -103,8 +101,6 @@ public class ViewValueWriter {
             }
             removes.add(new ViewWriteFieldChange(
                 0, // not used
-                -1, //deprecated
-                -1, //deprecated
                 tenantIdAndCentricId,
                 new Id(0), // not used
                 ViewWriteFieldChange.Type.remove,

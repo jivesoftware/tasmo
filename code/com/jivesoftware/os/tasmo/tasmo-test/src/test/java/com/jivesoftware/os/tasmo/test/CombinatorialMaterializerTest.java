@@ -43,7 +43,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.log4j.Appender;
-import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PatternLayout;
 import org.testng.Assert;
@@ -59,7 +58,7 @@ public class CombinatorialMaterializerTest {
     //private long seed = System.currentTimeMillis();
     private final long seed = 1389045159990L;
     private final boolean verbose = true;
-    private final int maxStepDepth = 3; // TODO change back to 4
+    private final int maxStepDepth = 4; // TODO change back to 4
     //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
     private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
 
@@ -79,7 +78,9 @@ public class CombinatorialMaterializerTest {
             appender.setLayout(new PatternLayout(PATTERN));
         }
         //LogManager.getLogger("com.jivesoftware.os.tasmo").setLevel(Level.TRACE);
-        LogManager.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore").setLevel(Level.TRACE);
+//        LogManager.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange").setLevel(Level.TRACE);
+//        LogManager.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore").setLevel(Level.TRACE);
+//        LogManager.getLogger("com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore").setLevel(Level.TRACE);
     }
 
     @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
@@ -94,7 +95,7 @@ public class CombinatorialMaterializerTest {
         assertCombination(inputCase, null, false);
     }
 
-    @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
+    @Test(dataProvider = "totalOrderAdds", invocationCount = 2, singleThreaded = true)
     public void testMultiThreadedAddsOnly(InputCase inputCase)
             throws Throwable {
         assertCombination(inputCase, null, true);
@@ -106,18 +107,19 @@ public class CombinatorialMaterializerTest {
         assertCombination(inputCase, null, false);
     }
 
-    @Test(dataProvider = "addsThenRemoves", invocationCount = 100, singleThreaded = true)
+    @Test(dataProvider = "addsThenRemoves", invocationCount = 2, singleThreaded = true)
     public void testMultiThreadedAddsThenRemoves(InputCase inputCase)
             throws Throwable {
 
-        assertCombination(inputCase, null, true); //382L
+        assertCombination(inputCase, null, true);
     }
 
-//    @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
-//    public void testSingleThreadedAddsThenRemovesThenAdds(InputCase inputCase)
-//            throws Throwable {
-//        assertCombination(inputCase, null, false);
-//    }
+    @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
+    public void testSingleThreadedAddsThenRemovesThenAdds(InputCase inputCase)
+            throws Throwable {
+        assertCombination(inputCase, null, false);
+    }
+
     private void assertCombination(final InputCase ic, Long onlyRunTestId, boolean multiThreadWrites) throws Throwable {
         try {
             if (onlyRunTestId != null && onlyRunTestId != ic.testId) {
@@ -472,7 +474,7 @@ public class CombinatorialMaterializerTest {
                     for (Event event : events) {
                         ObjectId instanceObjectId = jec.getInstanceObjectId(event.toJson());
                         if (deletedIds.contains(instanceObjectId.getId())) {
-                            undeletes.add(event);
+                            undeletes.add(new Event(event.toJson().deepCopy(), event.getObjectId()));
                         }
                     }
 

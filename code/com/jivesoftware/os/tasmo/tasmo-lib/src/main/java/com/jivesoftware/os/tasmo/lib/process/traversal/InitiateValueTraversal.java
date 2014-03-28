@@ -59,6 +59,7 @@ public class InitiateValueTraversal implements EventProcessor {
 
         for (InitiateTraverserKey key : traversers.keySet()) {
             if (writtenInstance.hasField(key.getTriggerFieldName())) {
+                long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId.getTenantId(), instanceId, "*exists*", timestamp);
 
                 if (writtenInstance.isDeletion()) {
                     for (PathTraverser pathTraverser : traversers.get(key)) {
@@ -72,7 +73,6 @@ public class InitiateValueTraversal implements EventProcessor {
                     }
                 } else {
 
-                    //long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId.getTenantId(), instanceId, refFieldName, timestamp);
                     for (PathTraverser pathTraverser : traversers.get(key)) {
                         PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, false);
                         List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(eventValueStore,

@@ -261,8 +261,6 @@ public class Materialization {
 
                         write.add(new ViewWriteFieldChange(
                                 change.getEventId(),
-                                -1,
-                                -1,
                                 tenantIdAndCentricId,
                                 change.getActorId(),
                                 ViewWriteFieldChange.Type.valueOf(change.getType().name()),

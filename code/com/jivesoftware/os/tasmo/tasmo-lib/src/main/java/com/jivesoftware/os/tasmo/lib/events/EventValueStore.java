@@ -43,12 +43,12 @@ public class EventValueStore {
             long removeAtTimestamp,
             ObjectId objectId,
             String[] fieldNames) {
-        if (fieldNames != null && fieldNames.length > 0) {
-            eventValueStore.multiRemove(tenantIdAndCentricId, objectId, fieldNames, new ConstantTimestamper(removeAtTimestamp + 1));
-        }
-
         String[] fields = Arrays.copyOf(fieldNames, fieldNames.length + 1);
         fields[fields.length - 1] = "deleted";
+        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), objectId, fields, removeAtTimestamp - 1);
+        if (fieldNames.length > 0) {
+            eventValueStore.multiRemove(tenantIdAndCentricId, objectId, fieldNames, new ConstantTimestamper(removeAtTimestamp + 1));
+        }
         concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), objectId, fields, removeAtTimestamp);
     }
 
@@ -62,10 +62,14 @@ public class EventValueStore {
     public void commit(Transaction transaction) {
 
         ObjectId objectInstanceId = transaction.objectInstanceId;
-        String[] takeAddedFieldNames = null;
         if (!transaction.addedFieldNames.isEmpty()) {
-            takeAddedFieldNames = transaction.takeAddedFieldNames();
+            String[] takeAddedFieldNames = transaction.takeAddedFieldNames();
             OpaqueFieldValue[] takeAddedValues = transaction.takeAddedValues();
+
+            String[] fields = Arrays.copyOf(takeAddedFieldNames, takeAddedFieldNames.length + 1);
+            fields[fields.length - 1] = "deleted";
+
+            concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, fields, transaction.addAtTimestamp - 1);
 
             eventValueStore.multiAdd(
                     transaction.tenantIdAndCentricId,
@@ -74,10 +78,15 @@ public class EventValueStore {
                     takeAddedValues,
                     null, new ConstantTimestamper(transaction.addAtTimestamp));
 
+            concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, fields, transaction.addAtTimestamp);
+
         }
-        String[] takeRemovedFieldNames = null;
         if (!transaction.removedFieldNames.isEmpty()) {
-            takeRemovedFieldNames = transaction.takeRemovedFieldNames();
+            String[] takeRemovedFieldNames = transaction.takeRemovedFieldNames();
+
+            String[] fields = Arrays.copyOf(takeRemovedFieldNames, takeRemovedFieldNames.length + 1);
+            fields[fields.length - 1] = "deleted";
+            concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, fields, transaction.removeAtTimestamp - 1);
 
             eventValueStore.multiRemove(
                     transaction.tenantIdAndCentricId,
@@ -85,21 +94,9 @@ public class EventValueStore {
                     takeRemovedFieldNames,
                     new ConstantTimestamper(transaction.removeAtTimestamp));
 
-            concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, takeRemovedFieldNames, transaction.removeAtTimestamp);
-
-        }
-
-        if (takeAddedFieldNames != null) {
-            String[] fields = Arrays.copyOf(takeAddedFieldNames, takeAddedFieldNames.length + 1);
-            fields[fields.length - 1] = "deleted";
-            concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, fields, transaction.addAtTimestamp);
-        }
-        if (takeRemovedFieldNames != null) {
-            String[] fields = Arrays.copyOf(takeRemovedFieldNames, takeRemovedFieldNames.length + 1);
-            fields[fields.length - 1] = "deleted";
             concurrencyStore.updated(transaction.tenantIdAndCentricId.getTenantId(), objectInstanceId, fields, transaction.removeAtTimestamp);
-        }
 
+        }
     }
 
     final public static class Transaction {

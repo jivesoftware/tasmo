@@ -26,19 +26,6 @@ public class ConcurrencyChecker {
 
     public List<ConcurrencyStore.FieldVersion> checkIfModifiedOutFromUnderneathMe(TenantIdAndCentricId tenantIdAndCentricId,
             List<FieldVersion> want) throws PathModifiedOutFromUnderneathMeException {
-
-//        Set<ObjectId> doTheseExist = new HashSet<>();
-//        for (ConcurrencyStore.FieldVersion fieldVersion : want) {
-//            doTheseExist.add(fieldVersion.getObjectId());
-//        }
-//        Set<ObjectId> exist = concurrencyStore.getExistence(tenantIdAndCentricId.getTenantId(), doTheseExist);
-//        List<ConcurrencyStore.FieldVersion> wantWhatExists = new ArrayList<>();
-//        for (ConcurrencyStore.FieldVersion fieldVersion : want) {
-//            if (exist.contains(fieldVersion.getObjectId())) {
-//                wantWhatExists.add(fieldVersion);
-//            }
-//        }
-
         List<ConcurrencyStore.FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId.getTenantId(), want);
         if (got != want) {
             PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);

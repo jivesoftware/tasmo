@@ -11,7 +11,7 @@ public class Event {
     private final ObjectNode event;
     private final ObjectId objectId;
 
-    Event(ObjectNode event, ObjectId objectId) {
+    public Event(ObjectNode event, ObjectId objectId) {
         this.event = event;
         this.objectId = objectId;
     }

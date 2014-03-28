@@ -173,11 +173,11 @@ public class ReferenceStore {
         LOG.inc("link");
         LOG.startTimer("link");
 
+        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName, "deleted"}, timestamp - 1);
+
         try {
             for (Reference to : tos) {
 
-                //LOG.trace("|--> link {}.{}.{}->{} t={}",
-                //        new Object[]{from.getClassName(), fieldName, from, to.getObjectId(), timestamp});
                 ClassAndField_IdKey classAndField_from = new ClassAndField_IdKey(from.getClassName(), fieldName, from);
                 ClassAndField_IdKey classAndField_to = new ClassAndField_IdKey(from.getClassName(), fieldName, to.getObjectId());
 
@@ -210,7 +210,7 @@ public class ReferenceStore {
         final ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp + 1);
         final ClassAndField_IdKey aClassAndField_aId = new ClassAndField_IdKey(from.getClassName(), fieldName, from);
 
-        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName, "deleted"}, timestamp);
+        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName, "deleted"}, timestamp - 1);
 
         multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
                 new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
@@ -233,7 +233,6 @@ public class ReferenceStore {
                                     constantTimestamper.get()
                                 });
                                 multiLinks.remove(tenantIdAndCentricId, aClassAndField_aId, to.getColumn(), constantTimestamper);
-
                                 LOG.trace(System.currentTimeMillis() + "|--> {} removed forward link {}.{}.{} t={}", new Object[]{threadTimestamp,
                                     aClassAndField_aId.getClassName(),
                                     aClassAndField_aId.getFieldName(),
@@ -245,6 +244,8 @@ public class ReferenceStore {
                         return to;
                     }
                 });
+
+        concurrencyStore.updated(tenantIdAndCentricId.getTenantId(), from, new String[]{fieldName, "deleted"}, timestamp);
 
         removedTos.callback(null); // EOS
 
