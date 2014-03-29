@@ -20,6 +20,8 @@ import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
+import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
+import java.util.Map;
 
 /**
  *
@@ -32,29 +34,34 @@ public class ReferenceGatherer {
         this.referenceStore = referenceStore;
     }
 
-    public void gatherReferenceResults(
-        TenantIdAndCentricId tenantIdAndCentricId, Multimap<String, ViewReference> referenceRequests) throws Exception {
+    public void gatherReferenceResults(Map<ViewDescriptor, Multimap<String, ViewReference>> allReferenceRequests)
+        throws Exception {
 
-        for (final String pathId : referenceRequests.keySet()) {
+        for (Map.Entry<ViewDescriptor, Multimap<String, ViewReference>> entry : allReferenceRequests.entrySet()) {
+            TenantIdAndCentricId tenantIdAndCentricId = entry.getKey().getTenantIdAndCentricId();
+            Multimap<String, ViewReference> referenceRequests = entry.getValue();
 
-            //TODO validate that the underlying store will return results in the order we added requests
-            for (final ViewReference request : referenceRequests.get(pathId)) {
-                ObjectId id = request.getOriginId();
+            for (final String pathId : referenceRequests.keySet()) {
 
-                CallbackStream<Reference> callbackStream = new CallbackStream<Reference>() {
-                    @Override
-                    public Reference callback(Reference value) throws Exception {
-                        if (value != null) {
-                            request.addDestinationId(value);
+                //TODO validate that the underlying store will return results in the order we added requests
+                for (final ViewReference request : referenceRequests.get(pathId)) {
+                    ObjectId id = request.getOriginId();
+
+                    CallbackStream<Reference> callbackStream = new CallbackStream<Reference>() {
+                        @Override
+                        public Reference callback(Reference value) throws Exception {
+                            if (value != null) {
+                                request.addDestinationId(value);
+                            }
+                            return value;
                         }
-                        return value;
-                    }
-                };
+                    };
 
-                if (request.isBackReference()) {
-                    referenceStore.get_aIds(tenantIdAndCentricId, id, request.getOriginClassNames(), request.getRefFieldName(), callbackStream);
-                } else {
-                    referenceStore.get_bIds(tenantIdAndCentricId, id.getClassName(), request.getRefFieldName(), id, callbackStream);
+                    if (request.isBackReference()) {
+                        referenceStore.get_aIds(tenantIdAndCentricId, id, request.getOriginClassNames(), request.getRefFieldName(), callbackStream);
+                    } else {
+                        referenceStore.get_bIds(tenantIdAndCentricId, id.getClassName(), request.getRefFieldName(), id, callbackStream);
+                    }
                 }
             }
         }

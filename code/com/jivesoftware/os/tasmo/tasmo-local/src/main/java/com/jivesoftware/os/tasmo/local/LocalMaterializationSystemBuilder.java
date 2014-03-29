@@ -11,7 +11,6 @@ import com.google.common.collect.Sets;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.tasmo.configuration.BindingGenerator;
@@ -48,11 +47,11 @@ import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.lib.BatchingEventValueStore;
 import com.jivesoftware.os.tasmo.view.reader.lib.BatchingReferenceStore;
 import com.jivesoftware.os.tasmo.view.reader.lib.ExistenceChecker;
-import com.jivesoftware.os.tasmo.view.reader.lib.JsonViewFormatter;
+import com.jivesoftware.os.tasmo.view.reader.lib.JsonViewFormatterProvider;
 import com.jivesoftware.os.tasmo.view.reader.lib.ReadTimeViewMaterializer;
 import com.jivesoftware.os.tasmo.view.reader.lib.ReferenceGatherer;
 import com.jivesoftware.os.tasmo.view.reader.lib.ValueGatherer;
-import com.jivesoftware.os.tasmo.view.reader.lib.ViewFormatter;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewFormatterProvider;
 import com.jivesoftware.os.tasmo.view.reader.lib.ViewModelProvider;
 import com.jivesoftware.os.tasmo.view.reader.lib.ViewPermissionCheckResult;
 import com.jivesoftware.os.tasmo.view.reader.lib.ViewPermissionChecker;
@@ -237,9 +236,9 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
         ValueGatherer valueGatherer = new ValueGatherer(new BatchingEventValueStore(rowColumnValueStoreProvider.eventStore()));
 
-        ViewFormatter<ObjectNode> viewFormatter = new JsonViewFormatter(viewObjectMapper, writtenEventProvider);
+        ViewFormatterProvider<ObjectNode> formatterProvider = new JsonViewFormatterProvider(viewObjectMapper, writtenEventProvider);
 
-        return new ReadTimeViewMaterializer(new ViewModelProvider(tenantId, viewsProvider), refGatherer, valueGatherer, viewFormatter,
+        return new ReadTimeViewMaterializer(new ViewModelProvider(tenantId, viewsProvider), refGatherer, valueGatherer, formatterProvider,
             viewPermissionChecker, existenceChecker);
     }
 

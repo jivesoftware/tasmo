@@ -53,7 +53,7 @@ import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.lib.BatchingEventValueStore;
 import com.jivesoftware.os.tasmo.view.reader.lib.BatchingReferenceStore;
 import com.jivesoftware.os.tasmo.view.reader.lib.ExistenceChecker;
-import com.jivesoftware.os.tasmo.view.reader.lib.JsonViewFormatter;
+import com.jivesoftware.os.tasmo.view.reader.lib.JsonViewFormatterProvider;
 import com.jivesoftware.os.tasmo.view.reader.lib.ReadTimeViewMaterializer;
 import com.jivesoftware.os.tasmo.view.reader.lib.ReferenceGatherer;
 import com.jivesoftware.os.tasmo.view.reader.lib.ValueGatherer;
@@ -219,7 +219,7 @@ public class Materialization {
 
 
         viewReader = new ReadTimeViewMaterializer(viewModelProvider, new ReferenceGatherer(batchingReferenceStore),
-            new ValueGatherer(batchingEventValueStore), new JsonViewFormatter(mapper, eventProvider), viewPermissionChecker(), existenceChecker());
+            new ValueGatherer(batchingEventValueStore), new JsonViewFormatterProvider(mapper, eventProvider), viewPermissionChecker(), existenceChecker());
 
         permittedIds.clear();
 

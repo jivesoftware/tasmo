@@ -24,14 +24,16 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -41,44 +43,45 @@ public class ViewAccumulator<V> {
 
     private final ViewPermissionChecker viewPermissionChecker;
     private final ExistenceChecker existenceChecker;
-    private List<Multimap<String, ViewReference>> refResults = new ArrayList<>();
-    private Multimap<String, ViewValue> valueResults = ArrayListMultimap.create();
-    private Set<ObjectId> presentIds = new HashSet<>();
-    private final List<ModelPath> allPaths;
-    private final ObjectId viewRoot;
-    private boolean forbidden;
+    private final Map<ViewDescriptor, AccumulationContext> accumulatingViews = new HashMap<>();
 
-    public ViewAccumulator(ObjectId viewRoot, List<ModelPath> allPaths,
+    public ViewAccumulator(Map<ViewDescriptor, RootAndPaths> requestsAndPaths,
         ViewPermissionChecker viewPermissionChecker, ExistenceChecker existenceChecker) {
-        this.viewRoot = viewRoot;
-        this.allPaths = allPaths;
+        for (Map.Entry<ViewDescriptor, RootAndPaths> entry : requestsAndPaths.entrySet()) {
+            accumulatingViews.put(entry.getKey(), new AccumulationContext(entry.getValue()));
+        }
         this.viewPermissionChecker = viewPermissionChecker;
         this.existenceChecker = existenceChecker;
-        this.presentIds.add(viewRoot);
     }
 
-    public void addRefResults(Multimap<String, ViewReference> referenceSteps) {
-        for (String pathId : referenceSteps.keySet()) {
-            Collection<ViewReference> toAdd = referenceSteps.get(pathId);
+    public void addRefResults(Map<ViewDescriptor, Multimap<String, ViewReference>> referenceSteps) {
+        for (Map.Entry<ViewDescriptor, Multimap<String, ViewReference>> entry : referenceSteps.entrySet()) {
 
-            for (ViewReference reference : toAdd) {
-                presentIds.addAll(reference.getDestinationIds());
+            AccumulationContext context = accumulatingViews.get(entry.getKey());
+            Multimap<String, ViewReference> viewReferenceSteps = entry.getValue();
+            for (String pathId : viewReferenceSteps.keySet()) {
+                Collection<ViewReference> toAdd = viewReferenceSteps.get(pathId);
+
+                for (ViewReference reference : toAdd) {
+                    context.presentIds.addAll(reference.getDestinationIds());
+                }
             }
+
+            context.refResults.add(viewReferenceSteps);
         }
-
-        refResults.add(referenceSteps);
     }
 
-    public boolean forbidden() {
-        return forbidden;
+    public boolean forbidden(ViewDescriptor viewDescriptor) {
+        return accumulatingViews.get(viewDescriptor).forbidden;
     }
 
-    public V formatResults(TenantId tenantId, Id actorId, ViewFormatter<V> formatter) {
-        presentIds.retainAll(existenceChecker.check(tenantId, presentIds));
+    public V formatResults(ViewDescriptor viewDescriptor, ViewFormatter<V> formatter) {
+        final AccumulationContext context = accumulatingViews.get(viewDescriptor);
+        context.presentIds.retainAll(existenceChecker.check(viewDescriptor.getTenantId(), context.presentIds));
 
         //visibility only using id is awkward
-        Set<Id> visibleIds = viewPermissionChecker.check(tenantId, actorId,
-            Sets.newHashSet(Iterables.transform(presentIds, new Function<ObjectId, Id>() {
+        Set<Id> visibleIds = viewPermissionChecker.check(viewDescriptor.getTenantId(), viewDescriptor.getActorId(),
+            Sets.newHashSet(Iterables.transform(context.presentIds, new Function<ObjectId, Id>() {
             @Override
             public Id apply(ObjectId f) {
                 return f.getId();
@@ -86,27 +89,27 @@ public class ViewAccumulator<V> {
         }))).allowed();
 
         Set<ObjectId> toRemove = new HashSet<>();
-        for (ObjectId objectId : presentIds) {
+        for (ObjectId objectId : context.presentIds) {
             if (!visibleIds.contains(objectId.getId())) {
                 toRemove.add(objectId);
             }
         }
-        presentIds.removeAll(toRemove);
-        forbidden = toRemove.contains(viewRoot);
+        context.presentIds.removeAll(toRemove);
+        context.forbidden = toRemove.contains(context.viewRoot);
 
-        if (presentIds.contains(viewRoot)) {
+        if (context.presentIds.contains(context.viewRoot)) {
 
-            formatter.setRoot(viewRoot);
+            formatter.setRoot(context.viewRoot);
 
-            for (ModelPath path : allPaths) {
-                for (Multimap<String, ViewReference> treeLevel : refResults) {
+            for (ModelPath path : context.paths) {
+                for (Multimap<String, ViewReference> treeLevel : context.refResults) {
                     for (ViewReference reference : treeLevel.get(path.getId())) {
-                        if (presentIds.contains(reference.getOriginId())) {
+                        if (context.presentIds.contains(reference.getOriginId())) {
                             List<ObjectId> presentDestinations = Lists.newArrayList(Iterables.filter(reference.getDestinationIds(),
                                 new Predicate<ObjectId>() {
                                 @Override
                                 public boolean apply(ObjectId t) {
-                                    return presentIds.contains(t);
+                                    return context.presentIds.contains(t);
                                 }
                             }));
                             formatter.addReferenceNode(reference, presentDestinations);
@@ -116,8 +119,8 @@ public class ViewAccumulator<V> {
                     formatter.nextLevel();
                 }
 
-                for (ViewValue value : valueResults.get(path.getId())) {
-                    if (presentIds.contains(value.getObjectId())) {
+                for (ViewValue value : context.valueResults.get(path.getId())) {
+                    if (context.presentIds.contains(value.getObjectId())) {
                         formatter.addValueNode(value);
                     }
                 }
@@ -129,11 +132,23 @@ public class ViewAccumulator<V> {
         } else {
             return null;
         }
-
-
     }
 
-    public Multimap<String, ViewReference> buildNextViewLevel() {
+    public Map<ViewDescriptor, Multimap<String, ViewReference>> buildNextViewLevel() {
+        Map<ViewDescriptor, Multimap<String, ViewReference>> nextLevel = new HashMap<>();
+        for (Map.Entry<ViewDescriptor, AccumulationContext> entry : accumulatingViews.entrySet()) {
+            Multimap<String, ViewReference> nextLevelForView = buildNextLevelForView(entry.getKey());
+            if (!nextLevelForView.isEmpty()) {
+                nextLevel.put(entry.getKey(), nextLevelForView);
+            }
+        }
+
+        return nextLevel;
+    }
+
+    private Multimap<String, ViewReference> buildNextLevelForView(ViewDescriptor viewDescriptor) {
+        AccumulationContext context = accumulatingViews.get(viewDescriptor);
+        List<Multimap<String, ViewReference>> refResults = context.refResults;
         int nextLevelIdx = refResults.size();
 
         Multimap<String, ViewReference> nextLevel = ArrayListMultimap.create();
@@ -148,7 +163,7 @@ public class ViewAccumulator<V> {
 
                     if (ModelPathStepType.value.equals(nextStep.getStepType())) {
                         for (ObjectId source : reference.getDestinationIds()) {
-                            valueResults.put(pathId, new ViewValue(reference.getPath(), nextStep, source));
+                            context.valueResults.put(pathId, new ViewValue(reference.getPath(), nextStep, source));
                         }
                     } else {
                         for (ObjectId source : reference.getDestinationIds()) {
@@ -159,13 +174,13 @@ public class ViewAccumulator<V> {
                 }
             }
         } else {
-            for (ModelPath path : allPaths) {
+            for (ModelPath path : context.paths) {
                 ModelPathStep step = path.getPathMembers().get(0);
                 if (ModelPathStepType.value.equals(step.getStepType())) {
-                    valueResults.put(path.getId(), new ViewValue(path, step, viewRoot));
+                    context.valueResults.put(path.getId(), new ViewValue(path, step, context.viewRoot));
 
                 } else {
-                    nextLevel.put(path.getId(), new ViewReference(path, step, viewRoot));
+                    nextLevel.put(path.getId(), new ViewReference(path, step, context.viewRoot));
                 }
             }
         }
@@ -173,7 +188,43 @@ public class ViewAccumulator<V> {
         return nextLevel;
     }
 
-    public Multimap<String, ViewValue> getViewValues() {
-        return valueResults;
+    public Map<ViewDescriptor, Multimap<String, ViewValue>> getViewValues(Iterable<ViewDescriptor> viewDescriptors) {
+        Map<ViewDescriptor, Multimap<String, ViewValue>> allViewValues = new HashMap<>();
+        for (ViewDescriptor descriptor : viewDescriptors) {
+            Multimap<String, ViewValue> viewValues = accumulatingViews.get(descriptor).valueResults;
+            if (viewValues != null) {
+                allViewValues.put(descriptor, viewValues);
+            }
+        }
+
+        return allViewValues;
+    }
+
+    static class RootAndPaths {
+
+        final ObjectId viewRoot;
+        final List<ModelPath> paths;
+
+        RootAndPaths(ObjectId viewRoot, List<ModelPath> paths) {
+            this.viewRoot = viewRoot;
+            this.paths = paths;
+        }
+    }
+
+    //holds accummulated state for a single view instance
+    private static class AccumulationContext {
+
+        private final ObjectId viewRoot;
+        private final List<ModelPath> paths;
+        private final Set<ObjectId> presentIds = new HashSet<>();
+        private boolean forbidden;
+        private final List<Multimap<String, ViewReference>> refResults = new ArrayList<>();
+        private final Multimap<String, ViewValue> valueResults = ArrayListMultimap.create();
+
+        public AccumulationContext(RootAndPaths rootAndPaths) {
+            this.viewRoot = rootAndPaths.viewRoot;
+            this.paths = rootAndPaths.paths;
+            this.presentIds.add(viewRoot);
+        }
     }
 }

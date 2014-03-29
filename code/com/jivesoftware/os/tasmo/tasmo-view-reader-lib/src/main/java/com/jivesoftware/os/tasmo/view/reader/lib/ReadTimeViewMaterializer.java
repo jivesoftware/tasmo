@@ -18,7 +18,10 @@ package com.jivesoftware.os.tasmo.view.reader.lib;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -31,10 +34,13 @@ import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReaderException;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewAccumulator.RootAndPaths;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -46,17 +52,17 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
     private final ViewModelProvider viewModelProvider;
     private final ReferenceGatherer referenceGatherer;
     private final ValueGatherer valueGatherer;
-    private final ViewFormatter<ObjectNode> viewFormatter;
+    private final ViewFormatterProvider<ObjectNode> viewFormatterProvider;
     private final ViewPermissionChecker viewPermissionChecker;
     private final ExistenceChecker existenceChecker;
     private final ObjectMapper mapper;
 
     public ReadTimeViewMaterializer(ViewModelProvider viewModelProvider, ReferenceGatherer referenceGatherer, ValueGatherer valueGatherer,
-        ViewFormatter<ObjectNode> viewFormatter, ViewPermissionChecker viewPermissionChecker, ExistenceChecker existenceChecker) {
+        ViewFormatterProvider<ObjectNode> viewFormatterProvider, ViewPermissionChecker viewPermissionChecker, ExistenceChecker existenceChecker) {
         this.viewModelProvider = viewModelProvider;
         this.referenceGatherer = referenceGatherer;
         this.valueGatherer = valueGatherer;
-        this.viewFormatter = viewFormatter;
+        this.viewFormatterProvider = viewFormatterProvider;
         this.viewPermissionChecker = viewPermissionChecker;
         this.existenceChecker = existenceChecker;
         this.mapper = new ObjectMapper();
@@ -71,17 +77,11 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
 
     @Override
     public List<ViewResponse> readViews(List<ViewDescriptor> viewRequests) throws IOException, ViewReaderException {
-        List<ViewResponse> responses = new ArrayList<>(viewRequests.size());
-        for (ViewDescriptor descriptor : viewRequests) {
-            try {
-                responses.add(buildView(descriptor));
-            } catch (Exception ex) {
-                LOG.error("Unable to build view for request: " + descriptor, ex);
-                responses.add(ViewResponse.error());
-            }
+        try {
+            return buildViews(viewRequests);
+        } catch (Exception ex) {
+            throw new ViewReaderException("Unable to process view read request", ex);
         }
-
-        return responses;
     }
 
     private ViewResponse getView(TenantId tenantId, ObjectId viewId, ViewResponse viewResponse) {
@@ -102,51 +102,147 @@ public class ReadTimeViewMaterializer implements ViewReader<ViewResponse> {
         return viewResponse;
     }
 
-    public ViewResponse buildView(ViewDescriptor viewRequest) throws Exception {
-        ViewBinding binding = viewModelProvider.getBindingForRequest(viewRequest);
-        if (binding == null) {
-            LOG.info("No view binding found to process request %s", viewRequest);
-            return ViewResponse.error();
+    public List<ViewResponse> buildViews(List<ViewDescriptor> viewRequests) throws Exception {
+        ViewRequestBatch requestBatch = new ViewRequestBatch(viewRequests);
+
+        for (ViewDescriptor descriptor : viewRequests) {
+            ViewBinding binding = viewModelProvider.getBindingForRequest(descriptor);
+            if (binding == null) {
+                LOG.info("No view binding found to process request %s", viewRequests);
+                requestBatch.setResponse(descriptor, ViewResponse.error());
+            } else {
+                requestBatch.setBinding(descriptor, binding);
+            }
         }
 
-        ObjectId initialId = findInitialId(viewRequest, binding);
-        if (initialId == null) {
-            return ViewResponse.notFound();
-        }
+        findInitialIds(requestBatch);
 
-        ViewAccumulator<ObjectNode> accumulator = new ViewAccumulator<>(initialId, binding.getModelPaths(), viewPermissionChecker, existenceChecker);
+        ViewAccumulator<ObjectNode> accumulator =
+            new ViewAccumulator<>(requestBatch.getPendingRequestPaths(), viewPermissionChecker, existenceChecker);
 
-        Multimap<String, ViewReference> requestsToMake;
+        Map<ViewDescriptor, Multimap<String, ViewReference>> requestsToMake;
 
         while (!(requestsToMake = accumulator.buildNextViewLevel()).isEmpty()) {
-            referenceGatherer.gatherReferenceResults(viewRequest.getTenantIdAndCentricId(), requestsToMake);
+            referenceGatherer.gatherReferenceResults(requestsToMake);
             accumulator.addRefResults(requestsToMake);
         }
 
-        valueGatherer.gatherValueResults(viewRequest.getTenantIdAndCentricId(), accumulator.getViewValues());
+        valueGatherer.gatherValueResults(accumulator.getViewValues(requestBatch.getPendingRequests()));
 
-        ObjectNode responseBody = accumulator.formatResults(viewRequest.getTenantId(), viewRequest.getActorId(), viewFormatter);
-        if (accumulator.forbidden()) {
-            return ViewResponse.forbidden();
-        } else {
-            return getView(viewRequest.getTenantId(), viewRequest.getViewId(), ViewResponse.ok(responseBody));
+        for (ViewDescriptor viewRequest : requestBatch.getPendingRequests()) {
+            ViewFormatter<ObjectNode> viewFormatter = viewFormatterProvider.createViewFormatter();
+            ObjectNode responseBody = accumulator.formatResults(viewRequest, viewFormatter);
+            if (accumulator.forbidden(viewRequest)) {
+                requestBatch.setResponse(viewRequest, ViewResponse.forbidden());
+            } else {
+                ViewResponse response = getView(viewRequest.getTenantId(), viewRequest.getViewId(), ViewResponse.ok(responseBody));
+                requestBatch.setResponse(viewRequest, response);
+            }
         }
 
+        return requestBatch.inOrderResponses(viewRequests);
     }
 
-    private ObjectId findInitialId(ViewDescriptor viewDescriptor, ViewBinding binding) throws Exception {
-        Id rootId = viewDescriptor.getViewId().getId();
+    private void findInitialIds(ViewRequestBatch requestBatch) throws Exception {
+
+        Map<ViewDescriptor, Set<ObjectId>> allPotentialRoots = new HashMap<>();
+        for (ViewDescriptor request : requestBatch.getPendingRequests()) {
+            ViewBinding binding = requestBatch.getBinding(request);
+            Set<ObjectId> potential = getPotentialRoots(request, binding);
+            if (potential.isEmpty()) {
+                requestBatch.setResponse(request, ViewResponse.error());
+            } else {
+                allPotentialRoots.put(request, potential);
+            }
+        }
+
+        Map<ViewDescriptor, ObjectId> foundRoots = valueGatherer.lookupEventIds(allPotentialRoots);
+        for (ViewDescriptor descriptor : requestBatch.getPendingRequests()) {
+            ObjectId root = foundRoots.get(descriptor);
+            if (root == null) {
+                requestBatch.setResponse(descriptor, ViewResponse.notFound());
+            } else {
+                requestBatch.setRootObject(descriptor, root);
+            }
+        }
+    }
+
+    private Set<ObjectId> getPotentialRoots(ViewDescriptor request, ViewBinding binding) {
+        Id rootId = request.getViewId().getId();
         Set<ObjectId> potentialRoots = new HashSet<>();
         for (String eventClass : binding.getModelPaths().get(0).getRootClassNames()) {
             potentialRoots.add(new ObjectId(eventClass, rootId));
         }
 
-        Set<ObjectId> foundRoots = valueGatherer.lookupEventIds(viewDescriptor.getTenantIdAndCentricId(), potentialRoots);
+        return potentialRoots;
 
-        if (foundRoots.size() > 1) {
-            LOG.warn("Unexpectedly found more than one root object for view id " + viewDescriptor.getViewId() + " found " + foundRoots);
+    }
+
+    //state for one in flight batch of view requests
+    private static class ViewRequestBatch {
+
+        private final Map<ViewDescriptor, ViewRequestContext> requestContexts = new HashMap<>();
+
+        private ViewRequestBatch(List<ViewDescriptor> requests) {
+            for (ViewDescriptor request : requests) {
+                requestContexts.put(request, new ViewRequestContext());
+            }
         }
 
-        return foundRoots.isEmpty() ? null : foundRoots.iterator().next();
+        private void setResponse(ViewDescriptor request, ViewResponse response) {
+            ViewRequestContext context = Preconditions.checkNotNull(requestContexts.get(request));
+            context.response = response;
+        }
+
+        private void setBinding(ViewDescriptor request, ViewBinding binding) {
+            ViewRequestContext context = Preconditions.checkNotNull(requestContexts.get(request));
+            context.viewBinding = binding;
+        }
+
+        private ViewBinding getBinding(ViewDescriptor request) {
+            ViewRequestContext context = Preconditions.checkNotNull(requestContexts.get(request));
+            return context.viewBinding;
+        }
+
+        private void setRootObject(ViewDescriptor request, ObjectId viewRoot) {
+            ViewRequestContext context = Preconditions.checkNotNull(requestContexts.get(request));
+            context.viewRoot = viewRoot;
+        }
+
+        private Iterable<ViewDescriptor> getPendingRequests() {
+            return Iterables.filter(requestContexts.keySet(), new Predicate<ViewDescriptor>() {
+                @Override
+                public boolean apply(ViewDescriptor t) {
+                    return requestContexts.get(t).response == null;
+                }
+            });
+        }
+
+        private Map<ViewDescriptor, RootAndPaths> getPendingRequestPaths() {
+            Map<ViewDescriptor, RootAndPaths> allPaths = new HashMap<>();
+            for (ViewDescriptor descriptor : getPendingRequests()) {
+                ViewRequestContext context = requestContexts.get(descriptor);
+                allPaths.put(descriptor, new RootAndPaths(context.viewRoot, context.viewBinding.getModelPaths()));
+            }
+
+            return allPaths;
+        }
+
+        private List<ViewResponse> inOrderResponses(List<ViewDescriptor> viewRequests) {
+            List<ViewResponse> responses = new ArrayList<>();
+            for (ViewDescriptor request : viewRequests) {
+                responses.add(requestContexts.get(request).response);
+            }
+
+            return responses;
+        }
+    }
+
+    private static class ViewRequestContext {
+
+        ViewDescriptor viewDescriptor;
+        ViewBinding viewBinding;
+        ObjectId viewRoot;
+        ViewResponse response;
     }
 }

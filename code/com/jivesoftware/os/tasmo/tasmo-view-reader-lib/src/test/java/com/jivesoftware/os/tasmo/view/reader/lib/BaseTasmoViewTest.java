@@ -224,7 +224,7 @@ public class BaseTasmoViewTest {
 
 
         viewReader = new ReadTimeViewMaterializer(viewModelProvider, new ReferenceGatherer(batchingReferenceStore),
-            new ValueGatherer(batchingEventValueStore), new JsonViewFormatter(mapper, eventProvider), viewPermissionChecker(), existenceChecker());
+            new ValueGatherer(batchingEventValueStore), new JsonViewFormatterProvider(mapper, eventProvider), viewPermissionChecker(), existenceChecker());
 
         permittedIds.clear();
 
