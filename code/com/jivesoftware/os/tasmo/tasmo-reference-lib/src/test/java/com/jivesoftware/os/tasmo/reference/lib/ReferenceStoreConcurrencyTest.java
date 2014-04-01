@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.testng.Assert;
@@ -34,7 +34,7 @@ import org.testng.annotations.Test;
  */
 public class ReferenceStoreConcurrencyTest {
 
-    @Test(invocationCount = 500, singleThreaded = false)
+    @Test(invocationCount = 1, singleThreaded = false)
     public void testConcurrencyMultiRefStore() throws Exception {
 
         //System.out.println("\n |--> BEGIN \n");
@@ -72,7 +72,7 @@ public class ReferenceStoreConcurrencyTest {
             }
         }
 
-        Executor executor = Executors.newCachedThreadPool();
+        ExecutorService executor = Executors.newCachedThreadPool();
         final CountDownLatch latch = new CountDownLatch(eventCount);
         for (final Event e : events) {
             executor.execute(new Runnable() {
@@ -90,6 +90,7 @@ public class ReferenceStoreConcurrencyTest {
         }
 
         latch.await();
+        executor.shutdownNow();
         //Thread.sleep(1000);
         //System.out.println("------------------------------------------------");
 
