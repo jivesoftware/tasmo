@@ -66,8 +66,6 @@ public class PathTraversalContext {
         this.modelPathIdState = new PathId[numberOfPathIds];
         this.modelPathVersionState = new ArrayList<>();
         this.removalContext = removalContext;
-
-        // A.a -> B
     }
 
     public long getThreadTimestamp() {
@@ -94,14 +92,16 @@ public class PathTraversalContext {
     @Override
     public String toString() {
         return "ViewFieldContext{"
-                + "modelPathIdState=" + modelPathIdState
+                + "modelPathIdState=" + Arrays.toString(modelPathIdState)
                 + "modelPathVersionState=" + modelPathVersionState
                 + ", rawFieldValue=" + leafNodeFields
                 + '}';
     }
 
     public List<ReferenceWithTimestamp> populateLeafNodeFields(TenantIdAndCentricId tenantIdAndCentricId,
-            EventValueStore eventValueStore, ObjectId objectInstanceId, List<String> fieldNames) {
+            EventValueStore eventValueStore,
+            ObjectId objectInstanceId, List<String> fieldNames) {
+
         LeafNodeFields fieldsToPopulate = writtenEventProvider.createLeafNodeFields();
         long latestTimestamp = writtenEvent.getEventId();
         List<ReferenceWithTimestamp> versions = new ArrayList<>();
@@ -164,7 +164,7 @@ public class PathTraversalContext {
                 Arrays.copyOf(modelPathIdState, modelPathIdState.length),
                 new ArrayList<>(modelPathVersionState),
                 leafNodeFields.toStringForm(),
-                threadTimestamp); //getHighWaterTimestamp());
+                threadTimestamp);
         changes.add(update);
     }
 

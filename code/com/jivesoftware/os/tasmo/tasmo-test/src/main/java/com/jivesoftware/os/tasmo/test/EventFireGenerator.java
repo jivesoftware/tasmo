@@ -33,7 +33,6 @@ public class EventFireGenerator {
 
     private final TenantId tenant;
     private final Id actor;
-    public static final int FANOUT = 2;
 
     public EventFireGenerator(TenantId tenant, Id actor) {
         this.tenant = tenant;
@@ -60,7 +59,7 @@ public class EventFireGenerator {
 
         ModelPath path = new ModelPath("testpath", steps);
 
-        EventsAndViewId eventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProvider, path, idProvider.nextId());
+        EventsAndViewId eventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProvider, path, idProvider.nextId(), 2);
 
         for (EventFire eventFire : eventFireGenerator.generateEventFireCombinationsForPath("TestView", eventsAndViewId, path)) {
             StringBuilder builder = new StringBuilder("Event fire: ");
@@ -94,19 +93,19 @@ public class EventFireGenerator {
         return eventFires;
     }
 
-    public EventsAndViewId deriveEventsFromPath(IdProvider idProvider, ModelPath path, Id viewId) {
+    public EventsAndViewId deriveEventsFromPath(IdProvider idProvider, ModelPath path, Id viewId, int fanOut) {
         List<Event> events = new ArrayList<>();
 
         IdTreeNode rootId = new IdTreeNode(null, viewId);
 
-        generateIdsForPathStep(idProvider, rootId, 0, path);
+        generateIdsForPathStep(idProvider, rootId, 0, path, fanOut);
 
         generateEventsForPathStep(rootId, 0, path, events);
 
         return new EventsAndViewId(viewId, events, rootId);
     }
 
-    private void generateIdsForPathStep(IdProvider idProvider, IdTreeNode previousId, int pathIndex, ModelPath path) {
+    private void generateIdsForPathStep(IdProvider idProvider, IdTreeNode previousId, int pathIndex, ModelPath path, int fanOut) {
         if (pathIndex < path.getPathMemberSize()) {
             ModelPathStep currentStep = path.getPathMembers().get(pathIndex);
             ModelPathStepType currentType = currentStep.getStepType();
@@ -114,19 +113,19 @@ public class EventFireGenerator {
             switch (currentType) {
                 case ref:
                     IdTreeNode referencedId = new IdTreeNode(previousId, idProvider.nextId());
-                    generateIdsForPathStep(idProvider, referencedId, pathIndex + 1, path);
+                    generateIdsForPathStep(idProvider, referencedId, pathIndex + 1, path, fanOut);
                     break;
                 case refs:
                 case backRefs:
                 case count:
-                    for (int i = 0; i < FANOUT; i++) {
+                    for (int i = 0; i < fanOut; i++) {
                         IdTreeNode idTreeNode = new IdTreeNode(previousId, idProvider.nextId());
-                        generateIdsForPathStep(idProvider, idTreeNode, pathIndex + 1, path);
+                        generateIdsForPathStep(idProvider, idTreeNode, pathIndex + 1, path, fanOut);
                     }
                     break;
                 case latest_backRef:
                     IdTreeNode referencingId = new IdTreeNode(previousId, idProvider.nextId());
-                    generateIdsForPathStep(idProvider, referencingId, pathIndex + 1, path);
+                    generateIdsForPathStep(idProvider, referencingId, pathIndex + 1, path, fanOut);
                     break;
                 case value:
                     return; //id for this node was generated in the previous step

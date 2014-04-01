@@ -55,15 +55,21 @@ public class InitiateValueTraversal implements EventProcessor {
             if (writtenInstance.hasField(key.getTriggerFieldName())) {
 
                 if (writtenInstance.isDeletion()) {
+
                     for (PathTraverser pathTraverser : traversers.get(key)) {
-                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext,
-                                writtenEvent, threadTimestamp, true);
-                        context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
-                        List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(tenantIdAndCentricId, eventValueStore,
-                                instanceId, pathTraverser.getInitialFieldNames());
-                        context.addVersions(valueVersions);
-                        pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(instanceId, timestamp));
-                        context.commit(tenantIdAndCentricId, pathTraverser);
+
+                        long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId, instanceId, "*exists*", timestamp);
+                        if (highest <= timestamp) {
+
+                            PathTraversalContext context = pathTraverser.createContext(writtenEventContext,
+                                    writtenEvent, threadTimestamp, true);
+                            context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
+                            List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(tenantIdAndCentricId, eventValueStore,
+                                    instanceId, pathTraverser.getInitialFieldNames());
+                            context.addVersions(valueVersions);
+                            pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(instanceId, timestamp));
+                            context.commit(tenantIdAndCentricId, pathTraverser);
+                        }
                     }
                 } else {
 

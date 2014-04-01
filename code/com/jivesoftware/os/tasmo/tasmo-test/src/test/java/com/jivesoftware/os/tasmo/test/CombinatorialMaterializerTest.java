@@ -59,6 +59,7 @@ public class CombinatorialMaterializerTest {
     private final long seed = 1389045159990L;
     private final boolean verbose = true;
     private final int maxStepDepth = 4; // TODO change back to 4
+    private final int maxFanOut = 2;
     //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
     private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
     private final Executor executor = Executors.newCachedThreadPool();
@@ -288,7 +289,7 @@ public class CombinatorialMaterializerTest {
             public Object[] apply(ModelPath path) {
                 OrderIdProvider idProvider = monatomic(0);
                 IdProviderImpl idProviderImpl = new IdProviderImpl(idProvider);
-                EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId());
+                EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId(), maxFanOut);
                 ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
                 long highestId = idProvider.nextId();
 
@@ -333,7 +334,7 @@ public class CombinatorialMaterializerTest {
             public Iterator<Object[]> apply(final ModelPath path) {
                 OrderIdProvider initialIdProvider = monatomic(0);
                 IdProviderImpl idProviderImpl = new IdProviderImpl(initialIdProvider);
-                final EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId());
+                final EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId(), maxFanOut);
                 final ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
                 final Set<Id> deletedIds = new HashSet<>();
                 long highestId = initialIdProvider.nextId();
@@ -384,7 +385,7 @@ public class CombinatorialMaterializerTest {
 
             OrderIdProvider initialIdProvider = monatomic(0);
             IdProviderImpl idProviderImpl = new IdProviderImpl(initialIdProvider);
-            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId());
+            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId(), maxFanOut);
             ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
             long highestId = initialIdProvider.nextId();
 
@@ -453,7 +454,7 @@ public class CombinatorialMaterializerTest {
 
             OrderIdProvider initialIdProvider = monatomic(0);
             IdProviderImpl idProviderImpl = new IdProviderImpl(initialIdProvider);
-            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId());
+            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId(), maxFanOut);
             ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
             long highestId = initialIdProvider.nextId();
 
@@ -466,7 +467,7 @@ public class CombinatorialMaterializerTest {
             JsonEventConventions jec = new JsonEventConventions();
             for (int i = 0; i < path.getPathMemberSize(); i++) {
 
-                for (int j = 1; j < 2; j++) {
+                for (int j = 1; j < 3; j++) {
 
                     // Case: build up and then delete at a depth and breadth delete
                     List<Event> deleteEvents = eventFire.createDeletesAtDepth(tenantId, actorId, i, j);
@@ -474,6 +475,9 @@ public class CombinatorialMaterializerTest {
                     for (Event evt : deleteEvents) {
                         deletedIds.add(evt.getObjectId().getId());
                     }
+//                    if (deletedIds.size() > 1) {
+//                        System.out.println("JBOOYA "+deletedIds.size());
+//                    }
                     List<Event> events = deriedEventsAndViewId.getEvents();
 
                     List<Event> undeletes = new ArrayList<>();
@@ -643,7 +647,7 @@ public class CombinatorialMaterializerTest {
             } else if (nextNode.isObject()) { //handles ref and latest_backref
                 assertViewElementExists(path, pathIndex + 1, (ObjectNode) nextNode, expectedFieldValues, resultAccumulator);
             } else if (nextNode.isInt()) { //handles count
-                resultAccumulator.add(assertCountField((IntNode) nextNode, refField, EventFireGenerator.FANOUT));
+                resultAccumulator.add(assertCountField((IntNode) nextNode, refField, maxFanOut));
             } else {
                 resultAccumulator.add(new AssertionResult(false, "Element view data for path element " + step + " was an unexpected type: " + nextNode));
             }

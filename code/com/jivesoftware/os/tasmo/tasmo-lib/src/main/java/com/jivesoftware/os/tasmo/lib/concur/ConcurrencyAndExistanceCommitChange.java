@@ -52,7 +52,9 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
             for (PathId ref : c.getModelPathInstanceIds()) {
                 ids.add(ref.getObjectId());
             }
-            if (c.getType() == ViewFieldChange.ViewFieldChangeType.remove || existence.containsAll(ids)) {
+            if (c.getType() == ViewFieldChange.ViewFieldChangeType.remove) {
+                acceptableChanges.add(c);
+            } else if (existence.containsAll(ids)) {
                 acceptableChanges.add(c);
             } else {
                 traceLogging(ids, existence, c);
@@ -67,7 +69,6 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
                         c.getTimestamp()));
             }
         }
-
 
         // TODO re-write to use batching!
         for (ViewFieldChange fieldChange : acceptableChanges) {
