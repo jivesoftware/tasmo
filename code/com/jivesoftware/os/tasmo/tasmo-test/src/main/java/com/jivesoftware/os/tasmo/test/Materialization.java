@@ -31,8 +31,11 @@ import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
+import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
@@ -314,6 +317,14 @@ public class Materialization {
                 commitChange);
 
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
+                new WrittenEventProcessorDecorator() {
+
+                    @Override
+                    public WrittenEventProcessor decorateWrittenEventProcessor(WrittenEventProcessor writtenEventProcessor) {
+                        return new EventBookKeeper(writtenEventProcessor);
+
+                    }
+                },
                 tasmoViewModel,
                 getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),

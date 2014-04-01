@@ -20,8 +20,9 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel.FieldNameAndType;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
-import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
@@ -47,6 +48,7 @@ public class TasmoViewMaterializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TasmoEventBookkeeper tasmoEventBookkeeper;
+    private final WrittenEventProcessorDecorator writtenEventProcessorDecorator;
     private final TasmoViewModel tasmoViewModel;
     private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
     private final WrittenInstanceHelper writtenInstanceHelper;
@@ -57,6 +59,7 @@ public class TasmoViewMaterializer {
     private final StripingLocksProvider<ObjectId> instanceIdLocks = new StripingLocksProvider<>(1024);
 
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
+            WrittenEventProcessorDecorator writtenEventProcessorDecorator,
             TasmoViewModel tasmoViewModel,
             ViewChangeNotificationProcessor viewChangeNotificationProcessor,
             WrittenInstanceHelper writtenInstanceHelper,
@@ -66,6 +69,7 @@ public class TasmoViewMaterializer {
             OrderIdProvider threadTime
     ) {
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
+        this.writtenEventProcessorDecorator = writtenEventProcessorDecorator;
         this.tasmoViewModel = tasmoViewModel;
         this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
         this.writtenInstanceHelper = writtenInstanceHelper;
@@ -174,8 +178,9 @@ public class TasmoViewMaterializer {
                 LOG.info("attempts " + attempts);
             }
             try {
-                EventBookKeeper eventBookKeeper = new EventBookKeeper(initiateTraversal);
-                eventBookKeeper.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+
+                WrittenEventProcessor writtenEventProcessor = writtenEventProcessorDecorator.decorateWrittenEventProcessor(initiateTraversal);
+                writtenEventProcessor.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
                 processed.add(writtenEvent);
                 break;
             } catch (Exception e) {
