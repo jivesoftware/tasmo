@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.jivesoftware.os.tasmo.inheritance.poms</groupId>
         <artifactId>global-repo-management</artifactId>
-        <version>0.3</version>
+        <version>0.4-SNAPSHOT</version>
         <relativePath>../global-repo-management/pom.xml</relativePath>
     </parent>
     <artifactId>global-version-management</artifactId>
@@ -18,43 +18,43 @@
             <dependency>
                 <groupId>com.jivesoftware.os.tasmo</groupId>
                 <artifactId>tasmo-reference-lib</artifactId>
-                <version>0.3</version>
+                <version>0.4-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.tasmo</groupId>
                 <artifactId>tasmo-lib</artifactId>
-                <version>0.3</version>
+                <version>0.4-SNAPSHOT</version>
                 <type>jar</type>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.tasmo</groupId>
                 <artifactId>tasmo-view-reader-service</artifactId>
-                <version>0.3</version>
+                <version>0.4-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.tasmo</groupId>
                 <artifactId>tasmo-view-reader-api</artifactId>
-                <version>0.3</version>
+                <version>0.4-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.tasmo</groupId>
                 <artifactId>tasmo-configuration</artifactId>
-                <version>0.3</version>
+                <version>0.4-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.tasmo</groupId>
                 <artifactId>tasmo-id</artifactId>
-                <version>0.3</version>
+                <version>0.4-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.tasmo</groupId>
                 <artifactId>tasmo-model</artifactId>
-                <version>0.3</version>
+                <version>0.4-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.tasmo</groupId>
                 <artifactId>tasmo-event-api</artifactId>
-                <version>0.3</version>
+                <version>0.4-SNAPSHOT</version>
                 <type>jar</type>
             </dependency>
 
