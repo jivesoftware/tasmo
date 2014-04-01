@@ -6,13 +6,21 @@ package com.jivesoftware.os.tasmo.test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterators;
+import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
+import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
+import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantIdAndRow;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
+import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.IdProviderImpl;
+import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
@@ -20,15 +28,25 @@ import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.log4j.Appender;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.PatternLayout;
+import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -37,9 +55,14 @@ import org.testng.annotations.Test;
  */
 public class CombinatorialMaterializerTest {
 
-    private long seed = System.currentTimeMillis();
-    //private final long seed = 1389045159990L;
-    private final boolean verbose = false;
+    //private long seed = System.currentTimeMillis();
+    private final long seed = 1389045159990L;
+    private final boolean verbose = true;
+    private final int maxStepDepth = 4; // TODO change back to 4
+    private final int maxFanOut = 2;
+    //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
+    private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
+    private final Executor executor = Executors.newCachedThreadPool();
 
     private void println(Object line) {
         if (verbose) {
@@ -47,36 +70,69 @@ public class CombinatorialMaterializerTest {
         }
     }
 
-    @Test (dataProvider = "totalOrderAdds")
-    public void testTotalOrderAdds(InputCase inputCase)
-        throws Throwable {
-        assertCombination(inputCase);
+    @BeforeClass
+    public void logger() {
+        String PATTERN = "%t %m%n";
+
+        Enumeration allAppenders = LogManager.getRootLogger().getAllAppenders();
+        while (allAppenders.hasMoreElements()) {
+            Appender appender = (Appender) allAppenders.nextElement();
+            appender.setLayout(new PatternLayout(PATTERN));
+        }
+        //LogManager.getLogger("com.jivesoftware.os.tasmo").setLevel(Level.TRACE);
+//        LogManager.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange").setLevel(Level.TRACE);
+//        LogManager.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore").setLevel(Level.TRACE);
+//        LogManager.getLogger("com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore").setLevel(Level.TRACE);
     }
 
-    @Test (dataProvider = "unorderedAdds")
-    public void testUnorderedAdds(InputCase inputCase)
-        throws Throwable {
-        assertCombination(inputCase);
+    @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
+    public void testSingleThreadedTotalOrderAdds(InputCase inputCase)
+            throws Throwable {
+        assertCombination(inputCase, null, false);
     }
 
-    @Test (dataProvider = "addsThenRemoves")
-    public void testAddsThenRemoves(InputCase inputCase)
-        throws Throwable {
-        assertCombination(inputCase);
+    @Test(dataProvider = "unorderedAdds", invocationCount = 1, singleThreaded = true)
+    public void testSingleThreadedUnorderedAdds(InputCase inputCase)
+            throws Throwable {
+        assertCombination(inputCase, null, false);
     }
 
-    @Test (dataProvider = "addsThenRemovesThenAdds")
-    public void testAddsThenRemovesThenAdds(InputCase inputCase)
-        throws Throwable {
-        assertCombination(inputCase);
+    @Test(dataProvider = "totalOrderAdds", invocationCount = 2, singleThreaded = true)
+    public void testMultiThreadedAddsOnly(InputCase inputCase)
+            throws Throwable {
+        assertCombination(inputCase, null, true);
     }
 
-    private void assertCombination(InputCase ic) throws Throwable {
+    @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
+    public void testSingleThreadedAddsThenRemoves(InputCase inputCase)
+            throws Throwable {
+        assertCombination(inputCase, null, false);
+    }
+
+    @Test(dataProvider = "addsThenRemoves", invocationCount = 2, singleThreaded = true)
+    public void testMultiThreadedAddsThenRemoves(InputCase inputCase)
+            throws Throwable {
+
+        assertCombination(inputCase, null, true);
+    }
+
+    @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
+    public void testSingleThreadedAddsThenRemovesThenAdds(InputCase inputCase)
+            throws Throwable {
+        assertCombination(inputCase, null, false);
+    }
+
+    @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 2, singleThreaded = true)
+    public void testMultiThreadedAddsThenRemovesThenAdds(InputCase inputCase)
+            throws Throwable {
+        assertCombination(inputCase, null, true);
+    }
+
+    private void assertCombination(final InputCase ic, Long onlyRunTestId, boolean multiThreadWrites) throws Throwable {
         try {
-//            if (testId != 97) {
-//                return;
-//            }
-
+            if (onlyRunTestId != null && onlyRunTestId != ic.testId) {
+                return;
+            }
             println("***** category:" + ic.category + " testId:" + ic.testId + " BINDING *****");
             println(ic.binding);
             Expectations expectations = ic.materialization.initModelPaths(tenantIdAndCentricId.getTenantId(), Arrays.asList(ic.binding));
@@ -88,10 +144,16 @@ public class CombinatorialMaterializerTest {
             }
 
             println("***** category:" + ic.category + " testId:" + ic.testId + " FIRING EVENTS (" + firedEvents.size() + ") *****");
-            ic.eventWriterProvider.eventWriter().write(firedEvents);
+            if (multiThreadWrites) {
+                fireEventInParallel(firedEvents, ic);
+            } else {
+                for (Event evt : firedEvents) {
+                    ic.eventWriterProvider.eventWriter().write(evt);
+                }
+            }
 
             println("***** category:" + ic.category + " testId:" + ic.testId + " BUILDING ASSERTIONS *****");
-            expectations.buildExpectations(expectations, ic.binding, ic.input, ic.deletedId);
+            expectations.buildExpectations(ic.testId, expectations, ic.binding, ic.input, ic.deletedId);
 
             println("***** category:" + ic.category + " testId:" + ic.testId + " ASSERTING *****");
             expectations.assertExpectation(tenantIdAndCentricId);
@@ -101,139 +163,237 @@ public class CombinatorialMaterializerTest {
             ObjectNode view = ic.materialization.readView(tenantIdAndCentricId, actorId, ic.input.getViewId());
             println(ic.materialization.mapper.writeValueAsString(view));
 
-            // TODO RE-WORK SO IT WORKS WITH ALL CASES
-            //        List<AssertionResult> allBranchResults = new ArrayList<>();
-            //        assertViewElementExists(
-            //                binding.getModelPaths().get(0).getPathMembers(), 0, view, input.getLeafNodeFields(), allBranchResults);
-            //
-            //        for (AssertionResult result : allBranchResults) {
-            //            Assert.assertTrue(result.isPassed(), result.getMessage());
-            //        }
+            if (!ic.category.equals("removes")) {
+                List<AssertionResult> allBranchResults = new ArrayList<>();
+                assertViewElementExists(ic.binding.getModelPaths().get(0).getPathMembers(), 0, view, ic.input.getLeafNodeFields(), allBranchResults);
+
+                for (AssertionResult result : allBranchResults) {
+                    Assert.assertTrue(result.isPassed(), result.getMessage());
+                }
+            }
 
             System.out.println("***** category:" + ic.category + " testId:" + ic.testId + " PASSED *****");
+            System.out.println("\n\n");
+
         } catch (Throwable t) {
             System.out.println("Test:testAllModelPathCombinationsAndEventFireCombinations: category:" + ic.category
-                + " testId:" + ic.testId + " seed:" + seed + " Failed.");
+                    + " testId:" + ic.testId + " seed:" + seed + " Failed.");
             t.printStackTrace();
+
             if (verbose) {
+                System.out.println(Thread.currentThread() + " |--> testId:" + ic.testId + " seed:" + seed + " Failed.");
+                System.out.println(Thread.currentThread() + " |--> REASON ");
+                System.out.println(Thread.currentThread() + " |--> " + t.getMessage() + " " + t.getClass());
+                System.out.println(Thread.currentThread() + " |--> FAILED " + verbose);
+
+                ic.materialization.rawViewValueStore.getAllRowKeys(100, null, new CallbackStream<TenantIdAndRow<TenantIdAndCentricId, ImmutableByteArray>>() {
+
+                    @Override
+                    public TenantIdAndRow<TenantIdAndCentricId, ImmutableByteArray> callback(
+                            final TenantIdAndRow<TenantIdAndCentricId, ImmutableByteArray> row) throws Exception {
+                        if (row != null) {
+                            ic.materialization.rawViewValueStore.getEntrys(row.getTenantId(), row.getRow(), null, Long.MAX_VALUE, 1000, false, null, null,
+                                    new CallbackStream<ColumnValueAndTimestamp<ImmutableByteArray, String, Long>>() {
+
+                                        @Override
+                                        public ColumnValueAndTimestamp<ImmutableByteArray, String, Long> callback(
+                                                ColumnValueAndTimestamp<ImmutableByteArray, String, Long> value) throws Exception {
+                                                    if (value != null) {
+
+                                                        System.out.println(" |--> " + rowKey(row.getRow())
+                                                                + " | " + columnKey(value.getColumn())
+                                                                + " | " + value.getValue() + " | " + value.getTimestamp());
+                                                    }
+                                                    return value;
+                                                }
+                                    });
+                        }
+                        return row;
+                    }
+                });
                 System.exit(0);
             }
             throw t;
         }
     }
+
+    private void fireEventInParallel(List<Event> batch, final InputCase ic) throws InterruptedException {
+        final CountDownLatch latch = new CountDownLatch(batch.size());
+        final AtomicLong errors = new AtomicLong();
+        final JsonEventConventions jec = new JsonEventConventions();
+        for (final Event b : batch) {
+            executor.execute(new Runnable() {
+
+                @Override
+                public void run() {
+                    Thread.currentThread().setName("thread-for-event-" + jec.getEventId(b.toJson()));
+                    try {
+                        ic.eventWriterProvider.eventWriter().write(Arrays.asList(b));
+                    } catch (EventWriteException ex) {
+                        ex.printStackTrace();
+                        errors.incrementAndGet();
+                    }
+                    latch.countDown();
+                }
+            });
+        }
+        latch.await();
+        if (errors.get() > 0) {
+            if (verbose) {
+                println("Encountered errors while sending events.");
+                System.exit(0);
+            }
+            Assert.fail("Encountered errors while sending events.");
+        }
+    }
+
+    public ObjectId rowKey(ImmutableByteArray viewObjectId) throws IOException {
+        return new ObjectId(ByteBuffer.wrap(viewObjectId.getImmutableBytes()));
+    }
+
+    private String columnKey(ImmutableByteArray bytes) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        ByteBuffer buf = ByteBuffer.wrap(bytes.getImmutableBytes());
+        int pathHashCode = buf.getInt();
+        int classesHashCode = buf.getInt();
+        sb.append(pathHashCode).append(".").append(classesHashCode).append("[");
+        while (buf.remaining() > 0) {
+            byte length = buf.get();
+            byte[] id = new byte[length];
+            buf.get(id);
+            sb.append(new Id(id).toStringForm()).append(" ");
+        }
+        sb.append(']');
+        return sb.toString();
+    }
+
     private final OrderIdProviderGenerator orderIdProviderGenerator = new OrderIdProviderGenerator();
     private final TenantId tenantId = new TenantId("test");
     private final TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
     private final Id actorId = new Id(100000000);
     private final ModelPathGenerator pathGenerator = new ModelPathGenerator();
     private final EventFireGenerator eventFireGenerator = new EventFireGenerator(tenantId, actorId);
-    private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
 
-    @DataProvider (name = "totalOrderAdds")
+    @DataProvider(name = "totalOrderAdds")
     public Iterator<Object[]> provideTotalOrderAdds() throws Exception {
-        seed = System.currentTimeMillis();
-        List<ViewBinding> viewBindings = buildBindings(stepTypes, 4);
+        List<ViewBinding> viewBindings = buildBindings(stepTypes, maxStepDepth);
 
-        List<Object[]> paramList = new ArrayList<>();
-        ViewBinding binding = viewBindings.get(0);
-        long testId = 0;
+        final ViewBinding binding = viewBindings.get(0);
 
         // Straight Adds
-        for (ModelPath path : viewBindings.get(0).getModelPaths()) {
+        List<ModelPath> modelPaths = viewBindings.get(0).getModelPaths();
+        return Iterators.transform(modelPaths.iterator(), new Function<ModelPath, Object[]>() {
+            long testId = 0;
 
-            OrderIdProvider idProvider = monatomic(0);
-            IdProviderImpl idProviderImpl = new IdProviderImpl(idProvider);
-            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId());
-            ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
-            long highestId = idProvider.nextId();
+            @Override
+            public Object[] apply(ModelPath path) {
+                OrderIdProvider idProvider = monatomic(0);
+                IdProviderImpl idProviderImpl = new IdProviderImpl(idProvider);
+                EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId(), maxFanOut);
+                ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
+                long highestId = idProvider.nextId();
 
-            Materialization materialization = new Materialization();
-            materialization.setupModelAndMaterializer();
-            idProvider = monatomic(highestId);
-            EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
-            Set<Id> deletedIds = new HashSet<>();
+                Materialization materialization = new Materialization();
+                try {
+                    materialization.setupModelAndMaterializer();
+                } catch (Exception x) {
+                    throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
+                }
+                idProvider = monatomic(highestId);
+                EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
+                Set<Id> deletedIds = new HashSet<>();
 
-            // Case: Entirely new adds
-            EventFire eventFire = new EventFire(viewId,
-                deriedEventsAndViewId.getEvents(),
-                path.getPathMembers().get(path.getPathMemberSize() - 1),
-                deriedEventsAndViewId.getIdTree());
+                // Case: Entirely new adds
+                EventFire eventFire = new EventFire(viewId,
+                        deriedEventsAndViewId.getEvents(),
+                        path.getPathMembers().get(path.getPathMemberSize() - 1),
+                        deriedEventsAndViewId.getIdTree());
 
-            paramList.add(buildParamaterListItem("adds",
-                testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, deletedIds));
-            testId++;
-        }
+                Object[] buildParamaterListItem = buildParamaterListItem("adds",
+                        testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, deletedIds);
+                testId++;
+                return buildParamaterListItem;
+            }
+        });
 
-        return paramList.iterator();
     }
 
-    @DataProvider (name = "unorderedAdds")
+    @DataProvider(name = "unorderedAdds")
     public Iterator<Object[]> provideUnorderedAdds() throws Exception {
-        seed = System.currentTimeMillis();
-        List<ViewBinding> viewBindings = buildBindings(stepTypes, 4);
+        List<ViewBinding> viewBindings = buildBindings(stepTypes, maxStepDepth);
+
+        final ViewBinding binding = viewBindings.get(0);
+        final int randomBatchSize = 2;
+
+        List<ModelPath> modelPaths = viewBindings.get(0).getModelPaths();
+        // Shuffled Adds
+        Iterator<Iterator<Object[]>> transform = Iterators.transform(modelPaths.iterator(), new Function<ModelPath, Iterator<Object[]>>() {
+            long testId = 0;
+
+            @Override
+            public Iterator<Object[]> apply(final ModelPath path) {
+                OrderIdProvider initialIdProvider = monatomic(0);
+                IdProviderImpl idProviderImpl = new IdProviderImpl(initialIdProvider);
+                final EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId(), maxFanOut);
+                final ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
+                final Set<Id> deletedIds = new HashSet<>();
+                long highestId = initialIdProvider.nextId();
+
+                // Case: Entirely new adds with shuffled eventIds. Ensures delivery and time stamp order doesn't matter.
+                List<OrderIdProvider> idProviders = orderIdProviderGenerator.generateOrderIdProviders(seed, highestId,
+                        new IdBatchConfig(Order.shuffle, deriedEventsAndViewId.getEvents().size(), randomBatchSize));
+
+                return Iterators.transform(idProviders.iterator(), new Function<OrderIdProvider, Object[]>() {
+
+                    @Override
+                    public Object[] apply(OrderIdProvider idProvider) {
+                        Materialization materialization = new Materialization();
+                        try {
+                            materialization.setupModelAndMaterializer();
+                        } catch (Exception x) {
+                            throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
+                        }
+                        EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
+                        EventFire eventFire = new EventFire(viewId,
+                                deriedEventsAndViewId.getEvents(),
+                                path.getPathMembers().get(path.getPathMemberSize() - 1),
+                                deriedEventsAndViewId.getIdTree());
+
+                        Object[] buildParamaterListItem = buildParamaterListItem("addsRandomOrder",
+                                testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, deletedIds);
+                        testId++;
+                        return buildParamaterListItem;
+                    }
+
+                });
+            }
+
+        });
+        return Iterators.concat(transform);
+    }
+
+    @DataProvider(name = "addsThenRemoves")
+    public Iterator<Object[]> provideAddsThenRemoves() throws Exception {
+        List<ViewBinding> viewBindings = buildBindings(stepTypes, maxStepDepth);
 
         List<Object[]> paramList = new ArrayList<>();
         ViewBinding binding = viewBindings.get(0);
         long testId = 0;
         int randomBatchSize = 2;
 
-        // Shuffled Adds
         for (ModelPath path : viewBindings.get(0).getModelPaths()) {
 
             OrderIdProvider initialIdProvider = monatomic(0);
             IdProviderImpl idProviderImpl = new IdProviderImpl(initialIdProvider);
-            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId());
+            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId(), maxFanOut);
             ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
-            Set<Id> deletedIds = new HashSet<>();
             long highestId = initialIdProvider.nextId();
 
             // Case: Entirely new adds with shuffled eventIds. Ensures delivery and time stamp order doesn't matter.
-            for (OrderIdProvider idProvider : orderIdProviderGenerator.generateOrderIdProviders(seed, highestId,
-                new IdBatchConfig(Order.shuffle, deriedEventsAndViewId.getEvents().size(), randomBatchSize))) {
-
-                Materialization materialization = new Materialization();
-                materialization.setupModelAndMaterializer();
-                EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
-                EventFire eventFire = new EventFire(viewId,
+            EventFire eventFire = new EventFire(viewId,
                     deriedEventsAndViewId.getEvents(),
                     path.getPathMembers().get(path.getPathMemberSize() - 1),
                     deriedEventsAndViewId.getIdTree());
-
-                paramList.add(buildParamaterListItem("addsRandomOrder",
-                    testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, deletedIds));
-                testId++;
-            }
-        }
-
-        return paramList.iterator();
-    }
-
-    @DataProvider (name = "addsThenRemoves")
-    public Iterator<Object[]> provideAddsThenRemoves() throws Exception {
-        seed = System.currentTimeMillis();
-        Random rand = new Random(seed);
-        List<ViewBinding> viewBindings = buildBindings(stepTypes, 4);
-
-        List<Object[]> paramList = new ArrayList<>();
-        ViewBinding binding = viewBindings.get(0);
-        long testId = 0;
-        int randomBatchSize = 2;
-
-
-        for (ModelPath path : viewBindings.get(0).getModelPaths()) {
-
-            OrderIdProvider initialIdProvider = monatomic(0);
-            IdProviderImpl idProviderImpl = new IdProviderImpl(initialIdProvider);
-            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId());
-            ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
-            long highestId = initialIdProvider.nextId();
-
-            // Case: Entirely new adds with shuffled eventIds. Ensures delivery and time stamp order doesn't matter.
-            EventFire eventFire = new EventFire(viewId,
-                deriedEventsAndViewId.getEvents(),
-                path.getPathMembers().get(path.getPathMemberSize() - 1),
-                deriedEventsAndViewId.getIdTree());
-
 
             for (int i = 0; i < path.getPathMemberSize(); i++) {
 
@@ -248,8 +408,8 @@ public class CombinatorialMaterializerTest {
                     List<Event> events = deriedEventsAndViewId.getEvents();
 
                     for (OrderIdProvider idProvider : orderIdProviderGenerator.generateOrderIdProviders(seed, highestId,
-                        new IdBatchConfig(Order.shuffle, events.size(), randomBatchSize),
-                        new IdBatchConfig(Order.shuffle, deleteEvents.size(), randomBatchSize))) {
+                            new IdBatchConfig(Order.shuffle, events.size(), randomBatchSize),
+                            new IdBatchConfig(Order.shuffle, deleteEvents.size(), randomBatchSize))) {
 
                         Materialization materialization = new Materialization();
                         materialization.setupModelAndMaterializer();
@@ -259,13 +419,19 @@ public class CombinatorialMaterializerTest {
                         allEvents.addAll(events);
                         allEvents.addAll(deleteEvents);
 
+                        // We have to allocate eventIds up front for determinism
+                        JsonEventConventions jec = new JsonEventConventions();
+                        for (Event e : allEvents) {
+                            jec.setEventId(e.toJson(), idProvider.nextId());
+                        }
+
                         eventFire = new EventFire(viewId,
-                            allEvents,
-                            path.getPathMembers().get(path.getPathMemberSize() - 1),
-                            deriedEventsAndViewId.getIdTree());
+                                allEvents,
+                                path.getPathMembers().get(path.getPathMemberSize() - 1),
+                                deriedEventsAndViewId.getIdTree());
 
                         paramList.add(buildParamaterListItem("removes",
-                            testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, deletedIds));
+                                testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, deletedIds));
                         testId++;
                     }
                 }
@@ -275,36 +441,33 @@ public class CombinatorialMaterializerTest {
         return paramList.iterator();
     }
 
-    @DataProvider (name = "addsThenRemovesThenAdds")
+    @DataProvider(name = "addsThenRemovesThenAdds")
     public Iterator<Object[]> provideAddsThenRemovesThenAdds() throws Exception {
-        seed = System.currentTimeMillis();
-        Random rand = new Random(seed);
-        List<ViewBinding> viewBindings = buildBindings(stepTypes, 4);
+        List<ViewBinding> viewBindings = buildBindings(stepTypes, maxStepDepth);
 
         List<Object[]> paramList = new ArrayList<>();
         ViewBinding binding = viewBindings.get(0);
         long testId = 0;
         int randomBatchSize = 2;
 
-
         for (ModelPath path : viewBindings.get(0).getModelPaths()) {
 
             OrderIdProvider initialIdProvider = monatomic(0);
             IdProviderImpl idProviderImpl = new IdProviderImpl(initialIdProvider);
-            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId());
+            EventsAndViewId deriedEventsAndViewId = eventFireGenerator.deriveEventsFromPath(idProviderImpl, path, idProviderImpl.nextId(), maxFanOut);
             ObjectId viewId = new ObjectId(binding.getViewClassName(), deriedEventsAndViewId.getViewId());
             long highestId = initialIdProvider.nextId();
 
             // Case: Entirely new adds with shuffled eventIds. Ensures delivery and time stamp order doesn't matter.
             EventFire eventFire = new EventFire(viewId,
-                deriedEventsAndViewId.getEvents(),
-                path.getPathMembers().get(path.getPathMemberSize() - 1),
-                deriedEventsAndViewId.getIdTree());
+                    deriedEventsAndViewId.getEvents(),
+                    path.getPathMembers().get(path.getPathMemberSize() - 1),
+                    deriedEventsAndViewId.getIdTree());
 
             JsonEventConventions jec = new JsonEventConventions();
             for (int i = 0; i < path.getPathMemberSize(); i++) {
 
-                for (int j = 1; j < 2; j++) {
+                for (int j = 1; j < 3; j++) {
 
                     // Case: build up and then delete at a depth and breadth delete
                     List<Event> deleteEvents = eventFire.createDeletesAtDepth(tenantId, actorId, i, j);
@@ -312,20 +475,23 @@ public class CombinatorialMaterializerTest {
                     for (Event evt : deleteEvents) {
                         deletedIds.add(evt.getObjectId().getId());
                     }
+//                    if (deletedIds.size() > 1) {
+//                        System.out.println("JBOOYA "+deletedIds.size());
+//                    }
                     List<Event> events = deriedEventsAndViewId.getEvents();
 
                     List<Event> undeletes = new ArrayList<>();
                     for (Event event : events) {
                         ObjectId instanceObjectId = jec.getInstanceObjectId(event.toJson());
                         if (deletedIds.contains(instanceObjectId.getId())) {
-                            undeletes.add(event);
+                            undeletes.add(new Event(event.toJson().deepCopy(), event.getObjectId()));
                         }
                     }
 
                     for (OrderIdProvider idProvider : orderIdProviderGenerator.generateOrderIdProviders(seed, highestId,
-                        new IdBatchConfig(Order.shuffle, events.size(), randomBatchSize),
-                        new IdBatchConfig(Order.shuffle, deleteEvents.size(), randomBatchSize),
-                        new IdBatchConfig(Order.shuffle, undeletes.size(), randomBatchSize))) {
+                            new IdBatchConfig(Order.shuffle, events.size(), randomBatchSize),
+                            new IdBatchConfig(Order.shuffle, deleteEvents.size(), randomBatchSize),
+                            new IdBatchConfig(Order.shuffle, undeletes.size(), randomBatchSize))) {
 
                         Materialization materialization = new Materialization();
                         materialization.setupModelAndMaterializer();
@@ -336,13 +502,19 @@ public class CombinatorialMaterializerTest {
                         allEvents.addAll(deleteEvents);
                         allEvents.addAll(undeletes);
 
+                        // We have to allocate eventIds up front for determinism
+                        jec = new JsonEventConventions();
+                        for (Event e : allEvents) {
+                            jec.setEventId(e.toJson(), idProvider.nextId());
+                        }
+
                         eventFire = new EventFire(viewId,
-                            allEvents,
-                            path.getPathMembers().get(path.getPathMemberSize() - 1),
-                            deriedEventsAndViewId.getIdTree());
+                                allEvents,
+                                path.getPathMembers().get(path.getPathMemberSize() - 1),
+                                deriedEventsAndViewId.getIdTree());
 
                         paramList.add(buildParamaterListItem("removes",
-                            testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, new HashSet<Id>()));
+                                testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, new HashSet<Id>()));
                         testId++;
                     }
                 }
@@ -388,21 +560,21 @@ public class CombinatorialMaterializerTest {
     }
 
     private Object[] buildParamaterListItem(String category, long testId, Materialization materialization,
-        TenantIdAndCentricId tenantIdAndCentricId,
-        Id actorId,
-        ViewBinding binding,
-        ModelPath path,
-        EventWriterProvider writerProvider,
-        EventFire eventFire,
-        Set<Id> deletedIds) {
-        return new Object[]{ new InputCase(category,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            Id actorId,
+            ViewBinding binding,
+            ModelPath path,
+            EventWriterProvider writerProvider,
+            EventFire eventFire,
+            Set<Id> deletedIds) {
+        return new Object[]{new InputCase(category,
             testId,
             materialization,
             tenantIdAndCentricId, actorId,
             new ViewBinding(binding.getViewClassName(), Arrays.asList(path), false, false, false, null),
             writerProvider,
             eventFire,
-            deletedIds) };
+            deletedIds)};
     }
 
     static public class InputCase {
@@ -418,8 +590,8 @@ public class CombinatorialMaterializerTest {
         public final Set<Id> deletedId;
 
         public InputCase(String category, long testId, Materialization materialization, TenantIdAndCentricId tenantIdAndCentricId, Id actorId,
-            ViewBinding binding, EventWriterProvider eventWriterProvider, EventFire input,
-            Set<Id> deletedId) {
+                ViewBinding binding, EventWriterProvider eventWriterProvider, EventFire input,
+                Set<Id> deletedId) {
             this.category = category;
             this.testId = testId;
             this.materialization = materialization;
@@ -434,7 +606,7 @@ public class CombinatorialMaterializerTest {
 
     //TODO use and communicate different leaf node fields per branch.
     public void assertViewElementExists(List<ModelPathStep> path, int pathIndex, ObjectNode viewNode,
-        Map<String, String> expectedFieldValues, List<AssertionResult> resultAccumulator) {
+            Map<String, String> expectedFieldValues, List<AssertionResult> resultAccumulator) {
 
         if (viewNode == null) {
             resultAccumulator.add(new AssertionResult(false, "Supplied view node is null"));
@@ -451,6 +623,8 @@ public class CombinatorialMaterializerTest {
                 refField = "all_" + refField;
             } else if (ModelPathStepType.latest_backRef.equals(step.getStepType())) {
                 refField = "latest_" + refField;
+            } else if (ModelPathStepType.count.equals(step.getStepType())) {
+                refField = "count_" + refField;
             }
 
             JsonNode nextNode = viewNode.get(refField);
@@ -472,9 +646,19 @@ public class CombinatorialMaterializerTest {
                 }
             } else if (nextNode.isObject()) { //handles ref and latest_backref
                 assertViewElementExists(path, pathIndex + 1, (ObjectNode) nextNode, expectedFieldValues, resultAccumulator);
+            } else if (nextNode.isInt()) { //handles count
+                resultAccumulator.add(assertCountField((IntNode) nextNode, refField, maxFanOut));
             } else {
-                resultAccumulator.add(new AssertionResult(false, "Element view data for path element " + step + " was not an object"));
+                resultAccumulator.add(new AssertionResult(false, "Element view data for path element " + step + " was an unexpected type: " + nextNode));
             }
+        }
+    }
+
+    private AssertionResult assertCountField(IntNode leaf, String field, int expectedFieldValue) {
+        if (leaf.intValue() == expectedFieldValue) {
+            return new AssertionResult(true, "");
+        } else {
+            return new AssertionResult(false, "Unexpected value for field " + field + " - found " + leaf);
         }
     }
 

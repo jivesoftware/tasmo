@@ -100,9 +100,9 @@ public class ModelPathGenerator {
             if (type.isBackReferenceType()) {
                 builder.append(type.name()).append(".");
                 builder.append((char) (i + 1 + alphabetZero)).append(".");
-                builder.append("referringField");
+                builder.append("backRefField");
             } else {
-                builder.append("referringfield");
+                builder.append("refField");
                 builder.append(".").append(type.name());
                 builder.append(".").append((char) (i + 1 + alphabetZero));
             }

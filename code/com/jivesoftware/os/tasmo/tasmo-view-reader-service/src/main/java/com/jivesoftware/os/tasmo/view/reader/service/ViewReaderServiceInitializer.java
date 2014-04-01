@@ -18,7 +18,6 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
-import com.jivesoftware.os.tasmo.view.reader.api.VersionedView;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -62,17 +61,6 @@ public class ViewReaderServiceInitializer {
                 viewPermissionChecker,
                 viewsProvider,
                 new ViewAsObjectNode(),
-                config);
-    }
-
-    public static ViewReader<VersionedView<ViewResponse>> initializeVersionedViewReader(ViewReaderServiceConfig config,
-            SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
-            ViewPermissionChecker viewPermissionChecker,
-            ViewsProvider viewsProvider) throws Exception {
-        return build(setOfSortedMapsImplInitializer,
-                viewPermissionChecker,
-                viewsProvider,
-                new ViewAsVersionedView(),
                 config);
     }
 

@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.reference.lib;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 
 /**
@@ -16,5 +17,10 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
  */
 public interface RefStreamer {
 
-    void stream(TenantIdAndCentricId tenantIdAndCentricId, Reference referringObjectId, CallbackStream<Reference> referencedIdsStream) throws Exception;
+    void stream(TenantIdAndCentricId tenantIdAndCentricId,
+            ObjectId referringObjectId,
+            long readTime,
+            CallbackStream<ReferenceWithTimestamp> referencedIdsStream) throws Exception;
+
+    boolean isBackRefStreamer();
 }

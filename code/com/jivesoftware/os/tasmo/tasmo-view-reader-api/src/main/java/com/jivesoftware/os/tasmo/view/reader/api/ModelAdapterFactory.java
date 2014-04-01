@@ -19,8 +19,6 @@ import javax.annotation.Nullable;
  */
 public class ModelAdapterFactory {
 
-    public static final String VIEW_OBJECT_ID = "objectId";
-
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Nullable
@@ -47,10 +45,10 @@ public class ModelAdapterFactory {
     static String getFieldName(Method method) {
         String fieldName = method.getName();
         if (fieldName.equals(ModelingConstants.VIEW_BASE_ALIAS)) {
-            fieldName = VIEW_OBJECT_ID;
+            fieldName = "objectId";
         } else if (method.isAnnotationPresent(BackRef.class)) {
             BackRef backRefAnnotation = method.getAnnotation(BackRef.class);
-            fieldName = backRefAnnotation.type().getFieldNamePrefix() + "_" + backRefAnnotation.via();
+            fieldName = backRefAnnotation.type().getFieldNamePrefix() + backRefAnnotation.via();
         }
         return fieldName;
     }
@@ -85,10 +83,14 @@ public class ModelAdapterFactory {
             }
             JsonNode jsonNode = objectNode.get(fieldName);
             if (jsonNode == null) {
+                BackRef backRefAnnotation;
                 if (method.getReturnType().isArray()) {
                     return Array.newInstance(method.getReturnType().getComponentType(), 0);
                 } else if (method.isAnnotationPresent(Nullable.class)) {
                     return null;
+                } else if ((backRefAnnotation = method.getAnnotation(BackRef.class)) != null && backRefAnnotation.type() == BackRefType.COUNT) {
+                    // When no events backref this object, count returned by materializer is missing - fake it
+                    return new Integer(0);
                 } else {
                     throw new IllegalArgumentException(
                         "Element expected but not present in JSON " + topLevelInterface.getName() + "." + fieldName + ": " + root);

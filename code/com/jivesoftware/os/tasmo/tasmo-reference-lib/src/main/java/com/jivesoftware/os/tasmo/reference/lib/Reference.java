@@ -1,36 +1,40 @@
 package com.jivesoftware.os.tasmo.reference.lib;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import java.util.Objects;
 
 public class Reference {
 
     private final ObjectId objectId;
-    private final long timestamp;
+    private final String fieldName;
 
-    public Reference(ObjectId objectId, long timestamp) {
+    @JsonCreator
+    public Reference(@JsonProperty("objectId") ObjectId objectId,
+            @JsonProperty("fieldName") String fieldName) {
         this.objectId = objectId;
-        this.timestamp = timestamp;
+        this.fieldName = fieldName;
     }
 
     public ObjectId getObjectId() {
         return objectId;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    public String getFieldName() {
+        return fieldName;
     }
 
     @Override
     public String toString() {
-        return "Reference{" + "objectId=" + objectId + ", timestamp=" + timestamp + '}';
+        return "Reference{" + "objectId=" + objectId + ", fieldName=" + fieldName + '}';
     }
 
     @Override
     public int hashCode() {
-        int hash = 5;
-        hash = 73 * hash + Objects.hashCode(this.objectId);
-        hash = 73 * hash + (int) (this.timestamp ^ (this.timestamp >>> 32));
+        int hash = 7;
+        hash = 19 * hash + Objects.hashCode(this.objectId);
+        hash = 19 * hash + Objects.hashCode(this.fieldName);
         return hash;
     }
 
@@ -46,9 +50,10 @@ public class Reference {
         if (!Objects.equals(this.objectId, other.objectId)) {
             return false;
         }
-        if (this.timestamp != other.timestamp) {
+        if (!Objects.equals(this.fieldName, other.fieldName)) {
             return false;
         }
         return true;
     }
+
 }

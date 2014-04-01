@@ -10,5 +10,5 @@ package com.jivesoftware.os.tasmo.configuration;
 
 public enum ValueType {
 
-    value, ref, latest_backref, refs, backrefs, unknown
+    value, ref, latest_backref, refs, backrefs, count, unknown
 }

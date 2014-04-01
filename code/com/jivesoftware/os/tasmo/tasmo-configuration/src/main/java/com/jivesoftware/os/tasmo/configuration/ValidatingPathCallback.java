@@ -26,7 +26,7 @@ public class ValidatingPathCallback implements PathCallback {
     }
 
     private void assertFieldIsPresent(Set<String> classNames, ValueType type, String[] fieldNames) throws IllegalArgumentException {
-        if (type != ValueType.backrefs && type != ValueType.latest_backref) {
+        if (type != ValueType.backrefs && type != ValueType.latest_backref && type != ValueType.count) {
             for (String fieldName : fieldNames) {
                 for (String className : classNames) {
                     EventModel eventConfiguration = eventsModel.getEvent(className);

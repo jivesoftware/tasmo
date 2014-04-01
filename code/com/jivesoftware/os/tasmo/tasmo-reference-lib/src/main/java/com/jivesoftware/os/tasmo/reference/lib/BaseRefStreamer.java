@@ -17,7 +17,9 @@ public abstract class BaseRefStreamer implements RefStreamer {
     protected final String referringFieldName;
 
 
-    protected BaseRefStreamer(ReferenceStore referenceStore, Set<String> referringClassNames, String referringFieldName) {
+    protected BaseRefStreamer(ReferenceStore referenceStore,
+            Set<String> referringClassNames,
+            String referringFieldName) {
         this.referenceStore = referenceStore;
         this.referringClassNames = referringClassNames;
         this.referringFieldName = referringFieldName;

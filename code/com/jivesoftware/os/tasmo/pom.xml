@@ -4,12 +4,12 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.jivesoftware.os.jive</groupId>
     <artifactId>tasmo</artifactId>
-    <version>0.1</version>
+    <version>0.2</version>
     <packaging>pom</packaging>
     <parent>
         <groupId>com.jivesoftware.os.tasmo.inheritance.poms</groupId>
         <artifactId>global-repo-management</artifactId>
-        <version>0.1</version>
+        <version>0.2</version>
         <relativePath>inheritance-poms/global-repo-management/pom.xml</relativePath>
     </parent>
     <modules>
@@ -18,6 +18,7 @@
         <module>tasmo-event-api</module>
         <module>tasmo-id</module>
         <module>tasmo-lib</module>
+        <module>tasmo-local</module>
         <module>tasmo-model</module>
         <module>tasmo-reference-lib</module>
         <module>tasmo-reference-reader-api</module>

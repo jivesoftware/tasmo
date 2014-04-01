@@ -25,8 +25,8 @@ public class LongPathsTest extends BaseTasmoTest {
 
     @Test
     public void testLongPath() throws Exception {
-        Expectations expectations =
-            initModelPaths(ContentView + "::" + moderatorNames + "::Content.ref_parent.ref.Container|Container.refs_moderators.refs.User|User.userName");
+        Expectations expectations = initModelPaths(ContentView + "::" + moderatorNames
+                + "::Content.ref_parent.ref.Container|Container.refs_moderators.refs.User|User.userName");
         ObjectId userId = write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "moderator").build());
         ObjectId containerId = write(EventBuilder.create(idProvider, "Container", tenantId, actorId).set("name", "moderated container").build());
         write(EventBuilder.update(containerId, tenantId, actorId).set("refs_moderators", Arrays.asList(userId)).build());
@@ -44,13 +44,20 @@ public class LongPathsTest extends BaseTasmoTest {
         expectations.addExpectation(contentId, ContentView, moderatorNames, new ObjectId[]{contentId, containerId, userId2}, "userName", "moderator2");
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();
+
+        ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        System.out.println("Pre-event:" + mapper.writeValueAsString(view));
+
         write(EventBuilder.update(containerId, tenantId, actorId).set("refs_moderators", Arrays.asList(userId2)).build());
+
+        view = readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        System.out.println("Post-event:" + mapper.writeValueAsString(view));
         expectations.addExpectation(contentId, ContentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", null);
         expectations.addExpectation(contentId, ContentView, moderatorNames, new ObjectId[]{contentId, containerId, userId2}, "userName", "moderator2");
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();
 
-        ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        view = readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         System.out.println(mapper.writeValueAsString(view));
     }
 }

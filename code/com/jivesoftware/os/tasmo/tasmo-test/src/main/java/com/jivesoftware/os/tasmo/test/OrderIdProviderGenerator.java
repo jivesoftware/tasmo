@@ -162,7 +162,7 @@ public class OrderIdProviderGenerator {
          */
         public Object[] toArray() {
             if (next == null) {
-                return new Object[]{ values[index] };
+                return new Object[]{values[index]};
             } else {
                 return push(next.toArray(), values[index]);
             }

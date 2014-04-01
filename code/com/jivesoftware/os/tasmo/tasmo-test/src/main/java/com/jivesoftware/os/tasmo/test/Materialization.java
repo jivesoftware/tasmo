@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
@@ -26,16 +27,17 @@ import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
+import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
-import com.jivesoftware.os.tasmo.lib.write.ExistenceCommitChange;
+import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -51,6 +53,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
@@ -78,8 +81,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Materialization {
+
     public static final TenantId MASTER_TENANT_ID = new TenantId("master");
-    ExistenceStore existenceStore;
     EventValueStore eventValueStore;
     ViewValueStore viewValueStore;
     ViewValueWriter viewValueWriter;
@@ -97,7 +100,6 @@ public class Materialization {
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
     }
-
     WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
 
     public ViewChangeNotificationProcessor getViewChangeNotificationProcessor() {
@@ -158,37 +160,37 @@ public class Materialization {
 //            };
 //
 //        } else {
-            return new RowColumnValueStoreProvider() {
+        return new RowColumnValueStoreProvider() {
+            @Override
+            public RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore() {
+                return new RowColumnValueStoreImpl<>();
+            }
 
-                 @Override
-                public RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore() {
-                    return new RowColumnValueStoreImpl<>();
-                }
+            @Override
+            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() {
+                return new RowColumnValueStoreImpl<>();
+            }
 
-                @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() {
-                    return new RowColumnValueStoreImpl<>();
-                }
+            @Override
+            public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore() {
+                return new RowColumnValueStoreImpl<>();
+            }
 
-                @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore() {
-                    return new RowColumnValueStoreImpl<>();
-                }
+            @Override
+            public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks() {
+                return new RowColumnValueStoreImpl<>();
+            }
 
-                @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks() {
-                    return new RowColumnValueStoreImpl<>();
-                }
-
-                @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() {
-                    return new RowColumnValueStoreImpl<>();
-                }
-            };
+            @Override
+            public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() {
+                return new RowColumnValueStoreImpl<>();
+            }
+        };
         //}
     }
 
     public static interface RowColumnValueStoreProvider {
+
         RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore() throws Exception;
 
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() throws Exception;
@@ -213,8 +215,9 @@ public class Materialization {
         }
     }
 
-    public void setupModelAndMaterializer() throws Exception {
+    RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> rawViewValueStore;
 
+    public void setupModelAndMaterializer() throws Exception {
 
         String uuid = UUID.randomUUID().toString();
         //        Logger logger = Logger.getLogger("com.jivesoftware.soa.modules");
@@ -227,19 +230,21 @@ public class Materialization {
         EventValueCacheProvider cacheProvider = new EventValueCacheProvider() {
             @Override
             public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> createValueStoreCache() {
-               return new RowColumnValueStoreImpl<>();
+                return new RowColumnValueStoreImpl<>();
             }
         };
 
-        existenceStore = new ExistenceStore(existenceStorage);
-        eventValueStore = new EventValueStore(eventStore, cacheProvider);
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
+        ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrency);
+        eventValueStore = new EventValueStore(concurrencyStore, eventStore, cacheProvider);
 
-        viewValueStore = new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), new ViewPathKeyProvider());
+        rawViewValueStore = rowColumnValueStoreProvider.viewValueStore();
+        viewValueStore = new ViewValueStore(rawViewValueStore, new ViewPathKeyProvider());
         viewValueWriter = new ViewValueWriter(viewValueStore);
         viewValueReader = new ViewValueReader(viewValueStore);
 
-        ReferenceStore referenceStore = new ReferenceStore(rowColumnValueStoreProvider.multiLinks(),
-            rowColumnValueStoreProvider.multiBackLinks());
+        ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, rowColumnValueStoreProvider.multiLinks(),
+                rowColumnValueStoreProvider.multiBackLinks());
 
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
         CommitChange commitChange = new CommitChange() {
@@ -248,18 +253,22 @@ public class Materialization {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
+                        PathId[] modelPathInstanceIds = change.getModelPathInstanceIds();
+                        ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];
+                        for (int i = 0; i < ids.length; i++) {
+                            ids[i] = modelPathInstanceIds[i].getObjectId();
+                        }
+
                         write.add(new ViewWriteFieldChange(
-                            change.getEventId(),
-                            -1,
-                            -1,
-                            tenantIdAndCentricId,
-                            change.getActorId(),
-                            ViewWriteFieldChange.Type.valueOf(change.getType().name()),
-                            change.getViewObjectId(),
-                            change.getModelPathId(),
-                            change.getModelPathInstanceIds(),
-                            mapper.writeValueAsString(change.getValue()),
-                            change.getTimestamp()));
+                                change.getEventId(),
+                                tenantIdAndCentricId,
+                                change.getActorId(),
+                                ViewWriteFieldChange.Type.valueOf(change.getType().name()),
+                                change.getViewObjectId(),
+                                change.getModelPathId(),
+                                ids,
+                                mapper.writeValueAsString(change.getValue()),
+                                change.getTimestamp()));
                     } catch (Exception ex) {
                         throw new CommitChangeException("Failed to add change for the following reason.", ex);
                     }
@@ -273,15 +282,15 @@ public class Materialization {
             }
         };
 
-        commitChange = new ExistenceCommitChange(existenceStore, commitChange);
+        commitChange = new ConcurrencyAndExistanceCommitChange(concurrencyStore, commitChange);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
-            new CallbackStream<List<BookkeepingEvent>>() {
-            @Override
-            public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
-                return value;
-            }
-        });
+                new CallbackStream<List<BookkeepingEvent>>() {
+                    @Override
+                    public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
+                        return value;
+                    }
+                });
 
         viewsProvider = new ViewsProvider() {
             @Override
@@ -296,16 +305,22 @@ public class Materialization {
         };
 
         tasmoViewModel = new TasmoViewModel(
-            MASTER_TENANT_ID,
-            viewsProvider,
-            eventProvider,
-            referenceStore,
-            eventValueStore,
-            commitChange);
+                MASTER_TENANT_ID,
+                viewsProvider,
+                eventProvider,
+                concurrencyStore,
+                referenceStore,
+                eventValueStore,
+                commitChange);
 
-        materializer = new TasmoViewMaterializer(existenceStore, tasmoEventBookkeeper,
-            tasmoViewModel, getViewChangeNotificationProcessor());
-
+        materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
+                tasmoViewModel,
+                getViewChangeNotificationProcessor(),
+                new WrittenInstanceHelper(),
+                concurrencyStore,
+                eventValueStore,
+                referenceStore,
+                new OrderIdProviderImpl(1));
 
     }
 
@@ -323,7 +338,6 @@ public class Materialization {
             public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, final Set<Id> permissionCheckTheseIds) {
                 System.out.println("NO-OP permisions check for (" + permissionCheckTheseIds.size() + ") ids.");
                 return new ViewPermissionCheckResult() {
-
                     @Override
                     public Set<Id> allowed() {
                         return permissionCheckTheseIds;
@@ -353,11 +367,11 @@ public class Materialization {
         };
 
         viewProvider = new ViewProvider<>(viewPermissionChecker,
-            viewValueReader,
-            tenantViewsProvider,
-            viewAsObjectNode,
-            merger,
-            staleViewFieldStream);
+                viewValueReader,
+                tenantViewsProvider,
+                viewAsObjectNode,
+                merger,
+                staleViewFieldStream);
         return new Expectations(viewValueStore, newViews);
 
     }
@@ -421,29 +435,22 @@ public class Materialization {
                 Set<String> destinationClassName = splitClassNames(memberParts[3].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
-            } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")) {
+            } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
+                    || pathMember.contains("." + ModelPathStepType.count + ".")
+                    || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
+                // Example: Content.count.VersionedContent.ref_parent
+                // Example: Content.latest_backRef.VersionedContent.ref_parent
                 Set<String> destinationClassName = splitClassNames(memberParts[0].trim());
                 ModelPathStepType stepType = ModelPathStepType.valueOf(memberParts[1].trim());
                 Set<String> originClassName = splitClassNames(memberParts[2].trim());
                 String refFieldName = memberParts[3].trim();
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
-
-            } else if (pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
-
-                // Example: Content.backRefs.VersionedContent.ref_parent
-                Set<String> destinationClassName = splitClassNames(memberParts[0].trim());
-                ModelPathStepType stepType = ModelPathStepType.valueOf(memberParts[1].trim());
-                Set<String> originClassName = splitClassNames(memberParts[2].trim());
-                String refFieldName = memberParts[3].trim();
-
-                return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else {
 
@@ -455,7 +462,7 @@ public class Materialization {
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
+                        null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
 
             }
         } catch (Exception x) {
@@ -484,9 +491,13 @@ public class Materialization {
                     List<ObjectId> objectIds = Lists.newArrayList();
                     List<Long> eventIds = Lists.newArrayList();
                     for (ObjectNode w : events) {
-                        long eventId = idProvider.nextId();
+
+                        long eventId = jsonEventConventions.getEventId(w);
+                        if (eventId == 0) {
+                            eventId = idProvider.nextId();
+                            jsonEventConventions.setEventId(w, eventId);
+                        }
                         eventIds.add(eventId);
-                        jsonEventConventions.setEventId(w, eventId);
 
                         String instanceClassname = jsonEventConventions.getInstanceClassName(w);
                         ObjectId objectId = new ObjectId(instanceClassname, jsonEventConventions.getInstanceId(w, instanceClassname));

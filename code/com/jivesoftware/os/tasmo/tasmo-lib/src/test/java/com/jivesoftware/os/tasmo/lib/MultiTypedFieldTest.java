@@ -77,7 +77,8 @@ public class MultiTypedFieldTest extends BaseTasmoTest {
         write(EventBuilder.update(statusId, tenantId, actorId).set("child", commentVersionId).build());
 
         expectations.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{commentVersionId, statusId}, "modDate", "later");
-        expectations.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{commentVersionId, documentId}, "modDate", null);
+        //we don't actually clean up the latest backref anymore
+        expectations.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{commentVersionId, documentId}, "modDate", "now");
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();
         view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
@@ -88,7 +89,8 @@ public class MultiTypedFieldTest extends BaseTasmoTest {
         //This is correct - but a gotcha. If some type not in the set of types in the path starts referencing something that is, the view will not be updated.
         //In this context, the view means "latest thing I care about to backreference", not "latest thing to back reference"
         expectations.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{commentVersionId, statusId}, "modDate", "later");
-        expectations.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{commentVersionId, documentId}, "modDate", null);
+        //we don't actually clean up the latest backref anymore
+        expectations.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{commentVersionId, documentId}, "modDate", "now");
         expectations.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{commentVersionId, commentId}, "modDate", null);
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();

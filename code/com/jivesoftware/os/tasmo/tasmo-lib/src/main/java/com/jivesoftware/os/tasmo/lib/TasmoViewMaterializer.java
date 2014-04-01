@@ -9,23 +9,36 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.collect.ListMultimap;
+import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
+import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
-import com.jivesoftware.os.tasmo.lib.exists.ExistanceUpdate;
-import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
-import com.jivesoftware.os.tasmo.lib.process.EventBookKeeper;
-import com.jivesoftware.os.tasmo.lib.process.EventProcessorDispatcher;
-import com.jivesoftware.os.tasmo.lib.process.NoOpEventProcessor;
+import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.TasmoViewModel.FieldNameAndType;
+import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
+import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
+import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.process.InMemoryModifiedViewProvider;
+import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
+import com.jivesoftware.os.tasmo.reference.lib.Reference;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ExistenceUpdate;
+import com.jivesoftware.os.tasmo.reference.lib.concur.PathModifiedOutFromUnderneathMeException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,19 +46,33 @@ import java.util.Set;
 public class TasmoViewMaterializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-    private final ExistenceStore existenceStore;
     private final TasmoEventBookkeeper tasmoEventBookkeeper;
     private final TasmoViewModel tasmoViewModel;
     private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
+    private final WrittenInstanceHelper writtenInstanceHelper;
+    private final ConcurrencyStore concurrencyStore;
+    private final EventValueStore eventValueStore;
+    private final ReferenceStore referenceStore;
+    private final OrderIdProvider threadTime;
+    private final StripingLocksProvider<ObjectId> instanceIdLocks = new StripingLocksProvider<>(1024);
 
-    public TasmoViewMaterializer(ExistenceStore existenceStore, TasmoEventBookkeeper tasmoEventBookkeeper,
+    public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
             TasmoViewModel tasmoViewModel,
-            ViewChangeNotificationProcessor viewChangeNotificationProcessor
+            ViewChangeNotificationProcessor viewChangeNotificationProcessor,
+            WrittenInstanceHelper writtenInstanceHelper,
+            ConcurrencyStore concurrencyStore,
+            EventValueStore eventValueStore,
+            ReferenceStore referenceStore,
+            OrderIdProvider threadTime
     ) {
-        this.existenceStore = existenceStore;
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
         this.tasmoViewModel = tasmoViewModel;
         this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
+        this.writtenInstanceHelper = writtenInstanceHelper;
+        this.concurrencyStore = concurrencyStore;
+        this.eventValueStore = eventValueStore;
+        this.referenceStore = referenceStore;
+        this.threadTime = threadTime;
     }
 
     public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
@@ -54,69 +81,48 @@ public class TasmoViewMaterializer {
             LOG.startTimer("processWrittenEvents");
             tasmoEventBookkeeper.begin(writtenEvents);
 
-            List<ExistanceUpdate> exist = new ArrayList<>();
-            List<ExistanceUpdate> noLongerExist = new ArrayList<>();
             for (WrittenEvent writtenEvent : writtenEvents) {
-                TenantId tenantId = writtenEvent.getTenantId();
-                long timestamp = writtenEvent.getEventId();
-                WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
-                ObjectId objectId = writtenInstance.getInstanceId();
-                if (writtenInstance.isDeletion()) {
-                    noLongerExist.add(new ExistanceUpdate(tenantId, timestamp, objectId));
-                } else {
-                    exist.add(new ExistanceUpdate(tenantId, timestamp, objectId));
-                }
-            }
-
-            List<ExistanceUpdate> checkIfExists = new ArrayList<>();
-            checkIfExists.addAll(exist);
-            checkIfExists.addAll(noLongerExist);
-            Set<ObjectId> currentlyExists = existenceStore.getExistence(checkIfExists);
-            Set<ObjectId> transitioning = new HashSet<>();
-            for (ExistanceUpdate existanceUpdate : exist) {
-                if (!currentlyExists.contains(existanceUpdate.objectId)) {
-                    transitioning.add(existanceUpdate.objectId);
-                }
-            }
-
-            for (ExistanceUpdate existanceUpdate : noLongerExist) {
-                if (currentlyExists.contains(existanceUpdate.objectId)) {
-                    transitioning.add(existanceUpdate.objectId);
-                }
-            }
-
-            if (!exist.isEmpty()) {
-                existenceStore.addObjectId(exist);
-            }
-            if (!noLongerExist.isEmpty()) {
-                existenceStore.removeObjectId(noLongerExist);
-            }
-
-            for (WrittenEvent writtenEvent : writtenEvents) {
-                WrittenEventContext batchContext = new WrittenEventContext(new InMemoryModifiedViewProvider(), transitioning);
-
+                WrittenEventContext batchContext = new WrittenEventContext(new InMemoryModifiedViewProvider());
                 if (writtenEvent == null) {
                     LOG.warn("some one is sending null events.");
                     processed.add(null);
                     continue;
                 }
-                VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(writtenEvent.getTenantId());
+                TenantId tenantId = writtenEvent.getTenantId();
+                VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
                 if (model == null) {
                     LOG.error("Cannot process an event until a model has been loaded.");
                     throw new Exception("Cannot process an event until a model has been loaded.");
                 } else {
-                    String className = writtenEvent.getWrittenInstance().getInstanceId().getClassName();
-                    ListMultimap<String, EventProcessorDispatcher> dispatchers = model.getDispatchers();
-                    for (EventProcessorDispatcher dispatcher : dispatchers.get(className)) {
-                        WrittenEventProcessor processorizer = dispatcher;
-                        if (processorizer == null) {
-                            processorizer = new NoOpEventProcessor();
-                        }
-                        if (new EventBookKeeper(processorizer).process(batchContext, writtenEvent)) {
-                            processed.add(writtenEvent);
+                    WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
+                    String className = writtenInstance.getInstanceId().getClassName();
+
+                    List<TenantIdAndCentricId> tenantIdAndCentricIds = buildTenantIdAndCentricIds(model, className, tenantId, writtenEvent);
+                    ObjectId instanceId = writtenInstance.getInstanceId();
+                    long timestamp = writtenEvent.getEventId();
+
+                    synchronized (instanceIdLocks.lock(writtenInstance.getInstanceId())) {
+
+                        for (TenantIdAndCentricId tenantIdAndCentricId : tenantIdAndCentricIds) {
+                            if (writtenInstance.isDeletion()) {
+                                concurrencyStore.removeObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
+                                removeValueFields(model, className, tenantIdAndCentricId, timestamp, instanceId);
+                            } else {
+                                concurrencyStore.addObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
+                                updateValueFields(tenantIdAndCentricId, timestamp, instanceId, model, className, writtenInstance);
+                            }
+
+                            ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
+                            for (InitiateTraversal initiateTraversal : dispatchers.get(className)) {
+                                if (initiateTraversal == null) {
+                                    LOG.warn("No traversal defined for className:{}", className);
+                                    continue;
+                                }
+                                traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent, processed);
+                            }
+                            viewChangeNotificationProcessor.process(batchContext, writtenEvent);
                         }
                     }
-                    viewChangeNotificationProcessor.process(batchContext, writtenEvent);
                 }
             }
 
@@ -136,5 +142,119 @@ public class TasmoViewMaterializer {
             LOG.debug("Processed: " + writtenEvents.size() + " events in " + elapse + "millis.");
         }
         return processed;
+    }
+
+    private List<TenantIdAndCentricId> buildTenantIdAndCentricIds(VersionedTasmoViewModel model,
+            String className,
+            TenantId tenantId,
+            WrittenEvent writtenEvent) {
+
+        List<TenantIdAndCentricId> tenantIdAndCentricIds = new ArrayList<>();
+        tenantIdAndCentricIds.add(new TenantIdAndCentricId(tenantId, Id.NULL));
+        for (FieldNameAndType fieldNameAndType : model.getEventModel().get(className)) {
+            if (fieldNameAndType.isIdCentric()) {
+                tenantIdAndCentricIds.add(new TenantIdAndCentricId(tenantId, writtenEvent.getCentricId()));
+                break;
+            }
+        }
+        return tenantIdAndCentricIds;
+    }
+
+    private void traverseEvent(InitiateTraversal initiateTraversal,
+            WrittenEventContext batchContext,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEvent writtenEvent,
+            List<WrittenEvent> processed) throws RuntimeException, Exception {
+
+        int attempts = 0;
+        int maxAttempts = 10;
+        while (attempts < maxAttempts) {
+            attempts++;
+            if (attempts > 1) {
+                LOG.info("attempts " + attempts);
+            }
+            try {
+                EventBookKeeper eventBookKeeper = new EventBookKeeper(initiateTraversal);
+                eventBookKeeper.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+                processed.add(writtenEvent);
+                break;
+            } catch (Exception e) {
+                boolean pathModifiedException = false;
+                Throwable t = e;
+                while (t != null) {
+                    if (t instanceof PathModifiedOutFromUnderneathMeException) {
+                        pathModifiedException = true;
+                        LOG.trace("** RETRY ** " + t.toString(), t);
+
+                    }
+                    t = t.getCause();
+                }
+                if (pathModifiedException) {
+                    Thread.sleep(1); // TODO is yield a better choice?
+                } else {
+                    throw e;
+                }
+            }
+        }
+        if (attempts >= maxAttempts) {
+            throw new RuntimeException("Failed to reach stasis after " + maxAttempts + " attempts.");
+        }
+    }
+
+    private void removeValueFields(VersionedTasmoViewModel model,
+            String className,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            long timestamp,
+            ObjectId instanceId) {
+
+        ListMultimap<String, FieldNameAndType> eventModel = model.getEventModel();
+        Set<String> fieldNames = new HashSet<>();
+        for (FieldNameAndType fieldNameAndType : eventModel.get(className)) {
+            if (fieldNameAndType.getFieldType() == ModelPathStepType.value) {
+                String fieldName = fieldNameAndType.getFieldName();
+                fieldNames.add(fieldName);
+            }
+        }
+        eventValueStore.removeObjectId(tenantIdAndCentricId, timestamp, instanceId, fieldNames.toArray(new String[fieldNames.size()]));
+    }
+
+    private void updateValueFields(TenantIdAndCentricId tenantIdAndCentricId,
+            long timestamp,
+            ObjectId instanceId,
+            VersionedTasmoViewModel model,
+            String className,
+            WrittenInstance writtenInstance) throws Exception {
+
+        EventValueStore.Transaction transaction = eventValueStore.begin(tenantIdAndCentricId,
+                timestamp,
+                timestamp,
+                instanceId);
+
+        ListMultimap<String, FieldNameAndType> eventModel = model.getEventModel();
+        for (FieldNameAndType fieldNameAndType : eventModel.get(className)) {
+            String fieldName = fieldNameAndType.getFieldName();
+            if (writtenInstance.hasField(fieldName)) {
+                if (fieldNameAndType.getFieldType() == ModelPathStepType.ref) {
+                    long highest = concurrencyStore.highest(tenantIdAndCentricId, instanceId, fieldName, timestamp);
+                    if (timestamp >= highest) {
+                        OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
+                        if (fieldValue.isNull()) {
+                            referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, fieldName, Collections.EMPTY_LIST);
+                        } else {
+                            Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, fieldName);
+                            referenceStore.link(tenantIdAndCentricId, timestamp, instanceId, fieldName, tos);
+                        }
+                    }
+                } else {
+                    OpaqueFieldValue got = writtenInstance.getFieldValue(fieldName);
+                    if (got == null || got.isNull()) {
+                        transaction.remove(fieldName);
+                    } else {
+                        transaction.set(fieldName, got);
+                    }
+                }
+            }
+        }
+        eventValueStore.commit(transaction);
     }
 }

@@ -3,6 +3,7 @@ package com.jivesoftware.os.tasmo.service;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.DefaultRowColumnValueStoreMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.NeverAcceptsFailureSetOfSortedMaps;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
@@ -10,6 +11,7 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMaps
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.CurrentTimestamper;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.ByteArrayTypeMarshaller;
+import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.LongTypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
@@ -19,20 +21,21 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
+import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
-import com.jivesoftware.os.tasmo.lib.write.ExistenceCommitChange;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -65,6 +68,7 @@ public class TasmoServiceInitializer {
     }
 
     public static EventIngressCallbackStream initializeEventIngressCallbackStream(
+            OrderIdProvider threadTimestamp,
             ViewsProvider viewsProvider,
             WrittenEventProvider eventProvider,
             SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
@@ -86,8 +90,15 @@ public class TasmoServiceInitializer {
                 new ObjectIdMarshaller(), new StringTypeMarshaller(),
                 (TypeMarshaller<OpaqueFieldValue>) eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
 
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyTable =
+                new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "concurrencyTable", "v",
+                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
+                new ObjectIdMarshaller(), new StringTypeMarshaller(),
+                new LongTypeMarshaller()), new CurrentTimestamper()));
 
-        EventValueStore eventValueStore = new EventValueStore(eventStore, eventValueCacheProvider);
+        ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrencyTable);
+
+        EventValueStore eventValueStore = new EventValueStore(concurrencyStore, eventStore, eventValueCacheProvider);
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks =
                 new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "multiLinkTable", "v",
                 new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
@@ -98,18 +109,18 @@ public class TasmoServiceInitializer {
                 new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
                 new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
 
-        ReferenceStore referenceStore = new ReferenceStore(multiLinks, multiBackLinks);
+        ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, multiLinks, multiBackLinks);
 
         TasmoEventBookkeeper bookkeeper =
                 new TasmoEventBookkeeper(bookKeepingStream);
         TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
-        ExistenceStore existenceStore = new ExistenceStore(existenceTable);
-        ExistenceCommitChange existenceCommitChange = new ExistenceCommitChange(existenceStore, changeWriter);
+        ConcurrencyAndExistanceCommitChange existenceCommitChange = new ConcurrencyAndExistanceCommitChange(null, changeWriter);
 
         final TasmoViewModel tasmoViewModel = new TasmoViewModel(
                 masterTenantId,
                 viewsProvider,
                 eventProvider,
+                concurrencyStore,
                 referenceStore,
                 eventValueStore,
                 existenceCommitChange);
@@ -127,7 +138,14 @@ public class TasmoServiceInitializer {
             }
         }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);
 
-        TasmoViewMaterializer materializer = new TasmoViewMaterializer(existenceStore, bookkeeper, tasmoViewModel, viewChangeNotificationProcessor);
+        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
+                tasmoViewModel,
+                viewChangeNotificationProcessor,
+                new WrittenInstanceHelper(),
+                concurrencyStore,
+                eventValueStore,
+                referenceStore,
+                threadTimestamp);
 
         return new EventIngressCallbackStream(materializer);
     }

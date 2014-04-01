@@ -34,7 +34,7 @@ public class ViewValueStore {
     private final ViewPathKeyProvider viewPathKeyProvider;
 
     public ViewValueStore(RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore,
-        ViewPathKeyProvider viewPathKeyProvider) {
+            ViewPathKeyProvider viewPathKeyProvider) {
         this.viewValueStore = viewValueStore;
         this.viewPathKeyProvider = viewPathKeyProvider;
     }
@@ -70,7 +70,6 @@ public class ViewValueStore {
         return _bytes;
     }
 
-
     private int viewPathKey(ObjectId[] objectIds) {
         String[] classes = new String[objectIds.length];
         for (int i = 0; i < objectIds.length; i++) {
@@ -89,7 +88,7 @@ public class ViewValueStore {
     }
 
     public String get(TenantIdAndCentricId tenantIdAndCentricId,
-        ObjectId viewObjectId, String modelPathId, ObjectId[] modelPathInstanceState) throws IOException {
+            ObjectId viewObjectId, String modelPathId, ObjectId[] modelPathInstanceState) throws IOException {
         ImmutableByteArray rowKey = rowKey(viewObjectId);
         ImmutableByteArray columnKey = columnKey(modelPathId, modelPathInstanceState);
         String got = viewValueStore.get(tenantIdAndCentricId, rowKey, columnKey, null, null);
@@ -97,16 +96,17 @@ public class ViewValueStore {
     }
 
     static public interface ViewCollector extends CallbackStream<ColumnValueAndTimestamp<ImmutableByteArray, String, Long>> {
+
         ViewDescriptor getViewDescriptor();
     }
 
     public void multiGet(List<? extends ViewCollector> viewCollectors) throws IOException {
-        List<TenantKeyedColumnValueCallbackStream<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, Long>> keyCallbackPairs =
-            Lists.newArrayList();
-        for (ViewCollector viewCollector:viewCollectors) {
+        List<TenantKeyedColumnValueCallbackStream<TenantIdAndCentricId,
+                ImmutableByteArray, ImmutableByteArray, String, Long>> keyCallbackPairs = Lists.newArrayList();
+        for (ViewCollector viewCollector : viewCollectors) {
             ViewDescriptor viewDescriptor = viewCollector.getViewDescriptor();
             keyCallbackPairs.add(new TenantKeyedColumnValueCallbackStream<>(viewDescriptor.getTenantIdAndCentricId(),
-                rowKey(viewDescriptor.getViewId()), viewCollector));
+                    rowKey(viewDescriptor.getViewId()), viewCollector));
         }
 
         viewValueStore.multiRowGetAll(keyCallbackPairs);
@@ -116,12 +116,12 @@ public class ViewValueStore {
         MultiAdd<ImmutableByteArray, ImmutableByteArray, String> rawAdds = new MultiAdd<>();
         for (ViewWriteFieldChange change : adds) {
             rawAdds.add(rowKey(change.getViewObjectId()),
-                columnKey(change.getModelPathId(),
-                change.getModelPathInstanceIds()),
-                change.getValue(),
-                new ConstantTimestamper(change.getTimestamp()));
+                    columnKey(change.getModelPathId(),
+                            change.getModelPathInstanceIds()),
+                    change.getValue(),
+                    new ConstantTimestamper(change.getTimestamp()));
 
-            LOG.debug("Adding {}", change);
+            LOG.debug("VVS:ADD {}", change);
         }
         List<RowColumValueTimestampAdd<ImmutableByteArray, ImmutableByteArray, String>> took = rawAdds.take();
         viewValueStore.multiRowsMultiAdd(tenantIdAndCentricId, took);
@@ -131,11 +131,11 @@ public class ViewValueStore {
         MultiRemove<ImmutableByteArray, ImmutableByteArray> rawRemoves = new MultiRemove<>();
         for (ViewWriteFieldChange change : removes) {
             rawRemoves.add(rowKey(change.getViewObjectId()),
-                columnKey(change.getModelPathId(),
-                change.getModelPathInstanceIds()),
-                new ConstantTimestamper(change.getTimestamp()));
+                    columnKey(change.getModelPathId(),
+                            change.getModelPathInstanceIds()),
+                    new ConstantTimestamper(change.getTimestamp()));
 
-            LOG.debug("Removing {}", change);
+            LOG.debug("VVS:REMOVED {}", change);
         }
         List<RowColumnTimestampRemove<ImmutableByteArray, ImmutableByteArray>> took = rawRemoves.take();
         viewValueStore.multiRowsMultiRemove(tenantIdAndCentricId, took);

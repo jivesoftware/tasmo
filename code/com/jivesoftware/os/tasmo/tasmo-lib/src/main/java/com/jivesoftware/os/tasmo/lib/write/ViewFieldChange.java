@@ -12,8 +12,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -27,73 +28,39 @@ public class ViewFieldChange {
         add, remove
     }
     private final long eventId;
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    private final long sessionId;
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    private final long changeId;
-    private final TenantIdAndCentricId tenantIdAndCentricId;
     private final Id actorId;
     private final ViewFieldChangeType type;
     private final ObjectId viewObjectId;
     private final String modelPathId;
-    private final ObjectId[] modelPathInstanceIds;
+    private final PathId[] modelPathInstanceIds;
+    private final List<ReferenceWithTimestamp> modelPathVersions;
     private final String value;
     private final long timestamp;
 
     @JsonCreator
     public ViewFieldChange(
-        @JsonProperty("eventId") long eventId,
-        @JsonProperty("sessionId") long sessionId,
-        @JsonProperty("changeId") long changeId,
-        @JsonProperty("tenantIdAndCentricId") TenantIdAndCentricId tenantIdAndCentricId,
-        @JsonProperty("actorId") Id actorId,
-        @JsonProperty("type") ViewFieldChangeType type,
-        @JsonProperty("viewObjectId") ObjectId viewObjectId,
-        @JsonProperty("modelPathId") String modelPathId,
-        @JsonProperty("modelPathInstanceIds") ObjectId[] modelPathInstanceIds,
-        @JsonProperty("value") String value,
-        @JsonProperty("timestamp") long timestamp) {
+            @JsonProperty("eventId") long eventId,
+            @JsonProperty("actorId") Id actorId,
+            @JsonProperty("type") ViewFieldChangeType type,
+            @JsonProperty("viewObjectId") ObjectId viewObjectId,
+            @JsonProperty("modelPathId") String modelPathId,
+            @JsonProperty("modelPathInstanceIds") PathId[] modelPathInstanceIds,
+            @JsonProperty("modelPathVersions") List<ReferenceWithTimestamp> modelPathVersions,
+            @JsonProperty("value") String value,
+            @JsonProperty("timestamp") long timestamp) {
         this.eventId = eventId;
-        this.sessionId = sessionId;
-        this.changeId = changeId;
-        this.tenantIdAndCentricId = tenantIdAndCentricId;
         this.actorId = actorId;
         this.type = type;
         this.viewObjectId = viewObjectId;
         this.modelPathId = modelPathId;
         this.modelPathInstanceIds = modelPathInstanceIds;
+        this.modelPathVersions = modelPathVersions;
         this.value = value;
         this.timestamp = timestamp;
     }
 
     public long getEventId() {
         return eventId;
-    }
-
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    public long getSessionId() {
-        return sessionId;
-    }
-
-    /**
-     * @deprecated this field is no longer used, but remains for on the wire compatibility
-     */
-    @Deprecated
-    public long getChangeId() {
-        return changeId;
-    }
-
-    public TenantIdAndCentricId getTenantIdAndCentricId() {
-        return tenantIdAndCentricId;
     }
 
     public Id getActorId() {
@@ -112,8 +79,12 @@ public class ViewFieldChange {
         return modelPathId;
     }
 
-    public ObjectId[] getModelPathInstanceIds() {
+    public PathId[] getModelPathInstanceIds() {
         return modelPathInstanceIds;
+    }
+
+    public List<ReferenceWithTimestamp> getModelPathVersions() {
+        return modelPathVersions;
     }
 
     public String getValue() {
@@ -127,24 +98,20 @@ public class ViewFieldChange {
     @Override
     public String toString() {
         return "ViewFieldChange{"
-            + "eventId=" + eventId
-            + ", tenantIdAndCentricId=" + tenantIdAndCentricId
-            + ", actorId=" + actorId
-            + ", type=" + type
-            + ", viewObjectId=" + viewObjectId
-            + ", modelPathId=" + modelPathId
-            + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
-            + ", value=" + value
-            + ", timestamp=" + timestamp + '}';
+                + "eventId=" + eventId
+                + ", actorId=" + actorId
+                + ", type=" + type
+                + ", viewObjectId=" + viewObjectId
+                + ", modelPathId=" + modelPathId
+                + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
+                + ", value=" + value
+                + ", timestamp=" + timestamp + '}';
     }
 
     @Override
     public int hashCode() {
         int hash = 5;
         hash = 97 * hash + (int) (this.eventId ^ (this.eventId >>> 32));
-        hash = 97 * hash + (int) (this.sessionId ^ (this.sessionId >>> 32));
-        hash = 97 * hash + (int) (this.changeId ^ (this.changeId >>> 32));
-        hash = 97 * hash + Objects.hashCode(this.tenantIdAndCentricId);
         hash = 97 * hash + Objects.hashCode(this.actorId);
         hash = 97 * hash + (this.type != null ? this.type.hashCode() : 0);
         hash = 97 * hash + Objects.hashCode(this.viewObjectId);
@@ -165,15 +132,6 @@ public class ViewFieldChange {
         }
         final ViewFieldChange other = (ViewFieldChange) obj;
         if (this.eventId != other.eventId) {
-            return false;
-        }
-        if (this.sessionId != other.sessionId) {
-            return false;
-        }
-        if (this.changeId != other.changeId) {
-            return false;
-        }
-        if (!Objects.equals(this.tenantIdAndCentricId, other.tenantIdAndCentricId)) {
             return false;
         }
         if (!Objects.equals(this.actorId, other.actorId)) {

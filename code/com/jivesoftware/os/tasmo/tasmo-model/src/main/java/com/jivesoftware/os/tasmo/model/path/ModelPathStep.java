@@ -122,6 +122,7 @@ public class ModelPathStep {
 
             case latest_backRef:
             case backRefs:
+            case count:
                 path.add(destinationClassName);
                 path.add(stepType);
                 path.add(originClassName);

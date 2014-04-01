@@ -2,8 +2,9 @@ package com.jivesoftware.os.tasmo.view.reader.api;
 
 public enum BackRefType {
 
-    ALL("all"),
-    LATEST("latest");
+    ALL("all_"),
+    LATEST("latest_"),
+    COUNT("count_");
 
     private final String fieldNamePrefix;
 

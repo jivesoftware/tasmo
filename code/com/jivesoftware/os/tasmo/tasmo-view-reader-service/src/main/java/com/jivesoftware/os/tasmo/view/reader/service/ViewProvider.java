@@ -23,7 +23,6 @@ import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
-import com.jivesoftware.os.tasmo.view.reader.api.ViewFieldVersion;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore.ViewCollector;
@@ -195,9 +194,8 @@ public class ViewProvider<V> implements ViewReader<V> {
 
         public VV getView(Set<Id> canViewTheseIds) throws Exception {
             ViewResponse view = viewFieldsCollector.getView(canViewTheseIds);
-            List<ViewFieldVersion> viewValueFieldVersions = viewFieldsCollector.getViewValueFieldVersions();
             TenantIdAndCentricId tenantIdAndCentricId = viewDescriptor.getTenantIdAndCentricId();
-            return viewFormatter.getView(tenantIdAndCentricId, viewDescriptor.getViewId(), view, viewValueFieldVersions);
+            return viewFormatter.getView(tenantIdAndCentricId, viewDescriptor.getViewId(), view);
         }
 
         @Override
