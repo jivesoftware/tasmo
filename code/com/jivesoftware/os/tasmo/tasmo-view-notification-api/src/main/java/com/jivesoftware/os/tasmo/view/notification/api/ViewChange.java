@@ -2,8 +2,6 @@ package com.jivesoftware.os.tasmo.view.notification.api;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.tasmo.id.BaseView;
-import com.jivesoftware.os.tasmo.view.notification.api.ViewNotification;
-import com.jivesoftware.os.tasmo.view.notification.api.ViewNotification;
 
 /**
  *
