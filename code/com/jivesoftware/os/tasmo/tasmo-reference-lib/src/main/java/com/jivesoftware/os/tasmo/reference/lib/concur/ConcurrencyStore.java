@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -122,7 +123,7 @@ public class ConcurrencyStore {
                 Long got = updatedStore.get(tenantId, e.objectId, e.fieldName, null, null);
                 if (got == null) { // TODO resolve: got == null should be impossible
                     was.add(e);
-                } else if (got != e.version) {
+                } else if (!Objects.equals(got, e.version)) {
                     was.add(new FieldVersion(e.objectId, e.fieldName, got));
                     return was; // Means epected has been modified
                 } else {
