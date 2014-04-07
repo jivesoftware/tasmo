@@ -119,7 +119,7 @@ public class TasmoServiceInitializer {
         TasmoEventBookkeeper bookkeeper
                 = new TasmoEventBookkeeper(bookKeepingStream);
         TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
-        ConcurrencyAndExistanceCommitChange existenceCommitChange = new ConcurrencyAndExistanceCommitChange(null, changeWriter);
+        ConcurrencyAndExistanceCommitChange existenceCommitChange = new ConcurrencyAndExistanceCommitChange(concurrencyStore, changeWriter);
 
         final TasmoViewModel tasmoViewModel = new TasmoViewModel(
                 masterTenantId,
