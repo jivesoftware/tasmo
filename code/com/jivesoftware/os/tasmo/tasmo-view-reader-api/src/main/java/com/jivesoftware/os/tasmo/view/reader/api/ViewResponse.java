@@ -65,8 +65,8 @@ public class ViewResponse {
     }
 
     @Nullable
-    public <V extends BaseView<?>> V getView(Class<V> viewClass) {
-        return ModelAdapterFactory.createModelAdapter(getViewBody(), viewClass);
+    public <V extends BaseView<?>> V getView(Class<V> viewClass, ViewInstanceProvider viewInstanceProvider) {
+        return viewInstanceProvider.getViewInstance(getViewBody(), viewClass);
     }
 
     @Override

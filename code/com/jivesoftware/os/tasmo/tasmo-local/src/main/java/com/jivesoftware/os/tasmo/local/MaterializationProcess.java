@@ -1,6 +1,7 @@
 package com.jivesoftware.os.tasmo.local;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Optional;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
@@ -10,6 +11,7 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewId;
+import com.jivesoftware.os.tasmo.view.reader.api.ViewInstanceProvider;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReaderException;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -54,7 +56,21 @@ public class MaterializationProcess {
         }
 
         if (viewResponse.getStatusCode() == ViewResponse.StatusCode.OK) {
-            return viewResponse.getView(viewClass);
+            return viewResponse.getView(viewClass, new ViewInstanceProvider(){
+
+                @Override
+                public <V> V getViewInstance(ObjectNode objectNode, Class<V> modelClass) {
+                    //TODO copy model adapter factory
+                    return null;
+                }
+
+                @Override
+                public <V> Optional<V> getViewInstance(Optional<ObjectNode> objectNode, Class<V> modelClass) {
+                    //TODO copy model adapter factory
+                    return Optional.absent();
+                }
+                
+            });
         } else {
             return null;
         }
@@ -91,7 +107,21 @@ public class MaterializationProcess {
         }
 
         if (viewResponse.getStatusCode() == ViewResponse.StatusCode.OK) {
-            return viewResponse.getView(viewClass);
+            return viewResponse.getView(viewClass, new ViewInstanceProvider(){
+
+                @Override
+                public <V> V getViewInstance(ObjectNode objectNode, Class<V> modelClass) {
+                    //TODO copy model adapter factory
+                    return null;
+                }
+
+                @Override
+                public <V> Optional<V> getViewInstance(Optional<ObjectNode> objectNode, Class<V> modelClass) {
+                    //TODO copy model adapter factory
+                    return Optional.absent();
+                }
+                
+            });
         } else {
             return null;
         }
