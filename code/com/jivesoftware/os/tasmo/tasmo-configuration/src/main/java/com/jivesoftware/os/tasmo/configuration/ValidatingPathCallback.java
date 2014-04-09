@@ -28,28 +28,27 @@ public class ValidatingPathCallback implements PathCallback {
     private void assertFieldIsPresent(Set<String> classNames, ValueType type, String[] fieldNames) throws IllegalArgumentException {
         if (type != ValueType.backrefs && type != ValueType.latest_backref && type != ValueType.count) {
             for (String fieldName : fieldNames) {
+                int foundEventsWithField = 0;
                 for (String className : classNames) {
                     EventModel eventConfiguration = eventsModel.getEvent(className);
                     Map<String, ValueType> event = eventConfiguration.getEventFields();
                     if (event != null && event.containsKey(fieldName)) {
                         if (event.get(fieldName).equals(type)) {
-                            continue;
+                            foundEventsWithField++;
                         } else {
                             if (type == ValueType.value) {
                                 if (event.get(fieldName).equals(ValueType.ref)) {
-                                    continue;
-                                }
-                                if (event.get(fieldName).equals(ValueType.refs)) {
-                                    continue;
+                                    foundEventsWithField++;
+                                } else if (event.get(fieldName).equals(ValueType.refs)) {
+                                    foundEventsWithField++;
                                 }
                             }
                         }
                     }
 
-                    String msg = "The view expects event:" + className + " to have field:" + fieldName + " and be of type:" + type + "."
-                            + " found: event:" + ((event == null) ? null : className)
-                            + " field:" + ((event == null || !event.containsKey(fieldName)) ? null : fieldName)
-                            + " type:" + ((event == null) ? null : event.get(fieldName));
+                }
+                if (foundEventsWithField == 0) {
+                    String msg = "The view expects one of these events:" + classNames + " to have field:" + fieldName + " and be of type:" + type;
                     throw new IllegalArgumentException(msg);
                 }
             }
