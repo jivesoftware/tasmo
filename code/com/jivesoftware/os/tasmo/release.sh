@@ -54,10 +54,6 @@ echo "/-------------------------------------------------------"
 echo "| setting version to "${VERSION}
 echo "\-------------------------------------------------------"
 find . -name "pom.xml" | xargs -n 1 mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${VERSION} -pl
-if [ "$?" -ne "0" ]; then
-	echo "Failed to set versions="${VERSION}
-	exit 1
-fi
 git add -A
 git commit -m "release "${VERSION}
 git push origin ${ON_BRANCH}
@@ -81,11 +77,10 @@ fi
 
 
 git checkout ${ON_BRANCH}
+echo "/-------------------------------------------------------"
+echo "| setting version to "${VERSION}"-SNAPSHOT on branch "${ON_BRANCH}
+echo "\-------------------------------------------------------"
 find . -name "pom.xml" | xargs -n 1 mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${1}-SNAPSHOT -pl
-if [ "$?" -ne "0" ]; then
-	echo "Failed to set versions="${1}
-	exit 1
-fi
 git add -A
 git commit -m "begin "${1}"-SNAPSHOT"
 git push origin ${ON_BRANCH}
