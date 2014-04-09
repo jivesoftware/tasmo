@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jivesoftware.os.tasmo.id.BaseView;
 import javax.annotation.Nullable;
 
 /**
@@ -62,11 +61,6 @@ public class ViewResponse {
 
     public boolean hasViewBody() {
         return statusCode == StatusCode.OK && viewBody != null;
-    }
-
-    @Nullable
-    public <V extends BaseView<?>> V getView(Class<V> viewClass, ViewInstanceProvider viewInstanceProvider) {
-        return viewInstanceProvider.getViewInstance(getViewBody(), viewClass);
     }
 
     @Override
