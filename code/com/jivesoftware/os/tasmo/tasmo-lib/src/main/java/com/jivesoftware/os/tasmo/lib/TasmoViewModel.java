@@ -203,7 +203,7 @@ public class TasmoViewModel {
                 PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName,
                         modelPath, eventValueStore, referenceStore);
 
-                LOG.info("Bind:{}", factoryKey);
+                LOG.trace("Bind:{}", factoryKey);
                 allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
 
                 List<PathTraverser> pathTraversers = fieldProcessorFactory.buildPathTraversers(pathTraverserConfig);

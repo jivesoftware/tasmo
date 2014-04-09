@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.jive.utils.logger.MetricLogger;
+import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantIdAndRow;
@@ -56,8 +58,9 @@ import org.testng.annotations.Test;
 public class CombinatorialMaterializerTest {
 
     //private long seed = System.currentTimeMillis();
+    private final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final long seed = 1389045159990L;
-    private final boolean verbose = true;
+    private final boolean verbose = false;
     private final int maxStepDepth = 4; // TODO change back to 4
     private final int maxFanOut = 2;
     //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
@@ -66,7 +69,7 @@ public class CombinatorialMaterializerTest {
 
     private void println(Object line) {
         if (verbose) {
-            System.out.println(line);
+            LOG.info(line == null ? "null" : line.toString());
         }
     }
 
@@ -173,7 +176,6 @@ public class CombinatorialMaterializerTest {
             }
 
             System.out.println("***** category:" + ic.category + " testId:" + ic.testId + " PASSED *****");
-            System.out.println("\n\n");
 
         } catch (Throwable t) {
             System.out.println("Test:testAllModelPathCombinationsAndEventFireCombinations: category:" + ic.category

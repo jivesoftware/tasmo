@@ -13,6 +13,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.jivesoftware.os.jive.utils.logger.MetricLogger;
+import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
@@ -34,6 +36,7 @@ import org.testng.Assert;
  */
 public class Expectations {
 
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final ViewValueStore viewValueStore;
     private final Map<ViewKey, ModelPath> viewModelPaths = Maps.newHashMap();
@@ -56,7 +59,7 @@ public class Expectations {
             for (Map.Entry<String, String> entry : input.getLeafNodeFields().entrySet()) {
                 ObjectId[] branchIds = viewBranch.getBranchIds();
 
-                System.out.println("Adding view path expecation: " + binding.getModelPaths().get(0).getId()
+                LOG.trace("Adding view path expecation: " + binding.getModelPaths().get(0).getId()
                         + Arrays.toString(branchIds) + ":" + entry.getKey() + "->" + (viewBranch.isDeleted() ? null : entry.getValue()));
 
                 expectations.addExpectation(testCase, branchIds[0], binding.getViewClassName(),
