@@ -1,5 +1,4 @@
 #!/bin/bash
-
 echo "/-------------------------------------------------------"
 echo "| checking running from develop branch. "
 echo "\-------------------------------------------------------"
@@ -48,16 +47,19 @@ then
 	
 fi
 
+VERSION=`mvn org.apache.maven.plugins:maven-help-plugin:2.1.1:evaluate -Dexpression=project.version | grep -v '\[' | tr '-' ' ' | awk '{ print $1 }'`
+
+
 echo "/-------------------------------------------------------"
-echo "| setting version to "${1}
+echo "| setting version to "${VERSION}
 echo "\-------------------------------------------------------"
-find . -name "pom.xml" | xargs -n 1 mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${1} -pl
+find . -name "pom.xml" | xargs -n 1 mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${VERSION} -pl
 if [ "$?" -ne "0" ]; then
-	echo "Failed to set versions="${1}
+	echo "Failed to set versions="${VERSION}
 	exit 1
 fi
 git add -A
-git commit -m "release "${1}
+git commit -m "release "${VERSION}
 git push origin ${ON_BRANCH}
 if [ "$?" -ne "0" ]; then
 	echo "Failed to push release to "${ON_BRANCH}
@@ -79,12 +81,12 @@ fi
 
 
 git checkout ${ON_BRANCH}
-find . -name "pom.xml" | xargs -n 1 mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${2}-SNAPSHOT -pl
+find . -name "pom.xml" | xargs -n 1 mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${1}-SNAPSHOT -pl
 if [ "$?" -ne "0" ]; then
-	echo "Failed to set versions="${2}
+	echo "Failed to set versions="${1}
 	exit 1
 fi
 git add -A
-git commit -m "begin "${2}"-SNAPSHOT"
+git commit -m "begin "${1}"-SNAPSHOT"
 git push origin ${ON_BRANCH}
 
