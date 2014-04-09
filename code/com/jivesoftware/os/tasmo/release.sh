@@ -1,4 +1,7 @@
 #!/bin/bash
+
+NEXT_VERSION=$1
+
 echo "/-------------------------------------------------------"
 echo "| checking running from develop branch. "
 echo "\-------------------------------------------------------"
@@ -78,10 +81,15 @@ fi
 
 git checkout ${ON_BRANCH}
 echo "/-------------------------------------------------------"
-echo "| setting version to "${VERSION}"-SNAPSHOT on branch "${ON_BRANCH}
+echo "| setting version to "${NEXT_VERSION}"-SNAPSHOT on branch "${ON_BRANCH}
 echo "\-------------------------------------------------------"
-find . -name "pom.xml" | xargs -n 1 mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${1}-SNAPSHOT -pl
+find . -name "pom.xml" | xargs -n 1 mvn versions:set -DgenerateBackupPoms=false -DnewVersion=${NEXT_VERSION}-SNAPSHOT -pl
 git add -A
-git commit -m "begin "${1}"-SNAPSHOT"
+git commit -m "begin "${NEXT_VERSION}"-SNAPSHOT"
 git push origin ${ON_BRANCH}
+
+echo "/-------------------------------------------------------"
+echo "| populating .m2 for "${NEXT_VERSION}"-SNAPSHOT"
+echo "\-------------------------------------------------------"
+mvn clean install -DskipTests
 
