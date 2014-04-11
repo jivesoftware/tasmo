@@ -68,7 +68,7 @@ public class ViewModelProvider {
         }
     }
 
-    synchronized private void loadModel(TenantId tenantId) {
+    synchronized public void loadModel(TenantId tenantId) {
         ChainedVersion currentVersion = viewsProvider.getCurrentViewsVersion(tenantId);
         if (currentVersion == ChainedVersion.NULL) {
             versionedViewModels.put(tenantId, new VersionedTasmoViewModel(ChainedVersion.NULL, Collections.<String, ViewBinding>emptyMap()));

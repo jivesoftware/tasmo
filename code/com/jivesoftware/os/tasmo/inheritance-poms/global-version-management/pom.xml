@@ -66,37 +66,37 @@
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils</groupId>
                 <artifactId>http-client</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
                 <artifactId>row-column-value-store-marshall-primatives</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
                 <artifactId>row-column-value-store-inmemory</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils</groupId>
                 <artifactId>jaxrs-util</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils</groupId>
                 <artifactId>base</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils</groupId>
                 <artifactId>merlin-config</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
                 <artifactId>row-column-value-store-api</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
             </dependency>
             <dependency>
                 <groupId>com.googlecode.combinatoricslib</groupId>
@@ -107,18 +107,18 @@
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
                 <artifactId>row-column-value-store-marshall-api</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
                 <type>jar</type>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils</groupId>
                 <artifactId>logger</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
             </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils</groupId>
                 <artifactId>ordered-id</artifactId>
-                <version>0.2</version>
+                <version>0.5</version>
             </dependency>
             <dependency>
                 <groupId>org.eclipse.jetty</groupId>

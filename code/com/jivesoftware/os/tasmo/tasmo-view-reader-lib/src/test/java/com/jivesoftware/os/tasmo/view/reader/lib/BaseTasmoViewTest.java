@@ -76,7 +76,6 @@ import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
@@ -380,12 +379,12 @@ public class BaseTasmoViewTest {
         EventWriterResponse eventWriterResponse = writer.write(event);
         return eventWriterResponse.getObjectIds().get(0);
     }
-    
+
     <V extends BaseView> V getView(ViewResponse response, Class<V> viewClass) {
         if (response.getStatusCode() == ViewResponse.StatusCode.OK) {
             return proxyFactory.getViewProxy(response.getViewBody(), viewClass);
         } else {
-           throw new IllegalStateException("Cannot build view proxy from unsuccessful response");
+            throw new IllegalStateException("Cannot build view proxy from unsuccessful response");
         }
     }
 }

@@ -3,26 +3,40 @@ package com.jivesoftware.os.tasmo.view.reader.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.DefaultRowColumnValueStoreMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.NeverAcceptsFailureSetOfSortedMaps;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.CurrentTimestamper;
+import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
+import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.ByteArrayTypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
-import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
-import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
-import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
+import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
+import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
+import com.jivesoftware.os.tasmo.lib.exists.ExistenceStore;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
-import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
-import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
+import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
+import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
+import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
+import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
+import com.jivesoftware.os.tasmo.view.reader.lib.BatchingEventValueStore;
+import com.jivesoftware.os.tasmo.view.reader.lib.BatchingReferenceStore;
+import com.jivesoftware.os.tasmo.view.reader.lib.ExistenceChecker;
+import com.jivesoftware.os.tasmo.view.reader.lib.JsonViewFormatterProvider;
+import com.jivesoftware.os.tasmo.view.reader.lib.ReadTimeViewMaterializer;
+import com.jivesoftware.os.tasmo.view.reader.lib.ReferenceGatherer;
+import com.jivesoftware.os.tasmo.view.reader.lib.ValueGatherer;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewModelProvider;
+import com.jivesoftware.os.tasmo.view.reader.lib.ViewPermissionChecker;
 import java.io.IOException;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.merlin.config.Config;
@@ -54,72 +68,75 @@ public class ViewReaderServiceInitializer {
     }
 
     public static ViewReader<ViewResponse> initializeViewReader(ViewReaderServiceConfig config,
-            SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
-            ViewPermissionChecker viewPermissionChecker,
-            ViewsProvider viewsProvider) throws Exception {
-        return build(setOfSortedMapsImplInitializer,
-                viewPermissionChecker,
-                viewsProvider,
-                new ViewAsObjectNode(),
-                config);
+        SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+        ViewPermissionChecker viewPermissionChecker,
+        ViewsProvider viewsProvider) throws Exception {
+
+        return build(config, setOfSortedMapsImplInitializer, viewPermissionChecker, viewsProvider);
     }
 
-    private static <V> ViewProvider<V> build(
-            SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
-            final ViewPermissionChecker viewPermissionChecker,
-            ViewsProvider viewsProvider,
-            ViewFormatter<V> viewFormatter,
-            ViewReaderServiceConfig config) throws IOException {
-
-        RowColumnValueStore<TenantIdAndCentricId,
-                ImmutableByteArray,
-                ImmutableByteArray,
-                String,
-                RuntimeException> store = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
-                                "viewValueTable", "v", new DefaultRowColumnValueStoreMarshaller<>(
-                                        new TenantIdAndCentricIdMarshaller(),
-                                        new ImmutableByteArrayMarshaller(),
-                                        new ImmutableByteArrayMarshaller(),
-                                        new StringTypeMarshaller()), new CurrentTimestamper()));
-
-        final ViewValueStore viewValueStore = new ViewValueStore(store, new ViewPathKeyProvider());
-        ViewValueReader viewValueReader = new ViewValueReader(viewValueStore);
+    private static ViewReader<ViewResponse> build(ViewReaderServiceConfig config,
+        SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+        ViewPermissionChecker viewPermissionChecker,
+        ViewsProvider viewsProvider) throws IOException {
 
         TenantId tenantId = new TenantId(config.getModelMasterTenantId());
-        final TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(tenantId, viewsProvider);
-        tenantViewsProvider.loadModel(tenantId);
+        final ViewModelProvider viewModelProvider = new ViewModelProvider(tenantId, viewsProvider);
+        viewModelProvider.loadModel(tenantId);
 
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
                 try {
-                    tenantViewsProvider.reloadModels();
+                    viewModelProvider.reloadModels();
                 } catch (Exception x) {
-                    LOG.error("Scheduled reloadig of view model failed. ", x);
+                    LOG.error("Scheduled reloading of view model failed. ", x);
                 }
             }
         }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);
 
-        final long removeUndeclaredFieldsAfterNMillis = config.getRemoveUndeclaredFieldsAfterNMillis();
-        StaleViewFieldStream staleViewFieldStream = new StaleViewFieldStream() {
+        WrittenEventProvider eventProvider = new JsonWrittenEventProvider();
+
+        RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceTable =
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "existenceTable", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdMarshaller(),
+            new ObjectIdMarshaller(), new StringTypeMarshaller(),
+            new StringTypeMarshaller()), new CurrentTimestamper()));
+
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore =
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "eventValueTable", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
+            new ObjectIdMarshaller(), new StringTypeMarshaller(),
+            (TypeMarshaller<OpaqueFieldValue>) eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
+
+
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks =
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "multiLinkTable", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
+            new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks =
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "multiBackLinkTable", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
+            new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+
+
+        BatchingReferenceStore batchingReferenceStore = new BatchingReferenceStore(multiLinks, multiBackLinks);
+        ReferenceGatherer referenceGatherer = new ReferenceGatherer(batchingReferenceStore);
+
+        BatchingEventValueStore batchingEventValueStore = new BatchingEventValueStore(eventStore);
+        ValueGatherer valueGatherer = new ValueGatherer(batchingEventValueStore);
+        JsonViewFormatterProvider jsonViewFormatterProvider = new JsonViewFormatterProvider(new ObjectMapper(), null);
+        final ExistenceStore existenceStore = new ExistenceStore(existenceTable);
+
+        ExistenceChecker existenceChecker = new ExistenceChecker() {
             @Override
-            public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, String, Long> value) {
-                if (value != null && value.getTimestamp() < System.currentTimeMillis() - removeUndeclaredFieldsAfterNMillis) {
-                    try {
-                        ImmutableByteArray rowKey = viewValueStore.rowKey(viewDescriptor.getViewId());
-                        viewValueStore.remove(viewDescriptor.getTenantIdAndCentricId(), rowKey, value.getColumn(), value.getTimestamp() + 1);
-                    } catch (IOException x) {
-                        LOG.warn("Failed trying to cleanup stale fields for:{} ", viewDescriptor);
-                    }
-                }
+            public Set<ObjectId> check(TenantId tenantId, Set<ObjectId> existenceCheckTheseIds) {
+                return existenceStore.getExistence(tenantId, existenceCheckTheseIds);
             }
         };
 
-        return new ViewProvider<>(viewPermissionChecker,
-                viewValueReader,
-                tenantViewsProvider,
-                viewFormatter,
-                new JsonViewMerger(new ObjectMapper()),
-                staleViewFieldStream);
+        return new ReadTimeViewMaterializer(viewModelProvider, referenceGatherer, valueGatherer,
+            jsonViewFormatterProvider, viewPermissionChecker, existenceChecker);
     }
 }

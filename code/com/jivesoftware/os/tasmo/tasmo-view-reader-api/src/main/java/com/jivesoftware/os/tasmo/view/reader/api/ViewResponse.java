@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jivesoftware.os.tasmo.id.BaseView;
 import javax.annotation.Nullable;
 
 /**
@@ -13,12 +12,12 @@ import javax.annotation.Nullable;
 public class ViewResponse {
 
     public enum StatusCode {
+
         OK,
         ERROR,
         NOT_FOUND,
         FORBIDDEN
     }
-
     private final StatusCode statusCode;
     private final ObjectNode viewBody;
 
@@ -66,9 +65,9 @@ public class ViewResponse {
 
     @Override
     public String toString() {
-        return "ViewResponse{" +
-            "statusCode=" + statusCode +
-            ", viewBody=" + viewBody +
-            '}';
+        return "ViewResponse{"
+            + "statusCode=" + statusCode
+            + ", viewBody=" + viewBody
+            + '}';
     }
 }

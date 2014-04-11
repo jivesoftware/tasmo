@@ -57,10 +57,6 @@
             <artifactId>jackson-databind</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
         </dependency>
@@ -86,10 +82,6 @@
             <artifactId>http-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-configuration</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.jivesoftware.os.jive.utils</groupId>
             <artifactId>jaxrs-util</artifactId>
         </dependency>
@@ -97,6 +89,18 @@
             <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
             <artifactId>row-column-value-store-inmemory</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.tasmo</groupId>
+            <artifactId>tasmo-view-reader-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.tasmo</groupId>
+            <artifactId>tasmo-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.tasmo</groupId>
+            <artifactId>tasmo-reference-lib</artifactId>
         </dependency>
     </dependencies>
 </project>
