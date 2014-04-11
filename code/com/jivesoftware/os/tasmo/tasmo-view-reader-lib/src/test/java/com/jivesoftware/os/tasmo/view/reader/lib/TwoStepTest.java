@@ -20,8 +20,6 @@ import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.id.BaseEvent;
 import com.jivesoftware.os.tasmo.id.BaseView;
 import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.view.reader.api.BackRef;
-import com.jivesoftware.os.tasmo.view.reader.api.BackRefType;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewId;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -72,8 +70,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
     private static interface UserVersionsView extends BaseView {
 
         @Nullable
-        @BackRef(type = BackRefType.ALL, via = "authors", from = VersionEvent.class)
-        Version[] authors();
+        Version[] all_authors();
 
         interface Version {
 
@@ -85,8 +82,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
     private static interface UserVersionsLatestView extends BaseView {
 
         @Nullable
-        @BackRef(type = BackRefType.LATEST, via = "authors", from = VersionEvent.class)
-        Version authors();
+        Version latest_authors();
 
         interface Version {
 
@@ -98,8 +94,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
     private static interface UserVersionsCountView extends BaseView {
 
         @Nullable
-        @BackRef(type = BackRefType.COUNT, via = "authors", from = VersionEvent.class)
-        int authors();
+        int count_authors();
     }
     String eventModel =
         "User:userName(value),creationDate(value),manager(ref)|Content:location(ref)|Version:parent(ref),authors(refs),subject(value),body(value)|"
@@ -123,7 +118,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        ContentView content = response.getView(ContentView.class);
+        ContentView content = getView(response, ContentView.class);
         Assert.assertNotNull(content);
 
         ContentView.Container container = content.location();
@@ -140,7 +135,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        content = response.getView(ContentView.class);
+        content = getView(response, ContentView.class);
         Assert.assertNotNull(content);
 
         container = content.location();
@@ -156,7 +151,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        content = response.getView(ContentView.class);
+        content = getView(response, ContentView.class);
         Assert.assertNotNull(content);
 
         container = content.location();
@@ -173,7 +168,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        content = response.getView(ContentView.class);
+        content = getView(response, ContentView.class);
         Assert.assertNotNull(content);
 
         container = content.location();
@@ -190,7 +185,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        content = response.getView(ContentView.class);
+        content = getView(response, ContentView.class);
         Assert.assertNotNull(content);
 
         container = content.location();
@@ -204,7 +199,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        content = response.getView(ContentView.class);
+        content = getView(response, ContentView.class);
         Assert.assertNotNull(content);
 
         container = content.location();
@@ -220,7 +215,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        content = response.getView(ContentView.class);
+        content = getView(response, ContentView.class);
         Assert.assertNotNull(content);
 
         container = content.location();
@@ -235,7 +230,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        content = response.getView(ContentView.class);
+        content = getView(response, ContentView.class);
         Assert.assertNotNull(content);
 
         container = content.location();
@@ -251,7 +246,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        content = response.getView(ContentView.class);
+        content = getView(response, ContentView.class);
         Assert.assertNotNull(content);
 
         container = content.location();
@@ -299,7 +294,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        VersionAuthorsView version = response.getView(VersionAuthorsView.class);
+        VersionAuthorsView version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         VersionAuthorsView.User[] authors = version.authors();
@@ -315,7 +310,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(VersionAuthorsView.class);
+        version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         authors = version.authors();
@@ -331,7 +326,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(VersionAuthorsView.class);
+        version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         authors = version.authors();
@@ -356,7 +351,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(VersionAuthorsView.class);
+        version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         authors = version.authors();
@@ -371,7 +366,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(VersionAuthorsView.class);
+        version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         authors = version.authors();
@@ -396,7 +391,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(VersionAuthorsView.class);
+        version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         authors = version.authors();
@@ -417,7 +412,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(VersionAuthorsView.class);
+        version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         authors = version.authors();
@@ -434,7 +429,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(VersionAuthorsView.class);
+        version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         authors = version.authors();
@@ -455,7 +450,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(VersionAuthorsView.class);
+        version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         authors = version.authors();
@@ -484,7 +479,7 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(VersionAuthorsView.class);
+        version = getView(response, VersionAuthorsView.class);
         Assert.assertNotNull(version);
 
         authors = version.authors();
@@ -510,10 +505,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        UserVersionsView userVersion = response.getView(UserVersionsView.class);
+        UserVersionsView userVersion = getView(response, UserVersionsView.class);
         Assert.assertNotNull(userVersion);
 
-        UserVersionsView.Version[] versions = userVersion.authors();
+        UserVersionsView.Version[] versions = userVersion.all_authors();
         Assert.assertNotNull(versions);
         Assert.assertEquals(versions.length, 1);
         Assert.assertEquals(versions[0].body(), "body1");
@@ -526,10 +521,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsView.class);
+        userVersion = getView(response, UserVersionsView.class);
         Assert.assertNotNull(userVersion);
 
-        versions = userVersion.authors();
+        versions = userVersion.all_authors();
         Assert.assertNotNull(versions);
 
         Assert.assertEquals(versions.length, 2);
@@ -551,10 +546,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsView.class);
+        userVersion = getView(response, UserVersionsView.class);
         Assert.assertNotNull(userVersion);
 
-        versions = userVersion.authors();
+        versions = userVersion.all_authors();
         Assert.assertNotNull(versions);
 
         Assert.assertEquals(versions.length, 1);
@@ -570,10 +565,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsView.class);
+        userVersion = getView(response, UserVersionsView.class);
         Assert.assertNotNull(userVersion);
 
-        versions = userVersion.authors();
+        versions = userVersion.all_authors();
         Assert.assertNotNull(versions);
 
         Assert.assertEquals(versions.length, 2);
@@ -595,10 +590,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsView.class);
+        userVersion = getView(response, UserVersionsView.class);
         Assert.assertNotNull(userVersion);
 
-        versions = userVersion.authors();
+        versions = userVersion.all_authors();
         Assert.assertNotNull(versions);
 
         Assert.assertEquals(versions.length, 1);
@@ -614,10 +609,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsView.class);
+        userVersion = getView(response, UserVersionsView.class);
         Assert.assertNotNull(userVersion);
 
-        versions = userVersion.authors();
+        versions = userVersion.all_authors();
 
         Assert.assertNotNull(versions);
         Assert.assertEquals(versions.length, 2);
@@ -641,10 +636,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsView.class);
+        userVersion = getView(response, UserVersionsView.class);
         Assert.assertNotNull(userVersion);
 
-        versions = userVersion.authors();
+        versions = userVersion.all_authors();
         Assert.assertNotNull(versions);
 
         Assert.assertEquals(versions.length, 0);
@@ -667,10 +662,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        UserVersionsLatestView userVersion = response.getView(UserVersionsLatestView.class);
+        UserVersionsLatestView userVersion = getView(response, UserVersionsLatestView.class);
         Assert.assertNotNull(userVersion);
 
-        UserVersionsLatestView.Version version = userVersion.authors();
+        UserVersionsLatestView.Version version = userVersion.latest_authors();
         Assert.assertNotNull(version);
         Assert.assertEquals(version.body(), "body1");
 
@@ -684,10 +679,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsLatestView.class);
+        userVersion = getView(response, UserVersionsLatestView.class);
         Assert.assertNotNull(userVersion);
 
-        version = userVersion.authors();
+        version = userVersion.latest_authors();
         Assert.assertNotNull(version);
         Assert.assertEquals(version.body(), "body2");
 
@@ -700,10 +695,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsLatestView.class);
+        userVersion = getView(response, UserVersionsLatestView.class);
         Assert.assertNotNull(userVersion);
 
-        version = userVersion.authors();
+        version = userVersion.latest_authors();
         Assert.assertNotNull(version);
         Assert.assertEquals(version.body(), "body1");
 
@@ -716,10 +711,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsLatestView.class);
+        userVersion = getView(response, UserVersionsLatestView.class);
         Assert.assertNotNull(userVersion);
 
-        version = userVersion.authors();
+        version = userVersion.latest_authors();
         Assert.assertNotNull(version);
         Assert.assertEquals(version.body(), "body2");
 
@@ -732,10 +727,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsLatestView.class);
+        userVersion = getView(response, UserVersionsLatestView.class);
         Assert.assertNotNull(userVersion);
 
-        version = userVersion.authors();
+        version = userVersion.latest_authors();
         Assert.assertNotNull(version);
         Assert.assertEquals(version.body(), "body1");
 
@@ -748,10 +743,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsLatestView.class);
+        userVersion = getView(response, UserVersionsLatestView.class);
         Assert.assertNotNull(userVersion);
 
-        version = userVersion.authors();
+        version = userVersion.latest_authors();
         Assert.assertNotNull(version);
         Assert.assertEquals(version.body(), "body2");
 
@@ -767,10 +762,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsLatestView.class);
+        userVersion = getView(response, UserVersionsLatestView.class);
         Assert.assertNotNull(userVersion);
 
-        version = userVersion.authors();
+        version = userVersion.latest_authors();
         Assert.assertNull(version);
 
     }
@@ -792,11 +787,11 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        UserVersionsCountView userVersion = response.getView(UserVersionsCountView.class);
+        UserVersionsCountView userVersion = getView(response, UserVersionsCountView.class);
         Assert.assertNotNull(userVersion);
 
 
-        Assert.assertEquals(userVersion.authors(), 1);
+        Assert.assertEquals(userVersion.count_authors(), 1);
 
         ObjectId versionId2 = write(EventBuilder.create(idProvider, "Version", tenantId, actorId).
             set("authors", Arrays.asList(userId1)).set("body", "body2").build());
@@ -806,11 +801,11 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsCountView.class);
+        userVersion = getView(response, UserVersionsCountView.class);
         Assert.assertNotNull(userVersion);
 
 
-        Assert.assertEquals(userVersion.authors(), 2);
+        Assert.assertEquals(userVersion.count_authors(), 2);
 
         //clear one
         write(EventBuilder.update(versionId1, tenantId, actorId).
@@ -822,10 +817,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsCountView.class);
+        userVersion = getView(response, UserVersionsCountView.class);
         Assert.assertNotNull(userVersion);
 
-        Assert.assertEquals(userVersion.authors(), 1);
+        Assert.assertEquals(userVersion.count_authors(), 1);
 
         //rereference
         write(EventBuilder.update(versionId1, tenantId, actorId).
@@ -837,10 +832,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsCountView.class);
+        userVersion = getView(response, UserVersionsCountView.class);
         Assert.assertNotNull(userVersion);
 
-        Assert.assertEquals(userVersion.authors(), 2);
+        Assert.assertEquals(userVersion.count_authors(), 2);
 
         //delete one
         write(EventBuilder.update(versionId2, tenantId, actorId).
@@ -852,10 +847,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsCountView.class);
+        userVersion = getView(response, UserVersionsCountView.class);
         Assert.assertNotNull(userVersion);
 
-        Assert.assertEquals(userVersion.authors(), 1);
+        Assert.assertEquals(userVersion.count_authors(), 1);
 
         //undelete
         write(EventBuilder.update(versionId2, tenantId, actorId).set(ReservedFields.DELETED, false).
@@ -867,10 +862,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsCountView.class);
+        userVersion = getView(response, UserVersionsCountView.class);
         Assert.assertNotNull(userVersion);
 
-        Assert.assertEquals(userVersion.authors(), 2);
+        Assert.assertEquals(userVersion.count_authors(), 2);
 
         //delete both
         write(EventBuilder.update(versionId1, tenantId, actorId).
@@ -885,10 +880,10 @@ public class TwoStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        userVersion = response.getView(UserVersionsCountView.class);
+        userVersion = getView(response, UserVersionsCountView.class);
         Assert.assertNotNull(userVersion);
 
-        Assert.assertEquals(userVersion.authors(), 0);
+        Assert.assertEquals(userVersion.count_authors(), 0);
 
     }
 }

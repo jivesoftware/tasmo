@@ -33,6 +33,7 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
+import com.jivesoftware.os.tasmo.id.BaseView;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.IdProvider;
@@ -61,6 +62,7 @@ import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
+import com.jivesoftware.os.tasmo.view.reader.api.JsonViewProxyProvider;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import java.util.ArrayList;
@@ -74,6 +76,7 @@ import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
@@ -109,6 +112,7 @@ public class BaseTasmoViewTest {
     WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
     ViewReader<ViewResponse> viewReader;
     final Set<Id> permittedIds = new HashSet<>();
+    private final JsonViewProxyProvider proxyFactory = new JsonViewProxyProvider();
 
     public RowColumnValueStoreProvider getRowColumnValueStoreProvider(final String env) {
         return new RowColumnValueStoreProvider() {
@@ -375,5 +379,13 @@ public class BaseTasmoViewTest {
     ObjectId write(Event event) throws EventWriteException {
         EventWriterResponse eventWriterResponse = writer.write(event);
         return eventWriterResponse.getObjectIds().get(0);
+    }
+    
+    <V extends BaseView> V getView(ViewResponse response, Class<V> viewClass) {
+        if (response.getStatusCode() == ViewResponse.StatusCode.OK) {
+            return proxyFactory.getViewProxy(response.getViewBody(), viewClass);
+        } else {
+           throw new IllegalStateException("Cannot build view proxy from unsuccessful response");
+        }
     }
 }

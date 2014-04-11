@@ -8,6 +8,7 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
 import com.jivesoftware.os.tasmo.id.BaseView;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.tasmo.view.reader.api.JsonViewProxyProvider;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewId;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
@@ -23,6 +24,7 @@ public class MaterializationProcess {
 
     private final LocalMaterializationSystem localMaterializationSystem;
     private final JsonEventConventions jsonEventConventions = new JsonEventConventions();
+    private final JsonViewProxyProvider proxyProvider = new JsonViewProxyProvider();
 
     public MaterializationProcess(LocalMaterializationSystem localMaterializationSystem) {
         this.localMaterializationSystem = localMaterializationSystem;
@@ -55,7 +57,7 @@ public class MaterializationProcess {
         }
 
         if (viewResponse.getStatusCode() == ViewResponse.StatusCode.OK) {
-            return viewResponse.getView(viewClass);
+            return null; //viewResponse.getView(viewClass); TODO need to replace this functionality
         } else {
             return null;
         }
@@ -92,7 +94,7 @@ public class MaterializationProcess {
         }
 
         if (viewResponse.getStatusCode() == ViewResponse.StatusCode.OK) {
-            return viewResponse.getView(viewClass);
+            return proxyProvider.getViewProxy(viewResponse.getViewBody(), viewClass);
         } else {
             return null;
         }

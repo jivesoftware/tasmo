@@ -62,7 +62,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        Version version = response.getView(Version.class);
+        Version version = getView(response, Version.class);
 
         Assert.assertNotNull(version);
         Assert.assertEquals("awesome", version.subject());
@@ -73,7 +73,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(Version.class);
+        version = getView(response, Version.class);
 
         Assert.assertNotNull(version);
         Assert.assertEquals("awesome", version.subject());
@@ -85,7 +85,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(Version.class);
+        version = getView(response, Version.class);
 
         Assert.assertNotNull(version);
         Assert.assertEquals("not awesome", version.subject());
@@ -104,7 +104,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        Version version = response.getView(Version.class);
+        Version version = getView(response, Version.class);
 
         Assert.assertNotNull(version);
         Assert.assertEquals("awesome", version.subject());
@@ -116,7 +116,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(Version.class);
+        version = getView(response, Version.class);
 
         Assert.assertNotNull(version);
         Assert.assertEquals("awesome", version.subject());
@@ -128,7 +128,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(Version.class);
+        version = getView(response, Version.class);
 
         Assert.assertNotNull(version);
         Assert.assertNull(version.subject());
@@ -147,7 +147,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        Version version = response.getView(Version.class);
+        Version version = getView(response, Version.class);
 
         Assert.assertNotNull(version);
         Assert.assertEquals("awesome", version.subject());
@@ -165,7 +165,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        version = response.getView(Version.class);
+        version = getView(response, Version.class);
 
         Assert.assertNotNull(version);
         Assert.assertEquals("awesome", version.subject());
@@ -185,7 +185,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        Version version = response.getView(Version.class);
+        Version version = getView(response, Version.class);
 
         Assert.assertNotNull(version);
         Assert.assertEquals("awesome", version.subject());
@@ -212,7 +212,7 @@ public class SingleStepTest extends BaseTasmoViewTest {
         Assert.assertNotNull(response);
         Assert.assertEquals(response.getStatusCode(), ViewResponse.StatusCode.OK);
 
-        User userView = response.getView(User.class);
+        User userView = getView(response, User.class);
 
         Assert.assertNotNull(userView);
         Ref<User> managerRef = userView.manager();

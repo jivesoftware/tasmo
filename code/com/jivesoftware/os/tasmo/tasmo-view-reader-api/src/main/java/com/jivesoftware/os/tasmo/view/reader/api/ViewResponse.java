@@ -64,11 +64,6 @@ public class ViewResponse {
         return statusCode == StatusCode.OK && viewBody != null;
     }
 
-    @Nullable
-    public <V extends BaseView<?>> V getView(Class<V> viewClass) {
-        return ModelAdapterFactory.createModelAdapter(getViewBody(), viewClass);
-    }
-
     @Override
     public String toString() {
         return "ViewResponse{" +
