@@ -48,6 +48,19 @@ public class EventBuilder {
         return new EventBuilder(objectId, tenantId, actorId, userId, EventVerb.MODIFIED);
     }
 
+    public static EventBuilder migrate(ObjectId objectId, long migrationEventId, TenantId tenantId, Id userAndActorId) {
+        return new EventBuilder(objectId, migrationEventId, tenantId, userAndActorId, userAndActorId, EventVerb.MIGRATED);
+    }
+
+    public static EventBuilder migrate(ObjectId objectId, long migrationEventId, TenantId tenantId, Id actorId, Id userId) {
+        return new EventBuilder(objectId, migrationEventId, tenantId, actorId, userId, EventVerb.MIGRATED);
+    }
+
+    private EventBuilder(ObjectId objectId, long migrationEventId, TenantId tenantId, Id actorId, Id userId, EventVerb eventVerb) {
+        this(objectId, tenantId, actorId, userId, eventVerb);
+        JSON_EVENT_CONVENTIONS.setEventId(eventNode, migrationEventId);
+    }
+
     private EventBuilder(ObjectId objectId, TenantId tenantId, Id actorId, Id userId, EventVerb eventVerb) {
         Preconditions.checkNotNull(objectId);
         Preconditions.checkNotNull(tenantId);
