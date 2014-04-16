@@ -18,10 +18,10 @@ import java.util.List;
  */
 public class EventConvertingCallbackStream implements CallbackStream<List<ObjectNode>> {
 
-    private final EventIngressCallbackStream eventIngressCallbackStream;
+    private final CallbackStream<List<WrittenEvent>> eventIngressCallbackStream;
     private final WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider;
 
-    public EventConvertingCallbackStream(EventIngressCallbackStream eventIngressCallbackStream,
+    public EventConvertingCallbackStream(CallbackStream<List<WrittenEvent>> eventIngressCallbackStream,
         WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider) {
         this.eventIngressCallbackStream = eventIngressCallbackStream;
         this.writtenEventProvider = writtenEventProvider;
