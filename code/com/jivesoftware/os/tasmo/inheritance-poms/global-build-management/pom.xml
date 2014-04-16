@@ -5,7 +5,7 @@
     <parent>
         <groupId>com.jivesoftware.os.tasmo.inheritance.poms</groupId>
         <artifactId>global-plugin-management</artifactId>
-        <version>0.13-SNAPSHOT</version>
+        <version>0.13</version>
         <relativePath>../global-plugin-management/pom.xml</relativePath>
     </parent>
 
