@@ -551,9 +551,12 @@ public class BaseTasmoTest {
                     List<ObjectId> objectIds = Lists.newArrayList();
                     List<Long> eventIds = Lists.newArrayList();
                     for (ObjectNode w : events) {
-                        long eventId = idProvider.nextId();
+                        long eventId = jsonEventConventions.getEventId(w);
+                        if (eventId == 0) {
+                            eventId = idProvider.nextId();
+                            jsonEventConventions.setEventId(w, eventId);
+                        }
                         eventIds.add(eventId);
-                        jsonEventConventions.setEventId(w, eventId);
 
                         String instanceClassname = jsonEventConventions.getInstanceClassName(w);
                         ObjectId objectId = new ObjectId(instanceClassname, jsonEventConventions.getInstanceId(w, instanceClassname));

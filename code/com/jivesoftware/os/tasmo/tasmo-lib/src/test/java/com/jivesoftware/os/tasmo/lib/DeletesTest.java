@@ -264,7 +264,6 @@ public class DeletesTest extends BaseTasmoTest {
         view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         Assert.assertNull(view, " view = " + view);
 
-
         write(EventBuilder.update(content1, tenantId, actorId).set("ref_version", version1).build());
         view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         Assert.assertNull(view);
@@ -507,7 +506,6 @@ public class DeletesTest extends BaseTasmoTest {
 
         view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
         Assert.assertNull(view);
-
 
         write(EventBuilder.update(tagId, tenantId, actorId).set("ref_tagged", docId).build());
         view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
@@ -840,7 +838,7 @@ public class DeletesTest extends BaseTasmoTest {
         expectations.addExpectation(commentVersion, viewClassName, pathId, new ObjectId[]{commentVersion, comment, author}, "firstName", null);
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();
-        
+
         view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         Assert.assertNull(view);
 
