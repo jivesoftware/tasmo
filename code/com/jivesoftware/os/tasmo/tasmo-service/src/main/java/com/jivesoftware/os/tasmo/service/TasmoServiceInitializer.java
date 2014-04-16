@@ -1,6 +1,11 @@
 package com.jivesoftware.os.tasmo.service;
 
+import com.github.rholder.retry.Retryer;
+import com.github.rholder.retry.RetryerBuilder;
+import com.github.rholder.retry.StopStrategies;
+import com.github.rholder.retry.WaitStrategies;
 import com.google.common.base.Optional;
+import com.google.common.base.Predicate;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -35,6 +40,7 @@ import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotification
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
@@ -71,7 +77,7 @@ public class TasmoServiceInitializer {
         public Integer getPollForModelChangesEveryNSeconds();
     }
 
-    public static EventIngressCallbackStream initializeEventIngressCallbackStream(
+    public static CallbackStream<List<WrittenEvent>> initializeEventIngressCallbackStream(
             OrderIdProvider threadTimestamp,
             ViewsProvider viewsProvider,
             WrittenEventProvider eventProvider,
@@ -167,6 +173,27 @@ public class TasmoServiceInitializer {
                 referenceStore,
                 threadTimestamp);
 
-        return new EventIngressCallbackStream(materializer);
+
+        EventIngressCallbackStream eventIngressCallbackStream = new EventIngressCallbackStream(materializer);
+          Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()
+                .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
+                .withStopStrategy(StopStrategies.stopAfterDelay(TimeUnit.SECONDS.toSeconds(30))) // TODO expose to config
+                .retryIfException(new Predicate<Throwable>() {
+                    @Override
+                    public boolean apply(Throwable t) {
+                        LOG.error("Ingress failed due to: " + t);
+                        LOG.debug("", t);
+                        LOG.inc("ingress>errors");
+                        if (t instanceof InterruptedException) {
+                            Thread.currentThread().interrupt();
+                            return false;
+                        } else {
+                            return Exception.class.isAssignableFrom(t.getClass()) | RuntimeException.class.isAssignableFrom(t.getClass());
+                        }
+                    }
+                })
+                .build();
+
+        return new EventIngressRetryingCallbackStream(eventIngressCallbackStream, retryer);
     }
 }

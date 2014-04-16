@@ -8,10 +8,12 @@
  */
 package com.jivesoftware.os.tasmo.lib;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import java.util.Arrays;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -19,7 +21,7 @@ import org.testng.annotations.Test;
  */
 public class LatestBackRefsTest extends BaseTasmoTest {
 
-    @Test
+     @Test
     public void testLatestBackRefs() throws Exception {
         String viewClassName = "BackRefs";
         String viewFieldName = "contentsUsers";
@@ -30,7 +32,7 @@ public class LatestBackRefsTest extends BaseTasmoTest {
 
         ObjectId otherAuthorId1 =
             write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "jane")
-            .set("refs_contents", Arrays.asList(contentId1, contentId2)).build());
+                .set("refs_contents", Arrays.asList(contentId1, contentId2)).build());
 
         ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, contentId1.getId()));
         System.out.println(mapper.writeValueAsString(view));
@@ -48,7 +50,7 @@ public class LatestBackRefsTest extends BaseTasmoTest {
 
         ObjectId otherAuthorId2 =
             write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "ted")
-            .set("refs_contents", Arrays.asList(contentId2, contentId1)).build());
+                .set("refs_contents", Arrays.asList(contentId2, contentId1)).build());
 
         view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, contentId1.getId()));
         System.out.println(mapper.writeValueAsString(view));
@@ -91,7 +93,7 @@ public class LatestBackRefsTest extends BaseTasmoTest {
         String viewFieldName = "contentsUsers";
         Expectations expectations = initModelPaths(
             viewClassName + "::" + viewFieldName
-            + "::Space.refs_docs.refs.Content|Content.latest_backRef.User.refs_contents|User.userName");
+                + "::Space.refs_docs.refs.Content|Content.latest_backRef.User.refs_contents|User.userName");
 
 
         ObjectId space1 = write(EventBuilder.create(idProvider, "Space", tenantId, actorId).set("name", "Space1").build());
@@ -104,7 +106,7 @@ public class LatestBackRefsTest extends BaseTasmoTest {
 
         ObjectId otherAuthorId1 =
             write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "jane")
-            .set("refs_contents", Arrays.asList(contentId1, contentId2)).build());
+                .set("refs_contents", Arrays.asList(contentId1, contentId2)).build());
 
         write(EventBuilder.update(space1, tenantId, actorId)
             .set("refs_docs", Arrays.asList(contentId1)).build());
@@ -128,7 +130,7 @@ public class LatestBackRefsTest extends BaseTasmoTest {
 
         ObjectId otherAuthorId2 =
             write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "ted")
-            .set("refs_contents", Arrays.asList(contentId2, contentId1)).build());
+                .set("refs_contents", Arrays.asList(contentId2, contentId1)).build());
 
         view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, space1.getId()));
         System.out.println(mapper.writeValueAsString(view));
@@ -165,6 +167,39 @@ public class LatestBackRefsTest extends BaseTasmoTest {
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();
 
+    }
 
+    @Test (enabled = false) // TODO: NEED TO FIX THIS CASE!
+    public void changesDownstream() throws Exception {
+        String viewClassName = "BackRefs";
+        String viewFieldName = "latestContentAuthor";
+        Expectations expectations = initModelPaths(viewClassName + "::" + viewFieldName
+            + "::Document.latest_backRef.DocumentVersion.versionParent|DocumentVersion.author.ref.User|User.userName"/*,
+                // This is what makes the test work
+            viewClassName + "::" + "dummy"
+                + "::Document.latest_backRef.DocumentVersion.versionParent|DocumentVersion.instanceId"*/);
+        ObjectId user1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "Paul").build());
+        ObjectId document = write(EventBuilder.create(idProvider, "Document", tenantId, actorId).build());
+        ObjectId version1 = write(EventBuilder.create(idProvider, "DocumentVersion", tenantId, actorId)
+            .set("versionParent", document).set("author", user1).build());
+        ObjectId user2 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "John").build());
+        ObjectId version2 = write(EventBuilder.create(idProvider, "DocumentVersion", tenantId, actorId)
+            .set("versionParent", document).set("author", user2).build());
+
+        ObjectNode view1 = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, document.getId()));
+        System.out.println(mapper.writeValueAsString(view1));
+        JsonNode latest_versionParent = view1.get("latest_versionParent");
+        Assert.assertNotNull(latest_versionParent, "latest_versionParent");
+        JsonNode author = latest_versionParent.get("author");
+        Assert.assertNotNull(author, "author");
+        JsonNode userName = author.get("userName");
+        Assert.assertNotNull(userName, "userName");
+        Assert.assertEquals(userName.asText(), "John");
+
+        write(EventBuilder.update(user1, tenantId, actorId).set("userName", "Sir Paul").build());
+
+        ObjectNode view2 = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, document.getId()));
+        System.out.println(mapper.writeValueAsString(view2));
+        Assert.assertEquals(view2, view1);
     }
 }

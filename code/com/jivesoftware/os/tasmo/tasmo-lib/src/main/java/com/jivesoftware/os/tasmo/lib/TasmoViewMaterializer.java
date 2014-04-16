@@ -189,13 +189,15 @@ public class TasmoViewMaterializer {
                 while (t != null) {
                     if (t instanceof PathModifiedOutFromUnderneathMeException) {
                         pathModifiedException = true;
-                        LOG.trace("** RETRY ** " + t.toString(), t);
+                        if (LOG.isTraceEnabled()) {
+                            LOG.trace("** RETRY ** " + t.toString(), t);
+                        }
 
                     }
                     t = t.getCause();
                 }
                 if (pathModifiedException) {
-                    Thread.sleep(1); // TODO is yield a better choice?
+                    Thread.sleep(100); // TODO is yield a better choice?
                 } else {
                     throw e;
                 }

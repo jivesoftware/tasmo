@@ -83,7 +83,9 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
 
             if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
                 if (expected != was) {
-                    LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
+                    if (LOG.isTraceEnabled()) {
+                        LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
+                    }
                     PathModifiedOutFromUnderneathMeException pmofume = new PathModifiedOutFromUnderneathMeException(expected, was);
                     throw pmofume;
                 }
@@ -106,7 +108,9 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
             }
             msg.append(" change:").append(fieldChange);
 
-            LOG.trace("WRITE BLOCKED DUE TO LACK OF EXISTANCE:" + msg.toString());
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("WRITE BLOCKED DUE TO LACK OF EXISTANCE:" + msg.toString());
+            }
         }
     }
 }

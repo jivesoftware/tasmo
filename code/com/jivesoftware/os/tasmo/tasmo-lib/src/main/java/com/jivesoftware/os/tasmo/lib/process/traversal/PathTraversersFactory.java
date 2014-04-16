@@ -72,13 +72,15 @@ public class PathTraversersFactory {
         steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
         steps.add(new TraverseViewValueWriter(viewClassName, modelPathId));
 
-        LOG.trace("~~~~~ buildPathTraverser:" + initialPathIndex + " " + modelPathSteps);
-        int i = 1;
-        for (StepTraverser s : steps) {
-            LOG.trace(i + "." + s);
-            i++;
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("~~~~~ buildPathTraverser:" + initialPathIndex + " " + modelPathSteps);
+            int i = 1;
+            for (StepTraverser s : steps) {
+                LOG.trace(i + "." + s);
+                i++;
+            }
+            LOG.trace("");
         }
-        LOG.trace("");
 
         return new PathTraverser(firstStep, steps, pathTraverserConfig);
     }
@@ -131,13 +133,15 @@ public class PathTraversersFactory {
             steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
             steps.add(new TraverseViewValueWriter(viewClassName, modelPathId));
 
-            LOG.trace("~~~~~ buildBackRefPathTraverser:" + initialPathIndex + " " + modelPathSteps);
-            int i = 1;
-            for (StepTraverser s : steps) {
-                LOG.trace(i + "." + s);
-                i++;
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("~~~~~ buildBackRefPathTraverser:" + initialPathIndex + " " + modelPathSteps);
+                int i = 1;
+                for (StepTraverser s : steps) {
+                    LOG.trace(i + "." + s);
+                    i++;
+                }
+                LOG.trace("");
             }
-            LOG.trace("");
 
             return new PathTraverser(firstStep, steps, pathTraverserConfig);
         } else {

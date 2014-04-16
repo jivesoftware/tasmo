@@ -199,11 +199,15 @@ public class TasmoViewModel {
                 if (allFieldProcessorFactories.containsKey(factoryKey)) {
                     throw new IllegalArgumentException("you have already created this binding:" + factoryKey);
                 }
-                LOG.trace("MODELPATH " + modelPath);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("MODELPATH " + modelPath);
+                }
                 PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName,
                         modelPath, eventValueStore, referenceStore);
 
-                LOG.trace("Bind:{}", factoryKey);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("Bind:{}", factoryKey);
+                }
                 allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
 
                 List<PathTraverser> pathTraversers = fieldProcessorFactory.buildPathTraversers(pathTraverserConfig);
@@ -253,18 +257,25 @@ public class TasmoViewModel {
                     new InitiateRefTraversal(concurrencyChecker, referenceStore, refTraversers, backRefTraversers));
             all.put(className, initialStepDispatcher);
 
-            LOG.trace("---- Traversers for class:" + className);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("---- Traversers for class:" + className);
+            }
             for (InitiateTraverserKey key : backRefTraversers.keySet()) {
-                LOG.trace("-------- for key:" + key);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("-------- for key:" + key);
+                }
 
                 for (PathTraverser pathTraverser : backRefTraversers.get(key)) {
-
-                    for (StepTraverser stepTraverser : pathTraverser.getStepTraversers()) {
-                        LOG.trace("------------ traverser:" + stepTraverser);
+                    if (LOG.isTraceEnabled()) {
+                        for (StepTraverser stepTraverser : pathTraverser.getStepTraversers()) {
+                            LOG.trace("------------ traverser:" + stepTraverser);
+                        }
                     }
                 }
             }
-            LOG.trace("");
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("");
+            }
 
         }
         return all;
@@ -276,14 +287,18 @@ public class TasmoViewModel {
 
         for (PathTraverser pathTraverser : pathTraverers) {
             for (String className : pathTraverser.getInitialClassNames()) {
-                LOG.trace("CLASSNAME:" + className);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("CLASSNAME:" + className);
+                }
                 Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, PathTraverser>> typedSteps = groupedPathTraversers.get(className);
                 if (typedSteps == null) {
                     typedSteps = Maps.newHashMap();
                     groupedPathTraversers.put(className, typedSteps);
                 }
                 ModelPathStepType stepType = pathTraverser.getInitialModelPathStepType();
-                LOG.trace("STEPTYPE:" + stepType);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("STEPTYPE:" + stepType);
+                }
                 ArrayListMultimap<InitiateTraverserKey, PathTraverser> steps = typedSteps.get(stepType);
                 if (steps == null) {
                     steps = ArrayListMultimap.create();
@@ -292,22 +307,32 @@ public class TasmoViewModel {
 
                 String refFieldName = pathTraverser.getRefFieldName();
                 if (refFieldName != null) {
-                    LOG.trace("REFFIELDNAME:" + refFieldName);
+                    if (LOG.isTraceEnabled()) {
+                        LOG.trace("REFFIELDNAME:" + refFieldName);
+                    }
                     steps.put(new InitiateTraverserKey(refFieldName, refFieldName), pathTraverser);
                     for (StepTraverser stepTraverser : pathTraverser.getStepTraversers()) {
-                        LOG.trace("------------ STEP:" + stepTraverser);
+                        if (LOG.isTraceEnabled()) {
+                            LOG.trace("------------ STEP:" + stepTraverser);
+                        }
                     }
                 }
 
                 for (String fieldName : pathTraverser.getInitialFieldNames()) {
-                    LOG.trace("INITIALFIELDNAME:" + fieldName);
+                    if (LOG.isTraceEnabled()) {
+                        LOG.trace("INITIALFIELDNAME:" + fieldName);
+                    }
                     steps.put(new InitiateTraverserKey(fieldName, refFieldName), pathTraverser);
                     for (StepTraverser stepTraverser : pathTraverser.getStepTraversers()) {
-                        LOG.trace("------------ STEP:" + stepTraverser);
+                        if (LOG.isTraceEnabled()) {
+                            LOG.trace("------------ STEP:" + stepTraverser);
+                        }
                     }
                 }
             }
-            LOG.trace("------------------------------------------------");
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("------------------------------------------------");
+            }
         }
     }
 }

@@ -73,7 +73,9 @@ public class PathTraversalContext {
     }
 
     public void setPathId(int pathIndex, ObjectId id, long timestamp) {
-        LOG.trace("!!!!!!!!---------- SetPath:" + pathIndex + " |||| " + id + " @ " + timestamp + " " + " remove:" + removalContext);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("!!!!!!!!---------- SetPath:" + pathIndex + " |||| " + id + " @ " + timestamp + " " + " remove:" + removalContext);
+        }
         this.modelPathIdState[pathIndex] = new PathId(id, timestamp);
     }
 
@@ -169,31 +171,37 @@ public class PathTraversalContext {
     }
 
     public void commit(TenantIdAndCentricId tenantIdAndCentricId, PathTraverser traverser) throws Exception { // TODO this method doesn't belong in this class
+        try {
+            if (!changes.isEmpty()) {
+                if (LOG.isTraceEnabled()) {
+                    int i = 1;
+                    for (ViewFieldChange change : changes) {
+                        LOG.trace("!!!!!!!!----------" + i + "." + ((removalContext) ? "REMOVABLE" : "ADDABLE")
+                                + " PATH:" + Arrays.toString(change.getModelPathInstanceIds())
+                                + " versions:" + modelPathIdStateAsString(change.getModelPathVersions(), true)
+                                + " v=" + change.getValue() + " t=" + change.getTimestamp() + " traverse: [");
+                        for (String t : pathTraverserAsString(traverser)) {
+                            LOG.trace(t);
+                        }
+                    }
+                }
 
-        if (!changes.isEmpty()) {
-            int i = 1;
-            for (ViewFieldChange change : changes) {
-                LOG.trace("!!!!!!!!----------" + i + "." + ((removalContext) ? "REMOVABLE" : "ADDABLE")
-                        + " PATH:" + Arrays.toString(change.getModelPathInstanceIds())
-                        + " versions:" + modelPathIdStateAsString(change.getModelPathVersions(), true)
-                        + " v=" + change.getValue() + " t=" + change.getTimestamp() + " traverse: [");
-                for (String t : pathTraverserAsString(traverser)) {
-                    LOG.trace(t);
+                commitChange.commitChange(tenantIdAndCentricId, changes);
+
+            } else {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("!!!!!!!!---------- DIDN'T " + ((removalContext) ? "REMOVE" : "ADD")
+                            + " INCOMPLETE PATH:" + Arrays.toString(modelPathIdState)
+                            + " versions:" + modelPathIdStateAsString(modelPathVersionState, true) + " traverse: [");
+                    for (String t : pathTraverserAsString(traverser)) {
+                        LOG.trace(t);
+                    }
                 }
             }
-
-            commitChange.commitChange(tenantIdAndCentricId, changes);
-
-        } else {
-            LOG.trace("!!!!!!!!---------- DIDN'T " + ((removalContext) ? "REMOVE" : "ADD")
-                    + " INCOMPLETE PATH:" + Arrays.toString(modelPathIdState)
-                    + " versions:" + modelPathIdStateAsString(modelPathVersionState, true) + " traverse: [");
-            for (String t : pathTraverserAsString(traverser)) {
-                LOG.trace(t);
-            }
+        } finally {
+            changes.clear();
+            modelPathVersionState.clear();
         }
-        changes.clear();
-        modelPathVersionState.clear();
     }
 
     List<String> pathTraverserAsString(PathTraverser pathTraverser) {
