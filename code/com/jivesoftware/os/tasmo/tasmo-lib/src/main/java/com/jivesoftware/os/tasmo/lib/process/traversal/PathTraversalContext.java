@@ -83,27 +83,13 @@ public class PathTraversalContext {
     }
 
     public void addVersion(int pathIndex, ReferenceWithTimestamp version) {
-        cleanUpVersions(pathIndex);
-        this.modelPathVersionState[pathIndex].add(version);
+        this.modelPathVersionState[pathIndex] = Arrays.asList(version);
     }
 
     public void addVersions(int pathIndex, Collection<ReferenceWithTimestamp> versions) {
-        cleanUpVersions(pathIndex);
-        this.modelPathVersionState[pathIndex].addAll(versions);
+        this.modelPathVersionState[pathIndex] = new ArrayList<>(versions);
     }
 
-    private int lastVersionPathIndex = 0;
-
-    private void cleanUpVersions(int pathIndex) {
-        int i = pathIndex;
-        if (pathIndex > lastVersionPathIndex) {
-            i++;
-        }
-        lastVersionPathIndex = pathIndex;
-        for (; i < modelPathVersionState.length; i++) {
-            modelPathVersionState[i].clear();
-        }
-    }
 
     private List<ReferenceWithTimestamp> copyOfVersions() {
         List<ReferenceWithTimestamp> copy = new ArrayList<>();
@@ -226,7 +212,6 @@ public class PathTraversalContext {
             }
         } finally {
             changes.clear();
-            modelPathVersionState[lastVersionPathIndex].clear();
         }
     }
 

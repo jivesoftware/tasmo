@@ -323,7 +323,7 @@ public class CombinatorialMaterializerTest {
                         path.getPathMembers().get(path.getPathMemberSize() - 1),
                         deriedEventsAndViewId.getIdTree());
 
-                Object[] buildParamaterListItem = buildParamaterListItem("totalOrderAdds",
+                Object[] buildParamaterListItem = buildParamaterListItem("adds",
                         testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, deletedIds);
                 testId++;
                 return buildParamaterListItem;
@@ -373,7 +373,7 @@ public class CombinatorialMaterializerTest {
                                 path.getPathMembers().get(path.getPathMemberSize() - 1),
                                 deriedEventsAndViewId.getIdTree());
 
-                        Object[] buildParamaterListItem = buildParamaterListItem("unorderedAdds",
+                        Object[] buildParamaterListItem = buildParamaterListItem("addsRandomOrder",
                                 testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, deletedIds);
                         testId++;
                         return buildParamaterListItem;
@@ -444,7 +444,7 @@ public class CombinatorialMaterializerTest {
                                 path.getPathMembers().get(path.getPathMemberSize() - 1),
                                 deriedEventsAndViewId.getIdTree());
 
-                        paramList.add(buildParamaterListItem("addsThenRemoves",
+                        paramList.add(buildParamaterListItem("removes",
                                 testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, deletedIds));
                         testId++;
                     }
@@ -527,7 +527,7 @@ public class CombinatorialMaterializerTest {
                                 path.getPathMembers().get(path.getPathMemberSize() - 1),
                                 deriedEventsAndViewId.getIdTree());
 
-                        paramList.add(buildParamaterListItem("addsThenRemovesThenAdds",
+                        paramList.add(buildParamaterListItem("removes",
                                 testId, materialization, tenantIdAndCentricId, actorId, binding, path, writerProvider, eventFire, new HashSet<Id>()));
                         testId++;
                     }
