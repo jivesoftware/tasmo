@@ -5,14 +5,14 @@ import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
+import com.jivesoftware.os.tasmo.id.BaseView;
 import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
+import com.jivesoftware.os.tasmo.view.reader.api.ViewId;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReaderException;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-
 import java.io.IOException;
 
 /**
@@ -35,10 +35,10 @@ public class MaterializationProcess {
         }
     }
 
-    public ObjectNode readView(Event rootEvent, String viewClass) throws IOException, ViewReaderException {
+    public <V extends BaseView<?>> V readView(Event rootEvent, Class<V> viewClass) throws IOException, ViewReaderException {
         ViewReader<ViewResponse> reader = localMaterializationSystem.getReader();
 
-        ObjectId viewId = new ObjectId(viewClass, rootEvent.getObjectId().getId());
+        ViewId<V> viewId = ViewId.ofObject(rootEvent.getObjectId(), viewClass);
 
         ObjectNode eventJson = rootEvent.toJson();
         TenantId tenant = jsonEventConventions.getTenantId(eventJson);
@@ -54,18 +54,18 @@ public class MaterializationProcess {
         }
 
         if (viewResponse.getStatusCode() == ViewResponse.StatusCode.OK) {
-            return viewResponse.getViewBody();
+            return null; // viewResponse.getView(viewClass);
         } else {
             return null;
         }
     }
 
-    public ObjectNode writeEventAndReadView(Event rootEvent, String viewClass)
+    public <V extends BaseView> V writeEventAndReadView(Event rootEvent, Class<V> viewClass)
         throws EventWriteException, IOException, ViewReaderException {
         return writeEventsAndReadView(rootEvent, viewClass, (Event[]) null);
     }
 
-    public ObjectNode writeEventsAndReadView(Event rootEvent, String viewClass, Event... ancillaryEvents)
+    public <V extends BaseView<?>> V writeEventsAndReadView(Event rootEvent, Class<V> viewClass, Event... ancillaryEvents)
         throws EventWriteException, IOException, ViewReaderException {
         EventWriter writer = localMaterializationSystem.getWriter();
         ViewReader<ViewResponse> reader = localMaterializationSystem.getReader();
@@ -75,7 +75,7 @@ public class MaterializationProcess {
             writer.write(ancillaryEvents);
         }
 
-        ObjectId viewId = new ObjectId(viewClass, rootEvent.getObjectId().getId());
+        ViewId<V> viewId = ViewId.ofObject(rootEvent.getObjectId(), viewClass);
 
         ObjectNode eventJson = rootEvent.toJson();
         TenantId tenant = jsonEventConventions.getTenantId(eventJson);
@@ -91,7 +91,7 @@ public class MaterializationProcess {
         }
 
         if (viewResponse.getStatusCode() == ViewResponse.StatusCode.OK) {
-            return viewResponse.getViewBody();
+            return null; //viewResponse.getView(viewClass);
         } else {
             return null;
         }

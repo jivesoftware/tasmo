@@ -37,9 +37,34 @@ public final class ViewDescriptor {
 
     @JsonIgnore
     public ViewDescriptor(
+        TenantId tenantId,
+        Id actorId,
+        ViewId<?> viewId) {
+        this(tenantId, actorId, viewId.asObjectId(), Id.NULL);
+    }
+
+    @JsonIgnore
+    public ViewDescriptor(
+        TenantId tenantId,
+        Id actorId,
+        ViewId<?> viewId,
+        Id userId) {
+        this(tenantId, actorId, viewId.asObjectId(), userId);
+    }
+
+    @JsonIgnore
+    public ViewDescriptor(
             TenantIdAndCentricId tenantIdAndCentricId,
             Id actorId,
             ObjectId viewId) {
+        this(tenantIdAndCentricId.getTenantId(), actorId, viewId, tenantIdAndCentricId.getCentricId());
+    }
+
+    @JsonIgnore
+    public ViewDescriptor(
+        TenantIdAndCentricId tenantIdAndCentricId,
+        Id actorId,
+        ViewId<?> viewId) {
         this(tenantIdAndCentricId.getTenantId(), actorId, viewId, tenantIdAndCentricId.getCentricId());
     }
 
