@@ -4,31 +4,53 @@
  */
 package com.jivesoftware.os.tasmo.test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterators;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantIdAndRow;
+import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
+import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
+import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
 import com.jivesoftware.os.tasmo.id.Id;
+import com.jivesoftware.os.tasmo.id.IdProviderImpl;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
+import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
+import com.jivesoftware.os.tasmo.model.path.ModelPath;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PatternLayout;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 /**
@@ -119,7 +141,7 @@ public class CombinatorialMaterializerTest {
             if (ic.testId % 1000 == 0) {
                 if (ic.testId == 0) {
                     System.out.println("***** Begin test category:" + ic.category + " multi-threaded:" + multiThreadWrites + " ********");
-                } else
+                } else {
                     System.out.println("***** Ran " + ic.testId + " for category:" + ic.category + " multi-threaded:" + multiThreadWrites + " ********");
                 }
             }
