@@ -83,6 +83,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 
 /**
  *
@@ -212,7 +213,8 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                 concurrencyStore,
                 eventValueStore,
                 referenceStore,
-                new OrderIdProviderImpl(1));
+                new OrderIdProviderImpl(1),
+                Executors.newSingleThreadExecutor());
     }
 
     private EventWriter buildEventWriter(final TasmoViewMaterializer viewMaterializer,

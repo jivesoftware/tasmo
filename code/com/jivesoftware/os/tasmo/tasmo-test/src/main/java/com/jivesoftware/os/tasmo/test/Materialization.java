@@ -7,7 +7,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.jive.utils.logger.MetricLogger;
+import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
@@ -81,10 +84,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Materialization {
 
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     public static final TenantId MASTER_TENANT_ID = new TenantId("master");
     EventValueStore eventValueStore;
     ViewValueStore viewValueStore;
@@ -92,7 +99,7 @@ public class Materialization {
     ViewValueReader viewValueReader;
     ViewProvider<ViewResponse> viewProvider;
     TasmoViewModel tasmoViewModel;
-    TasmoViewMaterializer materializer;
+    TasmoViewMaterializer tasmoMaterializer;
     final ChainedVersion currentVersion = new ChainedVersion("0", "1");
     final AtomicReference<Views> views = new AtomicReference<>();
     ViewsProvider viewsProvider;
@@ -219,8 +226,9 @@ public class Materialization {
     }
 
     RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> rawViewValueStore;
+    ExecutorService eventProcessorThreads;
 
-    public void setupModelAndMaterializer() throws Exception {
+    public void setupModelAndMaterializer(int numberOfEventProcessorThreads) throws Exception {
 
         String uuid = UUID.randomUUID().toString();
         //        Logger logger = Logger.getLogger("com.jivesoftware.soa.modules");
@@ -316,7 +324,19 @@ public class Materialization {
                 eventValueStore,
                 commitChange);
 
-        materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
+        ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("event-processor-%d")
+                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
+                    }
+                })
+                .build();
+
+        eventProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, eventProcessorThreadFactory);
+
+        tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 new WrittenEventProcessorDecorator() {
 
                     @Override
@@ -331,7 +351,8 @@ public class Materialization {
                 concurrencyStore,
                 eventValueStore,
                 referenceStore,
-                new OrderIdProviderImpl(1));
+                new OrderIdProviderImpl(1),
+                eventProcessorThreads);
 
     }
 
@@ -385,6 +406,10 @@ public class Materialization {
                 staleViewFieldStream);
         return new Expectations(viewValueStore, newViews);
 
+    }
+
+    public void shutdown() {
+        eventProcessorThreads.shutdownNow();
     }
 
     List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {

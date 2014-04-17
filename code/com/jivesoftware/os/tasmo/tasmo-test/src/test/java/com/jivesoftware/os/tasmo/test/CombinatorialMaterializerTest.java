@@ -46,6 +46,7 @@ public class CombinatorialMaterializerTest {
     private final boolean verbose = false;
     private final int maxStepDepth = 4; // TODO change back to 4
     private final int maxFanOut = 2;
+    private final int numberOfEventProcessorThreads = 10;
     //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
     private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
     private final Executor executor = Executors.newCachedThreadPool();
@@ -80,24 +81,28 @@ public class CombinatorialMaterializerTest {
     public void testSingleThreadedTotalOrderAdds(AssertableCase inputCase)
             throws Throwable {
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, false);
+        inputCase.materialization.shutdown();
     }
 
     @Test(dataProvider = "unorderedAdds", invocationCount = 1, singleThreaded = true)
     public void testSingleThreadedUnorderedAdds(AssertableCase inputCase)
             throws Throwable {
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, false);
+        inputCase.materialization.shutdown();
     }
 
     @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsOnly(AssertableCase inputCase)
             throws Throwable {
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
+        inputCase.materialization.shutdown();
     }
 
     @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
     public void testSingleThreadedAddsThenRemoves(AssertableCase inputCase)
             throws Throwable {
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, false);
+        inputCase.materialization.shutdown();
     }
 
     @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
@@ -105,18 +110,21 @@ public class CombinatorialMaterializerTest {
             throws Throwable {
 
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
+        inputCase.materialization.shutdown();
     }
 
     @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
     public void testSingleThreadedAddsThenRemovesThenAdds(AssertableCase inputCase)
             throws Throwable {
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, false);
+        inputCase.materialization.shutdown();
     }
 
     @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsThenRemovesThenAdds(AssertableCase inputCase)
             throws Throwable {
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
+        inputCase.materialization.shutdown();
     }
 
     @DataProvider(name = "totalOrderAdds")
@@ -140,7 +148,7 @@ public class CombinatorialMaterializerTest {
 
                 Materialization materialization = new Materialization();
                 try {
-                    materialization.setupModelAndMaterializer();
+                    materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
                 } catch (Exception x) {
                     throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
                 }
@@ -194,7 +202,7 @@ public class CombinatorialMaterializerTest {
                     public Object[] apply(OrderIdProvider idProvider) {
                         Materialization materialization = new Materialization();
                         try {
-                            materialization.setupModelAndMaterializer();
+                            materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
                         } catch (Exception x) {
                             throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
                         }
@@ -257,7 +265,7 @@ public class CombinatorialMaterializerTest {
                             new IdBatchConfig(Order.shuffle, deleteEvents.size(), randomBatchSize))) {
 
                         Materialization materialization = new Materialization();
-                        materialization.setupModelAndMaterializer();
+                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
                         EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
 
                         List<Event> allEvents = new ArrayList<>();
@@ -339,7 +347,7 @@ public class CombinatorialMaterializerTest {
                             new IdBatchConfig(Order.shuffle, undeletes.size(), randomBatchSize))) {
 
                         Materialization materialization = new Materialization();
-                        materialization.setupModelAndMaterializer();
+                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
                         EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
 
                         List<Event> allEvents = new ArrayList<>();
@@ -371,7 +379,7 @@ public class CombinatorialMaterializerTest {
 
     public List<ViewBinding> buildBindings(List<ModelPathStepType> refTypes, int maxNumSteps) throws Exception {
         Materialization materialization = new Materialization();
-        materialization.setupModelAndMaterializer();
+        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
 
         List<String> pathStrings = pathGenerator.generateModelPaths(refTypes, maxNumSteps);
         List<ViewBinding> allViewBindings = materialization.parseModelPathStrings(pathStrings);
@@ -383,7 +391,7 @@ public class CombinatorialMaterializerTest {
     }
 
     private EventWriterProvider buildEventWriterProvider(Materialization materialization, OrderIdProvider idProvider) {
-        final EventWriter writer = new EventWriter(materialization.jsonEventWriter(materialization.materializer, idProvider));
+        final EventWriter writer = new EventWriter(materialization.jsonEventWriter(materialization.tasmoMaterializer, idProvider));
 
         return new EventWriterProvider() {
             @Override

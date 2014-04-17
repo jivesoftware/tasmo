@@ -43,6 +43,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 public class TasmoViewMaterializer {
 
@@ -57,6 +60,7 @@ public class TasmoViewMaterializer {
     private final ReferenceStore referenceStore;
     private final OrderIdProvider threadTime;
     private final StripingLocksProvider<ObjectId> instanceIdLocks = new StripingLocksProvider<>(1024);
+    private final ExecutorService processEvents;
 
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
             WrittenEventProcessorDecorator writtenEventProcessorDecorator,
@@ -66,7 +70,8 @@ public class TasmoViewMaterializer {
             ConcurrencyStore concurrencyStore,
             EventValueStore eventValueStore,
             ReferenceStore referenceStore,
-            OrderIdProvider threadTime
+            OrderIdProvider threadTime,
+            ExecutorService processEvents
     ) {
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
         this.writtenEventProcessorDecorator = writtenEventProcessorDecorator;
@@ -77,57 +82,42 @@ public class TasmoViewMaterializer {
         this.eventValueStore = eventValueStore;
         this.referenceStore = referenceStore;
         this.threadTime = threadTime;
+        this.processEvents = processEvents;
     }
 
     public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
-        List<WrittenEvent> processed = new ArrayList<>(writtenEvents.size());
+        final List<WrittenEvent> failedToProcess = new ArrayList<>(writtenEvents.size());
         try {
             LOG.startTimer("processWrittenEvents");
             tasmoEventBookkeeper.begin(writtenEvents);
 
-            for (WrittenEvent writtenEvent : writtenEvents) {
-                WrittenEventContext batchContext = new WrittenEventContext(new InMemoryModifiedViewProvider());
+            final CountDownLatch batchCompletionLatch = new CountDownLatch(writtenEvents.size());
+            List<Future> futures = new ArrayList<>();
+            for (final WrittenEvent writtenEvent : writtenEvents) {
                 if (writtenEvent == null) {
                     LOG.warn("some one is sending null events.");
-                    processed.add(null);
-                    continue;
-                }
-                TenantId tenantId = writtenEvent.getTenantId();
-                VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
-                if (model == null) {
-                    LOG.error("Cannot process an event until a model has been loaded.");
-                    throw new Exception("Cannot process an event until a model has been loaded.");
                 } else {
-                    WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
-                    String className = writtenInstance.getInstanceId().getClassName();
+                    Future<?> future = processEvents.submit(new Runnable() {
 
-                    List<TenantIdAndCentricId> tenantIdAndCentricIds = buildTenantIdAndCentricIds(model, className, tenantId, writtenEvent);
-                    ObjectId instanceId = writtenInstance.getInstanceId();
-                    long timestamp = writtenEvent.getEventId();
-
-                    synchronized (instanceIdLocks.lock(writtenInstance.getInstanceId())) {
-
-                        for (TenantIdAndCentricId tenantIdAndCentricId : tenantIdAndCentricIds) {
-                            if (writtenInstance.isDeletion()) {
-                                concurrencyStore.removeObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
-                                removeValueFields(model, className, tenantIdAndCentricId, timestamp, instanceId);
-                            } else {
-                                concurrencyStore.addObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
-                                updateValueFields(tenantIdAndCentricId, timestamp, instanceId, model, className, writtenInstance);
+                        @Override
+                        public void run() {
+                            try {
+                                processWrittenEvent(writtenEvent);
+                            } catch (Exception x) {
+                                failedToProcess.add(writtenEvent);
+                                LOG.error("Failed to process writtenEvent:" + writtenEvent, x);
+                            } finally {
+                                batchCompletionLatch.countDown();
                             }
-
-                            ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
-                            for (InitiateTraversal initiateTraversal : dispatchers.get(className)) {
-                                if (initiateTraversal == null) {
-                                    LOG.warn("No traversal defined for className:{}", className);
-                                    continue;
-                                }
-                                traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent, processed);
-                            }
-                            viewChangeNotificationProcessor.process(batchContext, writtenEvent);
                         }
-                    }
+                    });
+                    futures.add(future);
                 }
+            }
+            batchCompletionLatch.await();
+
+            for(Future future:futures) {
+                future.get(); // progegate exceptions to caller.
             }
 
             tasmoEventBookkeeper.succeeded();
@@ -145,7 +135,48 @@ public class TasmoViewMaterializer {
             long elapse = LOG.stopTimer("processWrittenEvents");
             LOG.debug("Processed: " + writtenEvents.size() + " events in " + elapse + "millis.");
         }
-        return processed;
+        return failedToProcess;
+    }
+
+    private void processWrittenEvent(WrittenEvent writtenEvent) throws Exception {
+        WrittenEventContext batchContext = new WrittenEventContext(new InMemoryModifiedViewProvider());
+
+        TenantId tenantId = writtenEvent.getTenantId();
+        VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
+        if (model == null) {
+            LOG.error("Cannot process an event until a model has been loaded.");
+            throw new Exception("Cannot process an event until a model has been loaded.");
+        } else {
+            WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
+            String className = writtenInstance.getInstanceId().getClassName();
+
+            List<TenantIdAndCentricId> tenantIdAndCentricIds = buildTenantIdAndCentricIds(model, className, tenantId, writtenEvent);
+            ObjectId instanceId = writtenInstance.getInstanceId();
+            long timestamp = writtenEvent.getEventId();
+
+            synchronized (instanceIdLocks.lock(writtenInstance.getInstanceId())) {
+
+                for (TenantIdAndCentricId tenantIdAndCentricId : tenantIdAndCentricIds) {
+                    if (writtenInstance.isDeletion()) {
+                        concurrencyStore.removeObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
+                        removeValueFields(model, className, tenantIdAndCentricId, timestamp, instanceId);
+                    } else {
+                        concurrencyStore.addObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
+                        updateValueFields(tenantIdAndCentricId, timestamp, instanceId, model, className, writtenInstance);
+                    }
+
+                    ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
+                    for (InitiateTraversal initiateTraversal : dispatchers.get(className)) {
+                        if (initiateTraversal == null) {
+                            LOG.warn("No traversal defined for className:{}", className);
+                            continue;
+                        }
+                        traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent);
+                    }
+                    viewChangeNotificationProcessor.process(batchContext, writtenEvent);
+                }
+            }
+        }
     }
 
     private List<TenantIdAndCentricId> buildTenantIdAndCentricIds(VersionedTasmoViewModel model,
@@ -167,8 +198,7 @@ public class TasmoViewMaterializer {
     private void traverseEvent(InitiateTraversal initiateTraversal,
             WrittenEventContext batchContext,
             TenantIdAndCentricId tenantIdAndCentricId,
-            WrittenEvent writtenEvent,
-            List<WrittenEvent> processed) throws RuntimeException, Exception {
+            WrittenEvent writtenEvent) throws RuntimeException, Exception {
 
         int attempts = 0;
         int maxAttempts = 10;
@@ -181,7 +211,6 @@ public class TasmoViewMaterializer {
 
                 WrittenEventProcessor writtenEventProcessor = writtenEventProcessorDecorator.decorateWrittenEventProcessor(initiateTraversal);
                 writtenEventProcessor.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
-                processed.add(writtenEvent);
                 break;
             } catch (Exception e) {
                 boolean pathModifiedException = false;

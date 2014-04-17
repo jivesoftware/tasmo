@@ -6,6 +6,7 @@ import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -48,7 +49,9 @@ import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.io.IOException;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.merlin.config.Config;
 import org.merlin.config.defaults.IntDefault;
@@ -75,6 +78,9 @@ public class TasmoServiceInitializer {
 
         @IntDefault(10)
         public Integer getPollForModelChangesEveryNSeconds();
+
+        @IntDefault(1)
+        public Integer getNumberOfEventProcessorThreads();
     }
 
     public static CallbackStream<List<WrittenEvent>> initializeEventIngressCallbackStream(
@@ -163,6 +169,18 @@ public class TasmoServiceInitializer {
             }
         };
 
+        ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("event-processor-%d")
+                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
+                    }
+                })
+                .build();
+
+        ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
+
         TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
                 bookKeepingEventProcessor,
                 tasmoViewModel,
@@ -171,11 +189,11 @@ public class TasmoServiceInitializer {
                 concurrencyStore,
                 eventValueStore,
                 referenceStore,
-                threadTimestamp);
-
+                threadTimestamp,
+                eventProcessorThreads);
 
         EventIngressCallbackStream eventIngressCallbackStream = new EventIngressCallbackStream(materializer);
-          Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()
+        Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()
                 .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
                 .withStopStrategy(StopStrategies.stopAfterDelay(TimeUnit.SECONDS.toSeconds(30))) // TODO expose to config
                 .retryIfException(new Predicate<Throwable>() {

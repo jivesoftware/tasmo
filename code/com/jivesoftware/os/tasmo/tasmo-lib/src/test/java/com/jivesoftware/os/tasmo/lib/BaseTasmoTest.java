@@ -92,6 +92,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.testng.annotations.AfterClass;
@@ -365,7 +366,7 @@ public class BaseTasmoTest {
                 },
                 tasmoViewModel, getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),
-                concurrencyStore, eventValueStore, referenceStore, new OrderIdProviderImpl(1));
+                concurrencyStore, eventValueStore, referenceStore, new OrderIdProviderImpl(1), Executors.newSingleThreadExecutor());
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
     }
