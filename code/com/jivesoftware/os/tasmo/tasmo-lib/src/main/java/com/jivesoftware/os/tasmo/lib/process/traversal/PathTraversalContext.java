@@ -45,7 +45,7 @@ public class PathTraversalContext {
     private final Id alternateViewId;
     private final long threadTimestamp;
     private final PathId[] modelPathIdState;
-    private final List<ReferenceWithTimestamp> modelPathVersionState;
+    private final List<ReferenceWithTimestamp>[] modelPathVersionState;
     private final boolean removalContext;
     private LeafNodeFields leafNodeFields; // uck
     private int addIsRemovingFields = 0; // uck
@@ -64,7 +64,10 @@ public class PathTraversalContext {
         this.alternateViewId = alternateViewId;
         this.threadTimestamp = threadTimestamp;
         this.modelPathIdState = new PathId[numberOfPathIds];
-        this.modelPathVersionState = new ArrayList<>();
+        this.modelPathVersionState = new List[numberOfPathIds];
+        for (int i = 0; i < numberOfPathIds; i++) {
+            modelPathVersionState[i] = new ArrayList<>();
+        }
         this.removalContext = removalContext;
     }
 
@@ -79,12 +82,35 @@ public class PathTraversalContext {
         this.modelPathIdState[pathIndex] = new PathId(id, timestamp);
     }
 
-    public void addVersion(ReferenceWithTimestamp version) {
-        this.modelPathVersionState.add(version);
+    public void addVersion(int pathIndex, ReferenceWithTimestamp version) {
+        cleanUpVersions(pathIndex);
+        this.modelPathVersionState[pathIndex].add(version);
     }
 
-    public void addVersions(Collection<ReferenceWithTimestamp> versions) {
-        this.modelPathVersionState.addAll(versions);
+    public void addVersions(int pathIndex, Collection<ReferenceWithTimestamp> versions) {
+        cleanUpVersions(pathIndex);
+        this.modelPathVersionState[pathIndex].addAll(versions);
+    }
+
+    private int lastVersionPathIndex = 0;
+
+    private void cleanUpVersions(int pathIndex) {
+        int i = pathIndex;
+        if (pathIndex > lastVersionPathIndex) {
+            i++;
+        }
+        lastVersionPathIndex = pathIndex;
+        for (; i < modelPathVersionState.length; i++) {
+            modelPathVersionState[i].clear();
+        }
+    }
+
+    private List<ReferenceWithTimestamp> copyOfVersions() {
+        List<ReferenceWithTimestamp> copy = new ArrayList<>();
+        for (List<ReferenceWithTimestamp> versiosns : modelPathVersionState) {
+            copy.addAll(versiosns);
+        }
+        return copy;
     }
 
     public PathId getPathId(int pathIndex) {
@@ -164,7 +190,7 @@ public class PathTraversalContext {
                 new ObjectId(viewClassName, viewId),
                 modelPathId,
                 Arrays.copyOf(modelPathIdState, modelPathIdState.length),
-                new ArrayList<>(modelPathVersionState),
+                copyOfVersions(),
                 leafNodeFields.toStringForm(),
                 threadTimestamp);
         changes.add(update);
@@ -192,7 +218,7 @@ public class PathTraversalContext {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("!!!!!!!!---------- DIDN'T " + ((removalContext) ? "REMOVE" : "ADD")
                             + " INCOMPLETE PATH:" + Arrays.toString(modelPathIdState)
-                            + " versions:" + modelPathIdStateAsString(modelPathVersionState, true) + " traverse: [");
+                            + " versions:" + modelPathIdStateAsString(copyOfVersions(), true) + " traverse: [");
                     for (String t : pathTraverserAsString(traverser)) {
                         LOG.trace(t);
                     }
@@ -200,7 +226,7 @@ public class PathTraversalContext {
             }
         } finally {
             changes.clear();
-            modelPathVersionState.clear();
+            modelPathVersionState[lastVersionPathIndex].clear();
         }
     }
 

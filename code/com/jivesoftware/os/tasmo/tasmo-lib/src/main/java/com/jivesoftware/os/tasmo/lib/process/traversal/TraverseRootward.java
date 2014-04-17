@@ -49,7 +49,7 @@ class TraverseRootward implements StepTraverser {
                                     (streamer.isBackRefStreamer()) ? to.getObjectId() : from.getObjectId(),
                                     to.getFieldName(),
                                     to.getTimestamp());
-                    context.addVersion(ref);
+                    context.addVersion(pathIndex, ref);
                     streamTo.stream(new PathId(to.getObjectId(), to.getTimestamp()));
                 }
                 return to;

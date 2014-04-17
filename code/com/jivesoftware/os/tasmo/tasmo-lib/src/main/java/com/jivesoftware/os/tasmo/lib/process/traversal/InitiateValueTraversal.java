@@ -66,7 +66,7 @@ public class InitiateValueTraversal implements EventProcessor {
                             context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
                             List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(tenantIdAndCentricId, eventValueStore,
                                     instanceId, pathTraverser.getInitialFieldNames());
-                            context.addVersions(valueVersions);
+                            context.addVersions(pathTraverser.getPathIndex(), valueVersions);
                             pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(instanceId, timestamp));
                             context.commit(tenantIdAndCentricId, pathTraverser);
                         }
@@ -80,7 +80,7 @@ public class InitiateValueTraversal implements EventProcessor {
                                 instanceId, pathTraverser.getInitialFieldNames());
 
                         context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
-                        context.addVersions(valueVersions);
+                        context.addVersions(pathTraverser.getPathIndex(), valueVersions);
                         pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(instanceId, timestamp));
                         context.commit(tenantIdAndCentricId, pathTraverser);
 

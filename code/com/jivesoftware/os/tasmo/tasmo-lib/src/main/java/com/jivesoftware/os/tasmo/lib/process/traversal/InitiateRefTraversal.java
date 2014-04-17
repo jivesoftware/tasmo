@@ -117,7 +117,7 @@ public class InitiateRefTraversal implements EventProcessor {
 
             PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, removal);
             context.setPathId(pathTraverser.getPathIndex(), from.getObjectId(), from.getTimestamp());
-            context.addVersion(from);
+            context.addVersion(pathTraverser.getPathIndex(), from);
 
             pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(to.getObjectId(), to.getTimestamp()));
             context.commit(tenantIdAndCentricId, pathTraverser);
@@ -127,7 +127,7 @@ public class InitiateRefTraversal implements EventProcessor {
 
             PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, removal);
             context.setPathId(pathTraverser.getPathIndex(), to.getObjectId(), to.getTimestamp());
-            context.addVersion(from);
+            context.addVersion(pathTraverser.getPathIndex(), from);
 
             pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(instanceId, to.getTimestamp()));
             context.commit(tenantIdAndCentricId, pathTraverser);

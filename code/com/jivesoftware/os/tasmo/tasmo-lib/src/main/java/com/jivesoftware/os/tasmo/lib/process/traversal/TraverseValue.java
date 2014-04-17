@@ -40,7 +40,7 @@ public class TraverseValue implements StepTraverser {
 
         context.setPathId(pathIndex, from.getObjectId(), from.getTimestamp());
         List<ReferenceWithTimestamp> versions = context.populateLeafNodeFields(tenantIdAndCentricId, eventValueStore, from.getObjectId(), fieldNames);
-        context.addVersions(versions);
+        context.addVersions(pathIndex, versions);
         PathId to = context.getPathId(processingPathIndex);
         streamTo.stream(to);
     }

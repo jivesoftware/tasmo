@@ -347,7 +347,7 @@ public class Materialization {
         ViewPermissionChecker viewPermissionChecker = new ViewPermissionChecker() {
             @Override
             public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, final Set<Id> permissionCheckTheseIds) {
-                System.out.println("NO-OP permisions check for (" + permissionCheckTheseIds.size() + ") ids.");
+                //System.out.println("NO-OP permisions check for (" + permissionCheckTheseIds.size() + ") ids.");
                 return new ViewPermissionCheckResult() {
                     @Override
                     public Set<Id> allowed() {
