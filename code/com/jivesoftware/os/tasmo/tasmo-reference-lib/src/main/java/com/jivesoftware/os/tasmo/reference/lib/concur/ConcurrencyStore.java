@@ -1,7 +1,5 @@
 package com.jivesoftware.os.tasmo.reference.lib.concur;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
@@ -14,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -61,29 +60,6 @@ public class ConcurrencyStore {
         updatedStore.multiRowsMultiRemove(batch);
     }
 
-    public Set<ObjectId> getExistence(List<ExistenceUpdate> existenceUpdates) {
-
-        ListMultimap<TenantIdAndCentricId, ObjectId> tenantIdsObjectIds = ArrayListMultimap.create();
-        for (ExistenceUpdate existenceUpdate : existenceUpdates) {
-            tenantIdsObjectIds.put(existenceUpdate.tenantId, existenceUpdate.objectId);
-        }
-
-        Set<ObjectId> existence = new HashSet<>();
-        for (TenantIdAndCentricId tenantId : tenantIdsObjectIds.keySet()) {
-            List<ObjectId> orderObjectIds = tenantIdsObjectIds.get(tenantId);
-            List<Long> multiRowGet = updatedStore.multiRowGet(tenantId, orderObjectIds, EXISTS, null, null);
-            for (int i = 0; i < orderObjectIds.size(); i++) {
-                if (multiRowGet.get(i) != null) {
-                    existence.add(orderObjectIds.get(i));
-                    LOG.trace("Check existence {} TRUE", new Object[]{orderObjectIds.get(i)});
-                } else {
-                    LOG.trace("Check existence {} FALSE", new Object[]{orderObjectIds.get(i)});
-                }
-            }
-        }
-        return existence;
-    }
-
     public Set<ObjectId> getExistence(TenantIdAndCentricId tenantId, Set<ObjectId> objectIds) {
         List<ObjectId> orderObjectIds = new ArrayList<>(objectIds);
         List<Long> multiRowGet = updatedStore.multiRowGet(tenantId, orderObjectIds, EXISTS, null, null);
@@ -114,14 +90,23 @@ public class ConcurrencyStore {
      * @return expected instance if no instance was modified.
      */
     public List<FieldVersion> checkIfModified(TenantIdAndCentricId tenantId, List<FieldVersion> expected) {
-        // TODO add multi get support.
-        List<FieldVersion> was = new ArrayList<>(expected.size());
+        List<ObjectId> rows = new ArrayList<>();
+        List<String> columns = new ArrayList<>();
         for (FieldVersion e : expected) {
-            if (e == null) { // TODO resolve: got == null should be impossible
+            rows.add(e.getObjectId());
+            columns.add(e.getFieldName());
+        }
+
+        List<Map<String, Long>> results = updatedStore.multiRowMultiGet(tenantId, rows, columns, null, null);
+        List<FieldVersion> was = new ArrayList<>(expected.size());
+        for (int i = 0; i < expected.size(); i++) {
+            FieldVersion e = expected.get(i);
+            Map<String, Long> result = results.get(i);
+            if (result == null) {
                 was.add(e);
             } else {
-                Long got = updatedStore.get(tenantId, e.objectId, e.fieldName, null, null);
-                if (got == null) { // TODO resolve: got == null should be impossible
+                Long got = result.get(e.fieldName);
+                if (got == null) {
                     was.add(e);
                 } else if (!Objects.equals(got, e.version)) {
                     was.add(new FieldVersion(e.objectId, e.fieldName, got));
@@ -129,10 +114,10 @@ public class ConcurrencyStore {
                 } else {
                     was.add(e);
                 }
-
             }
         }
         return expected;
+
     }
 
     public static class FieldVersion {
@@ -169,6 +154,36 @@ public class ConcurrencyStore {
         @Override
         public String toString() { // Hacked for human readability when in a list.
             return objectId + "." + fieldName + "=" + version;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 3;
+            hash = 37 * hash + Objects.hashCode(this.objectId);
+            hash = 37 * hash + Objects.hashCode(this.fieldName);
+            hash = 37 * hash + Objects.hashCode(this.version);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            final FieldVersion other = (FieldVersion) obj;
+            if (!Objects.equals(this.objectId, other.objectId)) {
+                return false;
+            }
+            if (!Objects.equals(this.fieldName, other.fieldName)) {
+                return false;
+            }
+            if (!Objects.equals(this.version, other.version)) {
+                return false;
+            }
+            return true;
         }
     }
 }

@@ -70,25 +70,27 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
             }
         }
 
-        // TODO re-write to use batching!
+        Set<FieldVersion> fieldVersions = new HashSet<>();
         for (ViewFieldChange fieldChange : acceptableChanges) {
-            List<FieldVersion> expected = new ArrayList<>();
-            List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
-            for (ReferenceWithTimestamp version : versions) {
-                if (version != null) {
-                    expected.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
+            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+                List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
+                for (ReferenceWithTimestamp version : versions) {
+                    if (version != null) {
+                        fieldVersions.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
+                    }
                 }
             }
-            List<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId, expected);
+        }
 
-            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
-                if (expected != was) {
-                    if (LOG.isTraceEnabled()) {
-                        LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
-                    }
-                    PathModifiedOutFromUnderneathMeException pmofume = new PathModifiedOutFromUnderneathMeException(expected, was);
-                    throw pmofume;
+        if (!fieldVersions.isEmpty()) {
+            List<FieldVersion> expected = new ArrayList(fieldVersions);
+            List<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId, expected);
+            if (expected != was) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
                 }
+                PathModifiedOutFromUnderneathMeException pmofume = new PathModifiedOutFromUnderneathMeException(expected, was);
+                throw pmofume;
             }
         }
 

@@ -116,7 +116,7 @@ public class TasmoViewMaterializer {
             }
             batchCompletionLatch.await();
 
-            for(Future future:futures) {
+            for (Future future : futures) {
                 future.get(); // progegate exceptions to caller.
             }
 
@@ -133,7 +133,7 @@ public class TasmoViewMaterializer {
             throw ex;
         } finally {
             long elapse = LOG.stopTimer("processWrittenEvents");
-            LOG.debug("Processed: " + writtenEvents.size() + " events in " + elapse + "millis.");
+            LOG.info("BATCH PROCESSED: elapse:{} millis events:{}", new Object[]{elapse, writtenEvents.size()});
         }
         return failedToProcess;
     }
