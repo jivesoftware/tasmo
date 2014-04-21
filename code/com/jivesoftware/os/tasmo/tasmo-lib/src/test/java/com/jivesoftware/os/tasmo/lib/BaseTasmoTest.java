@@ -355,18 +355,25 @@ public class BaseTasmoTest {
                 eventValueStore,
                 commitChange);
 
-        materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
-                new WrittenEventProcessorDecorator() {
+        WrittenEventProcessorDecorator writtenEventProcessorDecorator = new WrittenEventProcessorDecorator() {
+            @Override
+            public WrittenEventProcessor decorateWrittenEventProcessor(WrittenEventProcessor writtenEventProcessor) {
+                return new EventBookKeeper(writtenEventProcessor);
+            }
+        };
 
-                    @Override
-                    public WrittenEventProcessor decorateWrittenEventProcessor(WrittenEventProcessor writtenEventProcessor) {
-                        return new EventBookKeeper(writtenEventProcessor);
-
-                    }
-                },
-                tasmoViewModel, getViewChangeNotificationProcessor(),
+        TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator, new OrderIdProviderImpl(1));
+        TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+                concurrencyStore,
+                retryingEventTraverser,
+                getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),
-                concurrencyStore, eventValueStore, referenceStore, new OrderIdProviderImpl(1), Executors.newSingleThreadExecutor());
+                eventValueStore,
+                referenceStore);
+
+        materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
+                tasmoEventProcessor,
+                Executors.newSingleThreadExecutor());
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
     }

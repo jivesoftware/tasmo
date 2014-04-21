@@ -26,6 +26,8 @@ import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
+import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
@@ -181,15 +183,17 @@ public class TasmoServiceInitializer {
 
         ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
 
-        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
-                bookKeepingEventProcessor,
-                tasmoViewModel,
+        TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(bookKeepingEventProcessor, threadTimestamp);
+        TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+                concurrencyStore,
+                retryingEventTraverser,
                 viewChangeNotificationProcessor,
                 new WrittenInstanceHelper(),
-                concurrencyStore,
                 eventValueStore,
-                referenceStore,
-                threadTimestamp,
+                referenceStore);
+
+        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
+                tasmoEventProcessor,
                 eventProcessorThreads);
 
         EventIngressCallbackStream eventIngressCallbackStream = new EventIngressCallbackStream(materializer);

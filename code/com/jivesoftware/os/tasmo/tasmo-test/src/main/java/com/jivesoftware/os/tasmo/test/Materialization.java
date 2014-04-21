@@ -28,6 +28,8 @@ import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
@@ -336,22 +338,25 @@ public class Materialization {
 
         eventProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, eventProcessorThreadFactory);
 
-        tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
-                new WrittenEventProcessorDecorator() {
+        WrittenEventProcessorDecorator writtenEventProcessorDecorator = new WrittenEventProcessorDecorator() {
+            @Override
+            public WrittenEventProcessor decorateWrittenEventProcessor(WrittenEventProcessor writtenEventProcessor) {
+                return new EventBookKeeper(writtenEventProcessor);
+            }
+        };
 
-                    @Override
-                    public WrittenEventProcessor decorateWrittenEventProcessor(WrittenEventProcessor writtenEventProcessor) {
-                        return new EventBookKeeper(writtenEventProcessor);
 
-                    }
-                },
-                tasmoViewModel,
+        TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator, new OrderIdProviderImpl(1));
+        TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+                concurrencyStore,
+                retryingEventTraverser,
                 getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),
-                concurrencyStore,
                 eventValueStore,
-                referenceStore,
-                new OrderIdProviderImpl(1),
+                referenceStore);
+
+        tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
+                tasmoEventProcessor,
                 eventProcessorThreads);
 
     }

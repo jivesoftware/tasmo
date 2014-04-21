@@ -76,6 +76,7 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
                 List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
                 for (ReferenceWithTimestamp version : versions) {
                     if (version != null) {
+                        // TODO this could grow rather large should consider adding batching!
                         fieldVersions.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
                     }
                 }
