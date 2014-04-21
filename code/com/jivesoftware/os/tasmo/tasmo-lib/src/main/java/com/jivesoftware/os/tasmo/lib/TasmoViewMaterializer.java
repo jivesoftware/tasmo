@@ -36,6 +36,7 @@ public class TasmoViewMaterializer {
             List<Future> futures = new ArrayList<>();
             for (final WrittenEvent writtenEvent : writtenEvents) {
                 if (writtenEvent == null) {
+                    batchCompletionLatch.countDown();
                     LOG.warn("some one is sending null events.");
                 } else {
                     Future<?> future = processEvents.submit(new Runnable() {
