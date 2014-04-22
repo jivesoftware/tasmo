@@ -89,5 +89,17 @@
             <artifactId>tasmo-view-reader-service</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>jgraph</groupId>
+            <artifactId>jgraph</artifactId>
+            <version>5.13.0.0</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>jgrapht</groupId>
+            <artifactId>jgrapht</artifactId>
+            <version>0.6.0</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
 </project>
