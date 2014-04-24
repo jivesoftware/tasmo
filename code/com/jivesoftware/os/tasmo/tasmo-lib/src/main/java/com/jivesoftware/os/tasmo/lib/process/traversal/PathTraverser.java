@@ -61,14 +61,15 @@ public class PathTraverser {
             long threadTimestamp,
             boolean removalContext) {
 
-
         Id alternateViewId = buildAlternateViewId(writtenEvent);
-        CommitChange notificationsAfterCommitingChanges = pathTraverserConfig.commitChange;
+        CommitChange notificationsAfterCommitingChanges = writtenEventContext.getCommitChange();
         if (pathTraverserConfig.notificationRequired) {
             notificationsAfterCommitingChanges = new CommitChange() {
                 @Override
-                public void commitChange(TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
-                    pathTraverserConfig.commitChange.commitChange(tenantIdAndCentricId, changes);
+                public void commitChange(WrittenEventContext context,
+                        TenantIdAndCentricId tenantIdAndCentricId,
+                        List<ViewFieldChange> changes) throws CommitChangeException {
+                    writtenEventContext.getCommitChange().commitChange(context, tenantIdAndCentricId, changes);
                     for (ViewFieldChange viewFieldChange : changes) {
                         ModifiedViewInfo modifiedViewInfo = new ModifiedViewInfo(tenantIdAndCentricId, viewFieldChange.getViewObjectId());
                         writtenEventContext.getModifiedViewProvider().add(modifiedViewInfo);
@@ -76,8 +77,10 @@ public class PathTraverser {
                 }
             };
         }
-        PathTraversalContext context = new PathTraversalContext(writtenEvent,
+        PathTraversalContext context = new PathTraversalContext(writtenEventContext,
+                writtenEvent,
                 pathTraverserConfig.writtenEventProvider,
+                writtenEventContext.getFieldValueReader(),
                 notificationsAfterCommitingChanges,
                 alternateViewId,
                 step.getMembersSize(),

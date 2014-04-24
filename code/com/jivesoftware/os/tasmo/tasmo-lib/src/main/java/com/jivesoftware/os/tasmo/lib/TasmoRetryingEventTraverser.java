@@ -27,7 +27,7 @@ public class TasmoRetryingEventTraverser {
         this.threadTime = threadTime;
     }
 
-    public void traverseEvent(InitiateTraversal initiateTraversal,
+    public void traverseEvent(Object lock, InitiateTraversal initiateTraversal,
             WrittenEventContext batchContext,
             TenantIdAndCentricId tenantIdAndCentricId,
             WrittenEvent writtenEvent) throws RuntimeException, Exception {
@@ -36,13 +36,11 @@ public class TasmoRetryingEventTraverser {
         int maxAttempts = 10; // TODO expose to config
         while (attempts < maxAttempts) {
             attempts++;
-            if (attempts > 1) {
-                LOG.info("attempts " + attempts);
-            }
             try {
-
                 WrittenEventProcessor writtenEventProcessor = writtenEventProcessorDecorator.decorateWrittenEventProcessor(initiateTraversal);
-                writtenEventProcessor.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+                synchronized (lock) {
+                    writtenEventProcessor.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+                }
                 break;
             } catch (Exception e) {
                 boolean pathModifiedException = false;
@@ -67,7 +65,21 @@ public class TasmoRetryingEventTraverser {
             }
         }
         if (attempts >= maxAttempts) {
+            LOG.info("FAILED to reach CONSISTENCY after {} attempts for eventId:{} instanceId:{} tenantId:{}", new Object[]{
+                attempts,
+                writtenEvent.getEventId(),
+                writtenEvent.getWrittenInstance().getInstanceId(),
+                writtenEvent.getTenantId()});
             throw new RuntimeException("Failed to reach stasis after " + maxAttempts + " attempts.");
+        } else {
+            if (attempts > 1) {
+                LOG.warn("CONSISTENCY took  {} attempts for eventId:{} instanceId:{} tenantId:{}", new Object[]{
+                    attempts,
+                    writtenEvent.getEventId(),
+                    writtenEvent.getWrittenInstance().getInstanceId(),
+                    writtenEvent.getTenantId()
+                });
+            }
         }
     }
 }

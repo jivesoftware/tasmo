@@ -36,9 +36,9 @@ import java.util.Set;
 public class MapTreeNode implements TreeNode {
 
     private final ObjectId objectId;
-    private Collection<String> values = new ArrayList<>();
-    private Map<String, MapTreeNode> singleChildren = new HashMap<>();
-    private Map<StepTypeAndFieldName, MultiTreeNode> multiChildren = new HashMap<>();
+    private final Collection<String> values = new ArrayList<>();
+    private final Map<String, MapTreeNode> singleChildren = new HashMap<>();
+    private final Map<StepTypeAndFieldName, MultiTreeNode> multiChildren = new HashMap<>();
     private long timestamp;
 
     public MapTreeNode(ObjectId objectId) {
@@ -71,13 +71,13 @@ public class MapTreeNode implements TreeNode {
                 if (treeNode == null) {
                     switch (thisStep.getStepType()) {
                         case refs:
-                            treeNode = new AllForwardTreeNode();
+                            treeNode = new AllForwardTreeNode(new ArrayTreeNode());
                             break;
                         case backRefs:
-                            treeNode = new AllBackTreeNode();
+                            treeNode = new AllBackTreeNode(new ArrayTreeNode());
                             break;
                         case latest_backRef:
-                            treeNode = new LatestTreeNode();
+                            treeNode = new LatestTreeNode(new ArrayTreeNode());
                             break;
                         case count:
                             treeNode = new CountTreeNode();

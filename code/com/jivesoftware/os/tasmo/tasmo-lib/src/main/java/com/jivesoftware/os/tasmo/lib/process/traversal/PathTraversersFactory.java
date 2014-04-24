@@ -11,7 +11,6 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
@@ -34,18 +33,15 @@ public class PathTraversersFactory {
     private final String viewClassName;
     private final String modelPathId;
     private final ModelPath modelPath;
-    private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
 
     public PathTraversersFactory(
             String viewClassName,
             ModelPath modelPath,
-            EventValueStore eventValueStore,
             ReferenceStore referenceStore) {
         this.viewClassName = viewClassName;
         this.modelPathId = modelPath.getId();
         this.modelPath = modelPath;
-        this.eventValueStore = eventValueStore;
         this.referenceStore = referenceStore;
     }
 
@@ -162,7 +158,7 @@ public class PathTraversersFactory {
             StepTraverser processStep;
             if (pathIndex == modelPathMembersSize - 1) {
 
-                processStep = new TraverseValue(eventValueStore, member.getFieldNames(), initialPathIndex, pathIndex);
+                processStep = new TraverseValue(member.getFieldNames(), initialPathIndex, pathIndex);
 
             } else {
                 memberType = member.getStepType();

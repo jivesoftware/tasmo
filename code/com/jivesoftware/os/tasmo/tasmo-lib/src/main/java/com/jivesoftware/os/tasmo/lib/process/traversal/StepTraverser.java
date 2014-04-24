@@ -17,7 +17,7 @@ import com.jivesoftware.os.tasmo.lib.write.PathId;
 public interface StepTraverser {
 
     void process(TenantIdAndCentricId tenantIdAndCentricId,
-        PathTraversalContext viewFieldContext,
-        PathId pathId,
-        StepStream streamTo) throws Exception;
+            PathTraversalContext viewFieldContext,
+            PathId pathId,
+            StepStream streamTo) throws Exception;
 }

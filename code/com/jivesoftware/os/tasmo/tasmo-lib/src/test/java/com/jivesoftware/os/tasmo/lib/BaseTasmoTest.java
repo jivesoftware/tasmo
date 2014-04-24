@@ -49,6 +49,7 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
@@ -291,7 +292,9 @@ public class BaseTasmoTest {
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
         CommitChange commitChange = new CommitChange() {
             @Override
-            public void commitChange(TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
+            public void commitChange(WrittenEventContext batchContext,
+                    TenantIdAndCentricId tenantIdAndCentricId,
+                    List<ViewFieldChange> changes) throws CommitChangeException {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
@@ -351,9 +354,7 @@ public class BaseTasmoTest {
                 viewsProvider,
                 eventProvider,
                 concurrencyStore,
-                referenceStore,
-                eventValueStore,
-                commitChange);
+                referenceStore);
 
         WrittenEventProcessorDecorator writtenEventProcessorDecorator = new WrittenEventProcessorDecorator() {
             @Override
@@ -369,7 +370,9 @@ public class BaseTasmoTest {
                 getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),
                 eventValueStore,
-                referenceStore);
+                referenceStore,
+                commitChange,
+                new TasmoEdgeReport());
 
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,

@@ -83,6 +83,10 @@ public class ConcurrencyStore {
         return got;
     }
 
+    public List<Long> highests(TenantIdAndCentricId tenantIdAndCentricId, ObjectId objectId, String[] fields) {
+        return updatedStore.multiGet(tenantIdAndCentricId, objectId, fields, null, null);
+    }
+
     /**
      *
      * @param tenantId

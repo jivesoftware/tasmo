@@ -55,16 +55,13 @@ public class TasmoViewModelTest {
         concurrencyStore = Mockito.mock(ConcurrencyStore.class);
         writtenEventProvider = Mockito.mock(WrittenEventProvider.class);
         referenceStore = Mockito.mock(ReferenceStore.class);
-        eventValueStore = Mockito.mock(EventValueStore.class);
         changeWriter = Mockito.mock(CommitChange.class);
         tasmoViewModel = new TasmoViewModel(
                 tenantId,
                 viewsProvider,
                 writtenEventProvider,
                 concurrencyStore,
-                referenceStore,
-                eventValueStore,
-                changeWriter);
+                referenceStore);
     }
 
     @AfterMethod

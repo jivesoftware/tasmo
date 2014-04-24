@@ -15,15 +15,37 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+import com.jivesoftware.os.tasmo.id.Id;
+import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import java.io.IOException;
+import java.util.Set;
 
 /**
  *
  */
-public class AllBackTreeNode extends ArrayTreeNode {
+public class AllBackTreeNode implements MultiTreeNode {
+
+    private final ArrayTreeNode arrayTreeNode;
+
+    public AllBackTreeNode(ArrayTreeNode arrayTreeNode) {
+        this.arrayTreeNode = arrayTreeNode;
+    }
 
     @Override
     public String getFieldPrefix() {
         return ReservedFields.ALL_BACK_REF_FIELD_PREFIX;
+    }
+
+    @Override
+    public void add(ModelPathStep[] steps, ObjectId[] ids, String value, Long timestamp) {
+        arrayTreeNode.add(steps, ids, value, timestamp);
+    }
+
+    @Override
+    public JsonNode merge(JsonViewMerger merger, Set<Id> permittedIds) throws IOException {
+        return arrayTreeNode.merge(merger, permittedIds);
     }
 }

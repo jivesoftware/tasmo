@@ -25,7 +25,7 @@ import java.util.Set;
 /**
  *
  */
-interface TreeNode {
+public interface TreeNode {
     void add(ModelPathStep[] steps, ObjectId[] ids, String value, Long timestamp);
 
     JsonNode merge(JsonViewMerger merger, Set<Id> permittedIds) throws IOException;

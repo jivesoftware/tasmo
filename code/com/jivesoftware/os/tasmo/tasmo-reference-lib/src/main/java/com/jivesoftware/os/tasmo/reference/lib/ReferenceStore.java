@@ -14,6 +14,7 @@ import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.KeyedColumnValueCallbackStream;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
+import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantRowColumValueTimestampAdd;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.ConstantTimestamper;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
@@ -164,6 +165,55 @@ public class ReferenceStore {
         lastestBackRefs.callback(null); // eos
     }
 
+    public void batchLink(final TenantIdAndCentricId tenantIdAndCentricId,
+            ObjectId from,
+            long timestamp,
+            List<BatchLinkTo> batchLinks) throws Exception {
+        LOG.inc("batchLink");
+        LOG.startTimer("batchLink");
+
+        List<String> fieldNames = new ArrayList<>(batchLinks.size() + 1);
+        fieldNames.add("deleted");
+        for (BatchLinkTo link : batchLinks) {
+            fieldNames.add(link.fieldName);
+        }
+        String[] fields = fieldNames.toArray(new String[fieldNames.size()]);
+        concurrencyStore.updated(tenantIdAndCentricId, from, fields, timestamp - 1);
+
+        try {
+            List<TenantRowColumValueTimestampAdd<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[]>> links = new ArrayList<>();
+            List<TenantRowColumValueTimestampAdd<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[]>> backLinks = new ArrayList<>();
+            for (BatchLinkTo link : batchLinks) {
+                ClassAndField_IdKey classAndField_from = new ClassAndField_IdKey(from.getClassName(), link.fieldName, from);
+                ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp);
+                for (Reference to : link.tos) {
+                    links.add(new TenantRowColumValueTimestampAdd<>(tenantIdAndCentricId, classAndField_from, to.getObjectId(), EMPTY, constantTimestamper));
+                    ClassAndField_IdKey classAndField_to = new ClassAndField_IdKey(from.getClassName(), link.fieldName, to.getObjectId());
+                    backLinks.add(new TenantRowColumValueTimestampAdd<>(tenantIdAndCentricId, classAndField_to, from, EMPTY, constantTimestamper));
+                }
+            }
+            multiLinks.multiRowsMultiAdd(links);
+            multiBackLinks.multiRowsMultiAdd(backLinks);
+
+        } finally {
+            LOG.stopTimer("batchLink");
+        }
+
+        concurrencyStore.updated(tenantIdAndCentricId, from, fields, timestamp);
+    }
+
+    static public class BatchLinkTo {
+
+        private final String fieldName;
+        private final Collection<Reference> tos;
+
+        public BatchLinkTo(String fieldName, Collection<Reference> tos) {
+            this.fieldName = fieldName;
+            this.tos = tos;
+        }
+
+    }
+
     public void link(final TenantIdAndCentricId tenantIdAndCentricId,
             long timestamp,
             ObjectId from,
@@ -176,20 +226,31 @@ public class ReferenceStore {
         concurrencyStore.updated(tenantIdAndCentricId, from, new String[]{fieldName, "deleted"}, timestamp - 1);
 
         try {
+            ClassAndField_IdKey classAndField_from = new ClassAndField_IdKey(from.getClassName(), fieldName, from);
+            ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp);
+
+//            for (Reference to : tos) {
+//
+//                ClassAndField_IdKey classAndField_to = new ClassAndField_IdKey(from.getClassName(), fieldName, to.getObjectId());
+//
+//                multiLinks.add(tenantIdAndCentricId, classAndField_from, to.getObjectId(), EMPTY, null, constantTimestamper);
+//                LOG.trace(System.currentTimeMillis() + " |--> Set Links Tenant={} from={} to={} Timestamp={}",
+//                        new Object[]{tenantIdAndCentricId, classAndField_from, to, timestamp});
+//
+//                multiBackLinks.add(tenantIdAndCentricId, classAndField_to, from, EMPTY, null, constantTimestamper);
+//                LOG.trace(System.currentTimeMillis() + " |--> Set BackLinks Tenant={} to={} from={} Timestamp={}",
+//                        new Object[]{tenantIdAndCentricId, classAndField_to, from, timestamp});
+//            }
+            List<TenantRowColumValueTimestampAdd<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[]>> links = new ArrayList<>();
+            List<TenantRowColumValueTimestampAdd<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[]>> backLinks = new ArrayList<>();
             for (Reference to : tos) {
-
-                ClassAndField_IdKey classAndField_from = new ClassAndField_IdKey(from.getClassName(), fieldName, from);
+                links.add(new TenantRowColumValueTimestampAdd<>(tenantIdAndCentricId, classAndField_from, to.getObjectId(), EMPTY, constantTimestamper));
                 ClassAndField_IdKey classAndField_to = new ClassAndField_IdKey(from.getClassName(), fieldName, to.getObjectId());
-
-                ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp);
-                multiLinks.add(tenantIdAndCentricId, classAndField_from, to.getObjectId(), EMPTY, null, constantTimestamper);
-                LOG.trace(System.currentTimeMillis() + " |--> Set Links Tenant={} from={} to={} Timestamp={}",
-                        new Object[]{tenantIdAndCentricId, classAndField_from, to, timestamp});
-
-                multiBackLinks.add(tenantIdAndCentricId, classAndField_to, from, EMPTY, null, constantTimestamper);
-                LOG.trace(System.currentTimeMillis() + " |--> Set BackLinks Tenant={} to={} from={} Timestamp={}",
-                        new Object[]{tenantIdAndCentricId, classAndField_to, from, timestamp});
+                backLinks.add(new TenantRowColumValueTimestampAdd<>(tenantIdAndCentricId, classAndField_to, from, EMPTY, constantTimestamper));
             }
+            multiLinks.multiRowsMultiAdd(links);
+            multiBackLinks.multiRowsMultiAdd(backLinks);
+
         } finally {
             LOG.stopTimer("link");
         }

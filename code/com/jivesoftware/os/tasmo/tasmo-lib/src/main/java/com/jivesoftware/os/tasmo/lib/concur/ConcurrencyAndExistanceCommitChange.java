@@ -4,6 +4,7 @@ import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
@@ -36,7 +37,9 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
     }
 
     @Override
-    public void commitChange(TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
+    public void commitChange(WrittenEventContext batchContext,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            List<ViewFieldChange> changes) throws CommitChangeException {
 
         Set<ObjectId> check = new HashSet<>();
         for (ViewFieldChange change : changes) {
@@ -95,7 +98,7 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
             }
         }
 
-        commitChange.commitChange(tenantIdAndCentricId, acceptableChanges);
+        commitChange.commitChange(batchContext, tenantIdAndCentricId, acceptableChanges);
 
     }
 

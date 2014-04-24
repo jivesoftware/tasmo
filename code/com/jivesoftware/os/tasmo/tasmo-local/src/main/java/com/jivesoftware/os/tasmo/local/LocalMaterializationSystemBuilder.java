@@ -47,6 +47,7 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
@@ -194,9 +195,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                 viewsProvider,
                 writtenEventProvider,
                 concurrencyStore,
-                referenceStore,
-                eventValueStore,
-                commitChange);
+                referenceStore);
 
         viewMaterializerModel.loadModel(masterTenantId);
 
@@ -218,7 +217,9 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                 viewChangeNotificationProcessor,
                 new WrittenInstanceHelper(),
                 eventValueStore,
-                referenceStore);
+                referenceStore,
+                commitChange,
+                new TasmoEdgeReport());
 
         return new TasmoViewMaterializer(materializerEventBookkeeper,
                 tasmoEventProcessor,
@@ -368,7 +369,9 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
         return new CommitChange() {
             @Override
-            public void commitChange(TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
+            public void commitChange(WrittenEventContext batchContext,
+                    TenantIdAndCentricId tenantIdAndCentricId,
+                    List<ViewFieldChange> changes) throws CommitChangeException {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {

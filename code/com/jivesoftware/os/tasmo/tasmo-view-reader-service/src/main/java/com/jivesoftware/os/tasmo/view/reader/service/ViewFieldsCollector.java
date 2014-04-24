@@ -42,7 +42,7 @@ public class ViewFieldsCollector {
 
         ObjectId[] modelPathInstanceIds = modelPathInstanceIds(modelPathIds, viewPathClasses, modelPath.getPathMembers());
 
-        LOG.debug("Read view path -> with id={} instance ids={} value={} timestamp={}", new Object[] { modelPath.getId(), modelPathIds, value, timestamp });
+        LOG.debug("Read view path -> with id={} instance ids={} value={} timestamp={}", new Object[]{modelPath.getId(), modelPathIds, value, timestamp});
 
         if (treeRoot == null) {
             treeRoot = new MapTreeNode(modelPathInstanceIds[0]);

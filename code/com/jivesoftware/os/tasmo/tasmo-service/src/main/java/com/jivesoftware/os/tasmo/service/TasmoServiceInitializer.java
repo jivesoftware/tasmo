@@ -40,6 +40,7 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
@@ -95,6 +96,7 @@ public class TasmoServiceInitializer {
             ViewChangeNotificationProcessor viewChangeNotificationProcessor,
             CallbackStream<List<BookkeepingEvent>> bookKeepingStream,
             final Optional<WrittenEventProcessorDecorator> writtenEventProcessorDecorator,
+            TasmoEdgeReport tasmoEdgeReport,
             TasmoServiceConfig config) throws IOException {
 
         RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceTable
@@ -140,9 +142,7 @@ public class TasmoServiceInitializer {
                 viewsProvider,
                 eventProvider,
                 concurrencyStore,
-                referenceStore,
-                eventValueStore,
-                existenceCommitChange);
+                referenceStore);
 
         tasmoViewModel.loadModel(masterTenantId);
 
@@ -184,13 +184,15 @@ public class TasmoServiceInitializer {
         ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(bookKeepingEventProcessor, threadTimestamp);
-        TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+        final TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
                 concurrencyStore,
                 retryingEventTraverser,
                 viewChangeNotificationProcessor,
                 new WrittenInstanceHelper(),
                 eventValueStore,
-                referenceStore);
+                referenceStore,
+                existenceCommitChange,
+                tasmoEdgeReport);
 
         TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
                 tasmoEventProcessor,
@@ -215,6 +217,17 @@ public class TasmoServiceInitializer {
                     }
                 })
                 .build();
+
+        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    tasmoEventProcessor.logStats();
+                } catch (Exception x) {
+                    LOG.error("Issue with logging stats. ", x);
+                }
+            }
+        }, 60, 60, TimeUnit.SECONDS);
 
         return new EventIngressRetryingCallbackStream(eventIngressCallbackStream, retryer);
     }

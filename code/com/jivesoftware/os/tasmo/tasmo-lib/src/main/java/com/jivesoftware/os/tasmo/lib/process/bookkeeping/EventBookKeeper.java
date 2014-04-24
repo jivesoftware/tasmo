@@ -35,7 +35,6 @@ public class EventBookKeeper implements WrittenEventProcessor {
         String instanceClass = instanceId.getClassName();
 
         try {
-            long start = System.currentTimeMillis();
             LOG.startTimer("processed>" + instanceClass);
             LOG.startTimer("processed");
 
@@ -52,13 +51,6 @@ public class EventBookKeeper implements WrittenEventProcessor {
 
             LOG.inc("processed>" + instanceClass);
             LOG.inc("processed");
-
-            long elapse = System.currentTimeMillis() - start;
-            LOG.info("{} millis DONE PROCESSING EVENT-ID:{} Instance:{} {}", new Object[]{elapse,
-                writtenEvent.getEventId(),
-                instanceClass,
-                instanceId.getId()});
-
         } finally {
             LOG.stopTimer("processed>" + instanceClass);
             LOG.startTimer("processed");

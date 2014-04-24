@@ -21,6 +21,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.Id;
+import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Set;
@@ -28,9 +30,17 @@ import java.util.Set;
 /**
  *
  */
-class LatestTreeNode extends ArrayTreeNode {
+class LatestTreeNode implements MultiTreeNode {
 
-    public LatestTreeNode() {
+    private final ArrayTreeNode arrayTreeNode;
+
+    public LatestTreeNode(ArrayTreeNode arrayTreeNode) {
+        this.arrayTreeNode = arrayTreeNode;
+    }
+
+    @Override
+    public void add(ModelPathStep[] steps, ObjectId[] ids, String value, Long timestamp) {
+        arrayTreeNode.add(steps, ids, value, timestamp);
     }
 
     @Override
@@ -43,7 +53,7 @@ class LatestTreeNode extends ArrayTreeNode {
             }
         });
 
-        Iterable permitted = Iterables.filter(array.values(), new Predicate<MapTreeNode>() {
+        Iterable permitted = Iterables.filter(arrayTreeNode.values(), new Predicate<MapTreeNode>() {
             @Override
             public boolean apply(MapTreeNode input) {
                 return permittedIds.contains(input.getObjectId().getId());
@@ -65,5 +75,6 @@ class LatestTreeNode extends ArrayTreeNode {
     public String getFieldPrefix() {
         return ReservedFields.LATEST_BACK_REF_FIELD_PREFIX;
     }
+
 }
 

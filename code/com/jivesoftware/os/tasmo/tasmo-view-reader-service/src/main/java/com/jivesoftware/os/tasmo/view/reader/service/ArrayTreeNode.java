@@ -21,6 +21,7 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -28,14 +29,17 @@ import java.util.Set;
 /**
  *
  */
-abstract class ArrayTreeNode implements MultiTreeNode {
+public class ArrayTreeNode {
 
-    protected final Map<ObjectId, MapTreeNode> array = new LinkedHashMap<>();
+    private final Map<ObjectId, MapTreeNode> array = new LinkedHashMap<>();
 
     public ArrayTreeNode() {
     }
 
-    @Override
+    public Collection<MapTreeNode> values() {
+        return array.values();
+    }
+
     public void add(ModelPathStep[] steps, ObjectId[] ids,  String value, Long timestamp) {
        ObjectId objectId = ids[0];
         MapTreeNode child = array.get(objectId);
@@ -46,7 +50,6 @@ abstract class ArrayTreeNode implements MultiTreeNode {
         child.add(steps, ids, value, timestamp);
     }
 
-    @Override
     public JsonNode merge(JsonViewMerger merger, Set<Id> permittedIds) throws IOException {
         ArrayNode arrayNode = merger.createArrayNode();
         for (MapTreeNode treeNode : array.values()) {

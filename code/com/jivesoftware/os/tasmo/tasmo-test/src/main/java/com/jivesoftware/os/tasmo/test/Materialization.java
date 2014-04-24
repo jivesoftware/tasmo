@@ -43,6 +43,7 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
@@ -229,6 +230,7 @@ public class Materialization {
 
     RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> rawViewValueStore;
     ExecutorService eventProcessorThreads;
+    TasmoEventProcessor tasmoEventProcessor;
 
     public void setupModelAndMaterializer(int numberOfEventProcessorThreads) throws Exception {
 
@@ -262,7 +264,10 @@ public class Materialization {
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
         CommitChange commitChange = new CommitChange() {
             @Override
-            public void commitChange(TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
+            public void commitChange(WrittenEventContext batchContext,
+                    TenantIdAndCentricId tenantIdAndCentricId,
+                    List<ViewFieldChange> changes) throws CommitChangeException {
+
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
@@ -322,9 +327,7 @@ public class Materialization {
                 viewsProvider,
                 eventProvider,
                 concurrencyStore,
-                referenceStore,
-                eventValueStore,
-                commitChange);
+                referenceStore);
 
         ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("event-processor-%d")
@@ -345,20 +348,25 @@ public class Materialization {
             }
         };
 
-
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator, new OrderIdProviderImpl(1));
-        TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+        tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
                 concurrencyStore,
                 retryingEventTraverser,
                 getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),
                 eventValueStore,
-                referenceStore);
+                referenceStore,
+                commitChange,
+                new TasmoEdgeReport());
 
         tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,
                 eventProcessorThreads);
 
+    }
+
+    public void logStats() {
+        tasmoEventProcessor.logStats();
     }
 
     Expectations initModelPaths(TenantId tenantId, List<ViewBinding> bindings) throws Exception {

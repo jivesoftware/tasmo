@@ -1,15 +1,19 @@
 package com.jivesoftware.os.tasmo.service;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Joiner;
 import com.google.inject.Singleton;
 import com.jivesoftware.os.jive.utils.jaxrs.util.ResponseHelper;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import java.util.List;
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 @Singleton
@@ -19,6 +23,8 @@ public class MaterializerServiceEndpoints {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     @Context
     EventConvertingCallbackStream ingressWrittenEvents;
+    @Context
+    TasmoEdgeReport tasmoEdgeReport;
 
     @POST
     @Consumes("application/json")
@@ -40,5 +46,12 @@ public class MaterializerServiceEndpoints {
         } finally {
             LOG.stopTimer("writeEvents");
         }
+    }
+
+    @GET
+    @Path("/report/txt")
+    public Response hello() {
+        String report = Joiner.on("\n").join(tasmoEdgeReport.getTextReport());
+        return Response.ok(report, MediaType.TEXT_PLAIN).build();
     }
 }

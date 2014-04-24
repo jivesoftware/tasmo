@@ -18,7 +18,7 @@ package com.jivesoftware.os.tasmo.view.reader.service;
 /**
  *
  */
-interface MultiTreeNode extends TreeNode {
+public interface MultiTreeNode extends TreeNode {
 
     String getFieldPrefix();
 }

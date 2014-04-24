@@ -3,21 +3,18 @@ package com.jivesoftware.os.tasmo.lib;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
+import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
-import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateRefTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraverserKey;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateValueTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraverser;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraverserConfig;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraversersFactory;
 import com.jivesoftware.os.tasmo.lib.process.traversal.StepTraverser;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -42,24 +39,19 @@ public class TasmoViewModel {
     private final ConcurrentHashMap<TenantId, VersionedTasmoViewModel> versionedViewModels;
     private final ConcurrencyStore concurrencyStore;
     private final ReferenceStore referenceStore;
-    private final EventValueStore eventValueStore;
-    private final CommitChange changeWriter;
+    private final StripingLocksProvider<TenantId> loadModelLocks = new StripingLocksProvider<>(1024);
 
     public TasmoViewModel(
             TenantId masterTenantId,
             ViewsProvider viewsProvider,
             WrittenEventProvider writtenEventProvider,
             ConcurrencyStore concurrencyStore,
-            ReferenceStore referenceStore,
-            EventValueStore eventValueStore,
-            CommitChange changeWriter) {
+            ReferenceStore referenceStore) {
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.writtenEventProvider = writtenEventProvider;
         this.concurrencyStore = concurrencyStore;
         this.referenceStore = referenceStore;
-        this.eventValueStore = eventValueStore;
-        this.changeWriter = changeWriter;
         this.versionedViewModels = new ConcurrentHashMap<>();
     }
 
@@ -83,26 +75,28 @@ public class TasmoViewModel {
         }
     }
 
-    synchronized public void loadModel(TenantId tenantId) {
-        ChainedVersion currentVersion = viewsProvider.getCurrentViewsVersion(tenantId);
-        if (currentVersion == ChainedVersion.NULL) {
-            versionedViewModels.put(tenantId, new VersionedTasmoViewModel(ChainedVersion.NULL, null, null));
-        } else {
-            VersionedTasmoViewModel currentVersionedViewsModel = versionedViewModels.get(tenantId);
-            if (currentVersionedViewsModel == null
-                    || !currentVersionedViewsModel.getVersion().equals(currentVersion)) {
-
-                Views views = viewsProvider.getViews(new ViewsProcessorId(tenantId, "NotBeingUsedYet"));
-
-                if (views != null) {
-                    ListMultimap<String, InitiateTraversal> dispatchers = bindModelPaths(views);
-                    ListMultimap<String, FieldNameAndType> eventModel = bindEventFieldTypes(views);
-                    versionedViewModels.put(tenantId, new VersionedTasmoViewModel(views.getVersion(), dispatchers, eventModel));
-                } else {
-                    LOG.info("ViewsProvider failed to provide a 'Views' instance for tenantId:" + tenantId);
-                }
+    public void loadModel(TenantId tenantId) {
+        synchronized (loadModelLocks.lock(tenantId)) {
+            ChainedVersion currentVersion = viewsProvider.getCurrentViewsVersion(tenantId);
+            if (currentVersion == ChainedVersion.NULL) {
+                versionedViewModels.put(tenantId, new VersionedTasmoViewModel(ChainedVersion.NULL, null, null));
             } else {
-                LOG.debug("Didn't reload because view model versions are equal.");
+                VersionedTasmoViewModel currentVersionedViewsModel = versionedViewModels.get(tenantId);
+                if (currentVersionedViewsModel == null
+                        || !currentVersionedViewsModel.getVersion().equals(currentVersion)) {
+
+                    Views views = viewsProvider.getViews(new ViewsProcessorId(tenantId, "NotBeingUsedYet"));
+
+                    if (views != null) {
+                        ListMultimap<String, InitiateTraversal> dispatchers = bindModelPaths(views);
+                        ListMultimap<String, FieldNameAndType> eventModel = bindEventFieldTypes(views);
+                        versionedViewModels.put(tenantId, new VersionedTasmoViewModel(views.getVersion(), dispatchers, eventModel));
+                    } else {
+                        LOG.info("ViewsProvider failed to provide a 'Views' instance for tenantId:" + tenantId);
+                    }
+                } else {
+                    LOG.debug("Didn't reload because view model versions are equal.");
+                }
             }
         }
 
@@ -180,7 +174,6 @@ public class TasmoViewModel {
 
             PathTraverserConfig pathTraverserConfig = new PathTraverserConfig(
                     writtenEventProvider,
-                    changeWriter,
                     viewIdFieldName,
                     idCentric,
                     isNotificationRequired);
@@ -195,7 +188,7 @@ public class TasmoViewModel {
                     LOG.trace("MODELPATH " + modelPath);
                 }
                 PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName,
-                        modelPath, eventValueStore, referenceStore);
+                        modelPath, referenceStore);
 
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("Bind:{}", factoryKey);
@@ -244,9 +237,11 @@ public class TasmoViewModel {
             }
             ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore);
 
-            InitiateTraversal initialStepDispatcher = new InitiateTraversal(className,
-                    new InitiateValueTraversal(concurrencyChecker, eventValueStore, typedSteps.get(ModelPathStepType.value)),
-                    new InitiateRefTraversal(concurrencyChecker, referenceStore, refTraversers, backRefTraversers));
+            InitiateTraversal initialStepDispatcher = new InitiateTraversal(concurrencyChecker,
+                    typedSteps.get(ModelPathStepType.value),
+                    referenceStore,
+                    refTraversers,
+                    backRefTraversers);
             all.put(className, initialStepDispatcher);
 
             if (LOG.isTraceEnabled()) {

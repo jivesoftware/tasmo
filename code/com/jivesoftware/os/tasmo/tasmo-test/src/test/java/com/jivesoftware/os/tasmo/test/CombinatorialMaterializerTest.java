@@ -42,7 +42,7 @@ import org.testng.annotations.Test;
 public class CombinatorialMaterializerTest {
 
     //private long seed = System.currentTimeMillis();
-    private final long seed = 1389045159990L;
+    private final long seed = System.currentTimeMillis();
     private final boolean verbose = false;
     private final int maxStepDepth = 4; // TODO change back to 4
     private final int maxFanOut = 2;
