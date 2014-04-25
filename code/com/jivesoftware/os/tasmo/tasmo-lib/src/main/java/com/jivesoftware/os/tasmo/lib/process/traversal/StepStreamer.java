@@ -8,7 +8,7 @@ import java.util.List;
  *
  * @author jonathan
  */
-class StepStreamer implements StepStream {
+public class StepStreamer implements StepStream {
 
     private final TenantIdAndCentricId tenantIdAndCentricId;
     private final PathTraversalContext context;
@@ -28,11 +28,6 @@ class StepStreamer implements StepStream {
     @Override
     public void stream(PathId pathId) throws Exception {
         steps.get(stepIndex).process(tenantIdAndCentricId, context, pathId, nextStepStreamer());
-    }
-
-    @Override
-    public int getStepIndex() {
-        return stepIndex;
     }
 
     private StepStreamer nextStepStreamer() {

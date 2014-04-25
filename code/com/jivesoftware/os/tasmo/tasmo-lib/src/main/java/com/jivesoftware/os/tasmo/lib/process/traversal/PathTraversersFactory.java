@@ -45,16 +45,18 @@ public class PathTraversersFactory {
         this.referenceStore = referenceStore;
     }
 
-    public List<PathTraverser> buildPathTraversers(PathTraverserConfig pathTraverserConfig) {
-        List<PathTraverser> pathTraversers = Lists.newArrayList();
+    public List<TraversablePath> buildPathTraversers(String viewIdFieldName) {
+        List<TraversablePath> pathTraversers = Lists.newArrayList();
         List<ModelPathStep> modelPathMembers = modelPath.getPathMembers();
         for (int i = 0; i < modelPathMembers.size(); i++) {
-            pathTraversers.add(buildPathTraverser(pathTraverserConfig, modelPathMembers, i));
+            pathTraversers.add(buildPathTraverser(viewIdFieldName, modelPathMembers, i));
         }
         return pathTraversers;
     }
 
-    private PathTraverser buildPathTraverser(PathTraverserConfig pathTraverserConfig, List<ModelPathStep> modelPathSteps, int initialPathIndex) {
+    private TraversablePath buildPathTraverser(String viewIdFieldName,
+            List<ModelPathStep> modelPathSteps,
+            int initialPathIndex) {
 
         InitiateTraversalContext firstStep = new InitiateTraversalContext(
                 modelPathSteps.get(initialPathIndex),
@@ -66,26 +68,15 @@ public class PathTraversersFactory {
         List<StepTraverser> steps = new ArrayList<>();
         steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
         steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
-        steps.add(new TraverseViewValueWriter(viewClassName, modelPathId));
-
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("~~~~~ buildPathTraverser:" + initialPathIndex + " " + modelPathSteps);
-            int i = 1;
-            for (StepTraverser s : steps) {
-                LOG.trace(i + "." + s);
-                i++;
-            }
-            LOG.trace("");
-        }
-
-        return new PathTraverser(firstStep, steps, pathTraverserConfig);
+        steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPathId));
+        return new TraversablePath(firstStep, steps);
     }
 
-    public List<PathTraverser> buildBackPathTraversers(PathTraverserConfig pathTraverserConfig) {
-        List<PathTraverser> pathTraversers = Lists.newArrayList();
+    public List<TraversablePath> buildBackPathTraversers(String viewIdFieldName) {
+        List<TraversablePath> pathTraversers = Lists.newArrayList();
         List<ModelPathStep> modelPathMembers = modelPath.getPathMembers();
         for (int i = 0; i < modelPathMembers.size(); i++) {
-            PathTraverser buildInitialBackrefStep = buildInitialBackrefStep(pathTraverserConfig, i);
+            TraversablePath buildInitialBackrefStep = buildInitialBackrefStep(viewIdFieldName, i);
             if (buildInitialBackrefStep != null) {
                 pathTraversers.add(buildInitialBackrefStep);
             }
@@ -93,7 +84,7 @@ public class PathTraversersFactory {
         return pathTraversers;
     }
 
-    private PathTraverser buildInitialBackrefStep(PathTraverserConfig pathTraverserConfig, int initialPathIndex) {
+    private TraversablePath buildInitialBackrefStep(String viewIdFieldName, int initialPathIndex) {
         List<ModelPathStep> modelPathSteps = modelPath.getPathMembers();
 
         ModelPathStep modelPathStep = modelPathSteps.get(initialPathIndex);
@@ -114,7 +105,7 @@ public class PathTraversersFactory {
 
                         @Override
                         public Set<String> getInitialClassNames() {
-                            return super.initialModelPathMember.getDestinationClassNames();
+                            return super.getInitialModelPathStep().getDestinationClassNames();
                         }
 
                         @Override
@@ -127,19 +118,8 @@ public class PathTraversersFactory {
             steps.add(new TraverseBackref(modelPathStep, referenceStore, modelPathStep.getOriginClassNames()));
             steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
             steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
-            steps.add(new TraverseViewValueWriter(viewClassName, modelPathId));
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("~~~~~ buildBackRefPathTraverser:" + initialPathIndex + " " + modelPathSteps);
-                int i = 1;
-                for (StepTraverser s : steps) {
-                    LOG.trace(i + "." + s);
-                    i++;
-                }
-                LOG.trace("");
-            }
-
-            return new PathTraverser(firstStep, steps, pathTraverserConfig);
+            steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPathId));
+            return new TraversablePath(firstStep, steps);
         } else {
             return null;
         }

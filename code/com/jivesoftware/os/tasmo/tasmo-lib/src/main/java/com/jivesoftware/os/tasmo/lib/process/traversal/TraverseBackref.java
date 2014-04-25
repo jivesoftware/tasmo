@@ -16,6 +16,7 @@ import com.jivesoftware.os.tasmo.reference.lib.BackRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -64,6 +65,32 @@ public class TraverseBackref implements StepTraverser {
     @Override
     public String toString() {
         return "TraverseBackref." + initialModelPathMember;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 71 * hash + Objects.hashCode(this.initialModelPathMember);
+        hash = 71 * hash + Objects.hashCode(this.validDownStreamTypes);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final TraverseBackref other = (TraverseBackref) obj;
+        if (!Objects.equals(this.initialModelPathMember, other.initialModelPathMember)) {
+            return false;
+        }
+        if (!Objects.equals(this.validDownStreamTypes, other.validDownStreamTypes)) {
+            return false;
+        }
+        return true;
     }
 
 }

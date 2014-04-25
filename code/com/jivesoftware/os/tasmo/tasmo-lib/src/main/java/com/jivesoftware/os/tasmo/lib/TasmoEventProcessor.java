@@ -21,8 +21,11 @@ import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.process.InMemoryModifiedViewProvider;
+import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
+import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
+import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
@@ -50,6 +53,7 @@ public class TasmoEventProcessor {
     private static final int STATS_WINDOW = 1000;
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TasmoViewModel tasmoViewModel;
+    private final WrittenEventProvider writtenEventProvider;
     private final ConcurrencyStore concurrencyStore;
     private final TasmoRetryingEventTraverser eventTraverser;
     private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
@@ -67,6 +71,7 @@ public class TasmoEventProcessor {
     private final Map<String, DescriptiveStatistics> notificationStats = new ConcurrentHashMap<>();
 
     public TasmoEventProcessor(TasmoViewModel tasmoViewModel,
+            WrittenEventProvider writtenEventProvider,
             ConcurrencyStore concurrencyStore,
             TasmoRetryingEventTraverser eventTraverser,
             ViewChangeNotificationProcessor viewChangeNotificationProcessor,
@@ -76,6 +81,7 @@ public class TasmoEventProcessor {
             final CommitChange delegateCommitChange,
             TasmoEdgeReport tasmoEdgeReport) {
         this.tasmoViewModel = tasmoViewModel;
+        this.writtenEventProvider = writtenEventProvider;
         this.concurrencyStore = concurrencyStore;
         this.eventTraverser = eventTraverser;
         this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
@@ -197,24 +203,43 @@ public class TasmoEventProcessor {
     }
 
     public void processWrittenEvent(Object lock, WrittenEvent writtenEvent) throws Exception {
-        long startProcessingEvent = System.currentTimeMillis();
-        WrittenEventContext batchContext = new WrittenEventContext(writtenEvent,
-                new InMemoryModifiedViewProvider(), fieldValueReader, commitChange, tasmoEdgeReport);
-        
         TenantId tenantId = writtenEvent.getTenantId();
-        VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
+        final VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
         if (model == null) {
             LOG.error("Cannot process an event until a model has been loaded.");
             throw new Exception("Cannot process an event until a model has been loaded.");
-        } else {
-            WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
-            String className = writtenInstance.getInstanceId().getClassName();
+        }
 
-            List<TenantIdAndCentricId> tenantIdAndCentricIds = buildTenantIdAndCentricIds(model, className, tenantId, writtenEvent);
-            ObjectId instanceId = writtenInstance.getInstanceId();
-            long timestamp = writtenEvent.getEventId();
+        final ModifiedViewProvider modifiedViewProvider = new InMemoryModifiedViewProvider();
+        CommitChange commitChangeNotifier = new CommitChange() {
+            @Override
+            public void commitChange(WrittenEventContext context,
+                    TenantIdAndCentricId tenantIdAndCentricId,
+                    List<ViewFieldChange> changes) throws CommitChangeException {
 
-            for (TenantIdAndCentricId tenantIdAndCentricId : tenantIdAndCentricIds) {
+                commitChange.commitChange(context, tenantIdAndCentricId, changes);
+                for (ViewFieldChange viewFieldChange : changes) {
+                    if (model.getNotifiableViews().contains(viewFieldChange.getViewObjectId().getClassName())) {
+                        ModifiedViewInfo modifiedViewInfo = new ModifiedViewInfo(tenantIdAndCentricId, viewFieldChange.getViewObjectId());
+                        modifiedViewProvider.add(modifiedViewInfo);
+                    }
+                }
+            }
+        };
+
+        long startProcessingEvent = System.currentTimeMillis();
+        WrittenEventContext batchContext = new WrittenEventContext(writtenEvent, writtenEventProvider,
+                fieldValueReader, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport);
+
+        WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
+        String className = writtenInstance.getInstanceId().getClassName();
+
+        List<TenantIdAndCentricId> tenantIdAndCentricIds = buildTenantIdAndCentricIds(model, className, tenantId, writtenEvent);
+        ObjectId instanceId = writtenInstance.getInstanceId();
+        long timestamp = writtenEvent.getEventId();
+
+        for (TenantIdAndCentricId tenantIdAndCentricId : tenantIdAndCentricIds) {
+            synchronized (lock) {
                 long start = System.currentTimeMillis();
                 if (writtenInstance.isDeletion()) {
                     concurrencyStore.removeObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
@@ -238,7 +263,7 @@ public class TasmoEventProcessor {
                         continue;
                     }
                     start = System.currentTimeMillis();
-                    eventTraverser.traverseEvent(lock, initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent);
+                    eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent);
                     String traversalStatKey = "event:" + className;
                     stats = traversalStats.get(traversalStatKey);
                     if (stats == null) {
@@ -247,18 +272,18 @@ public class TasmoEventProcessor {
                     }
                     stats.addValue(System.currentTimeMillis() - start);
                 }
-
-                start = System.currentTimeMillis();
-                viewChangeNotificationProcessor.process(batchContext, writtenEvent);
-                String commitStatKey = "event:" + className;
-                stats = notificationStats.get(commitStatKey);
-                if (stats == null) {
-                    stats = new DescriptiveStatistics(STATS_WINDOW);
-                    notificationStats.put(commitStatKey, stats);
-                }
-                stats.addValue(System.currentTimeMillis() - start);
-
             }
+
+            long start = System.currentTimeMillis();
+            viewChangeNotificationProcessor.process(batchContext, writtenEvent);
+            String commitStatKey = "event:" + className;
+            DescriptiveStatistics stats = notificationStats.get(commitStatKey);
+            if (stats == null) {
+                stats = new DescriptiveStatistics(STATS_WINDOW);
+                notificationStats.put(commitStatKey, stats);
+            }
+            stats.addValue(System.currentTimeMillis() - start);
+
         }
 
         long elapse = System.currentTimeMillis() - startProcessingEvent;
@@ -338,6 +363,23 @@ public class TasmoEventProcessor {
             }
         }
 
+//        String[] vfn = valueFieldNames.toArray(new String[valueFieldNames.size()]);
+//        // HACK
+//        ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] readFieldValues = fieldValueReader.readFieldValues(tenantIdAndCentricId, instanceId, vfn);
+//        // end HACK
+//        for (int i = 0; i < vfn.length; i++) {
+//
+//            OpaqueFieldValue update = writtenInstance.getFieldValue(vfn[i]);
+//            if (update == null || update.isNull()) {
+//                transaction.remove(vfn[i]);
+//            } else {
+//                if (readFieldValues[i] != null && readFieldValues[i].getValue() != null && readFieldValues[i].getValue().equals(update)) {
+//                    writtenInstance.removeField(vfn[i]);
+//                    LOG.warn("HACK remove unchagned field:" + vfn[i]);
+//                }
+//                transaction.set(vfn[i], update);
+//            }
+//        }
         // 1 multiget
         List<Long> highests = concurrencyStore.highests(tenantIdAndCentricId, instanceId, refFieldNames.toArray(new String[refFieldNames.size()]));
         List<BatchLinkTo> batchLinkTos = new ArrayList<>(refFieldNames.size());

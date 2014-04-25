@@ -193,7 +193,6 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
         TasmoViewModel viewMaterializerModel = new TasmoViewModel(masterTenantId,
                 viewsProvider,
-                writtenEventProvider,
                 concurrencyStore,
                 referenceStore);
 
@@ -212,6 +211,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                 new OrderIdProviderImpl(1));
 
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(viewMaterializerModel,
+                writtenEventProvider,
                 concurrencyStore,
                 retryingEventTraverser,
                 viewChangeNotificationProcessor,

@@ -5,12 +5,14 @@ import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
+import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 
 public class WrittenEventContext {
 
     private final WrittenEvent event;
-    private final ModifiedViewProvider modifiedViewProvider;
+    private final WrittenEventProvider writtenEventProvider;
     private final FieldValueReader fieldValueReader;
+    private final ModifiedViewProvider modifiedViewProvider;
     private final CommitChange commitChange;
     private final TasmoEdgeReport tasmoEdgeReport;
 
@@ -21,13 +23,15 @@ public class WrittenEventContext {
     public int changes;
 
     public WrittenEventContext(WrittenEvent event,
-            ModifiedViewProvider modifiedViewProvider,
+            WrittenEventProvider writtenEventProvider,
             FieldValueReader fieldValueReader,
+            ModifiedViewProvider modifiedViewProvider,
             CommitChange commitChange,
             TasmoEdgeReport tasmoEdgeReport) {
         this.event = event;
-        this.modifiedViewProvider = modifiedViewProvider;
+        this.writtenEventProvider = writtenEventProvider;
         this.fieldValueReader = fieldValueReader;
+        this.modifiedViewProvider = modifiedViewProvider;
         this.commitChange = commitChange;
         this.tasmoEdgeReport = tasmoEdgeReport;
     }
@@ -36,14 +40,18 @@ public class WrittenEventContext {
         return event;
     }
 
-    public ModifiedViewProvider getModifiedViewProvider() {
-        return modifiedViewProvider;
+    public WrittenEventProvider getWrittenEventProvider() {
+        return writtenEventProvider;
     }
 
     public FieldValueReader getFieldValueReader() {
         return fieldValueReader;
     }
 
+    public ModifiedViewProvider getModifiedViewProvider() {
+        return modifiedViewProvider;
+    }
+    
     public CommitChange getCommitChange() {
         return commitChange;
     }

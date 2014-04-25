@@ -352,7 +352,6 @@ public class BaseTasmoTest {
         tasmoViewModel = new TasmoViewModel(
                 MASTER_TENANT_ID,
                 viewsProvider,
-                eventProvider,
                 concurrencyStore,
                 referenceStore);
 
@@ -365,6 +364,7 @@ public class BaseTasmoTest {
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator, new OrderIdProviderImpl(1));
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+                eventProvider,
                 concurrencyStore,
                 retryingEventTraverser,
                 getViewChangeNotificationProcessor(),

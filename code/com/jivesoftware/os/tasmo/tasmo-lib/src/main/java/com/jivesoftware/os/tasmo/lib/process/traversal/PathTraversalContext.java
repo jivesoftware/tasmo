@@ -15,7 +15,6 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange.ViewFieldChangeType;
@@ -23,7 +22,6 @@ import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.process.LeafNodeFields;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
-import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.io.IOException;
@@ -42,10 +40,7 @@ public class PathTraversalContext {
 
     private final WrittenEventContext writtenEventContext;
     private final WrittenEvent writtenEvent;
-    private final WrittenEventProvider writtenEventProvider;
     private final FieldValueReader fieldValueReader;
-    private final CommitChange commitChange;
-    private final Id alternateViewId;
     private final long threadTimestamp;
     private final PathId[] modelPathInstanceIds;
     private final List<ReferenceWithTimestamp>[] modelPathVersionState;
@@ -56,19 +51,13 @@ public class PathTraversalContext {
 
     public PathTraversalContext(WrittenEventContext writtenEventContext,
             WrittenEvent writtenEvent,
-            WrittenEventProvider writtenEventProvider,
             FieldValueReader fieldValueReader,
-            CommitChange commitChange,
-            Id alternateViewId,
             int numberOfPathIds,
             long threadTimestamp,
             boolean removalContext) {
         this.writtenEventContext = writtenEventContext;
         this.writtenEvent = writtenEvent;
-        this.writtenEventProvider = writtenEventProvider;
         this.fieldValueReader = fieldValueReader;
-        this.commitChange = commitChange;
-        this.alternateViewId = alternateViewId;
         this.threadTimestamp = threadTimestamp;
         this.modelPathInstanceIds = new PathId[numberOfPathIds];
         this.modelPathVersionState = new List[numberOfPathIds];
@@ -76,6 +65,10 @@ public class PathTraversalContext {
             modelPathVersionState[i] = new ArrayList<>();
         }
         this.removalContext = removalContext;
+    }
+
+    public WrittenEvent getWrittenEvent() {
+        return writtenEvent;
     }
 
     public void edged(String fromClass, String field, String toClass, long elapse, int fanOut) {
@@ -134,7 +127,7 @@ public class PathTraversalContext {
     public List<ReferenceWithTimestamp> populateLeafNodeFields(TenantIdAndCentricId tenantIdAndCentricId,
             ObjectId objectInstanceId, List<String> fieldNames) {
 
-        LeafNodeFields fieldsToPopulate = writtenEventProvider.createLeafNodeFields();
+        LeafNodeFields fieldsToPopulate = writtenEventContext.getWrittenEventProvider().createLeafNodeFields();
         long latestTimestamp = writtenEvent.getEventId();
         List<ReferenceWithTimestamp> versions = new ArrayList<>();
         if (!removalContext) {
@@ -175,17 +168,12 @@ public class PathTraversalContext {
         return versions;
     }
 
-    public void writeViewFields(String viewClassName, String modelPathId, ObjectId objectInstanceId) throws IOException {
+    public void writeViewFields(String viewClassName, String modelPathId, Id viewId) throws IOException {
         if (leafNodeFields == null) {
             return;
         }
         if (!removalContext && !leafNodeFields.hasFields() && addIsRemovingFields == 0) {
             return;
-        }
-        ObjectId objectId = objectInstanceId;
-        Id viewId = alternateViewId;
-        if (viewId == null) {
-            viewId = objectId.getId();
         }
 
         ViewFieldChange update = new ViewFieldChange(writtenEvent.getEventId(),
@@ -210,37 +198,22 @@ public class PathTraversalContext {
                         LOG.trace("!!!!!!!!----------" + i + "." + ((removalContext) ? "REMOVABLE" : "ADDABLE")
                                 + " PATH:" + Arrays.toString(change.getModelPathInstanceIds())
                                 + " versions:" + modelPathIdStateAsString(change.getModelPathVersions(), true)
-                                + " v=" + change.getValue() + " t=" + change.getTimestamp() + " traverse: [");
-                        for (String t : pathTraverserAsString(traverser)) {
-                            LOG.trace(t);
-                        }
+                                + " v=" + change.getValue() + " t=" + change.getTimestamp());
                     }
                 }
 
-                commitChange.commitChange(writtenEventContext, tenantIdAndCentricId, changes);
+                writtenEventContext.getCommitChange().commitChange(writtenEventContext, tenantIdAndCentricId, changes);
 
             } else {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("!!!!!!!!---------- DIDN'T " + ((removalContext) ? "REMOVE" : "ADD")
                             + " INCOMPLETE PATH:" + Arrays.toString(modelPathInstanceIds)
-                            + " versions:" + modelPathIdStateAsString(copyOfVersions(), true) + " traverse: [");
-                    for (String t : pathTraverserAsString(traverser)) {
-                        LOG.trace(t);
-                    }
+                            + " versions:" + modelPathIdStateAsString(copyOfVersions(), true));
                 }
             }
         } finally {
             changes.clear();
         }
-    }
-
-    List<String> pathTraverserAsString(PathTraverser pathTraverser) {
-        List<String> lines = new ArrayList<>();
-        for (StepTraverser stepTraverser : pathTraverser.getStepTraversers()) {
-            lines.add("!!!!!!!!----------  " + stepTraverser + ", ");
-        }
-        lines.add("!!!!!!!!----------  ]");
-        return lines;
     }
 
     String modelPathIdStateAsString(List<ReferenceWithTimestamp> path, boolean fields) {

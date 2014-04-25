@@ -23,5 +23,7 @@ public interface WrittenInstance {
 
     boolean hasField(String fieldName);
 
+    void removeField(String fielName);
+
     boolean isDeletion();
 }

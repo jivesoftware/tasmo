@@ -59,7 +59,6 @@ public class TasmoViewModelTest {
         tasmoViewModel = new TasmoViewModel(
                 tenantId,
                 viewsProvider,
-                writtenEventProvider,
                 concurrencyStore,
                 referenceStore);
     }

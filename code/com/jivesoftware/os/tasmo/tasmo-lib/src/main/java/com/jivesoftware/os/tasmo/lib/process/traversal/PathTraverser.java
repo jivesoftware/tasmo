@@ -1,147 +1,58 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
-import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
-import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
-import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
-import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.List;
 
 public class PathTraverser {
 
-    private final InitiateTraversalContext initialStepContext;
-    private final List<StepTraverser> stepTraversers;
-    private final PathTraverserConfig pathTraverserConfig;
+    private final PathTraverserKey pathTraverserKey;
+    private final StepStreamerFactory streamerFactory;
 
-    public PathTraverser(InitiateTraversalContext initialStepContext,
-            List<StepTraverser> stepTraversers,
-            PathTraverserConfig pathTraverserConfig) {
-        this.initialStepContext = initialStepContext;
-        this.stepTraversers = stepTraversers;
-        this.pathTraverserConfig = pathTraverserConfig;
+    public PathTraverser(PathTraverserKey pathTraverserKey, StepStreamerFactory streamerFactory) {
+        this.pathTraverserKey = pathTraverserKey;
+        this.streamerFactory = streamerFactory;
+    }
+
+    public PathTraverserKey getPathTraverserKey() {
+        return pathTraverserKey;
     }
 
     public PathTraversalContext createContext(WrittenEventContext writtenEventContext,
             WrittenEvent writtenEvent,
             long threadTimestamp,
             boolean removalContext) {
-        return createContext(writtenEventContext, writtenEvent, initialStepContext, threadTimestamp, removalContext);
-    }
 
-    public void travers(TenantIdAndCentricId tenantIdAndCentricId,
-            WrittenEvent writtenEvent,
-            PathTraversalContext context,
-            PathId pathId) throws Exception {
-
-        StepStreamer stepStreamer = new StepStreamer(tenantIdAndCentricId, context, stepTraversers, 0);
-        stepStreamer.stream(pathId);
-
-    }
-
-    public List<String> getInitialFieldNames() {
-        return initialStepContext.getInitialFieldNames();
-    }
-
-    public ModelPathStep getModelPathStep() {
-        return initialStepContext.initialModelPathMember;
-    }
-
-    private PathTraversalContext createContext(
-            final WrittenEventContext writtenEventContext,
-            WrittenEvent writtenEvent,
-            InitiateTraversalContext step,
-            long threadTimestamp,
-            boolean removalContext) {
-
-        Id alternateViewId = buildAlternateViewId(writtenEvent);
-        CommitChange notificationsAfterCommitingChanges = writtenEventContext.getCommitChange();
-        if (pathTraverserConfig.notificationRequired) {
-            notificationsAfterCommitingChanges = new CommitChange() {
-                @Override
-                public void commitChange(WrittenEventContext context,
-                        TenantIdAndCentricId tenantIdAndCentricId,
-                        List<ViewFieldChange> changes) throws CommitChangeException {
-                    writtenEventContext.getCommitChange().commitChange(context, tenantIdAndCentricId, changes);
-                    for (ViewFieldChange viewFieldChange : changes) {
-                        ModifiedViewInfo modifiedViewInfo = new ModifiedViewInfo(tenantIdAndCentricId, viewFieldChange.getViewObjectId());
-                        writtenEventContext.getModifiedViewProvider().add(modifiedViewInfo);
-                    }
-                }
-            };
-        }
         PathTraversalContext context = new PathTraversalContext(writtenEventContext,
                 writtenEvent,
-                pathTraverserConfig.writtenEventProvider,
                 writtenEventContext.getFieldValueReader(),
-                notificationsAfterCommitingChanges,
-                alternateViewId,
-                step.getMembersSize(),
+                pathTraverserKey.getPathLength(),
                 threadTimestamp,
                 removalContext);
         return context;
     }
 
-    protected Id buildAlternateViewId(WrittenEvent writtenEvent) throws IllegalStateException {
-        Id alternateViewId = null;
-        if (pathTraverserConfig.viewIdFieldName != null) {
-            WrittenInstance payload = writtenEvent.getWrittenInstance();
-
-            if (payload.hasField(pathTraverserConfig.viewIdFieldName)) {
-                try {
-                    // We are currently only supporting one ref, but with light change we could support a list of refs. Should we?
-                    ObjectId objectId = payload.getReferenceFieldValue(pathTraverserConfig.viewIdFieldName);
-                    if (objectId != null) {
-                        alternateViewId = objectId.getId();
-                    }
-                    alternateViewId = writtenEvent.getWrittenInstance().getIdFieldValue(pathTraverserConfig.viewIdFieldName);
-                } catch (Exception x) {
-                    throw new IllegalStateException("instanceClassName:" + payload.getInstanceId().getClassName() + " requires that field:"
-                            + pathTraverserConfig.viewIdFieldName
-                            + " always be present and of type ObjectId. Please check that you have marked this field as mandatory.", x);
-                }
-            } else {
-                throw new IllegalStateException("instanceClassName:" + payload.getInstanceId().getClassName() + " requires that field:"
-                        + pathTraverserConfig.viewIdFieldName
-                        + " always be present and of type ObjectId. Please check that you have marked this field as mandatory.");
-            }
-        }
-        return alternateViewId;
-    }
-
-    public ModelPathStepType getInitialModelPathStepType() {
-        return initialStepContext.getInitialModelPathStepType();
-    }
-
-    public String getRefFieldName() {
-        return initialStepContext.getRefFieldName();
-    }
-
-    public Iterable<String> getInitialClassNames() {
-        return initialStepContext.getInitialClassNames();
+    public List<String> getInitialFieldNames() {
+        return pathTraverserKey.getInitialFieldNames();
     }
 
     public int getPathIndex() {
-        return initialStepContext.getPathIndex();
+        return pathTraverserKey.getPathIndex();
     }
 
-    public List<StepTraverser> getStepTraversers() {
-        return stepTraversers;
+
+    public void travers(TenantIdAndCentricId tenantIdAndCentricId,
+            PathTraversalContext context,
+            PathId pathId) throws Exception {
+        StepStream stepStream = streamerFactory.create(tenantIdAndCentricId, context);
+        stepStream.stream(pathId);
     }
 
     @Override
     public String toString() {
-        return "PathTraverser{"
-                + "stepTraversers=" + stepTraversers
-                + ", initialStepContext=" + initialStepContext
-                + ", pathTraverserConfig=" + pathTraverserConfig + '}';
+        return "PathTraverser{" + "pathTraverserKey=" + pathTraverserKey + ", streamerFactory=" + streamerFactory + '}';
     }
 
 }

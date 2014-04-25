@@ -20,11 +20,11 @@ import java.util.Set;
  */
 public class InitiateTraversalContext {
 
-    protected final ModelPathStep initialModelPathMember;
-    protected final int pathIndex;
-    protected final int membersSize;
-    protected final String viewClassName;
-    protected final String modelPathId;
+    private final ModelPathStep initialModelPathMember;
+    private final int pathIndex;
+    private final int membersSize;
+    private final String viewClassName;
+    private final String modelPathId;
 
     public InitiateTraversalContext(
         ModelPathStep initialModelPathMember,

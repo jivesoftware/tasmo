@@ -8,7 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -33,19 +33,19 @@ public class InitiateTraversal implements WrittenEventProcessor {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final ConcurrencyChecker concurrencyChecker;
-    private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> traversers;
+    private final ListMultimap<InitiateTraverserKey, PathTraverser> valueTraversers;
 
     private final ReferenceStore referenceStore;
-    private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers;
-    private final ArrayListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers;
+    private final ListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers;
+    private final ListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers;
 
     public InitiateTraversal(ConcurrencyChecker concurrencyChecker,
-            ArrayListMultimap<InitiateTraverserKey, PathTraverser> traversers,
+            ListMultimap<InitiateTraverserKey, PathTraverser> traversers,
             ReferenceStore referenceStore,
-            ArrayListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers,
-            ArrayListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers) {
+            ListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers,
+            ListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers) {
         this.concurrencyChecker = concurrencyChecker;
-        this.traversers = traversers;
+        this.valueTraversers = traversers;
         this.referenceStore = referenceStore;
         this.forwardRefTraversers = forwardRefTraversers;
         this.backRefTraversers = backRefTraversers;
@@ -57,7 +57,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
             WrittenEvent writtenEvent,
             long threadTimestamp) throws Exception {
 
-        if (traversers != null && !traversers.isEmpty()) {
+        if (valueTraversers != null && !valueTraversers.isEmpty()) {
             LOG.startTimer("values");
             try {
                 processValues(batchContext, tenantIdAndCentricId, writtenEvent, threadTimestamp);
@@ -82,38 +82,38 @@ public class InitiateTraversal implements WrittenEventProcessor {
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         ObjectId instanceId = writtenInstance.getInstanceId();
 
-        for (InitiateTraverserKey key : traversers.keySet()) {
+        for (InitiateTraverserKey key : valueTraversers.keySet()) {
             if (writtenInstance.hasField(key.getTriggerFieldName())) {
 
                 if (writtenInstance.isDeletion()) {
 
-                    for (PathTraverser pathTraverser : traversers.get(key)) {
+                    for (PathTraverser pathTraverser : valueTraversers.get(key)) {
 
                         long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId, instanceId, "*exists*", timestamp);
                         if (highest <= timestamp) {
 
-                            PathTraversalContext context = pathTraverser.createContext(writtenEventContext,
-                                    writtenEvent, threadTimestamp, true);
+                            PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, true);
                             context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
+
                             List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(tenantIdAndCentricId,
                                     instanceId, pathTraverser.getInitialFieldNames());
                             context.addVersions(pathTraverser.getPathIndex(), valueVersions);
-                            pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(instanceId, timestamp));
+
+                            pathTraverser.travers(tenantIdAndCentricId, context, new PathId(instanceId, timestamp));
                             writtenEventContext.paths++;
                             context.commit(tenantIdAndCentricId, pathTraverser);
                         }
                     }
                 } else {
 
-                    for (PathTraverser pathTraverser : traversers.get(key)) {
-                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext,
-                                writtenEvent, threadTimestamp, false);
+                    for (PathTraverser pathTraverser : valueTraversers.get(key)) {
+                        PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, false);
                         List<ReferenceWithTimestamp> valueVersions = context.populateLeafNodeFields(tenantIdAndCentricId,
                                 instanceId, pathTraverser.getInitialFieldNames());
 
                         context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
                         context.addVersions(pathTraverser.getPathIndex(), valueVersions);
-                        pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(instanceId, timestamp));
+                        pathTraverser.travers(tenantIdAndCentricId, context, new PathId(instanceId, timestamp));
                         writtenEventContext.paths++;
                         context.commit(tenantIdAndCentricId, pathTraverser);
 
@@ -201,7 +201,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
             context.setPathId(pathTraverser.getPathIndex(), from.getObjectId(), from.getTimestamp());
             context.addVersion(pathTraverser.getPathIndex(), from);
 
-            pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(to.getObjectId(), to.getTimestamp()));
+            pathTraverser.travers(tenantIdAndCentricId, context, new PathId(to.getObjectId(), to.getTimestamp()));
             writtenEventContext.paths++;
             context.commit(tenantIdAndCentricId, pathTraverser);
         }
@@ -212,7 +212,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
             context.setPathId(pathTraverser.getPathIndex(), to.getObjectId(), to.getTimestamp());
             context.addVersion(pathTraverser.getPathIndex(), from);
 
-            pathTraverser.travers(tenantIdAndCentricId, writtenEvent, context, new PathId(instanceId, to.getTimestamp()));
+            pathTraverser.travers(tenantIdAndCentricId, context, new PathId(instanceId, to.getTimestamp()));
             writtenEventContext.paths++;
             context.commit(tenantIdAndCentricId, pathTraverser);
         }

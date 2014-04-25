@@ -9,7 +9,7 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
-import com.jivesoftware.os.tasmo.reference.lib.concur.PathModifiedOutFromUnderneathMeException;
+import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 
 /**
  *
@@ -27,26 +27,24 @@ public class TasmoRetryingEventTraverser {
         this.threadTime = threadTime;
     }
 
-    public void traverseEvent(Object lock, InitiateTraversal initiateTraversal,
+    public void traverseEvent(InitiateTraversal initiateTraversal,
             WrittenEventContext batchContext,
             TenantIdAndCentricId tenantIdAndCentricId,
             WrittenEvent writtenEvent) throws RuntimeException, Exception {
 
         int attempts = 0;
-        int maxAttempts = 10; // TODO expose to config
+        int maxAttempts = 3; // TODO expose to config
         while (attempts < maxAttempts) {
             attempts++;
             try {
                 WrittenEventProcessor writtenEventProcessor = writtenEventProcessorDecorator.decorateWrittenEventProcessor(initiateTraversal);
-                synchronized (lock) {
-                    writtenEventProcessor.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
-                }
+                writtenEventProcessor.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
                 break;
             } catch (Exception e) {
                 boolean pathModifiedException = false;
                 Throwable t = e;
                 while (t != null) {
-                    if (t instanceof PathModifiedOutFromUnderneathMeException) {
+                    if (t instanceof PathConsistencyException) {
                         pathModifiedException = true;
                         if (LOG.isTraceEnabled()) {
                             LOG.trace("** RETRY ** " + t.toString(), t);

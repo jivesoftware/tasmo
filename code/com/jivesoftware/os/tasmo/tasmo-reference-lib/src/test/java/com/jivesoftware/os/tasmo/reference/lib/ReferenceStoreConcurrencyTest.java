@@ -16,7 +16,7 @@ import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
-import com.jivesoftware.os.tasmo.reference.lib.concur.PathModifiedOutFromUnderneathMeException;
+import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -243,7 +243,7 @@ public class ReferenceStoreConcurrencyTest {
                         List<FieldVersion> want = Arrays.asList(new FieldVersion(from, fromRefFieldName, highest));
                         List<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
                         if (got != want) {
-                            PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
+                            PathConsistencyException e = new PathConsistencyException(want, got);
                             throw e;
                         }
 
@@ -260,7 +260,7 @@ public class ReferenceStoreConcurrencyTest {
                                                         new ConstantTimestamper(v.getTimestamp()));
                                                 //System.out.println(Thread.currentThread().getName()+" |--> add "+v.getObjectId()+" "+v.getTimestamp());
                                             } else {
-                                                PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
+                                                PathConsistencyException e = new PathConsistencyException(want, got);
                                                 //System.out.println(Thread.currentThread() + " " + e.toString());
                                                 throw e;
                                             }
@@ -271,7 +271,7 @@ public class ReferenceStoreConcurrencyTest {
 
                         got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
                         if (got != want) {
-                            PathModifiedOutFromUnderneathMeException e = new PathModifiedOutFromUnderneathMeException(want, got);
+                            PathConsistencyException e = new PathConsistencyException(want, got);
                             //System.out.println(Thread.currentThread() + " " + e.toString());
                             throw e;
                         }
@@ -282,7 +282,7 @@ public class ReferenceStoreConcurrencyTest {
                     boolean pathModifiedException = false;
                     Throwable t = e;
                     while (t != null) {
-                        if (t instanceof PathModifiedOutFromUnderneathMeException) {
+                        if (t instanceof PathConsistencyException) {
                             pathModifiedException = true;
                             //System.out.println(t.toString());
                         }

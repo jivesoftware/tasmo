@@ -13,6 +13,7 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -63,5 +64,35 @@ class TraverseLeafward implements StepTraverser {
     @Override
     public String toString() {
         return "Leafward(" + "streamer=" + streamer + ", pathIndex=" + pathIndex + ")";
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 37 * hash + Objects.hashCode(this.streamer);
+        hash = 37 * hash + this.pathIndex;
+        hash = 37 * hash + Objects.hashCode(this.validDownStreamTypes);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final TraverseLeafward other = (TraverseLeafward) obj;
+        if (!Objects.equals(this.streamer, other.streamer)) {
+            return false;
+        }
+        if (this.pathIndex != other.pathIndex) {
+            return false;
+        }
+        if (!Objects.equals(this.validDownStreamTypes, other.validDownStreamTypes)) {
+            return false;
+        }
+        return true;
     }
 }

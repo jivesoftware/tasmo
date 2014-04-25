@@ -12,6 +12,7 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.List;
+import java.util.Objects;
 
 public class TraverseValue implements StepTraverser {
 
@@ -44,6 +45,36 @@ public class TraverseValue implements StepTraverser {
     @Override
     public String toString() {
         return "Value(fieldNames=" + fieldNames + ", processingPathIndex=" + processingPathIndex + ", pathIndex=" + pathIndex + ')';
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 89 * hash + Objects.hashCode(this.fieldNames);
+        hash = 89 * hash + this.processingPathIndex;
+        hash = 89 * hash + this.pathIndex;
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final TraverseValue other = (TraverseValue) obj;
+        if (!Objects.equals(this.fieldNames, other.fieldNames)) {
+            return false;
+        }
+        if (this.processingPathIndex != other.processingPathIndex) {
+            return false;
+        }
+        if (this.pathIndex != other.pathIndex) {
+            return false;
+        }
+        return true;
     }
 
 }

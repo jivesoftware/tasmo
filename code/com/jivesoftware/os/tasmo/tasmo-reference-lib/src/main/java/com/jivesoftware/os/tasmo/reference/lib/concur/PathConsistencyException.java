@@ -3,12 +3,12 @@ package com.jivesoftware.os.tasmo.reference.lib.concur;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
 import java.util.List;
 
-public class PathModifiedOutFromUnderneathMeException extends RuntimeException {
+public class PathConsistencyException extends RuntimeException {
 
     private final List<FieldVersion> wanted;
     private final List<FieldVersion> got;
 
-    public PathModifiedOutFromUnderneathMeException(List<FieldVersion> wanted, List<FieldVersion> got) {
+    public PathConsistencyException(List<FieldVersion> wanted, List<FieldVersion> got) {
         this.wanted = wanted;
         this.got = got;
     }

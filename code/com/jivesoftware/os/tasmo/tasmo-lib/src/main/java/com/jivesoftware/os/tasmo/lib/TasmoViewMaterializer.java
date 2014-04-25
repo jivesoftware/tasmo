@@ -76,7 +76,7 @@ public class TasmoViewMaterializer {
                                     eventProcessor.processWrittenEvent(lock, event);
                                 } catch (Exception x) {
                                     failedToProcess.add(event);
-                                    LOG.warn("Failed to process eventId:{} instanceId:{} tenantId:{}" + new Object[]{
+                                    LOG.warn("Failed to process eventId:{} instanceId:{} tenantId:{}", new Object[]{
                                         event.getEventId(),
                                         event.getWrittenInstance().getInstanceId(),
                                         event.getTenantId()

@@ -13,7 +13,7 @@ import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange.ViewFieldChangeType;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
-import com.jivesoftware.os.tasmo.reference.lib.concur.PathModifiedOutFromUnderneathMeException;
+import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -93,7 +93,7 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
                 }
-                PathModifiedOutFromUnderneathMeException pmofume = new PathModifiedOutFromUnderneathMeException(expected, was);
+                PathConsistencyException pmofume = new PathConsistencyException(expected, was);
                 throw pmofume;
             }
         }

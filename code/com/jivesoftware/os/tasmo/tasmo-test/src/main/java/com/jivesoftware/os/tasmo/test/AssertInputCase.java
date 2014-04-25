@@ -11,13 +11,13 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndT
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantIdAndRow;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
-import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -39,7 +39,7 @@ public class AssertInputCase {
     private final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final Executor executor;
     private final long seed;
-    private final TenantIdAndCentricId tenantIdAndCentricId ;
+    private final TenantIdAndCentricId tenantIdAndCentricId;
     private final Id actorId;
     private final int maxFanOut;
     private final boolean verbose;
@@ -148,10 +148,6 @@ public class AssertInputCase {
         }
     }
 
-
-
-
-
     public ObjectId rowKey(ImmutableByteArray viewObjectId) throws IOException {
         return new ObjectId(ByteBuffer.wrap(viewObjectId.getImmutableBytes()));
     }
@@ -171,7 +167,6 @@ public class AssertInputCase {
         sb.append(']');
         return sb.toString();
     }
-
 
     //TODO use and communicate different leaf node fields per branch.
     public void assertViewElementExists(List<ModelPathStep> path, int pathIndex, ObjectNode viewNode,
@@ -240,8 +235,43 @@ public class AssertInputCase {
                 public void run() {
                     Thread.currentThread().setName("thread-for-event-" + jec.getEventId(b.toJson()));
                     try {
-                        ic.eventWriterProvider.eventWriter().write(Arrays.asList(b));
-                    } catch (EventWriteException ex) {
+                        int attempts = 0;
+                        int maxAttempts = 3; // TODO expose to config
+                        while (attempts < maxAttempts) {
+                            attempts++;
+                            try {
+
+                                ic.eventWriterProvider.eventWriter().write(Arrays.asList(b));
+                                break;
+                            } catch (Exception e) {
+                                boolean pathModifiedException = false;
+                                Throwable t = e;
+                                while (t != null) {
+                                    if (t instanceof PathConsistencyException) {
+                                        pathModifiedException = true;
+                                        if (LOG.isTraceEnabled()) {
+                                            LOG.trace("** RETRY ** " + t.toString(), t);
+                                        }
+
+                                    }
+                                    t = t.getCause();
+                                }
+                                if (pathModifiedException) {
+                                    Thread.sleep(100); // TODO is yield a better choice?
+                                } else {
+                                    throw e;
+                                }
+                            }
+                        }
+                        if (attempts >= maxAttempts) {
+                            LOG.info("FAILED to reach CONSISTENCY after {} attempts for {}", new Object[]{attempts, b});
+                            throw new RuntimeException("Failed to reach stasis after " + maxAttempts + " attempts.");
+                        } else {
+                            if (attempts > 1) {
+                                LOG.warn("CONSISTENCY took {} attempts for {}", new Object[]{attempts, b});
+                            }
+                        }
+                    } catch (Exception ex) {
                         ex.printStackTrace();
                         errors.incrementAndGet();
                     }
@@ -259,7 +289,7 @@ public class AssertInputCase {
         }
     }
 
-     private AssertionResult assertCountField(IntNode leaf, String field, int expectedFieldValue) {
+    private AssertionResult assertCountField(IntNode leaf, String field, int expectedFieldValue) {
         if (leaf.intValue() == expectedFieldValue) {
             return new AssertionResult(true, "");
         } else {

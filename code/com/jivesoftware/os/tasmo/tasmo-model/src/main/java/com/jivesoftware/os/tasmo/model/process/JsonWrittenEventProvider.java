@@ -156,6 +156,11 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
         public OpaqueFieldValue getFieldValue(String fieldName) {
             return new JsonLiteralFieldValue(instanceNode.get(fieldName));
         }
+        
+        @Override
+        public void removeField(String fieldName) {
+            instanceNode.remove(fieldName);
+        }
 
         @Override
         public ObjectId getInstanceId() {

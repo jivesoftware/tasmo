@@ -140,7 +140,6 @@ public class TasmoServiceInitializer {
         final TasmoViewModel tasmoViewModel = new TasmoViewModel(
                 masterTenantId,
                 viewsProvider,
-                eventProvider,
                 concurrencyStore,
                 referenceStore);
 
@@ -185,6 +184,7 @@ public class TasmoServiceInitializer {
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(bookKeepingEventProcessor, threadTimestamp);
         final TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+                eventProvider,
                 concurrencyStore,
                 retryingEventTraverser,
                 viewChangeNotificationProcessor,

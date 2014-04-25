@@ -325,7 +325,6 @@ public class Materialization {
         tasmoViewModel = new TasmoViewModel(
                 MASTER_TENANT_ID,
                 viewsProvider,
-                eventProvider,
                 concurrencyStore,
                 referenceStore);
 
@@ -350,6 +349,7 @@ public class Materialization {
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator, new OrderIdProviderImpl(1));
         tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+                eventProvider,
                 concurrencyStore,
                 retryingEventTraverser,
                 getViewChangeNotificationProcessor(),
