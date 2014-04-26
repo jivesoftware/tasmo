@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.lib.process;
 
+import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
@@ -15,6 +16,7 @@ public class WrittenEventContext {
     private final ModifiedViewProvider modifiedViewProvider;
     private final CommitChange commitChange;
     private final TasmoEdgeReport tasmoEdgeReport;
+    private final TasmoProcessingStats processingStats;
 
     public int paths; // hack
     public int fanDepth; // hack
@@ -27,13 +29,19 @@ public class WrittenEventContext {
             FieldValueReader fieldValueReader,
             ModifiedViewProvider modifiedViewProvider,
             CommitChange commitChange,
-            TasmoEdgeReport tasmoEdgeReport) {
+            TasmoEdgeReport tasmoEdgeReport,
+            TasmoProcessingStats processingStats) {
         this.event = event;
         this.writtenEventProvider = writtenEventProvider;
         this.fieldValueReader = fieldValueReader;
         this.modifiedViewProvider = modifiedViewProvider;
         this.commitChange = commitChange;
         this.tasmoEdgeReport = tasmoEdgeReport;
+        this.processingStats = processingStats;
+    }
+
+    public TasmoProcessingStats getProcessingStats() {
+        return processingStats;
     }
 
     public WrittenEvent getEvent() {
@@ -51,7 +59,7 @@ public class WrittenEventContext {
     public ModifiedViewProvider getModifiedViewProvider() {
         return modifiedViewProvider;
     }
-    
+
     public CommitChange getCommitChange() {
         return commitChange;
     }

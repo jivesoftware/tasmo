@@ -28,17 +28,22 @@ public class TasmoRetryingEventTraverser {
     }
 
     public void traverseEvent(InitiateTraversal initiateTraversal,
-            WrittenEventContext batchContext,
+            WrittenEventContext writtenEventContext,
             TenantIdAndCentricId tenantIdAndCentricId,
             WrittenEvent writtenEvent) throws RuntimeException, Exception {
+
+        String instanceClassName = writtenEvent.getWrittenInstance().getInstanceId().getClassName();
+        long startConsistency = System.currentTimeMillis();
 
         int attempts = 0;
         int maxAttempts = 3; // TODO expose to config
         while (attempts < maxAttempts) {
             attempts++;
             try {
+                long start = System.currentTimeMillis();
                 WrittenEventProcessor writtenEventProcessor = writtenEventProcessorDecorator.decorateWrittenEventProcessor(initiateTraversal);
-                writtenEventProcessor.process(batchContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+                writtenEventProcessor.process(writtenEventContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+                writtenEventContext.getProcessingStats().sample("EVENT TRAVERSAL", instanceClassName, System.currentTimeMillis() - start);
                 break;
             } catch (Exception e) {
                 boolean pathModifiedException = false;
@@ -49,19 +54,20 @@ public class TasmoRetryingEventTraverser {
                         if (LOG.isTraceEnabled()) {
                             LOG.trace("** RETRY ** " + t.toString(), t);
                         }
-
                     }
                     t = t.getCause();
                 }
                 if (pathModifiedException) {
                     Thread.sleep(100); // TODO is yield a better choice?
                     LOG.inc("pathModifiedOutFromUnderneathMe>all");
-                    LOG.inc("pathModifiedOutFromUnderneathMe>" + writtenEvent.getWrittenInstance().getInstanceId().getClassName());
+                    LOG.inc("pathModifiedOutFromUnderneathMe>" + instanceClassName);
                 } else {
                     throw e;
                 }
             }
         }
+        writtenEventContext.getProcessingStats().sample("ATTEMPTS", instanceClassName, attempts);
+
         if (attempts >= maxAttempts) {
             LOG.info("FAILED to reach CONSISTENCY after {} attempts for eventId:{} instanceId:{} tenantId:{}", new Object[]{
                 attempts,
@@ -79,5 +85,7 @@ public class TasmoRetryingEventTraverser {
                 });
             }
         }
+
+        writtenEventContext.getProcessingStats().sample("EVENT CONSISTENCY", instanceClassName, System.currentTimeMillis() - startConsistency);
     }
 }

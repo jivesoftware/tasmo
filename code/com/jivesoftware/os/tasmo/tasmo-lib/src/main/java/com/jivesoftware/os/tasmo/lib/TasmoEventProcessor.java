@@ -38,11 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
 
 /**
  *
@@ -50,7 +46,6 @@ import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
  */
 public class TasmoEventProcessor {
 
-    private static final int STATS_WINDOW = 1000;
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TasmoViewModel tasmoViewModel;
     private final WrittenEventProvider writtenEventProvider;
@@ -63,12 +58,8 @@ public class TasmoEventProcessor {
     private final FieldValueReader fieldValueReader;
     private final CommitChange commitChange;
     private final TasmoEdgeReport tasmoEdgeReport;
+    private final TasmoProcessingStats processingStats;
 
-    private final Map<String, DescriptiveStatistics> updateStats = new ConcurrentHashMap<>();
-    private final Map<String, DescriptiveStatistics> traversalStats = new ConcurrentHashMap<>();
-    private final Map<String, DescriptiveStatistics> fieldReadsStats = new ConcurrentHashMap<>();
-    private final Map<String, DescriptiveStatistics> commitStats = new ConcurrentHashMap<>();
-    private final Map<String, DescriptiveStatistics> notificationStats = new ConcurrentHashMap<>();
 
     public TasmoEventProcessor(TasmoViewModel tasmoViewModel,
             WrittenEventProvider writtenEventProvider,
@@ -88,6 +79,7 @@ public class TasmoEventProcessor {
         this.writtenInstanceHelper = writtenInstanceHelper;
         this.eventValueStore = eventValueStore;
         this.referenceStore = referenceStore;
+        this.processingStats = new TasmoProcessingStats();
 
         final EventValueStoreFieldValueReader eventValueStoreFieldValueReader = new EventValueStoreFieldValueReader(eventValueStore);
         this.fieldValueReader = new FieldValueReader() {
@@ -101,12 +93,7 @@ public class TasmoEventProcessor {
                         .readFieldValues(tenantIdAndCentricId, objectInstanceId, fieldNamesArray);
 
                 String key = "fieldsFrom:" + objectInstanceId.getClassName();
-                DescriptiveStatistics stats = fieldReadsStats.get(key);
-                if (stats == null) {
-                    stats = new DescriptiveStatistics(STATS_WINDOW);
-                    fieldReadsStats.put(key, stats);
-                }
-                stats.addValue(System.currentTimeMillis() - start);
+                processingStats.sample("READ FIELDS", key, System.currentTimeMillis() - start);
                 return readFieldValues;
             }
         };
@@ -128,12 +115,7 @@ public class TasmoEventProcessor {
                 }
                 for (String viewKey : viewKeys) {
                     String commitKey = "event:" + writtenEventClassName + "." + viewKey;
-                    DescriptiveStatistics stats = commitStats.get(commitKey);
-                    if (stats == null) {
-                        stats = new DescriptiveStatistics(STATS_WINDOW);
-                        commitStats.put(commitKey, stats);
-                    }
-                    stats.addValue(elapse);
+                    processingStats.sample("COMMIT", commitKey, elapse);
                 }
             }
         };
@@ -141,65 +123,7 @@ public class TasmoEventProcessor {
     }
 
     public void logStats() {
-        List<SortableStat> stats = new ArrayList<>();
-        for (Entry<String, DescriptiveStatistics> entrySet : updateStats.entrySet()) {
-            double sla = 100;
-            logStats(sla, "STATS UPDATES OF " + entrySet.getKey(), entrySet.getValue(), "millis", stats);
-        }
-        for (Entry<String, DescriptiveStatistics> entrySet : traversalStats.entrySet()) {
-            double sla = 500;
-            logStats(sla, "STATS TRAVERSAL OF " + entrySet.getKey(), entrySet.getValue(), "millis", stats);
-        }
-        for (Entry<String, DescriptiveStatistics> entrySet : commitStats.entrySet()) {
-            double sla = 100;
-            logStats(sla, "STATS COMMITS OF " + entrySet.getKey(), entrySet.getValue(), "millis", stats);
-        }
-        for (Entry<String, DescriptiveStatistics> entrySet : fieldReadsStats.entrySet()) {
-            double sla = 100;
-            logStats(sla, "STATS FIELD READS OF " + entrySet.getKey(), entrySet.getValue(), "millis", stats);
-        }
-        for (Entry<String, DescriptiveStatistics> entrySet : notificationStats.entrySet()) {
-            double sla = 100;
-            logStats(sla, "STATS NOTIFICATIONS OF " + entrySet.getKey(), entrySet.getValue(), "millis", stats);
-        }
-        Collections.sort(stats);
-        for (SortableStat stat : stats) {
-            LOG.info(stat.value + " " + stat.name);
-        }
-    }
-
-    private void logStats(double sla, String name, DescriptiveStatistics ds, String units, List<SortableStat> stats) {
-        logStatOverSLA(ds.getMin(), sla, units + " min " + name, stats);
-        logStatOverSLA(ds.getMax(), sla, units + " max " + name, stats);
-        logStatOverSLA(ds.getMean(), sla, units + " mean " + name, stats);
-        //logStatOverSLA(ds.getVariance(), sla,units + " variance " + name, stats);
-        logStatOverSLA(ds.getPercentile(50), sla, units + " 50th " + name, stats);
-        logStatOverSLA(ds.getPercentile(75), sla, units + " 75th " + name, stats);
-        logStatOverSLA(ds.getPercentile(90), sla, units + " 90th " + name, stats);
-        logStatOverSLA(ds.getPercentile(95), sla, units + " 95th " + name, stats);
-        logStatOverSLA(ds.getPercentile(99), sla, units + " 99th " + name, stats);
-    }
-
-    private void logStatOverSLA(double value, double sla, String name, List<SortableStat> stats) {
-        if (value > sla) {
-            stats.add(new SortableStat(value, name));
-        }
-    }
-
-    static class SortableStat implements Comparable<SortableStat> {
-
-        private final double value;
-        private final String name;
-
-        public SortableStat(double value, String name) {
-            this.value = value;
-            this.name = name;
-        }
-
-        @Override
-        public int compareTo(SortableStat o) {
-            return Double.compare(value, o.value);
-        }
+        processingStats.logStats();
     }
 
     public void processWrittenEvent(Object lock, WrittenEvent writtenEvent) throws Exception {
@@ -229,7 +153,7 @@ public class TasmoEventProcessor {
 
         long startProcessingEvent = System.currentTimeMillis();
         WrittenEventContext batchContext = new WrittenEventContext(writtenEvent, writtenEventProvider,
-                fieldValueReader, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport);
+                fieldValueReader, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport, processingStats);
 
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         String className = writtenInstance.getInstanceId().getClassName();
@@ -248,41 +172,23 @@ public class TasmoEventProcessor {
                     concurrencyStore.addObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
                     updateValueFields(tenantIdAndCentricId, timestamp, instanceId, model, className, writtenInstance);
                 }
-                String updateStatKey = "event:" + className;
-                DescriptiveStatistics stats = updateStats.get(updateStatKey);
-                if (stats == null) {
-                    stats = new DescriptiveStatistics(STATS_WINDOW);
-                    updateStats.put(updateStatKey, stats);
-                }
-                stats.addValue(System.currentTimeMillis() - start);
+                processingStats.sample("UPDATE", className, System.currentTimeMillis() - start);
 
                 ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
-                for (InitiateTraversal initiateTraversal : dispatchers.get(className)) {
+                List<InitiateTraversal> initiateTraversals = dispatchers.get(className);
+                processingStats.sample("TRAVERSER", className, initiateTraversals.size());
+                for (InitiateTraversal initiateTraversal : initiateTraversals) {
                     if (initiateTraversal == null) {
                         LOG.warn("No traversal defined for className:{}", className);
                         continue;
                     }
-                    start = System.currentTimeMillis();
                     eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent);
-                    String traversalStatKey = "event:" + className;
-                    stats = traversalStats.get(traversalStatKey);
-                    if (stats == null) {
-                        stats = new DescriptiveStatistics(STATS_WINDOW);
-                        traversalStats.put(traversalStatKey, stats);
-                    }
-                    stats.addValue(System.currentTimeMillis() - start);
                 }
             }
 
             long start = System.currentTimeMillis();
             viewChangeNotificationProcessor.process(batchContext, writtenEvent);
-            String commitStatKey = "event:" + className;
-            DescriptiveStatistics stats = notificationStats.get(commitStatKey);
-            if (stats == null) {
-                stats = new DescriptiveStatistics(STATS_WINDOW);
-                notificationStats.put(commitStatKey, stats);
-            }
-            stats.addValue(System.currentTimeMillis() - start);
+            processingStats.sample("NOTIFICATION", className, System.currentTimeMillis() - start);
 
         }
 
