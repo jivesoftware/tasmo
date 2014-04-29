@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BooleanNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
@@ -89,6 +90,12 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
             this.payload = new JsonEventPayload(instanceNode, eventConventions.getInstanceObjectId(eventNode, className), eventConventions);
         }
 
+
+        @Override
+        public Optional<String> getCorrelationId() {
+            return Optional.absent();
+        }
+
         @Override
         public TenantId getTenantId() {
             return eventConventions.getTenantId(eventNode);
@@ -156,7 +163,7 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
         public OpaqueFieldValue getFieldValue(String fieldName) {
             return new JsonLiteralFieldValue(instanceNode.get(fieldName));
         }
-        
+
         @Override
         public void removeField(String fieldName) {
             instanceNode.remove(fieldName);

@@ -19,4 +19,9 @@ public class PrefixCollapsedStepStreamerFactory implements StepStreamerFactory {
         return new StepTreeStreamer(tenantIdAndCentricId, context, stepTree);
     }
 
+    @Override
+    public String toString() {
+        return "PrefixCollapsedStepStreamerFactory{" + "stepTree=" + stepTree + '}';
+    }
+
 }

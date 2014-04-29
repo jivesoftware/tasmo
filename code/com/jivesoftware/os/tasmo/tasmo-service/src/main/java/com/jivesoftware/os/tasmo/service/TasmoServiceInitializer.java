@@ -6,6 +6,8 @@ import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
@@ -137,7 +139,20 @@ public class TasmoServiceInitializer {
         TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
         ConcurrencyAndExistanceCommitChange existenceCommitChange = new ConcurrencyAndExistanceCommitChange(concurrencyStore, changeWriter);
 
-        final TasmoViewModel tasmoViewModel = new TasmoViewModel(
+        ThreadFactory pathProcessorThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("path-processor-%d")
+                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
+                    }
+                })
+                .build();
+
+        ExecutorService pathProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), pathProcessorThreadFactory);
+        ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(pathProcessorThreads);
+
+        final TasmoViewModel tasmoViewModel = new TasmoViewModel(pathExecutors,
                 masterTenantId,
                 viewsProvider,
                 concurrencyStore,
@@ -170,17 +185,6 @@ public class TasmoServiceInitializer {
             }
         };
 
-        ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("event-processor-%d")
-                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
-                    }
-                })
-                .build();
-
-        ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(bookKeepingEventProcessor, threadTimestamp);
         final TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
@@ -194,6 +198,18 @@ public class TasmoServiceInitializer {
                 existenceCommitChange,
                 tasmoEdgeReport);
 
+
+        ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("event-processor-%d")
+                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
+                    }
+                })
+                .build();
+
+        ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
         TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
                 tasmoEventProcessor,
                 eventProcessorThreads);

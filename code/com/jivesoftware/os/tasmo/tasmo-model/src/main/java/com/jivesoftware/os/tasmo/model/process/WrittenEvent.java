@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.model.process;
 
+import com.google.common.base.Optional;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.TenantId;
 
@@ -10,6 +11,15 @@ import com.jivesoftware.os.tasmo.id.TenantId;
  *
  */
 public interface WrittenEvent {
+
+    /**
+     * Correlation ID which can optionally be added to the written event.  This ID is not used internally to
+     * tasmo but is exposed to downstream APIs which leverage {@code WrittenEvent}s, such as the
+     * {@code ViewChangeNotificationProcessor}.
+     *
+     * @return optional correlation ID
+     */
+    Optional<String> getCorrelationId();
 
     long getEventId();
 

@@ -18,7 +18,9 @@ public class WrittenEventContext {
     private final TasmoEdgeReport tasmoEdgeReport;
     private final TasmoProcessingStats processingStats;
 
-    public int paths; // hack
+    public int valuePaths; // hack
+    public int refPaths; // hack
+    public int backRefPaths; // hack
     public int fanDepth; // hack
     public int fanBreath; // hack
     public int readLeaves; // hack

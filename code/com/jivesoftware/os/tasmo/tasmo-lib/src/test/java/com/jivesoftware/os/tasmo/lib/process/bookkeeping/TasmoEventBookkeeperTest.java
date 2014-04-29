@@ -4,6 +4,7 @@
  */
 package com.jivesoftware.os.tasmo.lib.process.bookkeeping;
 
+import com.google.common.base.Optional;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
@@ -125,6 +126,11 @@ public class TasmoEventBookkeeperTest {
             @Override
             public boolean isBookKeepingEnabled() {
                 return true;
+            }
+
+            @Override
+            public Optional<String> getCorrelationId() {
+                return Optional.absent();
             }
         };
     }

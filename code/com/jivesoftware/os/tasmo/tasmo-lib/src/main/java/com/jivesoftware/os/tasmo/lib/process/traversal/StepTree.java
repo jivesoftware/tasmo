@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author jonathan
  */
 public class StepTree {
+
     Map<StepTraverser, StepTree> map = new ConcurrentHashMap<>();
 
     public void add(List<StepTraverser> steps) {
@@ -23,6 +24,11 @@ public class StepTree {
             }
             depth = got;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "StepTree{" + "map=" + map + '}';
     }
 
     public void print() {

@@ -8,6 +8,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -191,7 +192,8 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         ReferenceStore referenceStore = buildReferenceStore(concurrencyStore, rowColumnValueStoreProvider);
         EventValueStore eventValueStore = buildEventValueStore(concurrencyStore, rowColumnValueStoreProvider);
 
-        TasmoViewModel viewMaterializerModel = new TasmoViewModel(masterTenantId,
+        TasmoViewModel viewMaterializerModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
+                masterTenantId,
                 viewsProvider,
                 concurrencyStore,
                 referenceStore);

@@ -188,33 +188,40 @@ public class PathTraversalContext {
         changes.add(update);
     }
 
-    public void commit(TenantIdAndCentricId tenantIdAndCentricId, PathTraverser traverser) throws Exception { // TODO this method doesn't belong in this class
-        try {
-            writtenEventContext.changes += changes.size();
-            if (!changes.isEmpty()) {
-                if (LOG.isTraceEnabled()) {
-                    int i = 1;
-                    for (ViewFieldChange change : changes) {
-                        LOG.trace("!!!!!!!!----------" + i + "." + ((removalContext) ? "REMOVABLE" : "ADDABLE")
-                                + " PATH:" + Arrays.toString(change.getModelPathInstanceIds())
-                                + " versions:" + modelPathIdStateAsString(change.getModelPathVersions(), true)
-                                + " v=" + change.getValue() + " t=" + change.getTimestamp());
-                    }
-                }
-
-                writtenEventContext.getCommitChange().commitChange(writtenEventContext, tenantIdAndCentricId, changes);
-
-            } else {
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("!!!!!!!!---------- DIDN'T " + ((removalContext) ? "REMOVE" : "ADD")
-                            + " INCOMPLETE PATH:" + Arrays.toString(modelPathInstanceIds)
-                            + " versions:" + modelPathIdStateAsString(copyOfVersions(), true));
-                }
-            }
-        } finally {
-            changes.clear();
-        }
+    public List<ViewFieldChange> takeChanges() {
+        writtenEventContext.changes += changes.size();
+        List<ViewFieldChange> take = new ArrayList<>(changes);
+        changes.clear();
+        return take;
     }
+
+//    public void commit(TenantIdAndCentricId tenantIdAndCentricId, PathTraverser traverser) throws Exception { // TODO this method doesn't belong in this class
+//        try {
+//            writtenEventContext.changes += changes.size();
+//            if (!changes.isEmpty()) {
+//                if (LOG.isTraceEnabled()) {
+//                    int i = 1;
+//                    for (ViewFieldChange change : changes) {
+//                        LOG.trace("!!!!!!!!----------" + i + "." + ((removalContext) ? "REMOVABLE" : "ADDABLE")
+//                                + " PATH:" + Arrays.toString(change.getModelPathInstanceIds())
+//                                + " versions:" + modelPathIdStateAsString(change.getModelPathVersions(), true)
+//                                + " v=" + change.getValue() + " t=" + change.getTimestamp());
+//                    }
+//                }
+//
+//                writtenEventContext.getCommitChange().commitChange(writtenEventContext, tenantIdAndCentricId, changes);
+//
+//            } else {
+//                if (LOG.isTraceEnabled()) {
+//                    LOG.trace("!!!!!!!!---------- DIDN'T " + ((removalContext) ? "REMOVE" : "ADD")
+//                            + " INCOMPLETE PATH:" + Arrays.toString(modelPathInstanceIds)
+//                            + " versions:" + modelPathIdStateAsString(copyOfVersions(), true));
+//                }
+//            }
+//        } finally {
+//            changes.clear();
+//        }
+//    }
 
     String modelPathIdStateAsString(List<ReferenceWithTimestamp> path, boolean fields) {
         String s = "[";

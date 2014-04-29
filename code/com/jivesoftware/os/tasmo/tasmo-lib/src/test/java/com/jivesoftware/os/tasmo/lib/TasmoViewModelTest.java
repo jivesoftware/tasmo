@@ -7,6 +7,7 @@ package com.jivesoftware.os.tasmo.lib;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.Id;
@@ -26,6 +27,7 @@ import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executors;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -56,7 +58,7 @@ public class TasmoViewModelTest {
         writtenEventProvider = Mockito.mock(WrittenEventProvider.class);
         referenceStore = Mockito.mock(ReferenceStore.class);
         changeWriter = Mockito.mock(CommitChange.class);
-        tasmoViewModel = new TasmoViewModel(
+        tasmoViewModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
                 tenantId,
                 viewsProvider,
                 concurrencyStore,

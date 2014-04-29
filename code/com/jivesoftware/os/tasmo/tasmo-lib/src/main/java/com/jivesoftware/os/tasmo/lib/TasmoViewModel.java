@@ -4,6 +4,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -45,12 +46,14 @@ public class TasmoViewModel {
     private final ConcurrencyStore concurrencyStore;
     private final ReferenceStore referenceStore;
     private final StripingLocksProvider<TenantId> loadModelLocks = new StripingLocksProvider<>(1024);
+    private final ListeningExecutorService pathExectors;
 
-    public TasmoViewModel(
+    public TasmoViewModel(ListeningExecutorService pathExectors,
             TenantId masterTenantId,
             ViewsProvider viewsProvider,
             ConcurrencyStore concurrencyStore,
             ReferenceStore referenceStore) {
+        this.pathExectors = pathExectors;
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.concurrencyStore = concurrencyStore;
@@ -256,7 +259,8 @@ public class TasmoViewModel {
 //                    transformToPathAtATime(refTraversers),
 //                    transformToPathAtATime(backRefTraversers));
 
-            InitiateTraversal initiateTraversal = new InitiateTraversal(concurrencyChecker,
+            InitiateTraversal initiateTraversal = new InitiateTraversal(pathExectors,
+                    concurrencyChecker,
                     transformToPrefixCollapsedTree("values", valueTraversers),
                     referenceStore,
                     transformToPrefixCollapsedTree("refs", refTraversers),

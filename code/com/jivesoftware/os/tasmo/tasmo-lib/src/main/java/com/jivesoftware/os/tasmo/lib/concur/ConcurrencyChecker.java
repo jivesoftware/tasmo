@@ -23,6 +23,10 @@ public class ConcurrencyChecker {
         return concurrencyStore.highest(tenantId, instanceId, refFieldName, timestamp);
     }
 
+    public List<Long> highestVersions(TenantIdAndCentricId tenantId, ObjectId instanceId, String[] refFieldNames) {
+        return concurrencyStore.highests(tenantId, instanceId, refFieldNames);
+    }
+
     public List<ConcurrencyStore.FieldVersion> checkIfModifiedOutFromUnderneathMe(TenantIdAndCentricId tenantIdAndCentricId,
             List<FieldVersion> want) throws PathConsistencyException {
         List<ConcurrencyStore.FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);

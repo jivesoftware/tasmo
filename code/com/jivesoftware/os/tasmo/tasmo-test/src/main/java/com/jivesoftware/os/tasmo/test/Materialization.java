@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
@@ -322,14 +324,11 @@ public class Materialization {
             }
         };
 
-        tasmoViewModel = new TasmoViewModel(
-                MASTER_TENANT_ID,
-                viewsProvider,
-                concurrencyStore,
-                referenceStore);
 
-        ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("event-processor-%d")
+
+
+        ThreadFactory pathProcessorThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("path-processor-%d")
                 .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                     @Override
                     public void uncaughtException(Thread t, Throwable e) {
@@ -338,7 +337,15 @@ public class Materialization {
                 })
                 .build();
 
-        eventProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, eventProcessorThreadFactory);
+        ExecutorService pathProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, pathProcessorThreadFactory);
+        ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(pathProcessorThreads);
+        tasmoViewModel = new TasmoViewModel(pathExecutors,
+                MASTER_TENANT_ID,
+                viewsProvider,
+                concurrencyStore,
+                referenceStore);
+
+
 
         WrittenEventProcessorDecorator writtenEventProcessorDecorator = new WrittenEventProcessorDecorator() {
             @Override
@@ -358,6 +365,18 @@ public class Materialization {
                 referenceStore,
                 commitChange,
                 new TasmoEdgeReport());
+
+         ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("event-processor-%d")
+                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
+                    }
+                })
+                .build();
+
+        eventProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, eventProcessorThreadFactory);
 
         tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,

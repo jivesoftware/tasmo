@@ -60,7 +60,6 @@ public class TasmoEventProcessor {
     private final TasmoEdgeReport tasmoEdgeReport;
     private final TasmoProcessingStats processingStats;
 
-
     public TasmoEventProcessor(TasmoViewModel tasmoViewModel,
             WrittenEventProvider writtenEventProvider,
             ConcurrencyStore concurrencyStore,
@@ -93,7 +92,7 @@ public class TasmoEventProcessor {
                         .readFieldValues(tenantIdAndCentricId, objectInstanceId, fieldNamesArray);
 
                 String key = "fieldsFrom:" + objectInstanceId.getClassName();
-                processingStats.sample("READ FIELDS", key, System.currentTimeMillis() - start);
+                processingStats.latency("READ FIELDS", key, System.currentTimeMillis() - start);
                 return readFieldValues;
             }
         };
@@ -105,18 +104,36 @@ public class TasmoEventProcessor {
                     TenantIdAndCentricId tenantIdAndCentricId,
                     List<ViewFieldChange> changes) throws CommitChangeException {
 
-                long start = System.currentTimeMillis();
+                //long start = System.currentTimeMillis();
                 delegateCommitChange.commitChange(writtenEventContext, tenantIdAndCentricId, changes);
-                long elapse = System.currentTimeMillis() - start;
-                String writtenEventClassName = writtenEventContext.getEvent().getWrittenInstance().getInstanceId().getClassName();
-                Set<String> viewKeys = new HashSet<>();
-                for (ViewFieldChange c : changes) {
-                    viewKeys.add(c.getViewObjectId().getClassName()); // + "." + c.getModelPathId());
-                }
-                for (String viewKey : viewKeys) {
-                    String commitKey = "event:" + writtenEventClassName + "." + viewKey;
-                    processingStats.sample("COMMIT", commitKey, elapse);
-                }
+//                long elapse = System.currentTimeMillis() - start;
+//                String writtenEventClassName = writtenEventContext.getEvent().getWrittenInstance().getInstanceId().getClassName();
+//                Set<String> viewKeys = new HashSet<>();
+//                for (ViewFieldChange c : changes) {
+//                    viewKeys.add(c.getViewObjectId().getClassName()); // + "." + c.getModelPathId());
+//                    PathId[] modelPathInstanceIds = c.getModelPathInstanceIds();
+//                    String path = "Event:" + writtenEventClassName + " View:" + c.getViewObjectId().getClassName() + " -> ";
+//                    for (PathId p : modelPathInstanceIds) {
+//                        path += p.getObjectId().getClassName() + "->";
+//                    }
+//                    path += "(" + c.getModelPathId() + ")";
+//                    processingStats.tally("WROTE", path, 1);
+//
+//                    if (writtenEventContext.getEvent().getWrittenInstance().getInstanceId().getClassName().contains("Status")) {
+//                        String status = "Event:" + writtenEventClassName + " View:" + c.getViewObjectId().getClassName() + " " + c.getType() + " -> ";
+//                        for (PathId p : modelPathInstanceIds) {
+//                            status += p.getObjectId().getClassName() + "." + p.getObjectId().getId().toStringForm()+ "->";
+//                        }
+//                        status += "value:" + c.getValue();
+//                        status += "    ModelPath(" + c.getModelPathId() + ")";
+//                        LOG.warn("DONE " + status);
+//                    }
+//                }
+//                for (String viewKey : viewKeys) {
+//                    String commitKey = "event:" + writtenEventClassName + "." + viewKey;
+//                    processingStats.latency("COMMIT", commitKey, elapse);
+//                }
+
             }
         };
         this.tasmoEdgeReport = tasmoEdgeReport;
@@ -172,11 +189,11 @@ public class TasmoEventProcessor {
                     concurrencyStore.addObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
                     updateValueFields(tenantIdAndCentricId, timestamp, instanceId, model, className, writtenInstance);
                 }
-                processingStats.sample("UPDATE", className, System.currentTimeMillis() - start);
+                processingStats.latency("UPDATE", className, System.currentTimeMillis() - start);
 
                 ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
                 List<InitiateTraversal> initiateTraversals = dispatchers.get(className);
-                processingStats.sample("TRAVERSER", className, initiateTraversals.size());
+                processingStats.latency("TRAVERSER", className, initiateTraversals.size());
                 for (InitiateTraversal initiateTraversal : initiateTraversals) {
                     if (initiateTraversal == null) {
                         LOG.warn("No traversal defined for className:{}", className);
@@ -188,21 +205,25 @@ public class TasmoEventProcessor {
 
             long start = System.currentTimeMillis();
             viewChangeNotificationProcessor.process(batchContext, writtenEvent);
-            processingStats.sample("NOTIFICATION", className, System.currentTimeMillis() - start);
+            processingStats.latency("NOTIFICATION", className, System.currentTimeMillis() - start);
 
         }
 
         long elapse = System.currentTimeMillis() - startProcessingEvent;
-        LOG.info("{} millis paths:{} fanDepth:{} fanBreath:{} value:{} changes:{}  DONE PROCESSING {} event:{} instance:{} tenant:{}", new Object[]{elapse,
-            batchContext.paths,
-            batchContext.fanDepth,
-            batchContext.fanBreath,
-            batchContext.readLeaves,
-            batchContext.changes,
-            writtenEvent.getWrittenInstance().isDeletion() ? "DELETE" : "UPDATE",
-            writtenEvent.getEventId(),
-            writtenEvent.getWrittenInstance().getInstanceId(),
-            writtenEvent.getTenantId()});
+        LOG.info("{} millis valuePaths:{} refPaths:{} backRefPaths:{} "
+                + "fanDepth:{} fanBreath:{} value:{} changes:{}  DONE PROCESSING {} event:{} instance:{} tenant:{}",
+                new Object[]{elapse,
+                    batchContext.valuePaths,
+                    batchContext.refPaths,
+                    batchContext.backRefPaths,
+                    batchContext.fanDepth,
+                    batchContext.fanBreath,
+                    batchContext.readLeaves,
+                    batchContext.changes,
+                    writtenEvent.getWrittenInstance().isDeletion() ? "DELETE" : "UPDATE",
+                    writtenEvent.getEventId(),
+                    writtenEvent.getWrittenInstance().getInstanceId(),
+                    writtenEvent.getTenantId()});
     }
 
     private List<TenantIdAndCentricId> buildTenantIdAndCentricIds(VersionedTasmoViewModel model,

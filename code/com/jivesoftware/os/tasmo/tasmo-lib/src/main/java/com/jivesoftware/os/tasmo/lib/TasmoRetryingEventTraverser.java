@@ -43,7 +43,7 @@ public class TasmoRetryingEventTraverser {
                 long start = System.currentTimeMillis();
                 WrittenEventProcessor writtenEventProcessor = writtenEventProcessorDecorator.decorateWrittenEventProcessor(initiateTraversal);
                 writtenEventProcessor.process(writtenEventContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
-                writtenEventContext.getProcessingStats().sample("EVENT TRAVERSAL", instanceClassName, System.currentTimeMillis() - start);
+                writtenEventContext.getProcessingStats().latency("EVENT TRAVERSAL", instanceClassName, System.currentTimeMillis() - start);
                 break;
             } catch (Exception e) {
                 boolean pathModifiedException = false;
@@ -66,7 +66,7 @@ public class TasmoRetryingEventTraverser {
                 }
             }
         }
-        writtenEventContext.getProcessingStats().sample("ATTEMPTS", instanceClassName, attempts);
+        writtenEventContext.getProcessingStats().tally("CONSISTENCY ATTEMPTS", instanceClassName, attempts - 1);
 
         if (attempts >= maxAttempts) {
             LOG.info("FAILED to reach CONSISTENCY after {} attempts for eventId:{} instanceId:{} tenantId:{}", new Object[]{
@@ -77,7 +77,7 @@ public class TasmoRetryingEventTraverser {
             throw new RuntimeException("Failed to reach stasis after " + maxAttempts + " attempts.");
         } else {
             if (attempts > 1) {
-                LOG.warn("CONSISTENCY took  {} attempts for eventId:{} instanceId:{} tenantId:{}", new Object[]{
+                LOG.warn("CONSISTENCY took {} attempts for eventId:{} instanceId:{} tenantId:{}", new Object[]{
                     attempts,
                     writtenEvent.getEventId(),
                     writtenEvent.getWrittenInstance().getInstanceId(),
@@ -86,6 +86,6 @@ public class TasmoRetryingEventTraverser {
             }
         }
 
-        writtenEventContext.getProcessingStats().sample("EVENT CONSISTENCY", instanceClassName, System.currentTimeMillis() - startConsistency);
+        writtenEventContext.getProcessingStats().latency("EVENT CONSISTENCY", instanceClassName, System.currentTimeMillis() - startConsistency);
     }
 }
