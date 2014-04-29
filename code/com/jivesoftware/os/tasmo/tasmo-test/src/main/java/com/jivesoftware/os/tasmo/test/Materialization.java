@@ -232,6 +232,7 @@ public class Materialization {
 
     RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> rawViewValueStore;
     ExecutorService eventProcessorThreads;
+    ExecutorService pathProcessorThreads;
     TasmoEventProcessor tasmoEventProcessor;
 
     public void setupModelAndMaterializer(int numberOfEventProcessorThreads) throws Exception {
@@ -337,7 +338,7 @@ public class Materialization {
                 })
                 .build();
 
-        ExecutorService pathProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, pathProcessorThreadFactory);
+        pathProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, pathProcessorThreadFactory);
         ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(pathProcessorThreads);
         tasmoViewModel = new TasmoViewModel(pathExecutors,
                 MASTER_TENANT_ID,
@@ -442,6 +443,7 @@ public class Materialization {
 
     public void shutdown() {
         eventProcessorThreads.shutdownNow();
+        pathProcessorThreads.shutdownNow();
     }
 
     List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {
