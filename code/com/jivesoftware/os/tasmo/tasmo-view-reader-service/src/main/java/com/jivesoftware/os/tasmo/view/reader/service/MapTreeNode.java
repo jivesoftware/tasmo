@@ -22,6 +22,7 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,24 +37,28 @@ import java.util.Set;
 public class MapTreeNode implements TreeNode {
 
     private final ObjectId objectId;
-    private final Collection<String> values = new ArrayList<>();
+    private final Collection<ViewValue> values = new ArrayList<>();
     private final Map<String, MapTreeNode> singleChildren = new HashMap<>();
     private final Map<StepTypeAndFieldName, MultiTreeNode> multiChildren = new HashMap<>();
-    private long timestamp;
+    private long highWaterTimestamp;
 
     public MapTreeNode(ObjectId objectId) {
         this.objectId = objectId;
     }
 
     @Override
-    public void add(ModelPathStep[] steps, ObjectId[] ids, String value, Long timestamp) {
+    public void add(ModelPathStep[] steps, ObjectId[] ids, ViewValue value, Long threadTimestamp) {
+        if (value.getModelPathTimeStamps() != null) {
+            for (long modelPathTimestamp : value.getModelPathTimeStamps()) {
+                if (modelPathTimestamp > highWaterTimestamp) {
+                    this.highWaterTimestamp = modelPathTimestamp;
+                }
+            }
+        }
         ModelPathStep thisStep = steps[0];
         switch (thisStep.getStepType()) {
             case value:
                 values.add(value);
-                if (timestamp != null && timestamp > this.timestamp) {
-                    this.timestamp = timestamp;
-                }
                 break;
             case ref: {
                 String refFieldName = thisStep.getRefFieldName();
@@ -62,7 +67,7 @@ public class MapTreeNode implements TreeNode {
                     child = new MapTreeNode(ids[1]);
                     singleChildren.put(refFieldName, child);
                 }
-                child.add(Arrays.copyOfRange(steps, 1, steps.length), Arrays.copyOfRange(ids, 1, ids.length), value, timestamp);
+                child.add(Arrays.copyOfRange(steps, 1, steps.length), Arrays.copyOfRange(ids, 1, ids.length), value, threadTimestamp);
                 break;
             }
             default: {
@@ -85,7 +90,7 @@ public class MapTreeNode implements TreeNode {
                     }
                     multiChildren.put(stepTypeAndFieldName, treeNode);
                 }
-                treeNode.add(Arrays.copyOfRange(steps, 1, steps.length), Arrays.copyOfRange(ids, 1, ids.length), value, timestamp);
+                treeNode.add(Arrays.copyOfRange(steps, 1, steps.length), Arrays.copyOfRange(ids, 1, ids.length), value, threadTimestamp);
                 break;
             }
         }
@@ -95,8 +100,8 @@ public class MapTreeNode implements TreeNode {
     public JsonNode merge(JsonViewMerger merger, Set<Id> permittedIds) throws IOException {
         ObjectNode objectNode = merger.createObjectNode();
         objectNode.put(ReservedFields.VIEW_OBJECT_ID, objectId.toStringForm());
-        for (String value : values) {
-            objectNode.putAll(merger.toObjectNode(value));
+        for (ViewValue value : values) {
+            objectNode.putAll(merger.toObjectNode(value.getValue()));
         }
         for (Map.Entry<String, MapTreeNode> entry : singleChildren.entrySet()) {
             if (permittedIds.contains(entry.getValue().getObjectId().getId())) {
@@ -118,8 +123,8 @@ public class MapTreeNode implements TreeNode {
         return objectId;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    public long getHighWaterTimestamp() {
+        return highWaterTimestamp;
     }
 
     private static final class StepTypeAndFieldName {

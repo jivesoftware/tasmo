@@ -286,8 +286,8 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
         }
 
         @Override
-        public String toStringForm() throws IOException {
-            return mapper.writeValueAsString(fieldsNode);
+        public byte[] toBytes() throws IOException {
+            return mapper.writeValueAsBytes(fieldsNode);
         }
 
         @Override

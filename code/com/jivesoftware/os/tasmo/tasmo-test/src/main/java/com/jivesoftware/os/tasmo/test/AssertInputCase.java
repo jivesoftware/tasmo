@@ -18,6 +18,7 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -124,11 +125,11 @@ public class AssertInputCase {
                             final TenantIdAndRow<TenantIdAndCentricId, ImmutableByteArray> row) throws Exception {
                         if (row != null) {
                             ic.materialization.rawViewValueStore.getEntrys(row.getTenantId(), row.getRow(), null, Long.MAX_VALUE, 1000, false, null, null,
-                                    new CallbackStream<ColumnValueAndTimestamp<ImmutableByteArray, String, Long>>() {
+                                    new CallbackStream<ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long>>() {
 
                                         @Override
-                                        public ColumnValueAndTimestamp<ImmutableByteArray, String, Long> callback(
-                                                ColumnValueAndTimestamp<ImmutableByteArray, String, Long> value) throws Exception {
+                                        public ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> callback(
+                                                ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> value) throws Exception {
                                                     if (value != null) {
 
                                                         System.out.println(" |--> " + rowKey(row.getRow())

@@ -74,6 +74,7 @@ import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionCheckResult;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewProvider;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
@@ -302,7 +303,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
         StaleViewFieldStream staleViewFieldStream = new StaleViewFieldStream() {
             @Override
-            public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, String, Long> value) {
+            public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> value) {
                 //no op
             }
         };
@@ -315,7 +316,8 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                 tenantViewsProvider,
                 viewAsObjectNode,
                 merger,
-                staleViewFieldStream);
+                staleViewFieldStream,
+                1024 * 1024 * 10);
     }
 
     private String getViewClassFromViewModel(ObjectNode viewNode) {
@@ -392,7 +394,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                                 change.getViewObjectId(),
                                 change.getModelPathId(),
                                 ids,
-                                mapper.writeValueAsString(change.getValue()),
+                                new ViewValue(change.getModelPathTimestamps(), change.getValue()),
                                 change.getTimestamp()));
                     } catch (Exception ex) {
                         throw new CommitChangeException("Failed to add change for the following reason.", ex);

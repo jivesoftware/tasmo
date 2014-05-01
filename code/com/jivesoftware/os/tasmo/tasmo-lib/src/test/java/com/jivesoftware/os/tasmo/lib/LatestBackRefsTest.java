@@ -169,8 +169,8 @@ public class LatestBackRefsTest extends BaseTasmoTest {
 
     }
 
-    @Test (enabled = false) // TODO: NEED TO FIX THIS CASE!
-    public void changesDownstream() throws Exception {
+    @Test
+    public void testChangesDownstream() throws Exception {
         String viewClassName = "BackRefs";
         String viewFieldName = "latestContentAuthor";
         Expectations expectations = initModelPaths(viewClassName + "::" + viewFieldName
@@ -178,7 +178,7 @@ public class LatestBackRefsTest extends BaseTasmoTest {
                 // This is what makes the test work
             viewClassName + "::" + "dummy"
                 + "::Document.latest_backRef.DocumentVersion.versionParent|DocumentVersion.instanceId"*/);
-        ObjectId user1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "Paul").build());
+        ObjectId user1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "Sir Paul").build());
         ObjectId document = write(EventBuilder.create(idProvider, "Document", tenantId, actorId).build());
         ObjectId version1 = write(EventBuilder.create(idProvider, "DocumentVersion", tenantId, actorId)
             .set("versionParent", document).set("author", user1).build());
@@ -188,6 +188,7 @@ public class LatestBackRefsTest extends BaseTasmoTest {
 
         ObjectNode view1 = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, document.getId()));
         System.out.println(mapper.writeValueAsString(view1));
+
         JsonNode latest_versionParent = view1.get("latest_versionParent");
         Assert.assertNotNull(latest_versionParent, "latest_versionParent");
         JsonNode author = latest_versionParent.get("author");
@@ -200,6 +201,13 @@ public class LatestBackRefsTest extends BaseTasmoTest {
 
         ObjectNode view2 = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, document.getId()));
         System.out.println(mapper.writeValueAsString(view2));
-        Assert.assertEquals(view2, view1);
+
+        latest_versionParent = view2.get("latest_versionParent");
+        Assert.assertNotNull(latest_versionParent, "latest_versionParent");
+        author = latest_versionParent.get("author");
+        Assert.assertNotNull(author, "author");
+        userName = author.get("userName");
+        Assert.assertNotNull(userName, "userName");
+        Assert.assertEquals(userName.asText(), "Sir Paul");
     }
 }

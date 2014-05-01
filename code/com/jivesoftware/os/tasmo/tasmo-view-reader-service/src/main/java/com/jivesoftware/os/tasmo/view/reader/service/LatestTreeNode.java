@@ -23,6 +23,7 @@ import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.Set;
@@ -39,8 +40,8 @@ class LatestTreeNode implements MultiTreeNode {
     }
 
     @Override
-    public void add(ModelPathStep[] steps, ObjectId[] ids, String value, Long timestamp) {
-        arrayTreeNode.add(steps, ids, value, timestamp);
+    public void add(ModelPathStep[] steps, ObjectId[] ids, ViewValue value, Long threadTimestamp) {
+        arrayTreeNode.add(steps, ids, value, threadTimestamp);
     }
 
     @Override
@@ -48,7 +49,7 @@ class LatestTreeNode implements MultiTreeNode {
         Ordering<MapTreeNode> timestampOrdering = Ordering.from(new Comparator<MapTreeNode>() {
             @Override
             public int compare(MapTreeNode o1, MapTreeNode o2) {
-                long diff = o1.getTimestamp() - o2.getTimestamp();
+                long diff = o1.getHighWaterTimestamp() - o2.getHighWaterTimestamp();
                 return diff < 0 ? -1 : (diff > 0 ? 1 : 0);
             }
         });

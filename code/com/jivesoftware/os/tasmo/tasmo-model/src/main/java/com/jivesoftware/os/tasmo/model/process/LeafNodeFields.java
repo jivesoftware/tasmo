@@ -16,7 +16,7 @@ public interface LeafNodeFields {
 
     public boolean hasField(String fieldName);
 
-    public String toStringForm() throws IOException;
+    public byte[] toBytes() throws IOException;
 
     public boolean hasFields();
 

@@ -22,6 +22,7 @@ import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -38,7 +39,7 @@ class CountTreeNode implements MultiTreeNode {
     }
 
     @Override
-    public void add(ModelPathStep[] steps, ObjectId[] ids, String value, Long timestamp) {
+    public void add(ModelPathStep[] steps, ObjectId[] ids, ViewValue value, Long threadTimestamp) {
         idsSeen.add(ids[0].getId());
     }
 

@@ -34,7 +34,8 @@ public class ViewFieldChange {
     private final String modelPathId;
     private final PathId[] modelPathInstanceIds;
     private final List<ReferenceWithTimestamp> modelPathVersions;
-    private final String value;
+    private final long[] modelPathTimestamps;
+    private final byte[] value;
     private final long timestamp;
 
     @JsonCreator
@@ -46,7 +47,8 @@ public class ViewFieldChange {
             @JsonProperty("modelPathId") String modelPathId,
             @JsonProperty("modelPathInstanceIds") PathId[] modelPathInstanceIds,
             @JsonProperty("modelPathVersions") List<ReferenceWithTimestamp> modelPathVersions,
-            @JsonProperty("value") String value,
+            @JsonProperty("modelPathTimestamps") long[] modelPathTimestamps,
+            @JsonProperty("value") byte[] value,
             @JsonProperty("timestamp") long timestamp) {
         this.eventId = eventId;
         this.actorId = actorId;
@@ -55,6 +57,7 @@ public class ViewFieldChange {
         this.modelPathId = modelPathId;
         this.modelPathInstanceIds = modelPathInstanceIds;
         this.modelPathVersions = modelPathVersions;
+        this.modelPathTimestamps = modelPathTimestamps;
         this.value = value;
         this.timestamp = timestamp;
     }
@@ -87,7 +90,11 @@ public class ViewFieldChange {
         return modelPathVersions;
     }
 
-    public String getValue() {
+    public long[] getModelPathTimestamps() {
+        return modelPathTimestamps;
+    }
+
+    public byte[] getValue() {
         return value;
     }
 
@@ -104,21 +111,38 @@ public class ViewFieldChange {
                 + ", viewObjectId=" + viewObjectId
                 + ", modelPathId=" + modelPathId
                 + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
-                + ", value=" + value
+                + ", modelPathTimestamps=" + Arrays.toString(modelPathTimestamps)
+                + ", value=" + Arrays.toString(value)
                 + ", timestamp=" + timestamp + '}';
     }
 
+//    @Override
+//    public int hashCode() {
+//        int hash = 5;
+//        hash = 97 * hash + (int) (this.eventId ^ (this.eventId >>> 32));
+//        hash = 97 * hash + Objects.hashCode(this.actorId);
+//        hash = 97 * hash + (this.type != null ? this.type.hashCode() : 0);
+//        hash = 97 * hash + Objects.hashCode(this.viewObjectId);
+//        hash = 97 * hash + Objects.hashCode(this.modelPathId);
+//        hash = 97 * hash + Arrays.deepHashCode(this.modelPathInstanceIds);
+//        hash = 97 * hash + Objects.hashCode(this.modelPathTimestamps);
+//        hash = 97 * hash + Objects.hashCode(this.value);
+//        hash = 97 * hash + (int) (this.timestamp ^ (this.timestamp >>> 32));
+//        return hash;
+//    }
     @Override
     public int hashCode() {
-        int hash = 5;
-        hash = 97 * hash + (int) (this.eventId ^ (this.eventId >>> 32));
-        hash = 97 * hash + Objects.hashCode(this.actorId);
-        hash = 97 * hash + (this.type != null ? this.type.hashCode() : 0);
-        hash = 97 * hash + Objects.hashCode(this.viewObjectId);
-        hash = 97 * hash + Objects.hashCode(this.modelPathId);
-        hash = 97 * hash + Arrays.deepHashCode(this.modelPathInstanceIds);
-        hash = 97 * hash + Objects.hashCode(this.value);
-        hash = 97 * hash + (int) (this.timestamp ^ (this.timestamp >>> 32));
+        int hash = 7;
+        hash = 59 * hash + (int) (this.eventId ^ (this.eventId >>> 32));
+        hash = 59 * hash + Objects.hashCode(this.actorId);
+        hash = 59 * hash + Objects.hashCode(this.type);
+        hash = 59 * hash + Objects.hashCode(this.viewObjectId);
+        hash = 59 * hash + Objects.hashCode(this.modelPathId);
+        hash = 59 * hash + Arrays.deepHashCode(this.modelPathInstanceIds);
+        hash = 59 * hash + Objects.hashCode(this.modelPathVersions);
+        hash = 59 * hash + Arrays.hashCode(this.modelPathTimestamps);
+        hash = 59 * hash + Arrays.hashCode(this.value);
+        hash = 59 * hash + (int) (this.timestamp ^ (this.timestamp >>> 32));
         return hash;
     }
 
@@ -149,7 +173,13 @@ public class ViewFieldChange {
         if (!Arrays.deepEquals(this.modelPathInstanceIds, other.modelPathInstanceIds)) {
             return false;
         }
-        if (!Objects.equals(this.value, other.value)) {
+        if (!Objects.equals(this.modelPathVersions, other.modelPathVersions)) {
+            return false;
+        }
+        if (!Arrays.equals(this.modelPathTimestamps, other.modelPathTimestamps)) {
+            return false;
+        }
+        if (!Arrays.equals(this.value, other.value)) {
             return false;
         }
         if (this.timestamp != other.timestamp) {
@@ -157,4 +187,5 @@ public class ViewFieldChange {
         }
         return true;
     }
+
 }

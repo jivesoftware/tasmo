@@ -128,7 +128,7 @@ public class JsonWrittenEventProviderTest {
         values.addField("value1", value1);
         values.addField("value2", value2);
 
-        String stringified = values.toStringForm();
-        Assert.assertEquals(stringified, mapper.writeValueAsString(object));
+        byte[] stringified = values.toBytes();
+        Assert.assertEquals(stringified, mapper.writeValueAsBytes(object));
     }
 }

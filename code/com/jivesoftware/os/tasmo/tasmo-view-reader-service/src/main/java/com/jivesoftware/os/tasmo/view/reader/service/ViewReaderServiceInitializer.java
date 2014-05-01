@@ -9,7 +9,6 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.NeverAcceptsFai
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.CurrentTimestamper;
-import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
@@ -21,6 +20,8 @@ import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueMarshaller;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import java.io.IOException;
 import java.util.concurrent.Executors;
@@ -51,6 +52,9 @@ public class ViewReaderServiceInitializer {
 
         @LongDefault(1000L * 60 * 60 * 24 * 30) // 30 days
         public Long getRemoveUndeclaredFieldsAfterNMillis();
+
+        @LongDefault(1024L * 1024L * 50) // 50 mb
+        public Long getViewMaxSizeInBytes();
     }
 
     public static ViewReader<ViewResponse> initializeViewReader(ViewReaderServiceConfig config,
@@ -74,13 +78,13 @@ public class ViewReaderServiceInitializer {
         RowColumnValueStore<TenantIdAndCentricId,
                 ImmutableByteArray,
                 ImmutableByteArray,
-                String,
+                ViewValue,
                 RuntimeException> store = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
-                                "viewValueTable", "v", new DefaultRowColumnValueStoreMarshaller<>(
+                                "tasmo.views", "v", new DefaultRowColumnValueStoreMarshaller<>(
                                         new TenantIdAndCentricIdMarshaller(),
                                         new ImmutableByteArrayMarshaller(),
                                         new ImmutableByteArrayMarshaller(),
-                                        new StringTypeMarshaller()), new CurrentTimestamper()));
+                                        new ViewValueMarshaller()), new CurrentTimestamper()));
 
         final ViewValueStore viewValueStore = new ViewValueStore(store, new ViewPathKeyProvider());
         ViewValueReader viewValueReader = new ViewValueReader(viewValueStore);
@@ -103,7 +107,7 @@ public class ViewReaderServiceInitializer {
         final long removeUndeclaredFieldsAfterNMillis = config.getRemoveUndeclaredFieldsAfterNMillis();
         StaleViewFieldStream staleViewFieldStream = new StaleViewFieldStream() {
             @Override
-            public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, String, Long> value) {
+            public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> value) {
                 if (value != null && value.getTimestamp() < System.currentTimeMillis() - removeUndeclaredFieldsAfterNMillis) {
                     try {
                         ImmutableByteArray rowKey = viewValueStore.rowKey(viewDescriptor.getViewId());
@@ -115,11 +119,15 @@ public class ViewReaderServiceInitializer {
             }
         };
 
+
+        long viewMaxSizeInBytes = config.getViewMaxSizeInBytes();
+
         return new ViewProvider<>(viewPermissionChecker,
                 viewValueReader,
                 tenantViewsProvider,
                 viewFormatter,
                 new JsonViewMerger(new ObjectMapper()),
-                staleViewFieldStream);
+                staleViewFieldStream,
+                viewMaxSizeInBytes);
     }
 }

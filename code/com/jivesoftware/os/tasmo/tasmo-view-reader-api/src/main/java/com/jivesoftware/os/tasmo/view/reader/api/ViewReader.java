@@ -13,6 +13,7 @@ import java.util.List;
 
 /**
  * Provides methods for reading views
+ * @param <V>
  */
 public interface ViewReader<V> {
 
@@ -24,15 +25,17 @@ public interface ViewReader<V> {
      * @param viewRequest descriptor representing the view to read
      * @return
      * @throws IOException, ViewReaderException
+     * @throws com.jivesoftware.os.tasmo.view.reader.api.ViewReaderException
      */
     V readView(ViewDescriptor viewRequest) throws IOException, ViewReaderException;
 
     /**
      * Retrieves multiple views with a single request
      *
-     * @param view list of descriptors representing the views to read
+     * @param viewRequests
      * @return
      * @throws IOException, ViewReaderException
+     * @throws com.jivesoftware.os.tasmo.view.reader.api.ViewReaderException
      */
     List<V> readViews(List<ViewDescriptor> viewRequests) throws IOException, ViewReaderException;
 }

@@ -18,7 +18,9 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -54,16 +56,13 @@ class Expectations {
 
     void assertExpectation(TenantIdAndCentricId tenantIdAndCentricId) throws IOException {
         for (Expectation expectation : expectations) {
-            String got = viewValueStore.get(tenantIdAndCentricId,
+            ViewValue got = viewValueStore.get(tenantIdAndCentricId,
                 expectation.viewId,
                 expectation.modelPathId,
                 expectation.modelPathInstanceIds);
             JsonNode node = null;
             if (got != null) {
-                got = MAPPER.readValue(got, String.class);
-                if (got != null) {
-                    node = MAPPER.readValue(got, JsonNode.class);
-                }
+                node = MAPPER.readValue(new ByteArrayInputStream(got.getValue()), JsonNode.class);
             }
             try {
                 if (expectation.value == null) {

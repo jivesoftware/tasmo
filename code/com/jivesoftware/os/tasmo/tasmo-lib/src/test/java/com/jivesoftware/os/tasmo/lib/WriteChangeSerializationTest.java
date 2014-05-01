@@ -35,11 +35,10 @@ public class WriteChangeSerializationTest {
 
         long now = System.currentTimeMillis();
 
-        String valAsString = mapper.writeValueAsString(value);
-
         ViewFieldChange viewFieldChange = new ViewFieldChange(
                 1,
-                new Id(1234), type, viewId, viewFieldName, modelPathIds, Arrays.asList(modelPathVersionIds), valAsString, now);
+                new Id(1234), type, viewId, viewFieldName, modelPathIds, Arrays.asList(modelPathVersionIds),
+                new long[]{1}, mapper.writeValueAsBytes(value), now);
 
         System.out.println("Serializing:\n" + mapper.writeValueAsString(viewFieldChange));
 

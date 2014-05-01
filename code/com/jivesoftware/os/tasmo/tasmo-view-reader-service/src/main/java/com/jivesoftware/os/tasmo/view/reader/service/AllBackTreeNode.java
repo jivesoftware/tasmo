@@ -20,6 +20,7 @@ import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.io.IOException;
 import java.util.Set;
 
@@ -40,8 +41,8 @@ public class AllBackTreeNode implements MultiTreeNode {
     }
 
     @Override
-    public void add(ModelPathStep[] steps, ObjectId[] ids, String value, Long timestamp) {
-        arrayTreeNode.add(steps, ids, value, timestamp);
+    public void add(ModelPathStep[] steps, ObjectId[] ids, ViewValue value, Long threadTimestamp) {
+        arrayTreeNode.add(steps, ids, value, threadTimestamp);
     }
 
     @Override

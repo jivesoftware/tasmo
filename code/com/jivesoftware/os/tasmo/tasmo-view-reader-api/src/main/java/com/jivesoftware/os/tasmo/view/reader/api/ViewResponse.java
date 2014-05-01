@@ -15,7 +15,8 @@ public class ViewResponse {
         OK,
         ERROR,
         NOT_FOUND,
-        FORBIDDEN
+        FORBIDDEN,
+        TO_LARGE
     }
 
     private final StatusCode statusCode;
@@ -48,6 +49,10 @@ public class ViewResponse {
 
     public static ViewResponse notFound() {
         return new ViewResponse(StatusCode.NOT_FOUND, null);
+    }
+
+    public static ViewResponse toLarge() {
+        return new ViewResponse(StatusCode.TO_LARGE, null);
     }
 
     public StatusCode getStatusCode() {

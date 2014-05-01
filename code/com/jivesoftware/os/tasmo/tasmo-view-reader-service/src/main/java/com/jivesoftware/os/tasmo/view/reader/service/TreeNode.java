@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.io.IOException;
 import java.util.Set;
 
@@ -26,7 +27,7 @@ import java.util.Set;
  *
  */
 public interface TreeNode {
-    void add(ModelPathStep[] steps, ObjectId[] ids, String value, Long timestamp);
+    void add(ModelPathStep[] steps, ObjectId[] ids, ViewValue value, Long timestamp);
 
     JsonNode merge(JsonViewMerger merger, Set<Id> permittedIds) throws IOException;
 }

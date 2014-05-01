@@ -68,6 +68,7 @@ public class ConcurrencyAndExistanceCommitChange implements CommitChange {
                         c.getModelPathId(),
                         c.getModelPathInstanceIds(),
                         c.getModelPathVersions(),
+                        c.getModelPathTimestamps(),
                         c.getValue(),
                         c.getTimestamp()));
             }

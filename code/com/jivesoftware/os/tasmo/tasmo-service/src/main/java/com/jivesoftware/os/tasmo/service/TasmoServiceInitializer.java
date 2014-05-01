@@ -27,7 +27,6 @@ import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
-import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
 import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
@@ -101,20 +100,15 @@ public class TasmoServiceInitializer {
             TasmoEdgeReport tasmoEdgeReport,
             TasmoServiceConfig config) throws IOException {
 
-        RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceTable
-                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "existenceTable", "v",
-                                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdMarshaller(),
-                                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-                                        new StringTypeMarshaller()), new CurrentTimestamper()));
-
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore
-                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "eventValueTable", "v",
+                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.event.values", "v",
                                 new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
                                         new ObjectIdMarshaller(), new StringTypeMarshaller(),
                                         (TypeMarshaller<OpaqueFieldValue>) eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
 
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyTable
-                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "concurrencyTable", "v",
+                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
+                        "tasmo.multi.version.concurrency", "v",
                                 new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
                                         new ObjectIdMarshaller(), new StringTypeMarshaller(),
                                         new LongTypeMarshaller()), new CurrentTimestamper()));
@@ -123,12 +117,12 @@ public class TasmoServiceInitializer {
 
         EventValueStore eventValueStore = new EventValueStore(concurrencyStore, eventStore, eventValueCacheProvider);
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks
-                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "multiLinkTable", "v",
+                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.links", "v",
                                 new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
                                         new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
 
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks
-                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "multiBackLinkTable", "v",
+                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.back.links", "v",
                                 new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
                                         new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
 

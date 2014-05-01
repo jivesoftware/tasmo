@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -33,7 +34,7 @@ public class ViewWriteFieldChange {
     private final ObjectId viewObjectId;
     private final String modelPathId;
     private final ObjectId[] modelPathInstanceIds;
-    private final String value;
+    private final ViewValue value;
     private final long timestamp;
 
     @JsonCreator
@@ -45,7 +46,7 @@ public class ViewWriteFieldChange {
         @JsonProperty("viewObjectId") ObjectId viewObjectId,
         @JsonProperty("modelPathId") String modelPathId,
         @JsonProperty("modelPathInstanceIds") ObjectId[] modelPathInstanceIds,
-        @JsonProperty("value") String value,
+        @JsonProperty("value") ViewValue value,
         @JsonProperty("timestamp") long timestamp) {
         this.eventId = eventId;
         this.tenantIdAndCentricId = tenantIdAndCentricId;
@@ -86,7 +87,7 @@ public class ViewWriteFieldChange {
         return modelPathInstanceIds;
     }
 
-    public String getValue() {
+    public ViewValue getValue() {
         return value;
     }
 

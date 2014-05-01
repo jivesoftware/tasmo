@@ -15,7 +15,9 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -25,29 +27,40 @@ public class ViewFieldsCollector {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final JsonViewMerger merger;
     private MapTreeNode treeRoot;
+    private final long viewMaxSizeInBytes;
+    private long viewSizeInBytes = 0;
 
-    public ViewFieldsCollector(JsonViewMerger merger) {
+    public ViewFieldsCollector(JsonViewMerger merger, long viewMaxSizeInBytes) {
         this.merger = merger;
+        this.viewMaxSizeInBytes = viewMaxSizeInBytes;
     }
 
-    boolean add(ModelPath modelPath, Id[] modelPathIds, String[] viewPathClasses, String value, Long timestamp) throws IOException {
+    boolean add(ViewDescriptor viewDescriptor,
+            ModelPath modelPath, Id[] modelPathIds, String[] viewPathClasses, ViewValue viewValue, Long timestamp) throws IOException {
 
-        if (value == null || value.isEmpty()) {
+        byte[] value = (viewValue == null) ? null : viewValue.getValue();
+        viewSizeInBytes += (value == null) ? 0 : value.length;
+        if (viewSizeInBytes > viewMaxSizeInBytes) {
+            LOG.error("ViewDescriptor:" + viewDescriptor + " is larger than viewMaxReadableBytes:" + viewMaxSizeInBytes);
             return false;
         }
-        ObjectNode valueObject = merger.toObjectNode(value);
+
+        if (viewValue == null || viewValue.getValue() == null || viewValue.getValue().length == 0) {
+            return false;
+        }
+        ObjectNode valueObject = merger.toObjectNode(viewValue.getValue());
         if (valueObject == null || valueObject.isNull() || valueObject.size() == 0) {
             return false;
         }
 
         ObjectId[] modelPathInstanceIds = modelPathInstanceIds(modelPathIds, viewPathClasses, modelPath.getPathMembers());
 
-        LOG.debug("Read view path -> with id={} instance ids={} value={} timestamp={}", new Object[]{modelPath.getId(), modelPathIds, value, timestamp});
+        LOG.debug("Read view path -> with id={} instance ids={} value={} timestamp={}", new Object[]{modelPath.getId(), modelPathIds, viewValue, timestamp});
 
         if (treeRoot == null) {
             treeRoot = new MapTreeNode(modelPathInstanceIds[0]);
         }
-        treeRoot.add(modelPath.getPathMembers().toArray(new ModelPathStep[modelPath.getPathMemberSize()]), modelPathInstanceIds, value, timestamp);
+        treeRoot.add(modelPath.getPathMembers().toArray(new ModelPathStep[modelPath.getPathMemberSize()]), modelPathInstanceIds, viewValue, timestamp);
         return true;
     }
 
@@ -55,6 +68,9 @@ public class ViewFieldsCollector {
     }
 
     ViewResponse getView(Set<Id> canViewTheseIds) throws Exception {
+        if (viewSizeInBytes > viewMaxSizeInBytes) {
+            return ViewResponse.toLarge();
+        }
         if (treeRoot == null) {
             return ViewResponse.notFound();
         }

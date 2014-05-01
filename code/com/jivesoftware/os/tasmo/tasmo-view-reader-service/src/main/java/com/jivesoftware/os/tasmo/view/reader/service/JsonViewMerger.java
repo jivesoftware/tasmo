@@ -8,7 +8,6 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.service;
 
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -25,15 +24,15 @@ public class JsonViewMerger {
         this.mapper = mapper;
     }
 
-    public ObjectNode toObjectNode(String jsonString) throws IOException {
-        if (jsonString == null) {
+    public ObjectNode toObjectNode(byte[] jsonBytes) throws IOException {
+        if (jsonBytes == null) {
             return mapper.createObjectNode();
         }
-        if (!jsonString.startsWith(JsonToken.START_OBJECT.asString())) {
-            jsonString = mapper.readValue(jsonString, String.class);
-        }
+//        if (!jsonBytes.startsWith(JsonToken.START_OBJECT.asString())) {
+//            jsonBytes = mapper.readValue(jsonBytes, String.class);
+//        }
 
-        return mapper.readValue(jsonString, ObjectNode.class);
+        return mapper.readValue(jsonBytes, ObjectNode.class);
     }
 
     public ArrayNode createArrayNode() {

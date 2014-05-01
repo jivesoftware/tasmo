@@ -8,6 +8,7 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 
 
 /**
@@ -29,7 +30,7 @@ public class RowColumnValueStoreUtil {
             }
 
             @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore() {
+            public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore() {
                 return new RowColumnValueStoreImpl<>();
             }
 

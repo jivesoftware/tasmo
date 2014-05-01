@@ -25,6 +25,7 @@ import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore.ViewCollector;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -56,13 +57,15 @@ public class ViewProvider<V> implements ViewReader<V> {
     private final ViewFormatter<V> viewFormatter;
     private final JsonViewMerger merger;
     private final StaleViewFieldStream staleViewFieldStream;
+    private final long viewMaxSizeInBytes; // This is the number of bytes that can be read for a single view. Defends against posion view that could cause OOM
 
     public ViewProvider(ViewPermissionChecker viewPermissionChecker,
             ViewValueReader viewValueReader,
             TenantViewsProvider viewModel,
             ViewFormatter<V> viewFormatter,
             JsonViewMerger merger,
-            StaleViewFieldStream staleViewFieldStream) {
+            StaleViewFieldStream staleViewFieldStream,
+            long viewMaxSizeInBytes) {
         this.viewPermissionChecker = viewPermissionChecker;
         this.viewValueReader = viewValueReader;
         this.tenantViewsProvider = viewModel;
@@ -71,9 +74,8 @@ public class ViewProvider<V> implements ViewReader<V> {
         if (staleViewFieldStream == null) {
             throw new IllegalStateException("deadFieldStateStream cannot be null.");
         }
-
         this.staleViewFieldStream = staleViewFieldStream;
-
+        this.viewMaxSizeInBytes = viewMaxSizeInBytes;
     }
 
     @Override
@@ -135,7 +137,7 @@ public class ViewProvider<V> implements ViewReader<V> {
                 LOG.error(viewDescriptor.getViewId().getClassName() + " has no declared view bindings.");
             }
 
-            ViewFieldsCollector viewFieldsCollector = new ViewFieldsCollector(merger);
+            ViewFieldsCollector viewFieldsCollector = new ViewFieldsCollector(merger, viewMaxSizeInBytes);
             viewCollectors.add(new ViewCollectorImpl<>(viewDescriptor,
                     viewFieldBindings,
                     viewFieldsCollector,
@@ -204,8 +206,8 @@ public class ViewProvider<V> implements ViewReader<V> {
         }
 
         @Override
-        public ColumnValueAndTimestamp<ImmutableByteArray, String, Long> callback(
-                ColumnValueAndTimestamp<ImmutableByteArray, String, Long> fieldValue) throws Exception {
+        public ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> callback(
+                ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> fieldValue) throws Exception {
             if (viewClassFieldBindings == null) { // if factoed out so that we dont exceed 4 levels of if nesting.
                 return fieldValue;
             }
@@ -222,7 +224,8 @@ public class ViewProvider<V> implements ViewReader<V> {
 
                         if (viewPathClasses != null && viewPathClasses.length > 0) {
                             Id[] modelPathIds = modelPathIds(bb, modelPath.getPathMemberSize());
-                            if (viewFieldsCollector.add(modelPath, modelPathIds, viewPathClasses, fieldValue.getValue(), fieldValue.getTimestamp())) {
+                            if (viewFieldsCollector.add(viewDescriptor,
+                                    modelPath, modelPathIds, viewPathClasses, fieldValue.getValue(), fieldValue.getTimestamp())) {
                                 permissionCheckTheseIds.addAll(Arrays.asList(modelPathIds));
                             }
                         } else {

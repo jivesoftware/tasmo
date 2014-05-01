@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -40,14 +41,14 @@ public class ArrayTreeNode {
         return array.values();
     }
 
-    public void add(ModelPathStep[] steps, ObjectId[] ids,  String value, Long timestamp) {
+    public void add(ModelPathStep[] steps, ObjectId[] ids,  ViewValue value, Long threadTimestamp) {
        ObjectId objectId = ids[0];
         MapTreeNode child = array.get(objectId);
         if (child == null) {
             child = new MapTreeNode(objectId);
             array.put(objectId, child);
         }
-        child.add(steps, ids, value, timestamp);
+        child.add(steps, ids, value, threadTimestamp);
     }
 
     public JsonNode merge(JsonViewMerger merger, Set<Id> permittedIds) throws IOException {

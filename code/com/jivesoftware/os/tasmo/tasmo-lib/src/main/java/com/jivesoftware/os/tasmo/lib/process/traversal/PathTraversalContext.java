@@ -43,6 +43,7 @@ public class PathTraversalContext {
     private final FieldValueReader fieldValueReader;
     private final long threadTimestamp;
     private final PathId[] modelPathInstanceIds;
+    private final long[] modelPathTimestamps;
     private final List<ReferenceWithTimestamp>[] modelPathVersionState;
     private final boolean removalContext;
     private LeafNodeFields leafNodeFields; // uck
@@ -60,6 +61,7 @@ public class PathTraversalContext {
         this.fieldValueReader = fieldValueReader;
         this.threadTimestamp = threadTimestamp;
         this.modelPathInstanceIds = new PathId[numberOfPathIds];
+        this.modelPathTimestamps = new long[numberOfPathIds + 1];
         this.modelPathVersionState = new List[numberOfPathIds];
         for (int i = 0; i < numberOfPathIds; i++) {
             modelPathVersionState[i] = new ArrayList<>();
@@ -87,6 +89,7 @@ public class PathTraversalContext {
             LOG.trace("!!!!!!!!---------- SetPath:" + pathIndex + " |||| " + id + " @ " + timestamp + " " + " remove:" + removalContext);
         }
         this.modelPathInstanceIds[pathIndex] = new PathId(id, timestamp);
+        this.modelPathTimestamps[pathIndex] = timestamp;
         if (pathIndex == lastPathIndex) {
             writtenEventContext.fanBreath++;
         } else {
@@ -163,7 +166,7 @@ public class PathTraversalContext {
                 }
             }
         }
-
+        modelPathTimestamps[modelPathTimestamps.length - 1] = latestTimestamp;
         this.leafNodeFields = fieldsToPopulate;
         return versions;
     }
@@ -183,7 +186,8 @@ public class PathTraversalContext {
                 modelPathId,
                 Arrays.copyOf(modelPathInstanceIds, modelPathInstanceIds.length),
                 copyOfVersions(),
-                leafNodeFields.toStringForm(),
+                Arrays.copyOf(modelPathTimestamps, modelPathTimestamps.length),
+                leafNodeFields.toBytes(),
                 threadTimestamp);
         changes.add(update);
     }
@@ -222,7 +226,6 @@ public class PathTraversalContext {
 //            changes.clear();
 //        }
 //    }
-
     String modelPathIdStateAsString(List<ReferenceWithTimestamp> path, boolean fields) {
         String s = "[";
         for (ReferenceWithTimestamp p : path) {

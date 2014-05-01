@@ -30,10 +30,11 @@ import java.util.List;
 public class ViewValueStore {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-    private final RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore;
+    private final RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore;
     private final ViewPathKeyProvider viewPathKeyProvider;
 
-    public ViewValueStore(RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore,
+    public ViewValueStore(RowColumnValueStore<TenantIdAndCentricId,
+            ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore,
             ViewPathKeyProvider viewPathKeyProvider) {
         this.viewValueStore = viewValueStore;
         this.viewPathKeyProvider = viewPathKeyProvider;
@@ -87,22 +88,22 @@ public class ViewValueStore {
         return orderIds;
     }
 
-    public String get(TenantIdAndCentricId tenantIdAndCentricId,
+    public ViewValue get(TenantIdAndCentricId tenantIdAndCentricId,
             ObjectId viewObjectId, String modelPathId, ObjectId[] modelPathInstanceState) throws IOException {
         ImmutableByteArray rowKey = rowKey(viewObjectId);
         ImmutableByteArray columnKey = columnKey(modelPathId, modelPathInstanceState);
-        String got = viewValueStore.get(tenantIdAndCentricId, rowKey, columnKey, null, null);
+        ViewValue got = viewValueStore.get(tenantIdAndCentricId, rowKey, columnKey, null, null);
         return got;
     }
 
-    static public interface ViewCollector extends CallbackStream<ColumnValueAndTimestamp<ImmutableByteArray, String, Long>> {
+    static public interface ViewCollector extends CallbackStream<ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long>> {
 
         ViewDescriptor getViewDescriptor();
     }
 
     public void multiGet(List<? extends ViewCollector> viewCollectors) throws IOException {
         List<TenantKeyedColumnValueCallbackStream<TenantIdAndCentricId,
-                ImmutableByteArray, ImmutableByteArray, String, Long>> keyCallbackPairs = Lists.newArrayList();
+                ImmutableByteArray, ImmutableByteArray, ViewValue, Long>> keyCallbackPairs = Lists.newArrayList();
         for (ViewCollector viewCollector : viewCollectors) {
             ViewDescriptor viewDescriptor = viewCollector.getViewDescriptor();
             keyCallbackPairs.add(new TenantKeyedColumnValueCallbackStream<>(viewDescriptor.getTenantIdAndCentricId(),
@@ -113,7 +114,7 @@ public class ViewValueStore {
     }
 
     public void add(TenantIdAndCentricId tenantIdAndCentricId, List<ViewWriteFieldChange> adds) throws IOException {
-        MultiAdd<ImmutableByteArray, ImmutableByteArray, String> rawAdds = new MultiAdd<>();
+        MultiAdd<ImmutableByteArray, ImmutableByteArray, ViewValue> rawAdds = new MultiAdd<>();
         for (ViewWriteFieldChange change : adds) {
             rawAdds.add(rowKey(change.getViewObjectId()),
                     columnKey(change.getModelPathId(),
@@ -123,7 +124,7 @@ public class ViewValueStore {
 
             LOG.debug("VVS:ADD {}", change);
         }
-        List<RowColumValueTimestampAdd<ImmutableByteArray, ImmutableByteArray, String>> took = rawAdds.take();
+        List<RowColumValueTimestampAdd<ImmutableByteArray, ImmutableByteArray, ViewValue>> took = rawAdds.take();
         viewValueStore.multiRowsMultiAdd(tenantIdAndCentricId, took);
     }
 

@@ -9,6 +9,7 @@ import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -79,7 +80,7 @@ public class ViewValueWriter {
             this.constructingThread = Thread.currentThread();
         }
 
-        public void set(ObjectId viewObjectId, String modelPathId, ObjectId[] modelPathInstanceIds, String value, long timestamp) throws IOException {
+        public void set(ObjectId viewObjectId, String modelPathId, ObjectId[] modelPathInstanceIds, ViewValue value, long timestamp) throws IOException {
             if (!Thread.currentThread().equals(constructingThread)) {
                 throw new IllegalStateException("calling thread must be the same as creating thread.");
             }

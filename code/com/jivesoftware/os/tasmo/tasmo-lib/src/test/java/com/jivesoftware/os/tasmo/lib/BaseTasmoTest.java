@@ -79,6 +79,7 @@ import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionCheckResult;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewProvider;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
@@ -211,7 +212,7 @@ public class BaseTasmoTest {
             }
 
             @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore() {
+            public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore() {
                 return new RowColumnValueStoreImpl<>();
             }
 
@@ -234,7 +235,7 @@ public class BaseTasmoTest {
 
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() throws Exception;
 
-        RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> viewValueStore() throws Exception;
+        RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore() throws Exception;
 
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks() throws Exception;
 
@@ -304,8 +305,7 @@ public class BaseTasmoTest {
                         for (int i = 0; i < ids.length; i++) {
                             ids[i] = modelPathInstanceIds[i].getObjectId();
                         }
-
-                        write.add(new ViewWriteFieldChange(
+                        ViewWriteFieldChange viewWriteFieldChange = new ViewWriteFieldChange(
                                 change.getEventId(),
                                 tenantIdAndCentricId,
                                 change.getActorId(),
@@ -313,8 +313,10 @@ public class BaseTasmoTest {
                                 change.getViewObjectId(),
                                 change.getModelPathId(),
                                 ids,
-                                mapper.writeValueAsString(change.getValue()),
-                                change.getTimestamp()));
+                                new ViewValue(change.getModelPathTimestamps(), change.getValue()),
+                                change.getTimestamp());
+                        write.add(viewWriteFieldChange);
+                        System.out.println("viewWriteFieldChange:" + viewWriteFieldChange);
                     } catch (Exception ex) {
                         throw new CommitChangeException("Failed to add change for the following reason.", ex);
                     }
@@ -419,7 +421,7 @@ public class BaseTasmoTest {
 
         StaleViewFieldStream staleViewFieldStream = new StaleViewFieldStream() {
             @Override
-            public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, String, Long> value) {
+            public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> value) {
                 System.out.println("Encounterd stale fields for:" + viewDescriptor + " value:" + value);
             }
         };
@@ -429,7 +431,8 @@ public class BaseTasmoTest {
                 tenantViewsProvider,
                 viewAsObjectNode,
                 merger,
-                staleViewFieldStream);
+                staleViewFieldStream,
+                1024 * 1024 * 10);
         return new Expectations(viewValueStore, newViews);
 
     }

@@ -22,6 +22,7 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
+import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import java.util.ArrayList;
@@ -43,7 +44,7 @@ public class ViewProviderTest {
     ViewFormatter viewFormatter;
     JsonViewMerger merger = new JsonViewMerger(new ObjectMapper());
     StaleViewFieldStream staleViewFieldStream;
-    RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, String, RuntimeException> store;
+    RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> store;
 
     @BeforeMethod
     public void setUpMethod() throws Exception {
@@ -101,7 +102,8 @@ public class ViewProviderTest {
                 tenantViewsProvider,
                 viewFormatter,
                 merger,
-                staleViewFieldStream);
+                staleViewFieldStream,
+                1024L * 1024L * 10);
 
     }
 
@@ -112,7 +114,7 @@ public class ViewProviderTest {
         ViewValueWriter viewValueWriter = new ViewValueWriter(new ViewValueStore(store, new ViewPathKeyProvider()));
         ViewValueWriter.Transaction transaction = viewValueWriter.begin(new TenantIdAndCentricId(tenantId, new Id(1)));
         transaction.set(new ObjectId("view", new Id(2)), "1", new ObjectId[]{new ObjectId("view", new Id(2))},
-                mapper.writeValueAsString(ImmutableMap.of("title", "booya")), 1);
+                new ViewValue(new long[]{1}, mapper.writeValueAsBytes(ImmutableMap.of("title", "booya"))), 1);
         viewValueWriter.commit(transaction);
 
         ViewDescriptor request = new ViewDescriptor(new TenantIdAndCentricId(tenantId, new Id(1)), new Id(1), new ObjectId("view", new Id(2)));
@@ -121,4 +123,29 @@ public class ViewProviderTest {
         Assert.assertEquals(readView.getViewBody().get("title").asText(), "booya");
     }
 
+    @Test
+    public void testPoisonView() throws Exception {
+
+        viewProvider = new ViewProvider(viewPermissionChecker,
+                viewValueReader,
+                tenantViewsProvider,
+                viewFormatter,
+                merger,
+                staleViewFieldStream,
+                1); // any view over 1 byte should fail.
+
+
+        ObjectMapper mapper = new ObjectMapper();
+        TenantId tenantId = new TenantId("tenantId");
+        ViewValueWriter viewValueWriter = new ViewValueWriter(new ViewValueStore(store, new ViewPathKeyProvider()));
+        ViewValueWriter.Transaction transaction = viewValueWriter.begin(new TenantIdAndCentricId(tenantId, new Id(1)));
+        transaction.set(new ObjectId("view", new Id(2)), "1", new ObjectId[]{new ObjectId("view", new Id(2))},
+                new ViewValue(new long[]{1}, mapper.writeValueAsBytes(ImmutableMap.of("title", "booya"))), 1);
+        viewValueWriter.commit(transaction);
+
+        ViewDescriptor request = new ViewDescriptor(new TenantIdAndCentricId(tenantId, new Id(1)), new Id(1), new ObjectId("view", new Id(2)));
+        ViewResponse readView = (ViewResponse) viewProvider.readView(request);
+        System.out.println("Result:" + readView + " " + readView.getClass());
+
+    }
 }

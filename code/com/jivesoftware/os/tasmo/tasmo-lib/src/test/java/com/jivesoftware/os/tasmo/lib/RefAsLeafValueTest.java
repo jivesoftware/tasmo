@@ -26,11 +26,16 @@ public class RefAsLeafValueTest extends BaseTasmoTest {
         Expectations expectations = initModelPaths(viewClassName + "::" + viewFieldName + "::User.ref_followed");
         ObjectId user1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId)
             .set("ref_followed", new ObjectId("Place", new Id(2))).build()); //2
+
+
         expectations.addExpectation(user1, viewClassName, viewFieldName, new ObjectId[]{ user1 }, "ref_followed",
             "Place_" + new Id(2).toStringForm());
-        expectations.assertExpectation(tenantIdAndCentricId);
-        expectations.clear();
+
         ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
         System.out.println(mapper.writeValueAsString(view));
+
+        expectations.assertExpectation(tenantIdAndCentricId);
+        expectations.clear();
+
     }
 }
