@@ -16,7 +16,6 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.reference.lib.BackRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ForwardRefStreamer;
-import com.jivesoftware.os.tasmo.reference.lib.LatestBackRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import java.util.ArrayList;
@@ -164,9 +163,8 @@ public class PathTraversersFactory {
                 return new ForwardRefStreamer(referenceStore, fieldName);
             case backRefs:
             case count:
-                return new BackRefStreamer(referenceStore, classNames, fieldName);
             case latest_backRef:
-                return new LatestBackRefStreamer(referenceStore, classNames, fieldName);
+                return new BackRefStreamer(referenceStore, classNames, fieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support rev streaming");
         }

@@ -125,46 +125,7 @@ public class ReferenceStore {
         multiBackLinks.multiRowGetAll(tenantIdAndCentricId, callbacks);
         backRefs.callback(null); // EOS
     }
-
-    public void streamLatestBackRef(final TenantIdAndCentricId tenantIdAndCentricId,
-            ObjectId id,
-            Set<String> classNames,
-            String fieldName,
-            final long threadTimestamp,
-            final CallbackStream<ReferenceWithTimestamp> lastestBackRefs) throws Exception {
-
-        LOG.inc("get_latest_aId");
-
-        final AtomicReference<ColumnValueAndTimestamp<ObjectId, byte[], Long>> latestBackRef = new AtomicReference<>();
-
-        List<KeyedColumnValueCallbackStream<ClassAndField_IdKey, ObjectId, byte[], Long>> gets = new ArrayList<>();
-
-        for (String className : classNames) {
-            ClassAndField_IdKey rowKey = new ClassAndField_IdKey(className, fieldName, id);
-            gets.add(new KeyedColumnValueCallbackStream<>(rowKey, new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
-                @Override
-                public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(
-                        ColumnValueAndTimestamp<ObjectId, byte[], Long> backRef) throws Exception {
-                    if (backRef != null) {
-                        ColumnValueAndTimestamp<ObjectId, byte[], Long> highWater = latestBackRef.get();
-                        if (highWater == null || backRef.getTimestamp() > highWater.getTimestamp()) {
-                            latestBackRef.set(backRef);
-                        }
-                    }
-                    return backRef;
-                }
-            }));
-        }
-
-        multiBackLinks.multiRowGetAll(tenantIdAndCentricId, gets);
-
-        ColumnValueAndTimestamp<ObjectId, byte[], Long> latest = latestBackRef.get();
-        if (latest != null) {
-            lastestBackRefs.callback(new ReferenceWithTimestamp(latest.getColumn(), fieldName, latest.getTimestamp()));
-        }
-        lastestBackRefs.callback(null); // eos
-    }
-
+    
     public void batchLink(final TenantIdAndCentricId tenantIdAndCentricId,
             ObjectId from,
             long timestamp,
