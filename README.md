@@ -10,3 +10,5 @@ Tasmo is for significantly read heavy applications which display the same underl
 #### How It Works
 Tasmo based applications declare a set of events and views, where the events are the form data will be written, and the views are the multiple forms it will be read. Views constitute the composition and filtering of event data and are maintained at write time. Tasmo ingests streams of partial updates, and converts them to views by traversing a structural object graph derived from the declared event model. It then writes the event data in the forms required by the various view models.
 
+#### Getting Started
+Check out some Tasmo basics over at [the wiki](https://github.com/jivesoftware/tasmo/wiki).
