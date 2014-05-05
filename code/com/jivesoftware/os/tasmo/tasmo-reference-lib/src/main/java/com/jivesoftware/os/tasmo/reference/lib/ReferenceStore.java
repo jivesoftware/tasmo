@@ -23,10 +23,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Add a link result in the following: A.a -> B @ time TA and B <- A.a @ time TA
+ * Add a link result in the following: A.a -> B
+ *
+ * @ time TA and B <- A.a @ time TA
  *
  * When standing on A the get_bId() streams B,TA
  *
@@ -45,20 +46,20 @@ public class ReferenceStore {
     private final RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks;
 
     public ReferenceStore(
-            ConcurrencyStore concurrencyStore,
-            RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks,
-            RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks) {
+        ConcurrencyStore concurrencyStore,
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks,
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks) {
         this.concurrencyStore = concurrencyStore;
         this.multiLinks = multiLinks;
         this.multiBackLinks = multiBackLinks;
     }
 
     public void streamForwardRefs(final TenantIdAndCentricId tenantIdAndCentricId,
-            final String className,
-            final String fieldName,
-            final ObjectId id,
-            final long threadTimestamp,
-            final CallbackStream<ReferenceWithTimestamp> forwardRefs) {
+        final String className,
+        final String fieldName,
+        final ObjectId id,
+        final long threadTimestamp,
+        final CallbackStream<ReferenceWithTimestamp> forwardRefs) {
 
         LOG.inc("get_bIds");
 
@@ -66,36 +67,36 @@ public class ReferenceStore {
         LOG.trace(System.currentTimeMillis() + " |--> Get bIds Tenant={} A={}", tenantIdAndCentricId, aClassAndField_aId);
 
         multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
-                new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
-                    @Override
-                    public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> bId) throws Exception {
-                        if (bId == null) {
-                            forwardRefs.callback(null); // EOS
-                            return null;
-                        } else {
+            new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
+            @Override
+            public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> bId) throws Exception {
+                if (bId == null) {
+                    forwardRefs.callback(null); // EOS
+                    return null;
+                } else {
 
-                            ReferenceWithTimestamp reference = new ReferenceWithTimestamp(bId.getColumn(), fieldName, bId.getTimestamp());
-                            LOG.trace(System.currentTimeMillis() + " |--> {} Got bIds Tenant={} a={} b={} Timestamp={}", new Object[]{
-                                threadTimestamp, tenantIdAndCentricId, aClassAndField_aId, bId.getColumn(), bId.getTimestamp()});
+                    ReferenceWithTimestamp reference = new ReferenceWithTimestamp(bId.getColumn(), fieldName, bId.getTimestamp());
+                    LOG.trace(System.currentTimeMillis() + " |--> {} Got bIds Tenant={} a={} b={} Timestamp={}", new Object[]{
+                        threadTimestamp, tenantIdAndCentricId, aClassAndField_aId, bId.getColumn(), bId.getTimestamp()});
 
-                            ReferenceWithTimestamp returned = forwardRefs.callback(reference);
-                            if (returned == reference) {
-                                return bId;
-                            } else {
-                                return null;
-                            }
-                        }
+                    ReferenceWithTimestamp returned = forwardRefs.callback(reference);
+                    if (returned == reference) {
+                        return bId;
+                    } else {
+                        return null;
                     }
-                });
+                }
+            }
+        });
 
     }
 
     public void streamBackRefs(final TenantIdAndCentricId tenantIdAndCentricId,
-            final ObjectId id,
-            final Set<String> classNames,
-            final String fieldName,
-            final long threadTimestamp,
-            final CallbackStream<ReferenceWithTimestamp> backRefs) throws Exception {
+        final ObjectId id,
+        final Set<String> classNames,
+        final String fieldName,
+        final long threadTimestamp,
+        final CallbackStream<ReferenceWithTimestamp> backRefs) throws Exception {
 
         LOG.inc("get_aIds");
 
@@ -103,33 +104,33 @@ public class ReferenceStore {
         for (String className : classNames) {
             final ClassAndField_IdKey aClassAndField_bId = new ClassAndField_IdKey(className, fieldName, id);
             callbacks.add(new KeyedColumnValueCallbackStream<>(aClassAndField_bId,
-                    new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
-                        @Override
-                        public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> backRef)
-                        throws Exception {
-                            if (backRef != null) {
-                                ReferenceWithTimestamp reference = new ReferenceWithTimestamp(backRef.getColumn(),
-                                        fieldName, backRef.getTimestamp());
-                                LOG.trace(System.currentTimeMillis() + " |--> {} Got aIds Tenant={} b={} a={} Timestamp={}", new Object[]{
-                                    threadTimestamp, tenantIdAndCentricId, aClassAndField_bId, backRef.getColumn(), backRef.getTimestamp()});
+                new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
+                @Override
+                public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> backRef)
+                    throws Exception {
+                    if (backRef != null) {
+                        ReferenceWithTimestamp reference = new ReferenceWithTimestamp(backRef.getColumn(),
+                            fieldName, backRef.getTimestamp());
+                        LOG.trace(System.currentTimeMillis() + " |--> {} Got aIds Tenant={} b={} a={} Timestamp={}", new Object[]{
+                            threadTimestamp, tenantIdAndCentricId, aClassAndField_bId, backRef.getColumn(), backRef.getTimestamp()});
 
-                                ReferenceWithTimestamp returned = backRefs.callback(reference);
-                                if (returned != reference) {
-                                    return null;
-                                }
-                            }
-                            return backRef;
+                        ReferenceWithTimestamp returned = backRefs.callback(reference);
+                        if (returned != reference) {
+                            return null;
                         }
-                    }));
+                    }
+                    return backRef;
+                }
+            }));
         }
         multiBackLinks.multiRowGetAll(tenantIdAndCentricId, callbacks);
         backRefs.callback(null); // EOS
     }
-    
+
     public void batchLink(final TenantIdAndCentricId tenantIdAndCentricId,
-            ObjectId from,
-            long timestamp,
-            List<BatchLinkTo> batchLinks) throws Exception {
+        ObjectId from,
+        long timestamp,
+        List<BatchLinkTo> batchLinks) throws Exception {
         LOG.inc("batchLink");
         LOG.startTimer("batchLink");
 
@@ -172,14 +173,13 @@ public class ReferenceStore {
             this.fieldName = fieldName;
             this.tos = tos;
         }
-
     }
 
     public void link(final TenantIdAndCentricId tenantIdAndCentricId,
-            long timestamp,
-            ObjectId from,
-            String fieldName,
-            Collection<Reference> tos) throws Exception {
+        long timestamp,
+        ObjectId from,
+        String fieldName,
+        Collection<Reference> tos) throws Exception {
 
         LOG.inc("link");
         LOG.startTimer("link");
@@ -220,11 +220,11 @@ public class ReferenceStore {
     }
 
     public void unlink(final TenantIdAndCentricId tenantIdAndCentricId,
-            final long timestamp,
-            final ObjectId from,
-            final String fieldName,
-            final long threadTimestamp,
-            final CallbackStream<ReferenceWithTimestamp> removedTos) throws Exception {
+        final long timestamp,
+        final ObjectId from,
+        final String fieldName,
+        final long threadTimestamp,
+        final CallbackStream<ReferenceWithTimestamp> removedTos) throws Exception {
 
         //LOG.trace("|--> un-link {}.{}.{} t={}", new Object[]{from.getClassName(), fieldName, from, timestamp});
         LOG.inc("unlink");
@@ -235,37 +235,37 @@ public class ReferenceStore {
         concurrencyStore.updated(tenantIdAndCentricId, from, new String[]{fieldName, "deleted"}, timestamp - 1);
 
         multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
-                new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
-                    @Override
-                    public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> to)
-                    throws Exception {
-                        if (to != null) {
-                            if (to.getTimestamp() < timestamp) {
+            new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
+            @Override
+            public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> to)
+                throws Exception {
+                if (to != null) {
+                    if (to.getTimestamp() < timestamp) {
 
-                                ClassAndField_IdKey aClassAndField_bId = new ClassAndField_IdKey(from.getClassName(),
-                                        fieldName, to.getColumn());
+                        ClassAndField_IdKey aClassAndField_bId = new ClassAndField_IdKey(from.getClassName(),
+                            fieldName, to.getColumn());
 
-                                removedTos.callback(new ReferenceWithTimestamp(to.getColumn(), fieldName, to.getTimestamp()));
+                        removedTos.callback(new ReferenceWithTimestamp(to.getColumn(), fieldName, to.getTimestamp()));
 
-                                multiBackLinks.remove(tenantIdAndCentricId, aClassAndField_bId, from, constantTimestamper);
-                                LOG.trace(System.currentTimeMillis() + "|--> {} removed back link {}.{}.{} t={}", new Object[]{threadTimestamp,
-                                    aClassAndField_bId.getClassName(),
-                                    aClassAndField_bId.getFieldName(),
-                                    aClassAndField_bId.getObjectId(),
-                                    constantTimestamper.get()
-                                });
-                                multiLinks.remove(tenantIdAndCentricId, aClassAndField_aId, to.getColumn(), constantTimestamper);
-                                LOG.trace(System.currentTimeMillis() + "|--> {} removed forward link {}.{}.{} t={}", new Object[]{threadTimestamp,
-                                    aClassAndField_aId.getClassName(),
-                                    aClassAndField_aId.getFieldName(),
-                                    aClassAndField_aId.getObjectId(),
-                                    constantTimestamper.get()
-                                });
-                            }
-                        }
-                        return to;
+                        multiBackLinks.remove(tenantIdAndCentricId, aClassAndField_bId, from, constantTimestamper);
+                        LOG.trace(System.currentTimeMillis() + "|--> {} removed back link {}.{}.{} t={}", new Object[]{threadTimestamp,
+                            aClassAndField_bId.getClassName(),
+                            aClassAndField_bId.getFieldName(),
+                            aClassAndField_bId.getObjectId(),
+                            constantTimestamper.get()
+                        });
+                        multiLinks.remove(tenantIdAndCentricId, aClassAndField_aId, to.getColumn(), constantTimestamper);
+                        LOG.trace(System.currentTimeMillis() + "|--> {} removed forward link {}.{}.{} t={}", new Object[]{threadTimestamp,
+                            aClassAndField_aId.getClassName(),
+                            aClassAndField_aId.getFieldName(),
+                            aClassAndField_aId.getObjectId(),
+                            constantTimestamper.get()
+                        });
                     }
-                });
+                }
+                return to;
+            }
+        });
 
         concurrencyStore.updated(tenantIdAndCentricId, from, new String[]{fieldName, "deleted"}, timestamp);
 

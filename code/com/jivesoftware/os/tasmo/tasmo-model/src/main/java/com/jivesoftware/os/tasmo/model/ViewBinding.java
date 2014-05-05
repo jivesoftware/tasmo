@@ -51,6 +51,10 @@ public class ViewBinding {
         validate();
     }
 
+    public ViewBinding(String viewClassName, List<ModelPath> modelPaths, boolean idCentric, boolean notifiable) {
+        this(viewClassName, modelPaths, true, idCentric, notifiable, null);
+    }
+
     private void validate() {
         Set<String> ensurePathIdsAreUnique = new HashSet<>();
         Set<Integer> ensurePathIdHashCodesAreUnique = new HashSet<>();

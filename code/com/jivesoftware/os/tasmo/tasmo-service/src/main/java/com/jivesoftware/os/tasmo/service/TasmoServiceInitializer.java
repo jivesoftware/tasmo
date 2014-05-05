@@ -88,69 +88,68 @@ public class TasmoServiceInitializer {
     }
 
     public static CallbackStream<List<WrittenEvent>> initializeEventIngressCallbackStream(
-            OrderIdProvider threadTimestamp,
-            ViewsProvider viewsProvider,
-            WrittenEventProvider eventProvider,
-            SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
-            EventValueCacheProvider eventValueCacheProvider,
-            CommitChange changeWriter,
-            ViewChangeNotificationProcessor viewChangeNotificationProcessor,
-            CallbackStream<List<BookkeepingEvent>> bookKeepingStream,
-            final Optional<WrittenEventProcessorDecorator> writtenEventProcessorDecorator,
-            TasmoEdgeReport tasmoEdgeReport,
-            TasmoServiceConfig config) throws IOException {
+        OrderIdProvider threadTimestamp,
+        ViewsProvider viewsProvider,
+        WrittenEventProvider eventProvider,
+        SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+        EventValueCacheProvider eventValueCacheProvider,
+        CommitChange changeWriter,
+        ViewChangeNotificationProcessor viewChangeNotificationProcessor,
+        CallbackStream<List<BookkeepingEvent>> bookKeepingStream,
+        final Optional<WrittenEventProcessorDecorator> writtenEventProcessorDecorator,
+        TasmoEdgeReport tasmoEdgeReport,
+        TasmoServiceConfig config) throws IOException {
 
-        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore
-                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.event.values", "v",
-                                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
-                                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-                                        (TypeMarshaller<OpaqueFieldValue>) eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore =
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.event.values", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
+            new ObjectIdMarshaller(), new StringTypeMarshaller(),
+            (TypeMarshaller<OpaqueFieldValue>) eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
 
-        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyTable
-                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
-                        "tasmo.multi.version.concurrency", "v",
-                                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
-                                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-                                        new LongTypeMarshaller()), new CurrentTimestamper()));
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyTable =
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
+            "tasmo.multi.version.concurrency", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
+            new ObjectIdMarshaller(), new StringTypeMarshaller(),
+            new LongTypeMarshaller()), new CurrentTimestamper()));
 
         ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrencyTable);
 
         EventValueStore eventValueStore = new EventValueStore(concurrencyStore, eventStore, eventValueCacheProvider);
-        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks
-                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.links", "v",
-                                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-                                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks =
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.links", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
+            new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
 
-        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks
-                = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.back.links", "v",
-                                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-                                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks =
+            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.back.links", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
+            new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
 
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, multiLinks, multiBackLinks);
 
-        TasmoEventBookkeeper bookkeeper
-                = new TasmoEventBookkeeper(bookKeepingStream);
+        TasmoEventBookkeeper bookkeeper = new TasmoEventBookkeeper(bookKeepingStream);
         TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
         ConcurrencyAndExistanceCommitChange existenceCommitChange = new ConcurrencyAndExistanceCommitChange(concurrencyStore, changeWriter);
 
         ThreadFactory pathProcessorThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("path-processor-%d")
-                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
-                    }
-                })
-                .build();
+            .setNameFormat("path-processor-%d")
+            .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
+            }
+        })
+            .build();
 
         ExecutorService pathProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), pathProcessorThreadFactory);
         ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(pathProcessorThreads);
 
         final TasmoViewModel tasmoViewModel = new TasmoViewModel(pathExecutors,
-                masterTenantId,
-                viewsProvider,
-                concurrencyStore,
-                referenceStore);
+            masterTenantId,
+            viewsProvider,
+            concurrencyStore,
+            referenceStore);
 
         tasmoViewModel.loadModel(masterTenantId);
 
@@ -166,7 +165,6 @@ public class TasmoServiceInitializer {
         }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);
 
         WrittenEventProcessorDecorator bookKeepingEventProcessor = new WrittenEventProcessorDecorator() {
-
             @Override
             public WrittenEventProcessor decorateWrittenEventProcessor(WrittenEventProcessor writtenEventProcessor) {
                 EventBookKeeper eventBookKeeper = new EventBookKeeper(writtenEventProcessor);
@@ -182,51 +180,51 @@ public class TasmoServiceInitializer {
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(bookKeepingEventProcessor, threadTimestamp);
         final TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
-                eventProvider,
-                concurrencyStore,
-                retryingEventTraverser,
-                viewChangeNotificationProcessor,
-                new WrittenInstanceHelper(),
-                eventValueStore,
-                referenceStore,
-                existenceCommitChange,
-                tasmoEdgeReport);
+            eventProvider,
+            concurrencyStore,
+            retryingEventTraverser,
+            viewChangeNotificationProcessor,
+            new WrittenInstanceHelper(),
+            eventValueStore,
+            referenceStore,
+            existenceCommitChange,
+            tasmoEdgeReport);
 
 
         ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("event-processor-%d")
-                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
-                    }
-                })
-                .build();
+            .setNameFormat("event-processor-%d")
+            .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
+            }
+        })
+            .build();
 
         ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
         TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
-                tasmoEventProcessor,
-                eventProcessorThreads);
+            tasmoEventProcessor,
+            eventProcessorThreads);
 
         EventIngressCallbackStream eventIngressCallbackStream = new EventIngressCallbackStream(materializer);
         Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()
-                .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
-                .withStopStrategy(StopStrategies.stopAfterDelay(TimeUnit.SECONDS.toSeconds(30))) // TODO expose to config
-                .retryIfException(new Predicate<Throwable>() {
-                    @Override
-                    public boolean apply(Throwable t) {
-                        LOG.error("Ingress failed due to: " + t);
-                        LOG.debug("", t);
-                        LOG.inc("ingress>errors");
-                        if (t instanceof InterruptedException) {
-                            Thread.currentThread().interrupt();
-                            return false;
-                        } else {
-                            return Exception.class.isAssignableFrom(t.getClass()) | RuntimeException.class.isAssignableFrom(t.getClass());
-                        }
-                    }
-                })
-                .build();
+            .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
+            .withStopStrategy(StopStrategies.stopAfterDelay(TimeUnit.SECONDS.toSeconds(30))) // TODO expose to config
+            .retryIfException(new Predicate<Throwable>() {
+            @Override
+            public boolean apply(Throwable t) {
+                LOG.error("Ingress failed due to: " + t);
+                LOG.debug("", t);
+                LOG.inc("ingress>errors");
+                if (t instanceof InterruptedException) {
+                    Thread.currentThread().interrupt();
+                    return false;
+                } else {
+                    return Exception.class.isAssignableFrom(t.getClass()) | RuntimeException.class.isAssignableFrom(t.getClass());
+                }
+            }
+        })
+            .build();
 
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
             @Override

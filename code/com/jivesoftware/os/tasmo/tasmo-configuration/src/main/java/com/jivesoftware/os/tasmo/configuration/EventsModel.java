@@ -23,6 +23,10 @@ public class EventsModel {
 
     public void addEvent(ObjectNode eventNode) {
         EventModel eventConfiguration = EventModel.builder(eventNode, true).build();
+        addEvent(eventConfiguration);
+    }
+
+    public void addEvent(EventModel eventConfiguration) {
         pantheon.put(eventConfiguration.getEventClass(), eventConfiguration);
     }
 }
