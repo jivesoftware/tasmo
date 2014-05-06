@@ -43,9 +43,9 @@ public class PathTraverser {
     }
 
 
-    public void travers(TenantIdAndCentricId tenantIdAndCentricId,
-            PathTraversalContext context,
-            PathId pathId) throws Exception {
+    public void traverse(TenantIdAndCentricId tenantIdAndCentricId,
+                         PathTraversalContext context,
+                         PathId pathId) throws Exception {
         StepStream stepStream = streamerFactory.create(tenantIdAndCentricId, context);
         stepStream.stream(pathId);
     }

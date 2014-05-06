@@ -1,6 +1,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.collect.ListMultimap;
+import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
@@ -20,25 +21,14 @@ import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import com.jivesoftware.os.tasmo.model.process.InMemoryModifiedViewProvider;
-import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
-import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
-import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
-import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
-import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
-import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
+import com.jivesoftware.os.tasmo.model.process.*;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore.BatchLinkTo;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ExistenceUpdate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+
+import java.util.*;
 
 /**
  *
@@ -248,7 +238,7 @@ public class TasmoEventProcessor {
             long timestamp,
             ObjectId instanceId) {
 
-        ListMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
+        SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
         Set<String> fieldNames = new HashSet<>();
         for (TasmoViewModel.FieldNameAndType fieldNameAndType : eventModel.get(className)) {
             if (fieldNameAndType.getFieldType() == ModelPathStepType.value) {
@@ -271,7 +261,7 @@ public class TasmoEventProcessor {
                 timestamp,
                 instanceId);
 
-        ListMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
+        SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
 
         List<String> refFieldNames = new ArrayList<>();
         for (TasmoViewModel.FieldNameAndType fieldNameAndType : eventModel.get(className)) {

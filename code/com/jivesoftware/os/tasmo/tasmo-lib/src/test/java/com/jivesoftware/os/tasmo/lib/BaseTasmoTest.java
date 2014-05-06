@@ -11,6 +11,7 @@ package com.jivesoftware.os.tasmo.lib;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
@@ -22,23 +23,12 @@ import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
+import com.jivesoftware.os.tasmo.configuration.BindingGenerator;
+import com.jivesoftware.os.tasmo.configuration.ViewModel;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
-import com.jivesoftware.os.tasmo.event.api.write.Event;
-import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
-import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
-import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
-import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
-import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
-import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
-import com.jivesoftware.os.tasmo.id.ChainedVersion;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.IdProvider;
-import com.jivesoftware.os.tasmo.id.IdProviderImpl;
-import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.event.api.write.*;
+import com.jivesoftware.os.tasmo.id.*;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
@@ -72,35 +62,22 @@ import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
-import com.jivesoftware.os.tasmo.view.reader.service.StaleViewFieldStream;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewAsObjectNode;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionCheckResult;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewProvider;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
+import com.jivesoftware.os.tasmo.view.reader.service.*;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriterException;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.UUID;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  *
@@ -352,7 +329,7 @@ public class BaseTasmoTest {
             }
         };
 
-        tasmoViewModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
+        tasmoViewModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),//MoreExecutors.sameThreadExecutor()),
                 MASTER_TENANT_ID,
                 viewsProvider,
                 concurrencyStore,
@@ -382,6 +359,17 @@ public class BaseTasmoTest {
                 Executors.newSingleThreadExecutor());
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
+    }
+
+    Expectations initModelPaths(ArrayNode views) throws Exception {
+        List<ViewBinding> viewBindingsList = new LinkedList<>();
+        BindingGenerator bindingGenerator = new BindingGenerator();
+
+        for (JsonNode view : views) {
+            ViewModel viewConfiguration = ViewModel.builder((ObjectNode) view).build();
+            viewBindingsList.add(bindingGenerator.generate(null, viewConfiguration));
+        }
+        return initModelPaths(viewBindingsList);
     }
 
     Expectations initModelPaths(List<ViewBinding> bindings) throws Exception {
@@ -422,7 +410,7 @@ public class BaseTasmoTest {
         StaleViewFieldStream staleViewFieldStream = new StaleViewFieldStream() {
             @Override
             public void stream(ViewDescriptor viewDescriptor, ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> value) {
-                System.out.println("Encounterd stale fields for:" + viewDescriptor + " value:" + value);
+                System.out.println("Encountered stale fields for:" + viewDescriptor + " value:" + value);
             }
         };
 

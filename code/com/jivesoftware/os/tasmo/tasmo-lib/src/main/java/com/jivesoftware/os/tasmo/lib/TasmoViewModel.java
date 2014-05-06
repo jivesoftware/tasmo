@@ -1,9 +1,8 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Maps;
+import com.google.common.base.Objects;
+import com.google.common.collect.*;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
@@ -11,16 +10,7 @@ import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversalContext;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraverserKey;
-import com.jivesoftware.os.tasmo.lib.process.traversal.PathAtATimeStepStreamerFactory;
-import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraverser;
-import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraverserKey;
-import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraversersFactory;
-import com.jivesoftware.os.tasmo.lib.process.traversal.PrefixCollapsedStepStreamerFactory;
-import com.jivesoftware.os.tasmo.lib.process.traversal.StepTree;
-import com.jivesoftware.os.tasmo.lib.process.traversal.TraversablePath;
+import com.jivesoftware.os.tasmo.lib.process.traversal.*;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -30,11 +20,8 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class TasmoViewModel {
@@ -46,14 +33,14 @@ public class TasmoViewModel {
     private final ConcurrencyStore concurrencyStore;
     private final ReferenceStore referenceStore;
     private final StripingLocksProvider<TenantId> loadModelLocks = new StripingLocksProvider<>(1024);
-    private final ListeningExecutorService pathExectors;
+    private final ListeningExecutorService pathExecutors;
 
-    public TasmoViewModel(ListeningExecutorService pathExectors,
+    public TasmoViewModel(ListeningExecutorService pathExecutors,
             TenantId masterTenantId,
             ViewsProvider viewsProvider,
             ConcurrencyStore concurrencyStore,
             ReferenceStore referenceStore) {
-        this.pathExectors = pathExectors;
+        this.pathExecutors = pathExecutors;
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.concurrencyStore = concurrencyStore;
@@ -95,7 +82,7 @@ public class TasmoViewModel {
 
                     if (views != null) {
                         ListMultimap<String, InitiateTraversal> dispatchers = bindModelPaths(views);
-                        ListMultimap<String, FieldNameAndType> eventModel = bindEventFieldTypes(views);
+                        SetMultimap<String, FieldNameAndType> eventModel = bindEventFieldTypes(views);
                         Set<String> notifiableViewClassNames = buildNotifiableViewClassNames(views);
                         versionedViewModels.put(tenantId, new VersionedTasmoViewModel(views.getVersion(), dispatchers, eventModel, notifiableViewClassNames));
                     } else {
@@ -119,8 +106,8 @@ public class TasmoViewModel {
         return notifiableViewClassNames;
     }
 
-    private ListMultimap<String, FieldNameAndType> bindEventFieldTypes(Views views) throws IllegalArgumentException {
-        ListMultimap<String, FieldNameAndType> eventModel = ArrayListMultimap.create();
+    private SetMultimap<String, FieldNameAndType> bindEventFieldTypes(Views views) throws IllegalArgumentException {
+        SetMultimap<String, FieldNameAndType> eventModel = HashMultimap.create();
         for (ViewBinding viewBinding : views.getViewBindings()) {
             boolean idCentric = viewBinding.isIdCentric();
             for (ModelPath modelPath : viewBinding.getModelPaths()) {
@@ -168,6 +155,36 @@ public class TasmoViewModel {
             return idCentric;
         }
 
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                    .add("fieldName", fieldName)
+                    .add("fieldType", fieldType)
+                    .add("idCentric", idCentric)
+                    .toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            FieldNameAndType that = (FieldNameAndType) o;
+
+            if (idCentric != that.idCentric) return false;
+            if (fieldName != null ? !fieldName.equals(that.fieldName) : that.fieldName != null) return false;
+            if (fieldType != that.fieldType) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = fieldName != null ? fieldName.hashCode() : 0;
+            result = 31 * result + (fieldType != null ? fieldType.hashCode() : 0);
+            result = 31 * result + (idCentric ? 1 : 0);
+            return result;
+        }
     }
 
     private ListMultimap<String, InitiateTraversal> bindModelPaths(Views views) throws IllegalArgumentException {
@@ -253,18 +270,20 @@ public class TasmoViewModel {
             }
             ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore);
 
-//            InitiateTraversal initiateTraversal = new InitiateTraversal(concurrencyChecker,
+//            InitiateTraversal initiateTraversal = new InitiateTraversal(
+//                    pathExecutors,
+//                    concurrencyChecker,
 //                    transformToPathAtATime(valueTraversers),
 //                    referenceStore,
 //                    transformToPathAtATime(refTraversers),
 //                    transformToPathAtATime(backRefTraversers));
 
-            InitiateTraversal initiateTraversal = new InitiateTraversal(pathExectors,
+            InitiateTraversal initiateTraversal = new InitiateTraversal(pathExecutors,
                     concurrencyChecker,
-                    transformToPrefixCollapsedTree("values", valueTraversers),
+                    transformToPathAtATime(valueTraversers),
                     referenceStore,
-                    transformToPrefixCollapsedTree("refs", refTraversers),
-                    transformToPrefixCollapsedTree("backrefs", backRefTraversers));
+                    transformToPathAtATime(refTraversers),
+                    transformToPathAtATime(backRefTraversers));
 
             all.put(eventClassName, initiateTraversal);
         }

@@ -112,7 +112,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
                                     context.addVersions(pathTraverser.getPathIndex(), valueVersions);
 
                                     //long start = System.currentTimeMillis();
-                                    pathTraverser.travers(tenantIdAndCentricId, context, new PathId(instanceId, timestamp));
+                                    pathTraverser.traverse(tenantIdAndCentricId, context, new PathId(instanceId, timestamp));
                                     //writtenEventContext.getProcessingStats().latency("PATH", pathTraverser.toString(), System.currentTimeMillis() - start);
                                     writtenEventContext.valuePaths++;
                                     return context.takeChanges(); // TODO add auto flush if writeableChanges is getting to be to large.
@@ -141,7 +141,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
                                 context.setPathId(pathTraverser.getPathIndex(), instanceId, timestamp);
                                 context.addVersions(pathTraverser.getPathIndex(), valueVersions);
                                 //long start = System.currentTimeMillis();
-                                pathTraverser.travers(tenantIdAndCentricId, context, new PathId(instanceId, timestamp));
+                                pathTraverser.traverse(tenantIdAndCentricId, context, new PathId(instanceId, timestamp));
                                 //writtenEventContext.getProcessingStats().latency("PATH", pathTraverser.toString(), System.currentTimeMillis() - start);
                                 writtenEventContext.valuePaths++;
                                 for (ReferenceWithTimestamp valueVersion : valueVersions) {
@@ -270,7 +270,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
             context.setPathId(pathTraverser.getPathIndex(), from.getObjectId(), from.getTimestamp());
             context.addVersion(pathTraverser.getPathIndex(), from);
 
-            pathTraverser.travers(tenantIdAndCentricId, context, new PathId(to.getObjectId(), to.getTimestamp()));
+            pathTraverser.traverse(tenantIdAndCentricId, context, new PathId(to.getObjectId(), to.getTimestamp()));
             writtenEventContext.refPaths++;
             writeableChanges.addAll(context.takeChanges()); // TODO add auto flush if writeableChanges is getting to be to large.
         }
@@ -280,7 +280,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
             context.setPathId(pathTraverser.getPathIndex(), to.getObjectId(), to.getTimestamp());
             context.addVersion(pathTraverser.getPathIndex(), from);
 
-            pathTraverser.travers(tenantIdAndCentricId, context, new PathId(instanceId, to.getTimestamp()));
+            pathTraverser.traverse(tenantIdAndCentricId, context, new PathId(instanceId, to.getTimestamp()));
             writtenEventContext.backRefPaths++;
             writeableChanges.addAll(context.takeChanges()); // TODO add auto flush if writeableChanges is getting to be to large.
         }
