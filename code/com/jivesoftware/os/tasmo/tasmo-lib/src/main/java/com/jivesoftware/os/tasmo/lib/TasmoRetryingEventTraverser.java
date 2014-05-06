@@ -41,9 +41,12 @@ public class TasmoRetryingEventTraverser {
             attempts++;
             try {
                 long start = System.currentTimeMillis();
-                WrittenEventProcessor writtenEventProcessor = writtenEventProcessorDecorator.decorateWrittenEventProcessor(initiateTraversal);
-                writtenEventProcessor.process(writtenEventContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
-                writtenEventContext.getProcessingStats().latency("EVENT TRAVERSAL", instanceClassName, System.currentTimeMillis() - start);
+                WrittenEventProcessor writtenEventProcessor =
+                        writtenEventProcessorDecorator.decorateWrittenEventProcessor(initiateTraversal);
+                writtenEventProcessor.process(
+                        writtenEventContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+                writtenEventContext.getProcessingStats().latency(
+                        "EVENT TRAVERSAL", instanceClassName, System.currentTimeMillis() - start);
                 break;
             } catch (Exception e) {
                 boolean pathModifiedException = false;
