@@ -96,7 +96,7 @@ public class TasmoViewMaterializer {
             batchCompletionLatch.await();
 
             for (Future future : futures) {
-                future.get(); // progegate exceptions to caller.
+                future.get(); // progagate exceptions to caller.
             }
 
             tasmoEventBookkeeper.succeeded();

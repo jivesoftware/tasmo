@@ -23,14 +23,14 @@ import java.util.Set;
  *
  * @author jonathan
  */
-public class ConcurrencyAndExistanceCommitChange implements CommitChange {
+public class ConcurrencyAndExistenceCommitChange implements CommitChange {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final ConcurrencyStore concurrencyStore;
     private final CommitChange commitChange;
 
-    public ConcurrencyAndExistanceCommitChange(ConcurrencyStore concurrencyStore,
+    public ConcurrencyAndExistenceCommitChange(ConcurrencyStore concurrencyStore,
             CommitChange commitChange) {
         this.concurrencyStore = concurrencyStore;
         this.commitChange = commitChange;

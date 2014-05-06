@@ -11,6 +11,7 @@ package com.jivesoftware.os.tasmo.model.path;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Sets;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,11 +34,11 @@ public class ModelPathStep {
     // only public for jackson
     @JsonCreator
     public ModelPathStep(@JsonProperty("isRootId") boolean isRootId,
-            @JsonProperty("originClassName") Set<String> originClassName,
-            @JsonProperty("refFieldName") String refFieldName,
-            @JsonProperty("stepType") ModelPathStepType stepType,
-            @JsonProperty("destinationClassName") Set<String> destinationClassName,
-            @JsonProperty("fieldNames") List<String> fieldNames) {
+        @JsonProperty("originClassName") Set<String> originClassName,
+        @JsonProperty("refFieldName") String refFieldName,
+        @JsonProperty("stepType") ModelPathStepType stepType,
+        @JsonProperty("destinationClassName") Set<String> destinationClassName,
+        @JsonProperty("fieldNames") List<String> fieldNames) {
 
         this.isRootId = isRootId;
         this.originClassName = originClassName;
@@ -71,6 +72,14 @@ public class ModelPathStep {
             this.destinationClassName = destinationClassName;
         }
 
+    }
+
+    public ModelPathStep(boolean isRootId, String originClassName, String refFieldName, ModelPathStepType stepType, String destinationClassName) {
+        this(isRootId, Sets.newHashSet(originClassName), refFieldName, stepType, Sets.newHashSet(destinationClassName), null);
+    }
+
+    public ModelPathStep(boolean isRootId, String originClassName, List<String> valueFields) {
+        this(isRootId, Sets.newHashSet(originClassName), null, ModelPathStepType.value, null, valueFields);
     }
 
     public boolean getIsRootId() {
@@ -175,5 +184,4 @@ public class ModelPathStep {
         }
         return true;
     }
-
 }

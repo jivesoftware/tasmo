@@ -32,6 +32,7 @@ public class EventValueStore {
             EventValueCacheProvider cacheProvider) {
         this.concurrencyStore = concurrencyStore;
         this.eventValueStore = classFieldValueStore;
+        //cache provider is currently unused, but we've left it wired in
     }
 
     public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] get(
