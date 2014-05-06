@@ -280,10 +280,10 @@ public class TasmoViewModel {
 
             InitiateTraversal initiateTraversal = new InitiateTraversal(pathExecutors,
                     concurrencyChecker,
-                    transformToPathAtATime(valueTraversers),
+                    transformToPrefixCollapsedTree("values", valueTraversers),
                     referenceStore,
-                    transformToPathAtATime(refTraversers),
-                    transformToPathAtATime(backRefTraversers));
+                    transformToPrefixCollapsedTree("refs", refTraversers),
+                    transformToPrefixCollapsedTree("backrefs", backRefTraversers));
 
             all.put(eventClassName, initiateTraversal);
         }
