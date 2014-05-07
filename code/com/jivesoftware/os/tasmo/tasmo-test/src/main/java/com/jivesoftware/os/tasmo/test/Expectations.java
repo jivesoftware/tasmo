@@ -10,11 +10,14 @@ package com.jivesoftware.os.tasmo.test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
@@ -22,6 +25,7 @@ import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import java.io.ByteArrayInputStream;
@@ -141,7 +145,7 @@ public class Expectations {
         expectations.add(new Expectation(testCase, viewId, viewClassName, viewFieldName, modelPath, pathIds, fieldName, value));
     }
 
-    void assertExpectation(TenantIdAndCentricId tenantIdAndCentricId) throws IOException {
+    void assertExpectations(TenantIdAndCentricId tenantIdAndCentricId, ObjectNode view) throws IOException {
         List<AssertNode> asserts = new ArrayList<>();
         for (Expectation expectation : expectations) {
             ViewValue got = viewValueStore.get(tenantIdAndCentricId,
@@ -152,30 +156,10 @@ public class Expectations {
             if (got != null) {
                 node = MAPPER.readValue(new ByteArrayInputStream(got.getValue()), JsonNode.class);
             }
-            try {
-                if (expectation.value == null) {
-                    if (node != null) {
-                        JsonNode value = node.get(expectation.fieldName);
-                        if (value != null) {
-                            Assert.assertTrue(value instanceof NullNode,
-                                    "value:" + value + " expected to be a NullNode but was " + value.getClass() + "  " + expectation.toString());
-                        }
-                    }
-                } else {
-                    JsonNode was;
-                    if (node != null && expectation.fieldName != null) {
-                        was = node.get(expectation.fieldName);
-                    } else {
-                        was = node;
-                    }
-                    JsonNode want = MAPPER.convertValue(expectation.value, JsonNode.class);
-                    //Assert.assertEquals(was, want, expectation.toString() + " WANTED: " + want + " but WAS:" + was);
-
-                    asserts.add(new AssertNode(expectation, want, was));
-                }
-            } catch (IllegalArgumentException x) {
-                System.out.println("Failed while asserting " + expectation);
-                throw x;
+            assertExpectation(expectation, node, asserts);
+            node = findExpectationNode(expectation.path.getPathMembers(), expectation.modelPathInstanceIds, view, expectation.value != null);
+            if (node != null) {
+                assertExpectation(expectation, node, asserts);
             }
         }
         StringBuilder errors = new StringBuilder();
@@ -187,6 +171,87 @@ public class Expectations {
         if (errors.length() > 0) {
             Assert.fail(errors.toString());
         }
+    }
+
+    private void assertExpectation(Expectation expectation, JsonNode node, List<AssertNode> asserts) {
+        try {
+            if (expectation.value == null) {
+                if (node != null) {
+                    JsonNode value = node.get(expectation.fieldName);
+                    if (value != null) {
+                        Assert.assertTrue(value instanceof NullNode,
+                                "value:" + value + " expected to be a NullNode but was " + value.getClass() + "  " + expectation.toString());
+                    }
+                }
+            } else {
+                JsonNode was;
+                if (node != null && expectation.fieldName != null) {
+                    was = node.get(expectation.fieldName);
+                } else {
+                    was = node;
+                }
+                JsonNode want = MAPPER.convertValue(expectation.value, JsonNode.class);
+                //Assert.assertEquals(was, want, expectation.toString() + " WANTED: " + want + " but WAS:" + was);
+
+                asserts.add(new AssertNode(expectation, want, was));
+            }
+        } catch (IllegalArgumentException x) {
+            System.out.println("Failed while asserting " + expectation);
+            throw x;
+        }
+    }
+
+    private JsonNode findExpectationNode(List<ModelPathStep> pathMembers, ObjectId[] ids, JsonNode node, boolean shouldBePresent) {
+        if (shouldBePresent) {
+            Assert.assertNotNull(node);
+        } else if (node == null) {
+            return null;
+        }
+        if (ids.length == 1) {
+            String objectId = node.get(ReservedFields.VIEW_OBJECT_ID).asText();
+            Assert.assertEquals(objectId, ids[0].toStringForm(), "Unexpected objectId");
+            return node;
+        }
+        ModelPathStep firstStep = pathMembers.get(0);
+        String fieldName = firstStep.getRefFieldName();
+        switch (firstStep.getStepType()) {
+            case backRefs:
+                fieldName = ReservedFields.ALL_BACK_REF_FIELD_PREFIX + fieldName;
+                break;
+            case latest_backRef:
+                fieldName = ReservedFields.LATEST_BACK_REF_FIELD_PREFIX + fieldName;
+                break;
+            case count:
+                // Count nodes don't bring values, nothing to validate
+                return null;
+        }
+        JsonNode subNode = node.get(fieldName);
+        if (shouldBePresent) {
+            Assert.assertNotNull(subNode, "Expected field " + fieldName + " in JSON " + node);
+        } else if (subNode == null) {
+            return null;
+        }
+        if (subNode instanceof ArrayNode) {
+            Assert.assertTrue(firstStep.getStepType() == ModelPathStepType.backRefs || firstStep.getStepType() == ModelPathStepType.refs,
+                    "Encountered array for " + fieldName + " in " + node + ", single value expected");
+            JsonNode nodeInArray = null;
+            for (JsonNode jsonNode : subNode) {
+                JsonNode idNode = jsonNode.get(ReservedFields.VIEW_OBJECT_ID);
+                if (idNode != null && ids[1].toStringForm().equals(idNode.asText())) {
+                    nodeInArray = jsonNode;
+                    break;
+                }
+            }
+            // Technically we could skip this, assign jsonNode to subNode directly above and let recursion handle it.
+            // But the assertion wouldn't be informative in this case.
+            if (shouldBePresent) {
+                Assert.assertNotNull(nodeInArray, "Didn't find expected id " + ids[1] + " in " + fieldName + " of " + node);
+            } else if (nodeInArray == null) {
+                return null;
+            }
+            subNode = nodeInArray;
+        }
+        return findExpectationNode(pathMembers.subList(1, pathMembers.size()), Arrays.copyOfRange(ids, 1, ids.length), subNode, shouldBePresent);
     }
 
     static class AssertNode {

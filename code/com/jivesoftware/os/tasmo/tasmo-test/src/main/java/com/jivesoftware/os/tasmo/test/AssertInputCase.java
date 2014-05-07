@@ -88,13 +88,13 @@ public class AssertInputCase {
             println("***** category:" + ic.category + " testId:" + ic.testId + " BUILDING ASSERTIONS *****");
             expectations.buildExpectations(ic.testId, expectations, ic.binding, ic.input, ic.deletedId);
 
-            println("***** category:" + ic.category + " testId:" + ic.testId + " ASSERTING *****");
-            expectations.assertExpectation(tenantIdAndCentricId);
-            expectations.clear();
-
             println("***** category:" + ic.category + " testId:" + ic.testId + " OUTPUT *****");
             ObjectNode view = ic.materialization.readView(tenantIdAndCentricId, actorId, ic.input.getViewId());
             println(ic.materialization.mapper.writeValueAsString(view));
+
+            println("***** category:" + ic.category + " testId:" + ic.testId + " ASSERTING *****");
+            expectations.assertExpectations(tenantIdAndCentricId, view);
+            expectations.clear();
 
             if (!ic.category.equals("removes")) {
                 List<AssertionResult> allBranchResults = new ArrayList<>();
