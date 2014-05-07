@@ -2,7 +2,6 @@ package com.jivesoftware.os.tasmo.reference.lib;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantKeyedColumnValueCallbackStream;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantRowColumnTimestampRemove;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import java.util.ArrayList;
@@ -25,14 +24,12 @@ public class ReferenceMultiGet {
         this.maxBatchSize = maxBatchSize;
     }
 
-
     public void add(ReferenceRequest referenceRequest) {
-
     }
 
     public void pump() {
         List<ReferenceRequest> batch = new ArrayList<>();
-        while(batch.size() < maxBatchSize) {
+        while (batch.size() < maxBatchSize) {
             ReferenceRequest referenceRequest = referenceRequests.poll();
             if (referenceRequest == null) {
                 break;
@@ -48,6 +45,7 @@ public class ReferenceMultiGet {
     }
 
     public static class ReferenceRequest {
+
         private final TenantIdAndCentricId tenantIdAndCentricId;
         private final ObjectId referringObjectId;
         private final long readTime;
@@ -63,10 +61,10 @@ public class ReferenceMultiGet {
             this.readTime = readTime;
             this.referencedIdsStream = referencedIdsStream;
         }
-
     }
 
     public static class ReferenceResponse {
+
         private final TenantIdAndCentricId tenantIdAndCentricId;
         private final ObjectId referringObjectId;
         private final long readTime;

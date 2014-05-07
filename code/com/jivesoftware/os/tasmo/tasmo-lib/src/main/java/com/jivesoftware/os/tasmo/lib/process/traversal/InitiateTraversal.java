@@ -198,7 +198,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
                                 @Override
                                 public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                     if (to != null && to.getTimestamp() < timestamp) {
-                                        travers(writtenEventContext,
+                                        traverse(writtenEventContext,
                                                 tenantIdAndCentricId, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, true,
                                                 writeableChanges);
                                     }
@@ -234,7 +234,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
                                     @Override
                                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                         if (to != null) {
-                                            travers(writtenEventContext,
+                                            traverse(writtenEventContext,
                                                     tenantIdAndCentricId, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, false,
                                                     writeableChanges);
                                         }
@@ -251,7 +251,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
 
     }
 
-    private void travers(final WrittenEventContext writtenEventContext,
+    private void traverse(final WrittenEventContext writtenEventContext,
             final TenantIdAndCentricId tenantIdAndCentricId,
             final WrittenEvent writtenEvent,
             InitiateTraverserKey key,

@@ -29,7 +29,7 @@ import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.*;
 import com.jivesoftware.os.tasmo.id.*;
-import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
@@ -307,7 +307,7 @@ public class BaseTasmoTest {
             }
         };
 
-        commitChange = new ConcurrencyAndExistanceCommitChange(concurrencyStore, commitChange);
+        commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, commitChange);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
                 new CallbackStream<List<BookkeepingEvent>>() {

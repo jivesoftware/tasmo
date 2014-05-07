@@ -12,13 +12,13 @@ import javax.annotation.Nullable;
 public class ViewResponse {
 
     public enum StatusCode {
+
         OK,
         ERROR,
         NOT_FOUND,
         FORBIDDEN,
-        TO_LARGE
+        TOO_LARGE
     }
-
     private final StatusCode statusCode;
     private final ObjectNode viewBody;
 
@@ -52,7 +52,7 @@ public class ViewResponse {
     }
 
     public static ViewResponse toLarge() {
-        return new ViewResponse(StatusCode.TO_LARGE, null);
+        return new ViewResponse(StatusCode.TOO_LARGE, null);
     }
 
     public StatusCode getStatusCode() {
@@ -70,9 +70,9 @@ public class ViewResponse {
 
     @Override
     public String toString() {
-        return "ViewResponse{" +
-            "statusCode=" + statusCode +
-            ", viewBody=" + viewBody +
-            '}';
+        return "ViewResponse{"
+            + "statusCode=" + statusCode
+            + ", viewBody=" + viewBody
+            + '}';
     }
 }
