@@ -4,7 +4,6 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
-
 import java.util.Set;
 
 /**
@@ -19,9 +18,9 @@ public class VersionedTasmoViewModel {
     private final Set<String> notifiableViews;
 
     public VersionedTasmoViewModel(ChainedVersion version,
-            ListMultimap<String, InitiateTraversal> dispatchers,
-            SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel,
-            Set<String> notifiableViews) {
+        ListMultimap<String, InitiateTraversal> dispatchers,
+        SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel,
+        Set<String> notifiableViews) {
         this.version = version;
         this.dispatchers = dispatchers;
         this.eventModel = eventModel;
@@ -47,8 +46,8 @@ public class VersionedTasmoViewModel {
     @Override
     public String toString() {
         return "VersionedViewTasmoModel{"
-                + "version=" + version
-                + ", dispatchers=" + dispatchers
-                + '}';
+            + "version=" + version
+            + ", dispatchers=" + dispatchers
+            + '}';
     }
 }

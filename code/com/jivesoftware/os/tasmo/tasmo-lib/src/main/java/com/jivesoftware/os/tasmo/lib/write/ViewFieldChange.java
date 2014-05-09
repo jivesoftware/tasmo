@@ -112,7 +112,7 @@ public class ViewFieldChange {
                 + ", modelPathId=" + modelPathId
                 + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
                 + ", modelPathTimestamps=" + Arrays.toString(modelPathTimestamps)
-                + ", value=" + Arrays.toString(value)
+                + ", value=" + new String(value)
                 + ", timestamp=" + timestamp + '}';
     }
 

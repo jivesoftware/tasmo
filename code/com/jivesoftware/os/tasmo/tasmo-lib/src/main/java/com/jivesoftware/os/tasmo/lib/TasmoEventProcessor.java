@@ -21,14 +21,25 @@ import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import com.jivesoftware.os.tasmo.model.process.*;
+import com.jivesoftware.os.tasmo.model.process.InMemoryModifiedViewProvider;
+import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
+import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
+import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
+import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
+import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
+import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore.BatchLinkTo;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ExistenceUpdate;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -51,15 +62,15 @@ public class TasmoEventProcessor {
     private final TasmoProcessingStats processingStats;
 
     public TasmoEventProcessor(TasmoViewModel tasmoViewModel,
-            WrittenEventProvider writtenEventProvider,
-            ConcurrencyStore concurrencyStore,
-            TasmoRetryingEventTraverser eventTraverser,
-            ViewChangeNotificationProcessor viewChangeNotificationProcessor,
-            WrittenInstanceHelper writtenInstanceHelper,
-            EventValueStore eventValueStore,
-            ReferenceStore referenceStore,
-            final CommitChange delegateCommitChange,
-            TasmoEdgeReport tasmoEdgeReport) {
+        WrittenEventProvider writtenEventProvider,
+        ConcurrencyStore concurrencyStore,
+        TasmoRetryingEventTraverser eventTraverser,
+        ViewChangeNotificationProcessor viewChangeNotificationProcessor,
+        WrittenInstanceHelper writtenInstanceHelper,
+        EventValueStore eventValueStore,
+        ReferenceStore referenceStore,
+        final CommitChange delegateCommitChange,
+        TasmoEdgeReport tasmoEdgeReport) {
         this.tasmoViewModel = tasmoViewModel;
         this.writtenEventProvider = writtenEventProvider;
         this.concurrencyStore = concurrencyStore;
@@ -75,11 +86,11 @@ public class TasmoEventProcessor {
 
             @Override
             public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] readFieldValues(TenantIdAndCentricId tenantIdAndCentricId,
-                    ObjectId objectInstanceId,
-                    String[] fieldNamesArray) {
+                ObjectId objectInstanceId,
+                String[] fieldNamesArray) {
                 long start = System.currentTimeMillis();
                 ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] readFieldValues = eventValueStoreFieldValueReader
-                        .readFieldValues(tenantIdAndCentricId, objectInstanceId, fieldNamesArray);
+                    .readFieldValues(tenantIdAndCentricId, objectInstanceId, fieldNamesArray);
 
                 String key = "fieldsFrom:" + objectInstanceId.getClassName();
                 processingStats.latency("READ FIELDS", key, System.currentTimeMillis() - start);
@@ -91,38 +102,10 @@ public class TasmoEventProcessor {
 
             @Override
             public void commitChange(WrittenEventContext writtenEventContext,
-                    TenantIdAndCentricId tenantIdAndCentricId,
-                    List<ViewFieldChange> changes) throws CommitChangeException {
+                TenantIdAndCentricId tenantIdAndCentricId,
+                List<ViewFieldChange> changes) throws CommitChangeException {
 
-                //long start = System.currentTimeMillis();
                 delegateCommitChange.commitChange(writtenEventContext, tenantIdAndCentricId, changes);
-//                long elapse = System.currentTimeMillis() - start;
-//                String writtenEventClassName = writtenEventContext.getEvent().getWrittenInstance().getInstanceId().getClassName();
-//                Set<String> viewKeys = new HashSet<>();
-//                for (ViewFieldChange c : changes) {
-//                    viewKeys.add(c.getViewObjectId().getClassName()); // + "." + c.getModelPathId());
-//                    PathId[] modelPathInstanceIds = c.getModelPathInstanceIds();
-//                    String path = "Event:" + writtenEventClassName + " View:" + c.getViewObjectId().getClassName() + " -> ";
-//                    for (PathId p : modelPathInstanceIds) {
-//                        path += p.getObjectId().getClassName() + "->";
-//                    }
-//                    path += "(" + c.getModelPathId() + ")";
-//                    processingStats.tally("WROTE", path, 1);
-//
-//                    if (writtenEventContext.getEvent().getWrittenInstance().getInstanceId().getClassName().contains("Status")) {
-//                        String status = "Event:" + writtenEventClassName + " View:" + c.getViewObjectId().getClassName() + " " + c.getType() + " -> ";
-//                        for (PathId p : modelPathInstanceIds) {
-//                            status += p.getObjectId().getClassName() + "." + p.getObjectId().getId().toStringForm()+ "->";
-//                        }
-//                        status += "value:" + c.getValue();
-//                        status += "    ModelPath(" + c.getModelPathId() + ")";
-//                        LOG.warn("DONE " + status);
-//                    }
-//                }
-//                for (String viewKey : viewKeys) {
-//                    String commitKey = "event:" + writtenEventClassName + "." + viewKey;
-//                    processingStats.latency("COMMIT", commitKey, elapse);
-//                }
 
             }
         };
@@ -145,8 +128,8 @@ public class TasmoEventProcessor {
         CommitChange commitChangeNotifier = new CommitChange() {
             @Override
             public void commitChange(WrittenEventContext context,
-                    TenantIdAndCentricId tenantIdAndCentricId,
-                    List<ViewFieldChange> changes) throws CommitChangeException {
+                TenantIdAndCentricId tenantIdAndCentricId,
+                List<ViewFieldChange> changes) throws CommitChangeException {
 
                 commitChange.commitChange(context, tenantIdAndCentricId, changes);
                 for (ViewFieldChange viewFieldChange : changes) {
@@ -160,7 +143,7 @@ public class TasmoEventProcessor {
 
         long startProcessingEvent = System.currentTimeMillis();
         WrittenEventContext batchContext = new WrittenEventContext(writtenEvent, writtenEventProvider,
-                fieldValueReader, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport, processingStats);
+            fieldValueReader, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport, processingStats);
 
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         String className = writtenInstance.getInstanceId().getClassName();
@@ -201,25 +184,25 @@ public class TasmoEventProcessor {
 
         long elapse = System.currentTimeMillis() - startProcessingEvent;
         LOG.info("{} millis valuePaths:{} refPaths:{} backRefPaths:{} "
-                + "fanDepth:{} fanBreath:{} value:{} changes:{}  DONE PROCESSING {} event:{} instance:{} tenant:{}",
-                new Object[]{elapse,
-                    batchContext.valuePaths,
-                    batchContext.refPaths,
-                    batchContext.backRefPaths,
-                    batchContext.fanDepth,
-                    batchContext.fanBreath,
-                    batchContext.readLeaves,
-                    batchContext.changes,
-                    writtenEvent.getWrittenInstance().isDeletion() ? "DELETE" : "UPDATE",
-                    writtenEvent.getEventId(),
-                    writtenEvent.getWrittenInstance().getInstanceId(),
-                    writtenEvent.getTenantId()});
+            + "fanDepth:{} fanBreath:{} value:{} changes:{}  DONE PROCESSING {} event:{} instance:{} tenant:{}",
+            new Object[]{ elapse,
+                batchContext.valuePaths,
+                batchContext.refPaths,
+                batchContext.backRefPaths,
+                batchContext.fanDepth,
+                batchContext.fanBreath,
+                batchContext.readLeaves,
+                batchContext.changes,
+                writtenEvent.getWrittenInstance().isDeletion() ? "DELETE" : "UPDATE",
+                writtenEvent.getEventId(),
+                writtenEvent.getWrittenInstance().getInstanceId(),
+                writtenEvent.getTenantId() });
     }
 
     private List<TenantIdAndCentricId> buildTenantIdAndCentricIds(VersionedTasmoViewModel model,
-            String className,
-            TenantId tenantId,
-            WrittenEvent writtenEvent) {
+        String className,
+        TenantId tenantId,
+        WrittenEvent writtenEvent) {
 
         List<TenantIdAndCentricId> tenantIdAndCentricIds = new ArrayList<>();
         tenantIdAndCentricIds.add(new TenantIdAndCentricId(tenantId, Id.NULL));
@@ -233,10 +216,10 @@ public class TasmoEventProcessor {
     }
 
     private void removeValueFields(VersionedTasmoViewModel model,
-            String className,
-            TenantIdAndCentricId tenantIdAndCentricId,
-            long timestamp,
-            ObjectId instanceId) {
+        String className,
+        TenantIdAndCentricId tenantIdAndCentricId,
+        long timestamp,
+        ObjectId instanceId) {
 
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
         Set<String> fieldNames = new HashSet<>();
@@ -250,16 +233,16 @@ public class TasmoEventProcessor {
     }
 
     private void updateValueFields(TenantIdAndCentricId tenantIdAndCentricId,
-            long timestamp,
-            ObjectId instanceId,
-            VersionedTasmoViewModel model,
-            String className,
-            WrittenInstance writtenInstance) throws Exception {
+        long timestamp,
+        ObjectId instanceId,
+        VersionedTasmoViewModel model,
+        String className,
+        WrittenInstance writtenInstance) throws Exception {
 
         EventValueStore.Transaction transaction = eventValueStore.begin(tenantIdAndCentricId,
-                timestamp,
-                timestamp,
-                instanceId);
+            timestamp,
+            timestamp,
+            instanceId);
 
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
 
@@ -280,23 +263,7 @@ public class TasmoEventProcessor {
             }
         }
 
-//        String[] vfn = valueFieldNames.toArray(new String[valueFieldNames.size()]);
-//        // HACK
-//        ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] readFieldValues = fieldValueReader.readFieldValues(tenantIdAndCentricId, instanceId, vfn);
-//        // end HACK
-//        for (int i = 0; i < vfn.length; i++) {
-//
-//            OpaqueFieldValue update = writtenInstance.getFieldValue(vfn[i]);
-//            if (update == null || update.isNull()) {
-//                transaction.remove(vfn[i]);
-//            } else {
-//                if (readFieldValues[i] != null && readFieldValues[i].getValue() != null && readFieldValues[i].getValue().equals(update)) {
-//                    writtenInstance.removeField(vfn[i]);
-//                    LOG.warn("HACK remove unchagned field:" + vfn[i]);
-//                }
-//                transaction.set(vfn[i], update);
-//            }
-//        }
+
         // 1 multiget
         List<Long> highests = concurrencyStore.highests(tenantIdAndCentricId, instanceId, refFieldNames.toArray(new String[refFieldNames.size()]));
         List<BatchLinkTo> batchLinkTos = new ArrayList<>(refFieldNames.size());
@@ -306,7 +273,7 @@ public class TasmoEventProcessor {
                 // 4 multi puts
                 OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
                 if (fieldValue.isNull()) {
-                    batchLinkTos.add(new BatchLinkTo(fieldName, Collections.EMPTY_LIST));
+                    batchLinkTos.add(new BatchLinkTo(fieldName, Collections.<Reference>emptyList()));
                 } else {
                     Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, fieldName);
                     batchLinkTos.add(new BatchLinkTo(fieldName, tos));

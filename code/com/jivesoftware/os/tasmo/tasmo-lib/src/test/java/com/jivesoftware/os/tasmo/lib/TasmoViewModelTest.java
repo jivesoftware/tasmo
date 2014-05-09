@@ -1,7 +1,3 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,16 +20,15 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Executors;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.Executors;
 
 /**
  *
@@ -60,10 +55,10 @@ public class TasmoViewModelTest {
         referenceStore = Mockito.mock(ReferenceStore.class);
         changeWriter = Mockito.mock(CommitChange.class);
         tasmoViewModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
-                tenantId,
-                viewsProvider,
-                concurrencyStore,
-                referenceStore);
+            tenantId,
+            viewsProvider,
+            concurrencyStore,
+            referenceStore);
     }
 
     @AfterMethod
@@ -118,8 +113,8 @@ public class TasmoViewModelTest {
     private Views makeViews(String className, ChainedVersion version, String pathName, String... fieldNames) {
         List<ModelPath> modelPaths = new ArrayList<>();
         modelPaths.add(ModelPath.builder(pathName)
-                .addPathMember(new ModelPathStep(true, Sets.newHashSet(pathName), null, ModelPathStepType.value, null, Arrays.asList(fieldNames)))
-                .build());
+            .addPathMember(new ModelPathStep(true, Sets.newHashSet(pathName), null, ModelPathStepType.value, null, Arrays.asList(fieldNames)))
+            .build());
         ViewBinding viewBinding = new ViewBinding(className, modelPaths, false, false, false, null);
         List<ViewBinding> viewBindings = new ArrayList<>();
         viewBindings.add(viewBinding);

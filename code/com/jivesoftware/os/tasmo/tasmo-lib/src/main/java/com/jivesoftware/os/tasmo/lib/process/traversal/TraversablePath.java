@@ -41,4 +41,9 @@ public class TraversablePath {
     public List<StepTraverser> getStepTraversers() {
         return stepTraversers;
     }
+
+    @Override
+    public String toString() {
+        return "TraversablePath{" + "initialStepContext=" + initialStepContext + ", stepTraversers=" + stepTraversers + '}';
+    }
 }

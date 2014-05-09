@@ -22,7 +22,11 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMa
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.ByteArrayTypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.LongTypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
-import com.jivesoftware.os.tasmo.id.*;
+import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
+import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
 import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
@@ -47,16 +51,15 @@ import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import org.merlin.config.Config;
-import org.merlin.config.defaults.IntDefault;
-import org.merlin.config.defaults.StringDefault;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import org.merlin.config.Config;
+import org.merlin.config.defaults.IntDefault;
+import org.merlin.config.defaults.StringDefault;
 
 /**
  *
@@ -201,7 +204,7 @@ public class TasmoServiceInitializer {
         ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
         TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
             tasmoEventProcessor,
-            eventProcessorThreads);
+            MoreExecutors.listeningDecorator(eventProcessorThreads));
 
         EventIngressCallbackStream eventIngressCallbackStream = new EventIngressCallbackStream(materializer);
         Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()

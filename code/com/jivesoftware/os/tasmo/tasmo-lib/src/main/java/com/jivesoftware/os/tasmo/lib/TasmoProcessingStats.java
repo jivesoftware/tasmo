@@ -25,7 +25,7 @@ public class TasmoProcessingStats {
     public void latency(String catagoryName, String name, long sample) {
         Map<String, DescriptiveStatistics> catagory = latencyCatagories.get(catagoryName);
         if (catagory == null) {
-            catagory = new ConcurrentHashMap();
+            catagory = new ConcurrentHashMap<>();
             latencyCatagories.put(catagoryName, catagory);
         }
         DescriptiveStatistics descriptiveStatistics = catagory.get(name);
@@ -39,7 +39,7 @@ public class TasmoProcessingStats {
     public void tally(String catagoryName, String name, long sample) {
         Map<String, AtomicLong> catagory = tallyCatagories.get(catagoryName);
         if (catagory == null) {
-            catagory = new ConcurrentHashMap();
+            catagory = new ConcurrentHashMap<>();
             tallyCatagories.put(catagoryName, catagory);
         }
         AtomicLong atomicLong = catagory.get(name);

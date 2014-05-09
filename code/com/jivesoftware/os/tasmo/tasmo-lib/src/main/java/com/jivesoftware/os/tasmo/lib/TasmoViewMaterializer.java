@@ -2,6 +2,7 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -16,7 +17,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 public class TasmoViewMaterializer {
@@ -24,12 +24,12 @@ public class TasmoViewMaterializer {
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TasmoEventBookkeeper tasmoEventBookkeeper;
     private final TasmoEventProcessor eventProcessor;
-    private final ExecutorService processEvents;
+    private final ListeningExecutorService processEvents;
     private final ConcurrentHashMap<TenantId, StripingLocksProvider<ObjectId>> instanceIdLocks = new ConcurrentHashMap<>();
 
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
             TasmoEventProcessor eventProcessor,
-            ExecutorService processEvents
+            ListeningExecutorService processEvents
     ) {
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
         this.eventProcessor = eventProcessor;

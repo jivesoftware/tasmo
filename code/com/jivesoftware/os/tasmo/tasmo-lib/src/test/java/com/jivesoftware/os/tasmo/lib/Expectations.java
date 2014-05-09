@@ -79,7 +79,9 @@ class Expectations {
                     } else {
                         toTest = node;
                     }
-                    Assert.assertEquals(toTest, MAPPER.convertValue(expectation.value, JsonNode.class), expectation.toString());
+                    JsonNode convertValue = MAPPER.convertValue(expectation.value, JsonNode.class);
+                    Assert.assertEquals(toTest, convertValue,
+                        expectation.toString() + " WAS:" + toTest + " WANTED:" + convertValue);
                 }
             } catch (IllegalArgumentException x) {
                 System.out.println("Failed while asserting " + expectation);

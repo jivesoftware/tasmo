@@ -206,7 +206,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
         return new TasmoViewMaterializer(materializerEventBookkeeper,
             tasmoEventProcessor,
-            Executors.newSingleThreadExecutor());
+            MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()));
     }
 
     private EventWriter buildEventWriter(final TasmoViewMaterializer viewMaterializer,

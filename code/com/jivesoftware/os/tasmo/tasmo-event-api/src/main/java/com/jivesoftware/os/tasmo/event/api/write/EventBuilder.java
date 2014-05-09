@@ -32,6 +32,10 @@ public class EventBuilder {
     private final ObjectId objectId;
     private final ObjectNode instanceNode;
 
+    public static EventBuilder create(ObjectId id, TenantId tenantId, Id userAndActorId) {
+        return new EventBuilder(id, tenantId, userAndActorId, userAndActorId, EventVerb.CREATED);
+    }
+
     public static EventBuilder create(IdProvider idProvider, String className, TenantId tenantId, Id userAndActorId) {
         return new EventBuilder(new ObjectId(className, idProvider.nextId()), tenantId, userAndActorId, userAndActorId, EventVerb.CREATED);
     }

@@ -377,7 +377,7 @@ public class Materialization {
 
         tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,
-                eventProcessorThreads);
+                MoreExecutors.listeningDecorator(eventProcessorThreads));
 
     }
 
