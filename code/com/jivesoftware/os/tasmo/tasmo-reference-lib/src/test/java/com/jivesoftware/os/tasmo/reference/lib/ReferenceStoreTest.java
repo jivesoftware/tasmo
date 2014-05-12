@@ -62,7 +62,7 @@ public class ReferenceStoreTest {
         }
 
         referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, 0, new ObjectIdResults());
-        referenceStore.link(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, bIds);
+        referenceStore.link(tenantIdAndCentricId, aId.getObjectId(), eventId, Arrays.asList(new ReferenceStore.LinkTo(aFieldName, bIds)));
 
         ObjectIdResults results = new ObjectIdResults();
         Set<String> aClassNames = Sets.newHashSet(aClassName);
@@ -83,7 +83,7 @@ public class ReferenceStoreTest {
             versionResults.add(new ReferenceWithTimestamp(bId.getObjectId(), bId.getFieldName(), 0));
         }
         referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, 0, new ObjectIdResults());
-        referenceStore.link(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, bIds);
+        referenceStore.link(tenantIdAndCentricId, aId.getObjectId(), eventId, Arrays.asList(new ReferenceStore.LinkTo(aFieldName, bIds)));
 
         referenceStore.streamBackRefs(tenantIdAndCentricId, bId3.getObjectId(), aClassNames, aFieldName, 0, results);
         Assert.assertTrue(equal(results.results, Arrays.asList(new ReferenceWithTimestamp(aId.getObjectId(), aId.getFieldName(), 0))));
@@ -106,7 +106,7 @@ public class ReferenceStoreTest {
             versionResults.add(new ReferenceWithTimestamp(bId.getObjectId(), bId.getFieldName(), 0));
         }
         referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, 0, new ObjectIdResults());
-        referenceStore.link(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, bIds);
+        referenceStore.link(tenantIdAndCentricId, aId.getObjectId(), eventId, Arrays.asList(new ReferenceStore.LinkTo(aFieldName, bIds)));
 
         //bid1 is no longer linked to by aId
         referenceStore.streamBackRefs(tenantIdAndCentricId, bId1.getObjectId(), aClassNames, aFieldName, 0, results);

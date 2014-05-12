@@ -7,7 +7,6 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.model.process.LeafNodeFields;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
-import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,23 +19,24 @@ import java.util.List;
 public class LeafContext {
 
     private final WrittenEventContext writtenEventContext;
-    private final boolean removalContext;
+//    private final boolean removalContext;
 
     private LeafNodeFields leafNodeFields; // uck
-    private int addIsRemovingFields = 0; // uck
+//    private int addIsRemovingFields = 0; // uck
 
-    public LeafContext(WrittenEventContext writtenEventContext, boolean removalContext) {
+    public LeafContext(WrittenEventContext writtenEventContext) {
         this.writtenEventContext = writtenEventContext;
-        this.removalContext = removalContext;
+//        this.removalContext = removalContext;
     }
 
     public byte[] toBytes() throws IOException {
         if (leafNodeFields == null) {
             return null;
         }
-        if (!removalContext && !leafNodeFields.hasFields() && addIsRemovingFields == 0) {
-            return null;
-        }
+//// This seems to have no effect so commenting it out for the short term.
+//        if (!removalContext && !leafNodeFields.hasFields() && addIsRemovingFields == 0) {
+//            return null;
+//        }
         return leafNodeFields.toBytes();
     }
 
@@ -59,16 +59,16 @@ public class LeafContext {
         long latestTimestamp = writtenEvent.getEventId();
         LeafNodeFields fieldsToPopulate = writtenEventContext.getWrittenEventProvider().createLeafNodeFields();
         List<ReferenceWithTimestamp> versions = new ArrayList<>();
-        addIsRemovingFields = 0;
-        WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
-        for (String fieldName : fieldNames) {
-            if (writtenInstance.hasField(fieldName)) {
-                OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
-                if (fieldValue.isNull()) {
-                    addIsRemovingFields++;
-                }
-            }
-        }
+        //addIsRemovingFields = 0;
+//        WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
+//        for (String fieldName : fieldNames) {
+//            if (writtenInstance.hasField(fieldName)) {
+//                OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
+//                if (fieldValue.isNull()) {
+//                    addIsRemovingFields++;
+//                }
+//            }
+//        }
 
         String[] fieldNamesArray = fieldNames.toArray(new String[fieldNames.size()]);
         ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] got = writtenEventContext.getFieldValueReader().readFieldValues(tenantIdAndCentricId,

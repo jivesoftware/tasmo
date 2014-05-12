@@ -40,8 +40,13 @@ public class TraverseValue implements StepTraverser {
             StepStream streamTo) throws Exception {
 
         pathContext.setPathId(writtenEventContext, pathIndex, from.getObjectId(), from.getTimestamp());
-        List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(tenantIdAndCentricId, pathContext, from.getObjectId(), fieldNames);
-        pathContext.addVersions(pathIndex, versions);
+        if (pathTraversalContext.isRemovalContext()) {
+            List<ReferenceWithTimestamp> versions = leafContext.removeLeafNodeFields(pathContext);
+            pathContext.addVersions(pathIndex, versions);
+        } else {
+            List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(tenantIdAndCentricId, pathContext, from.getObjectId(), fieldNames);
+            pathContext.addVersions(pathIndex, versions);
+        }
         PathId to = pathContext.getPathId(processingPathIndex);
         streamTo.stream(to);
     }

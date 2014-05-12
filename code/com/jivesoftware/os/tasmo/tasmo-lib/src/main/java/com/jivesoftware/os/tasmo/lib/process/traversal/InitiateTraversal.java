@@ -81,100 +81,6 @@ public class InitiateTraversal implements WrittenEventProcessor {
             LOG.stopTimer("refs");
         }
 
-//        LOG.startTimer("refs");
-//        try {
-//            processExistence(batchContext, tenantIdAndCentricId, writtenEvent, threadTimestamp);
-//        } finally {
-//            LOG.stopTimer("refs");
-//        }
-    }
-
-    private void processExistence(final WrittenEventContext writtenEventContext,
-            final TenantIdAndCentricId tenantIdAndCentricId,
-            final WrittenEvent writtenEvent,
-            final long threadTimestamp) throws Exception {
-        final long timestamp = writtenEvent.getEventId();
-        WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
-        final ObjectId instanceId = writtenInstance.getInstanceId();
-
-        Set<InitiateTraverserKey> allKeys = backRefTraversers.keySet();
-
-        List<InitiateTraverserKey> keys = new ArrayList<>();
-        List<String> accumulateRefFieldNames = new ArrayList<>();
-        for (InitiateTraverserKey key : allKeys) {
-            keys.add(key);
-            accumulateRefFieldNames.add(key.getRefFieldName());
-        }
-
-        String[] refFieldNames = accumulateRefFieldNames.toArray(new String[accumulateRefFieldNames.size()]);
-        List<Long> highestVersions = concurrencyChecker.highestVersions(tenantIdAndCentricId, instanceId, refFieldNames);
-
-        List<Callable<List<ViewFieldChange>>> callables = new ArrayList<>();
-        for (int i = 0; i < refFieldNames.length; i++) {
-            final InitiateTraverserKey key = keys.get(i);
-            final String refFieldName = refFieldNames[i];
-            final long highest = highestVersions.get(i) == null ? timestamp : highestVersions.get(i);
-            callables.add(new Callable<List<ViewFieldChange>>() {
-
-                @Override
-                public List<ViewFieldChange> call() throws Exception {
-                    final List<ViewFieldChange> writeableChanges = new ArrayList<>();
-                    referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), instanceId, refFieldName, threadTimestamp,
-                            new CallbackStream<ReferenceWithTimestamp>() {
-                                @Override
-                                public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
-                                    if (to != null && to.getTimestamp() < timestamp) {
-                                        traverse(writtenEventContext,
-                                                tenantIdAndCentricId, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, true,
-                                                writeableChanges);
-                                    }
-                                    return to;
-                                }
-                            });
-                    return writeableChanges;
-                }
-            });
-        }
-
-        commit(writtenEventContext, tenantIdAndCentricId, callables);
-
-        if (!writtenInstance.isDeletion()) {
-            List<ConcurrencyStore.FieldVersion> fieldVersions = new ArrayList<>();
-            for (int i = 0; i < refFieldNames.length; i++) {
-                long highest = highestVersions.get(i) == null ? timestamp : highestVersions.get(i);
-                fieldVersions.add(new ConcurrencyStore.FieldVersion(instanceId, refFieldNames[i], highest));
-            }
-            concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId, fieldVersions);
-
-            callables.clear();
-            for (int i = 0; i < refFieldNames.length; i++) {
-                final InitiateTraverserKey key = keys.get(i);
-                final String refFieldName = refFieldNames[i];
-                callables.add(new Callable<List<ViewFieldChange>>() {
-
-                    @Override
-                    public List<ViewFieldChange> call() throws Exception {
-                        final List<ViewFieldChange> writeableChanges = new ArrayList<>();
-                        referenceStore.streamForwardRefs(tenantIdAndCentricId, instanceId.getClassName(), refFieldName, instanceId, threadTimestamp,
-                                new CallbackStream<ReferenceWithTimestamp>() {
-
-                                    @Override
-                                    public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
-                                        if (to != null) {
-                                            traverse(writtenEventContext,
-                                                    tenantIdAndCentricId, writtenEvent, key, instanceId, refFieldName, to, threadTimestamp, false,
-                                                    writeableChanges);
-                                        }
-                                        return to;
-                                    }
-                                });
-                        return writeableChanges;
-                    }
-                });
-            }
-            commit(writtenEventContext, tenantIdAndCentricId, callables);
-            concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId, fieldVersions);
-        }
     }
 
     private void processValues(final WrittenEventContext writtenEventContext,
@@ -199,11 +105,10 @@ public class InitiateTraversal implements WrittenEventProcessor {
                                 public List<ViewFieldChange> call() throws Exception {
                                     PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, true);
                                     PathContext pathContext = pathTraverser.createPathContext();
-                                    LeafContext leafContext = new LeafContext(writtenEventContext, true);
+                                    LeafContext leafContext = new LeafContext(writtenEventContext);
                                     pathContext.setPathId(writtenEventContext, pathTraverser.getPathIndex(), instanceId, timestamp);
 
-                                    List<ReferenceWithTimestamp> valueVersions = leafContext.populateLeafNodeFields(tenantIdAndCentricId, pathContext,
-                                            instanceId, pathTraverser.getInitialFieldNames());
+                                    List<ReferenceWithTimestamp> valueVersions = leafContext.removeLeafNodeFields(pathContext);
                                     pathContext.addVersions(pathTraverser.getPathIndex(), valueVersions);
 
                                     pathTraverser.traverse(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext,
@@ -232,7 +137,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
                             public List<ViewFieldChange> call() throws Exception {
                                 PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, false);
                                 PathContext pathContext = pathTraverser.createPathContext();
-                                LeafContext leafContext = new LeafContext(writtenEventContext, false);
+                                LeafContext leafContext = new LeafContext(writtenEventContext);
                                 List<ReferenceWithTimestamp> valueVersions = leafContext.populateLeafNodeFields(tenantIdAndCentricId, pathContext,
                                         instanceId, pathTraverser.getInitialFieldNames());
 
@@ -368,7 +273,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
         for (final PathTraverser pathTraverser : forwardRefTraversers.get(key)) {
             PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, removal);
             PathContext pathContext = pathTraverser.createPathContext();
-            LeafContext leafContext = new LeafContext(writtenEventContext, removal);
+            LeafContext leafContext = new LeafContext(writtenEventContext);
             pathContext.setPathId(writtenEventContext, pathTraverser.getPathIndex(), from.getObjectId(), from.getTimestamp());
             pathContext.addVersions(pathTraverser.getPathIndex(), Arrays.asList(from));
 
@@ -383,7 +288,7 @@ public class InitiateTraversal implements WrittenEventProcessor {
         for (final PathTraverser pathTraverser : backRefTraversers.get(key)) {
             PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, removal);
             PathContext pathContext = pathTraverser.createPathContext();
-            LeafContext leafContext = new LeafContext(writtenEventContext, removal);
+            LeafContext leafContext = new LeafContext(writtenEventContext);
             pathContext.setPathId(writtenEventContext, pathTraverser.getPathIndex(), to.getObjectId(), to.getTimestamp());
             pathContext.addVersions(pathTraverser.getPathIndex(), Arrays.asList(from));
 

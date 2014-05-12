@@ -225,7 +225,9 @@ public class ReferenceStoreConcurrencyTest {
                     } else {
                         final long highest = concurrencyStore.highest(tenantIdAndCentricId, from, fromRefFieldName, timestamp);
                         if (timestamp >= highest) {
-                            referenceStore.link(tenantIdAndCentricId, timestamp, from, fromRefFieldName, Arrays.asList(tos));
+
+                            referenceStore.link(tenantIdAndCentricId, from, timestamp,
+                                    Arrays.asList(new ReferenceStore.LinkTo(fromRefFieldName, Arrays.asList(tos))));
                         }
                         // yield
                         referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), from, fromRefFieldName, 0,

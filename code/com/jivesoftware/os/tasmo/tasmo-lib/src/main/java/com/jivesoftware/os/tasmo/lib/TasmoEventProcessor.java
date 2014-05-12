@@ -30,7 +30,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore.BatchLinkTo;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore.LinkTo;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ExistenceUpdate;
 import java.util.ArrayList;
@@ -266,22 +266,22 @@ public class TasmoEventProcessor {
 
         // 1 multiget
         List<Long> highests = concurrencyStore.highests(tenantIdAndCentricId, instanceId, refFieldNames.toArray(new String[refFieldNames.size()]));
-        List<BatchLinkTo> batchLinkTos = new ArrayList<>(refFieldNames.size());
+        List<LinkTo> batchLinkTos = new ArrayList<>(refFieldNames.size());
         for (int i = 0; i < refFieldNames.size(); i++) {
             String fieldName = refFieldNames.get(i);
             if (highests == null || highests.get(i) == null || timestamp >= highests.get(i)) {
                 // 4 multi puts
                 OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
                 if (fieldValue.isNull()) {
-                    batchLinkTos.add(new BatchLinkTo(fieldName, Collections.<Reference>emptyList()));
+                    batchLinkTos.add(new LinkTo(fieldName, Collections.<Reference>emptyList()));
                 } else {
                     Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, fieldName);
-                    batchLinkTos.add(new BatchLinkTo(fieldName, tos));
+                    batchLinkTos.add(new LinkTo(fieldName, tos));
                 }
             }
         }
         if (!batchLinkTos.isEmpty()) {
-            referenceStore.batchLink(tenantIdAndCentricId, instanceId, timestamp, batchLinkTos);
+            referenceStore.link(tenantIdAndCentricId, instanceId, timestamp, batchLinkTos);
         }
         // 3 to 6 multiputs
         eventValueStore.commit(transaction);

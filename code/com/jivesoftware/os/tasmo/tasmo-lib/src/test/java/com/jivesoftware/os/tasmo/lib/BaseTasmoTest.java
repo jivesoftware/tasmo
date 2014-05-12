@@ -369,8 +369,8 @@ public class BaseTasmoTest {
                 commitChange,
                 new TasmoEdgeReport());
 
-        //ListeningExecutorService processEvents = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-        ListeningExecutorService processEvents = MoreExecutors.sameThreadExecutor();
+        ListeningExecutorService processEvents = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(10));
+        //ListeningExecutorService processEvents = MoreExecutors.sameThreadExecutor();
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,
                 processEvents);
