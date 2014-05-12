@@ -18,20 +18,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.jivesoftware.jive.platform.shared.test.hbase.EmbeddedHBase;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.DefaultRowColumnValueStoreMarshaller;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.NeverAcceptsFailureSetOfSortedMaps;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.CurrentTimestamper;
-import com.jivesoftware.os.jive.utils.row.column.value.store.hbase.HBaseSetOfSortedMapsImplInitializer;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
-import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.ByteArrayTypeMarshaller;
-import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
 import com.jivesoftware.os.tasmo.configuration.BindingGenerator;
 import com.jivesoftware.os.tasmo.configuration.ViewModel;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
@@ -48,12 +40,9 @@ import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.IdProvider;
 import com.jivesoftware.os.tasmo.id.IdProviderImpl;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
-import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
 import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
@@ -83,7 +72,6 @@ import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
-import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
@@ -96,7 +84,6 @@ import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewProvider;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueMarshaller;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
@@ -171,68 +158,68 @@ public class BaseTasmoTest {
 
     public RowColumnValueStoreProvider getRowColumnValueStoreProvider(final String env) {
         if (useHBase) {
-            final SetOfSortedMapsImplInitializer<Exception> hBase = new HBaseSetOfSortedMapsImplInitializer(
-                embeddedHBase.getConfiguration());
+//            final SetOfSortedMapsImplInitializer<Exception> hBase = new HBaseSetOfSortedMapsImplInitializer(
+//                embeddedHBase.getConfiguration());
+//            return new RowColumnValueStoreProvider() {
+//
+//
+//                @Override
+//                public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() throws IOException {
+//                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "eventValueTable", "v",
+//                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
+//                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
+//                        eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
+//                }
+//
+//                @Override
+//                public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore()
+//                    throws IOException {
+//                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "viewValueTable", "v",
+//                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
+//                        new ImmutableByteArrayMarshaller(), new ImmutableByteArrayMarshaller(), new ViewValueMarshaller()),
+//                        new CurrentTimestamper()));
+//                }
+//
+//                @Override
+//                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks()
+//                    throws IOException {
+//                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "multiLinkTable", "v",
+//                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
+//                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+//                }
+//
+//                @Override
+//                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks()
+//                    throws IOException {
+//                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "multiBackLinkTable", "v",
+//                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
+//                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+//                }
+//            };
+            return null;
+        } else {
             return new RowColumnValueStoreProvider() {
 
-
                 @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() throws IOException {
-                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "eventValueTable", "v",
-                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
-                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-                        eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
+                public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() {
+                    return new RowColumnValueStoreImpl<>();
                 }
 
                 @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore()
-                    throws IOException {
-                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "viewValueTable", "v",
-                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
-                        new ImmutableByteArrayMarshaller(), new ImmutableByteArrayMarshaller(), new ViewValueMarshaller()),
-                        new CurrentTimestamper()));
+                public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore() {
+                    return new RowColumnValueStoreImpl<>();
                 }
 
                 @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks()
-                    throws IOException {
-                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "multiLinkTable", "v",
-                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks() {
+                    return new RowColumnValueStoreImpl<>();
                 }
 
                 @Override
-                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks()
-                    throws IOException {
-                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "multiBackLinkTable", "v",
-                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+                public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() {
+                    return new RowColumnValueStoreImpl<>();
                 }
             };
-
-        } else {
-        return new RowColumnValueStoreProvider() {
-
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() {
-                return new RowColumnValueStoreImpl<>();
-            }
-
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore() {
-                return new RowColumnValueStoreImpl<>();
-            }
-
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks() {
-                return new RowColumnValueStoreImpl<>();
-            }
-
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() {
-                return new RowColumnValueStoreImpl<>();
-            }
-        };
         }
     }
 
@@ -246,19 +233,19 @@ public class BaseTasmoTest {
 
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() throws Exception;
     }
-    private static EmbeddedHBase embeddedHBase = new EmbeddedHBase();
+    //private static EmbeddedHBase embeddedHBase = new EmbeddedHBase();
 
     @BeforeClass
     public void startHBase() throws Exception {
         if (useHBase) {
-            embeddedHBase.start(true);
+            //embeddedHBase.start(true);
         }
     }
 
     @AfterClass
     public void stopHBase() throws Exception {
         if (useHBase) {
-            embeddedHBase.stop();
+            //embeddedHBase.stop();
         }
     }
 
@@ -293,14 +280,14 @@ public class BaseTasmoTest {
         viewValueReader = new ViewValueReader(viewValueStore);
 
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, rowColumnValueStoreProvider.multiLinks(),
-            rowColumnValueStoreProvider.multiBackLinks());
+                rowColumnValueStoreProvider.multiBackLinks());
 
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
         CommitChange commitChange = new CommitChange() {
             @Override
             public void commitChange(WrittenEventContext batchContext,
-                TenantIdAndCentricId tenantIdAndCentricId,
-                List<ViewFieldChange> changes) throws CommitChangeException {
+                    TenantIdAndCentricId tenantIdAndCentricId,
+                    List<ViewFieldChange> changes) throws CommitChangeException {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
@@ -310,15 +297,15 @@ public class BaseTasmoTest {
                             ids[i] = modelPathInstanceIds[i].getObjectId();
                         }
                         ViewWriteFieldChange viewWriteFieldChange = new ViewWriteFieldChange(
-                            change.getEventId(),
-                            tenantIdAndCentricId,
-                            change.getActorId(),
-                            ViewWriteFieldChange.Type.valueOf(change.getType().name()),
-                            change.getViewObjectId(),
-                            change.getModelPathId(),
-                            ids,
-                            new ViewValue(change.getModelPathTimestamps(), change.getValue()),
-                            change.getTimestamp());
+                                change.getEventId(),
+                                tenantIdAndCentricId,
+                                change.getActorId(),
+                                ViewWriteFieldChange.Type.valueOf(change.getType().name()),
+                                change.getViewObjectId(),
+                                change.getModelPathId(),
+                                ids,
+                                new ViewValue(change.getModelPathTimestamps(), change.getValue()),
+                                change.getTimestamp());
                         write.add(viewWriteFieldChange);
                         //System.out.println("viewWriteFieldChange:" + viewWriteFieldChange);
                     } catch (Exception ex) {
@@ -337,12 +324,12 @@ public class BaseTasmoTest {
         commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, commitChange);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
-            new CallbackStream<List<BookkeepingEvent>>() {
-                @Override
-                public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
-                    return value;
-                }
-            });
+                new CallbackStream<List<BookkeepingEvent>>() {
+                    @Override
+                    public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
+                        return value;
+                    }
+                });
 
         viewsProvider = new ViewsProvider() {
             @Override
@@ -358,10 +345,10 @@ public class BaseTasmoTest {
 
         ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8));
         tasmoViewModel = new TasmoViewModel(pathExecutors,
-            MASTER_TENANT_ID,
-            viewsProvider,
-            concurrencyStore,
-            referenceStore);
+                MASTER_TENANT_ID,
+                viewsProvider,
+                concurrencyStore,
+                referenceStore);
 
         WrittenEventProcessorDecorator writtenEventProcessorDecorator = new WrittenEventProcessorDecorator() {
             @Override
@@ -372,21 +359,21 @@ public class BaseTasmoTest {
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator, new OrderIdProviderImpl(1));
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
-            eventProvider,
-            concurrencyStore,
-            retryingEventTraverser,
-            getViewChangeNotificationProcessor(),
-            new WrittenInstanceHelper(),
-            eventValueStore,
-            referenceStore,
-            commitChange,
-            new TasmoEdgeReport());
+                eventProvider,
+                concurrencyStore,
+                retryingEventTraverser,
+                getViewChangeNotificationProcessor(),
+                new WrittenInstanceHelper(),
+                eventValueStore,
+                referenceStore,
+                commitChange,
+                new TasmoEdgeReport());
 
         //ListeningExecutorService processEvents = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
         ListeningExecutorService processEvents = MoreExecutors.sameThreadExecutor();
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
-            tasmoEventProcessor,
-            processEvents);
+                tasmoEventProcessor,
+                processEvents);
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
     }
@@ -445,12 +432,12 @@ public class BaseTasmoTest {
         };
 
         viewProvider = new ViewProvider<>(viewPermissionChecker,
-            viewValueReader,
-            tenantViewsProvider,
-            viewAsObjectNode,
-            merger,
-            staleViewFieldStream,
-            1024 * 1024 * 10);
+                viewValueReader,
+                tenantViewsProvider,
+                viewAsObjectNode,
+                merger,
+                staleViewFieldStream,
+                1024 * 1024 * 10);
         return new Expectations(viewValueStore, newViews);
 
     }
@@ -514,11 +501,11 @@ public class BaseTasmoTest {
                 Set<String> destinationClassName = splitClassNames(memberParts[3].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
-                || pathMember.contains("." + ModelPathStepType.count + ".")
-                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
+                    || pathMember.contains("." + ModelPathStepType.count + ".")
+                    || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
                 // Example: Content.count.VersionedContent.ref_parent
@@ -529,7 +516,7 @@ public class BaseTasmoTest {
                 String refFieldName = memberParts[3].trim();
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else {
 
@@ -541,7 +528,7 @@ public class BaseTasmoTest {
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
+                        null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
 
             }
         } catch (Exception x) {
