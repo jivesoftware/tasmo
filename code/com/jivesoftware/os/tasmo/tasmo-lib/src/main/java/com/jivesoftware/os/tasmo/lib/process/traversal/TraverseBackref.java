@@ -10,6 +10,7 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.reference.lib.BackRefStreamer;
@@ -38,7 +39,10 @@ public class TraverseBackref implements StepTraverser {
 
     @Override
     public void process(TenantIdAndCentricId tenantIdAndCentricId,
+            final WrittenEventContext writtenEventContext,
             final PathTraversalContext context,
+            final PathContext pathContext,
+            final LeafContext leafContext,
             final PathId from,
             final StepStream streamTo) throws Exception {
 

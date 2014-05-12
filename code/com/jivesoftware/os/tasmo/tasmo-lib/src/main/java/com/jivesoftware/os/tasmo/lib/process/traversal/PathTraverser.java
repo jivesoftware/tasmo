@@ -25,13 +25,14 @@ public class PathTraverser {
             long threadTimestamp,
             boolean removalContext) {
 
-        PathTraversalContext context = new PathTraversalContext(writtenEventContext,
-                writtenEvent,
-                writtenEventContext.getFieldValueReader(),
-                pathTraverserKey.getPathLength(),
+        PathTraversalContext context = new PathTraversalContext(
                 threadTimestamp,
                 removalContext);
         return context;
+    }
+
+    public PathContext createPathContext() {
+        return new PathContext(pathTraverserKey.getPathLength());
     }
 
     public List<String> getInitialFieldNames() {
@@ -42,11 +43,13 @@ public class PathTraverser {
         return pathTraverserKey.getPathIndex();
     }
 
-
     public void traverse(TenantIdAndCentricId tenantIdAndCentricId,
-                         PathTraversalContext context,
-                         PathId pathId) throws Exception {
-        StepStream stepStream = streamerFactory.create(tenantIdAndCentricId, context);
+            WrittenEventContext writtenEventContext,
+            PathTraversalContext context,
+            PathContext pathContext,
+            LeafContext leafContext,
+            PathId pathId) throws Exception {
+        StepStream stepStream = streamerFactory.create(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext);
         stepStream.stream(pathId);
     }
 

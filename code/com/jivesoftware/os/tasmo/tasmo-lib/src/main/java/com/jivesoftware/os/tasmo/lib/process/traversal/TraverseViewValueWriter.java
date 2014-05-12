@@ -11,9 +11,12 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
+import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
+import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -33,17 +36,45 @@ public class TraverseViewValueWriter implements StepTraverser {
 
     @Override
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
-            PathTraversalContext context,
-            PathId pathId,
+            WrittenEventContext writtenEventContext,
+            PathTraversalContext pathTraversalContext,
+            PathContext pathContext,
+            LeafContext leafContext,
+            PathId from,
             StepStream streamTo) throws Exception {
 
-        ObjectId objectId = pathId.getObjectId();
-        Id viewId = buildAlternateViewId(context.getWrittenEvent());
+        ObjectId objectId = from.getObjectId();
+        Id viewId = buildAlternateViewId(writtenEventContext.getEvent());
         if (viewId == null) {
             viewId = objectId.getId();
         }
 
-        context.writeViewFields(viewClassName, modelPathId, viewId);
+        writeViewFields(writtenEventContext, pathTraversalContext, pathContext, leafContext, viewClassName, modelPathId, viewId);
+    }
+
+    public void writeViewFields(WrittenEventContext writtenEventContext,
+        PathTraversalContext pathTraversalContext,
+        PathContext pathContext,
+        LeafContext leafContext,
+        String viewClassName,
+        String modelPathId,
+        Id viewId) throws IOException {
+
+        byte[] leafAsBytes = leafContext.toBytes();
+        if (leafAsBytes != null) {
+            WrittenEvent writtenEvent = writtenEventContext.getEvent();
+            ViewFieldChange update = new ViewFieldChange(writtenEvent.getEventId(),
+                writtenEvent.getActorId(),
+                (pathTraversalContext.isRemovalContext()) ? ViewFieldChange.ViewFieldChangeType.remove : ViewFieldChange.ViewFieldChangeType.add, // uck
+                new ObjectId(viewClassName, viewId),
+                modelPathId,
+                pathContext.copyOfModelPathInstanceIds(),
+                pathContext.copyOfVersions(),
+                pathContext.copyOfModelPathTimestamps(),
+                leafAsBytes,
+                pathTraversalContext.getThreadTimestamp());
+            pathTraversalContext.addChange(update);
+        }
     }
 
     protected Id buildAlternateViewId(WrittenEvent writtenEvent) throws IllegalStateException {

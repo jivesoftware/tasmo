@@ -10,9 +10,11 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
 
@@ -33,24 +35,27 @@ class TraverseRootward implements StepTraverser {
 
     @Override
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
+            final WrittenEventContext writtenEventContext,
             final PathTraversalContext context,
+            final PathContext pathContext,
+            final LeafContext leafContext,
             final PathId from,
             final StepStream streamTo) throws Exception {
 
-        context.setPathId(pathIndex, from.getObjectId(), from.getTimestamp());
+        pathContext.setPathId(writtenEventContext, pathIndex, from.getObjectId(), from.getTimestamp());
         streamer.stream(tenantIdAndCentricId, from.getObjectId(), context.getThreadTimestamp(),
                 new CallbackStream<ReferenceWithTimestamp>() {
                     @Override
                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                         if (to != null && isValidUpStreamObject(to)) {
 
-                            context.setPathId(pathIndex, to.getObjectId(), to.getTimestamp());
+                            pathContext.setPathId(writtenEventContext, pathIndex, to.getObjectId(), to.getTimestamp());
 
                             ReferenceWithTimestamp ref = new ReferenceWithTimestamp(
                                     (streamer.isBackRefStreamer()) ? to.getObjectId() : from.getObjectId(),
                                     to.getFieldName(),
                                     to.getTimestamp());
-                            context.addVersion(pathIndex, ref);
+                            pathContext.addVersions(pathIndex, Arrays.asList(ref));
                             streamTo.stream(new PathId(to.getObjectId(), to.getTimestamp()));
                         }
                         return to;

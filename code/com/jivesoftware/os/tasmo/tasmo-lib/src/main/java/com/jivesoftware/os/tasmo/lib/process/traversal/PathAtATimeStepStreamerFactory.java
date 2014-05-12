@@ -1,6 +1,7 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import java.util.List;
 
 /**
@@ -16,8 +17,13 @@ public class PathAtATimeStepStreamerFactory implements StepStreamerFactory {
     }
 
     @Override
-    public StepStreamer create(TenantIdAndCentricId tenantIdAndCentricId, PathTraversalContext context) {
-        return new StepStreamer(tenantIdAndCentricId, context, stepTraversers, 0);
+    public StepStreamer create(TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEventContext writtenEventContext,
+            PathTraversalContext context,
+            PathContext pathContext,
+            LeafContext leafContext) {
+
+        return new StepStreamer(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, stepTraversers, 0);
     }
 
 }
