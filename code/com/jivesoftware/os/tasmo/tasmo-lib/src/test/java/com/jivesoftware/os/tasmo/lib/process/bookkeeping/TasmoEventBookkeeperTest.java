@@ -13,6 +13,7 @@ import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -24,7 +25,7 @@ import org.testng.annotations.Test;
  */
 public class TasmoEventBookkeeperTest {
 
-    private OrderIdProvider idProvider = new OrderIdProviderImpl(45);
+    private final OrderIdProvider idProvider = new OrderIdProviderImpl(45);
 
     @Test
     public void testBooKeeping() throws Exception {
@@ -37,13 +38,11 @@ public class TasmoEventBookkeeperTest {
                 return value;
             }
         };
-        TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(callback);
+        TasmoEventsProcessedNotifier processedNotifier = new TasmoEventsProcessedNotifier(callback);
 
         List<WrittenEvent> events = getEvents(35);
 
-        tasmoEventBookkeeper.begin(events);
-
-        tasmoEventBookkeeper.succeeded();
+        processedNotifier.notify(events, Collections.<WrittenEvent>emptyList());
 
         Assert.assertEquals(callbackVal.size(), events.size());
 
@@ -57,9 +56,7 @@ public class TasmoEventBookkeeperTest {
 
         events = getEvents(3);
 
-        tasmoEventBookkeeper.begin(events);
-
-        tasmoEventBookkeeper.succeeded();
+        processedNotifier.notify(events, Collections.<WrittenEvent>emptyList());
 
         Assert.assertEquals(callbackVal.size(), events.size());
 
@@ -72,9 +69,7 @@ public class TasmoEventBookkeeperTest {
 
         events = getEvents(456);
 
-        tasmoEventBookkeeper.begin(events);
-
-        tasmoEventBookkeeper.failed();
+        processedNotifier.notify(Collections.<WrittenEvent>emptyList(), events);
 
         Assert.assertEquals(callbackVal.size(), events.size());
 

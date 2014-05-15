@@ -29,6 +29,7 @@ import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -233,7 +234,11 @@ public class InitiateTraversal implements WrittenEventProcessor {
                     @Override
                     public List<ViewFieldChange> call() throws Exception {
                         final List<ViewFieldChange> writeableChanges = new ArrayList<>();
-                        referenceStore.streamForwardRefs(tenantIdAndCentricId, instanceId.getClassName(), refFieldName, instanceId, threadTimestamp,
+                        referenceStore.streamForwardRefs(tenantIdAndCentricId,
+                                Collections.singleton(instanceId.getClassName()),
+                                refFieldName,
+                                instanceId,
+                                threadTimestamp,
                                 new CallbackStream<ReferenceWithTimestamp>() {
 
                                     @Override

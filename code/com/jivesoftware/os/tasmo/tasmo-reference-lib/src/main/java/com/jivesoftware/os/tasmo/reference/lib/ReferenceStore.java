@@ -15,6 +15,7 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndT
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.KeyedColumnValueCallbackStream;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnTimestampRemove;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
+import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantKeyedColumnValueCallbackStream;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantRowColumValueTimestampAdd;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.ConstantTimestamper;
 import com.jivesoftware.os.tasmo.id.ObjectId;
@@ -56,8 +57,61 @@ public class ReferenceStore {
         this.multiBackLinks = multiBackLinks;
     }
 
+    public void multiStreamRefs(List<RefStreamRequestContext> refStreamRequests) throws Exception {
+
+        List<TenantKeyedColumnValueCallbackStream<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], Long>> fowardRefStreams = new ArrayList<>();
+        List<TenantKeyedColumnValueCallbackStream<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], Long>> backRefStreams = new ArrayList<>();
+
+        for (RefStreamRequestContext refStreamRequest : refStreamRequests) {
+            for (String className : refStreamRequest.getReferringClassNames()) {
+                ClassAndField_IdKey cafik = new ClassAndField_IdKey(className,
+                        refStreamRequest.getReferringFieldName(),
+                        refStreamRequest.getReferringObjectId());
+
+                if (refStreamRequest.isBackRefStream()) {
+                    backRefStreams.add(new TenantKeyedColumnValueCallbackStream<>(refStreamRequest.getTenantIdAndCentricId(), cafik,
+                            new NullSwallowingCallbackStream(refStreamRequest)));
+                } else {
+                    fowardRefStreams.add(new TenantKeyedColumnValueCallbackStream<>(refStreamRequest.getTenantIdAndCentricId(), cafik,
+                            new NullSwallowingCallbackStream(refStreamRequest)));
+                }
+            }
+        }
+        if (!fowardRefStreams.isEmpty()) {
+            multiLinks.multiRowGetAll(fowardRefStreams);
+        }
+        if (!backRefStreams.isEmpty()) {
+            multiBackLinks.multiRowGetAll(backRefStreams);
+        }
+
+        for (RefStreamRequestContext refStreamRequest : refStreamRequests) {
+            refStreamRequest.callback(null); // EOS
+        }
+    }
+
+    /**
+     * prevents delegate from getting 'null' aka end of stream marker
+     */
+    static class NullSwallowingCallbackStream implements CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>> {
+
+        private final CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>> delagate;
+
+        public NullSwallowingCallbackStream(CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>> delagate) {
+            this.delagate = delagate;
+        }
+
+        @Override
+        public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> v) throws Exception {
+            if (v != null) {
+                return delagate.callback(v);
+            }
+            return v;
+        }
+
+    }
+
     public void streamForwardRefs(final TenantIdAndCentricId tenantIdAndCentricId,
-            final String className,
+            Set<String> classNames,
             final String fieldName,
             final ObjectId id,
             final long threadTimestamp,
@@ -66,31 +120,33 @@ public class ReferenceStore {
         LOG.inc("get_bIds");
         final List<ReferenceWithTimestamp> refs = new ArrayList<>();
 
-        final ClassAndField_IdKey aClassAndField_aId = new ClassAndField_IdKey(className, fieldName, id);
-        LOG.trace(System.currentTimeMillis() + " |--> Get bIds Tenant={} A={}", tenantIdAndCentricId, aClassAndField_aId);
+        for (String className : classNames) {
+            final ClassAndField_IdKey aClassAndField_aId = new ClassAndField_IdKey(className, fieldName, id);
+            LOG.trace(System.currentTimeMillis() + " |--> Get bIds Tenant={} A={}", tenantIdAndCentricId, aClassAndField_aId);
 
-        multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
-                new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
-                    @Override
-                    public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> bId) throws Exception {
-                        if (bId != null) {
+            multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
+                    new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
+                        @Override
+                        public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> bId) throws Exception {
+                            if (bId != null) {
 
-                            ReferenceWithTimestamp reference = new ReferenceWithTimestamp(bId.getColumn(), fieldName, bId.getTimestamp());
-                            LOG.trace(System.currentTimeMillis() + " |--> {} Got bIds Tenant={} a={} b={} Timestamp={}", new Object[]{
-                                threadTimestamp, tenantIdAndCentricId, aClassAndField_aId, bId.getColumn(), bId.getTimestamp()});
+                                ReferenceWithTimestamp reference = new ReferenceWithTimestamp(bId.getColumn(), fieldName, bId.getTimestamp());
+                                LOG.trace(System.currentTimeMillis() + " |--> {} Got bIds Tenant={} a={} b={} Timestamp={}", new Object[]{
+                                    threadTimestamp, tenantIdAndCentricId, aClassAndField_aId, bId.getColumn(), bId.getTimestamp()});
 
-                            refs.add(reference);
+                                refs.add(reference);
 
-                            if (refs.size() > MAX_FAN_OUT_BEFORE_WARN) {
-                                LOG.warn("TODO: streamForwardRefs reference fan-out is exceeding comfort level. We need break scans into batched scans.");
+                                if (refs.size() > MAX_FAN_OUT_BEFORE_WARN) {
+                                    LOG.warn("TODO: streamForwardRefs reference fan-out is exceeding comfort level. We need break scans into batched scans.");
+                                }
                             }
+                            return bId;
                         }
-                        return bId;
-                    }
-                });
+                    });
 
-        for (ReferenceWithTimestamp ref : refs) {
-            forwardRefs.callback(ref);
+            for (ReferenceWithTimestamp ref : refs) {
+                forwardRefs.callback(ref);
+            }
         }
         forwardRefs.callback(null); // EOS
     }

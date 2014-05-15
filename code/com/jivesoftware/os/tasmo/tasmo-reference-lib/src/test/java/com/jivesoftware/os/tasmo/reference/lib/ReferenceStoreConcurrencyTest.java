@@ -249,7 +249,7 @@ public class ReferenceStoreConcurrencyTest {
                             throw e;
                         }
 
-                        referenceStore.streamForwardRefs(tenantIdAndCentricId, from.getClassName(), fromRefFieldName, from, 0,
+                        referenceStore.streamForwardRefs(tenantIdAndCentricId, Collections.singleton(from.getClassName()), fromRefFieldName, from, 0,
                                 new CallbackStream<ReferenceWithTimestamp>() {
 
                                     @Override

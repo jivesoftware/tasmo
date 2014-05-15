@@ -240,7 +240,7 @@ public class TasmoViewModel {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("MODELPATH " + modelPath);
                 }
-                PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName, modelPath, referenceStore);
+                PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName, modelPath);
 
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("Bind:{}", factoryKey);

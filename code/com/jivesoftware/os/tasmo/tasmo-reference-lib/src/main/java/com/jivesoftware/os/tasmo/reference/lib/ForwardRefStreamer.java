@@ -11,22 +11,27 @@ package com.jivesoftware.os.tasmo.reference.lib;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import java.util.Collections;
+import java.util.Objects;
 
-public class ForwardRefStreamer extends BaseRefStreamer {
+public class ForwardRefStreamer implements RefStreamer {
 
-    public ForwardRefStreamer(ReferenceStore referenceStore, String referringFieldName) {
-        super(referenceStore, Collections.<String>emptySet(), referringFieldName);
+    private final String referringFieldName;
+
+    public ForwardRefStreamer(String referringFieldName) {
+        this.referringFieldName = referringFieldName;
     }
 
     @Override
-    public void stream(TenantIdAndCentricId tenantIdAndCentricId,
+    public void stream(ReferenceTraverser referenceTraverser,
+            TenantIdAndCentricId tenantIdAndCentricId,
             ObjectId referringObjectId,
             long readTime,
             final CallbackStream<ReferenceWithTimestamp> tos) throws Exception {
 
-        referenceStore.streamForwardRefs(tenantIdAndCentricId,
-                referringObjectId.getClassName(),
+        referenceTraverser.traverseForwardRef(tenantIdAndCentricId,
+                Collections.singleton(referringObjectId.getClassName()),
                 referringFieldName,
                 referringObjectId,
                 readTime,
@@ -40,6 +45,29 @@ public class ForwardRefStreamer extends BaseRefStreamer {
 
     @Override
     public String toString() {
-        return "ForwardRefStreamer{" + "referringClassNames=" + referringClassNames + ", referringFieldName=" + referringFieldName + '}';
+        return "ForwardRefStreamer{ referringFieldName=" + referringFieldName + '}';
     }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 79 * hash + Objects.hashCode(this.referringFieldName);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final ForwardRefStreamer other = (ForwardRefStreamer) obj;
+        if (!Objects.equals(this.referringFieldName, other.referringFieldName)) {
+            return false;
+        }
+        return true;
+    }
+
 }

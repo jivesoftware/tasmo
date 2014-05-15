@@ -71,7 +71,7 @@ public class ReferenceStoreTest {
         Assert.assertTrue(equal(results.results, Arrays.asList(new ReferenceWithTimestamp(aId.getObjectId(), aId.getFieldName(), 0))));
         results.results.clear();
 
-        referenceStore.streamForwardRefs(tenantIdAndCentricId, aClassName, aFieldName, aId.getObjectId(), 0, results);
+        referenceStore.streamForwardRefs(tenantIdAndCentricId, Collections.singleton(aClassName), aFieldName, aId.getObjectId(), 0, results);
         //in memory reference store will return ascending sorted lists
         Assert.assertTrue(equal(results.results, versionResults));
         results.results.clear();
@@ -94,7 +94,7 @@ public class ReferenceStoreTest {
         Assert.assertTrue(equal(results.results, Collections.<ReferenceWithTimestamp>emptyList()));
         results.results.clear();
 
-        referenceStore.streamForwardRefs(tenantIdAndCentricId, aClassName, aFieldName, aId.getObjectId(), 0, results);
+        referenceStore.streamForwardRefs(tenantIdAndCentricId, Collections.singleton(aClassName), aFieldName, aId.getObjectId(), 0, results);
         //in memory reference store will return ascending sorted lists
         Assert.assertTrue(equal(results.results, versionResults));
         results.results.clear();
@@ -113,7 +113,7 @@ public class ReferenceStoreTest {
         Assert.assertTrue(equal(results.results, Collections.<ReferenceWithTimestamp>emptyList()));
         results.results.clear();
 
-        referenceStore.streamForwardRefs(tenantIdAndCentricId, aClassName, aFieldName, aId.getObjectId(), 0, results);
+        referenceStore.streamForwardRefs(tenantIdAndCentricId, Collections.singleton(aClassName), aFieldName, aId.getObjectId(), 0, results);
         //in memory reference store will return ascending sorted lists
         Assert.assertTrue(equal(results.results, Collections.<ReferenceWithTimestamp>emptyList()));
         results.results.clear();

@@ -43,7 +43,7 @@ class TraverseLeafward implements StepTraverser {
             final StepStream streamTo) throws Exception {
 
         pathContext.setPathId(writtenEventContext, pathIndex, from.getObjectId(), from.getTimestamp());
-        streamer.stream(tenantIdAndCentricId, from.getObjectId(), context.getThreadTimestamp(),
+        streamer.stream(writtenEventContext.getReferenceTraverser(), tenantIdAndCentricId, from.getObjectId(), context.getThreadTimestamp(),
                 new CallbackStream<ReferenceWithTimestamp>() {
                     @Override
                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {

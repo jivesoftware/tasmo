@@ -33,6 +33,7 @@ import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore.LinkTo;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ExistenceUpdate;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,6 +58,7 @@ public class TasmoEventProcessor {
     private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
     private final FieldValueReader fieldValueReader;
+    private final ReferenceTraverser referenceTraverser;
     private final CommitChange commitChange;
     private final TasmoEdgeReport tasmoEdgeReport;
     private final TasmoProcessingStats processingStats;
@@ -68,6 +70,7 @@ public class TasmoEventProcessor {
         ViewChangeNotificationProcessor viewChangeNotificationProcessor,
         WrittenInstanceHelper writtenInstanceHelper,
         EventValueStore eventValueStore,
+        ReferenceTraverser referenceTraverser,
         ReferenceStore referenceStore,
         final CommitChange delegateCommitChange,
         TasmoEdgeReport tasmoEdgeReport) {
@@ -97,6 +100,8 @@ public class TasmoEventProcessor {
                 return readFieldValues;
             }
         };
+
+        this.referenceTraverser = referenceTraverser;
 
         this.commitChange = new CommitChange() {
 
@@ -143,7 +148,7 @@ public class TasmoEventProcessor {
 
         long startProcessingEvent = System.currentTimeMillis();
         WrittenEventContext batchContext = new WrittenEventContext(writtenEvent, writtenEventProvider,
-            fieldValueReader, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport, processingStats);
+            fieldValueReader, referenceTraverser, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport, processingStats);
 
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         String className = writtenInstance.getInstanceId().getClassName();
