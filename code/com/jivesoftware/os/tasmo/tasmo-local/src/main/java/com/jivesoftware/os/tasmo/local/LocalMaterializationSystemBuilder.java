@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
@@ -59,6 +60,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.BatchingReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -119,7 +121,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         ViewValueStore viewValueStore = buildViewValueStore(rowColumnValueStoreProvider);
         CommitChange commitChange = buildCommitChange(viewValueStore);
         TasmoViewMaterializer viewMaterializer = buildViewMaterializer(viewsProvider, rowColumnValueStoreProvider,
-            writtenEventProvider, commitChange, masterTenantId);
+                writtenEventProvider, commitChange, masterTenantId);
 
         EventWriter eventWriter = buildEventWriter(viewMaterializer, writtenEventProvider);
         ViewReader<ViewResponse> viewReader = buildViewReader(viewValueStore, viewsProvider, masterTenantId);
@@ -149,9 +151,9 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
     }
 
     private TasmoViewMaterializer buildViewMaterializer(ViewsProvider viewsProvider,
-        RowColumnValueStoreProvider rowColumnValueStoreProvider,
-        WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider,
-        CommitChange commitChange, TenantId masterTenantId) throws Exception {
+            RowColumnValueStoreProvider rowColumnValueStoreProvider,
+            WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider,
+            CommitChange commitChange, TenantId masterTenantId) throws Exception {
 
         TasmoEventBookkeeper materializerEventBookkeeper = new TasmoEventBookkeeper(new CallbackStream<List<BookkeepingEvent>>() {
             @Override
@@ -175,10 +177,10 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         EventValueStore eventValueStore = buildEventValueStore(concurrencyStore, rowColumnValueStoreProvider);
 
         TasmoViewModel viewMaterializerModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
-            masterTenantId,
-            viewsProvider,
-            concurrencyStore,
-            referenceStore);
+                masterTenantId,
+                viewsProvider,
+                concurrencyStore,
+                referenceStore);
 
         viewMaterializerModel.loadModel(masterTenantId);
 
@@ -191,26 +193,43 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         };
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
-            new OrderIdProviderImpl(1));
+                new OrderIdProviderImpl(1));
+
+        ListeningExecutorService traverserExecutors = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(32));
+        final BatchingReferenceTraverser referenceTraverser = new BatchingReferenceTraverser(referenceStore,
+                traverserExecutors, 100, 10000); // TODO expose to config
+        Executors.newSingleThreadExecutor().submit(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    referenceTraverser.processRequests();
+                } catch (InterruptedException x) {
+                    LOG.error("Reference Traversal failed for the folloing reasons.", x);
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
 
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(viewMaterializerModel,
-            writtenEventProvider,
-            concurrencyStore,
-            retryingEventTraverser,
-            viewChangeNotificationProcessor,
-            new WrittenInstanceHelper(),
-            eventValueStore,
-            referenceStore,
-            commitChange,
-            new TasmoEdgeReport());
+                writtenEventProvider,
+                concurrencyStore,
+                retryingEventTraverser,
+                viewChangeNotificationProcessor,
+                new WrittenInstanceHelper(),
+                eventValueStore,
+                referenceTraverser,
+                referenceStore,
+                commitChange,
+                new TasmoEdgeReport());
 
         return new TasmoViewMaterializer(materializerEventBookkeeper,
-            tasmoEventProcessor,
-            MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()));
+                tasmoEventProcessor,
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()));
     }
 
     private EventWriter buildEventWriter(final TasmoViewMaterializer viewMaterializer,
-        final WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider) {
+            final WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider) {
 
         if (orderIdProvider == null) {
             orderIdProvider = new OrderIdProviderImpl(1);
@@ -291,12 +310,12 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         tenantViewsProvider.loadModel(tenantId);
 
         return new ViewProvider<>(viewPermissionChecker,
-            viewValueReader,
-            tenantViewsProvider,
-            viewAsObjectNode,
-            merger,
-            staleViewFieldStream,
-            1024 * 1024 * 10);
+                viewValueReader,
+                tenantViewsProvider,
+                viewAsObjectNode,
+                merger,
+                staleViewFieldStream,
+                1024 * 1024 * 10);
     }
 
     private String getViewClassFromViewModel(ObjectNode viewNode) {
@@ -339,8 +358,8 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         return new CommitChange() {
             @Override
             public void commitChange(WrittenEventContext batchContext,
-                TenantIdAndCentricId tenantIdAndCentricId,
-                List<ViewFieldChange> changes) throws CommitChangeException {
+                    TenantIdAndCentricId tenantIdAndCentricId,
+                    List<ViewFieldChange> changes) throws CommitChangeException {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
                     try {
@@ -352,15 +371,15 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                         }
 
                         write.add(new ViewWriteFieldChange(
-                            change.getEventId(),
-                            tenantIdAndCentricId,
-                            change.getActorId(),
-                            ViewWriteFieldChange.Type.valueOf(change.getType().name()),
-                            change.getViewObjectId(),
-                            change.getModelPathId(),
-                            ids,
-                            new ViewValue(change.getModelPathTimestamps(), change.getValue()),
-                            change.getTimestamp()));
+                                change.getEventId(),
+                                tenantIdAndCentricId,
+                                change.getActorId(),
+                                ViewWriteFieldChange.Type.valueOf(change.getType().name()),
+                                change.getViewObjectId(),
+                                change.getModelPathId(),
+                                ids,
+                                new ViewValue(change.getModelPathTimestamps(), change.getValue()),
+                                change.getTimestamp()));
                     } catch (Exception ex) {
                         throw new CommitChangeException("Failed to add change for the following reason.", ex);
                     }

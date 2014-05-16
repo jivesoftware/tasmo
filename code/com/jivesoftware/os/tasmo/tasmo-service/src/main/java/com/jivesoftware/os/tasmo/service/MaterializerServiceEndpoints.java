@@ -6,6 +6,7 @@ import com.google.inject.Singleton;
 import com.jivesoftware.os.jive.utils.jaxrs.util.ResponseHelper;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import java.util.List;
 import javax.ws.rs.Consumes;
@@ -25,6 +26,8 @@ public class MaterializerServiceEndpoints {
     EventConvertingCallbackStream ingressWrittenEvents;
     @Context
     TasmoEdgeReport tasmoEdgeReport;
+    @Context
+    TasmoProcessingStats tasmoProcessingStats;
 
     @POST
     @Consumes("application/json")
@@ -53,5 +56,11 @@ public class MaterializerServiceEndpoints {
     public Response hello() {
         String report = Joiner.on("\n").join(tasmoEdgeReport.getTextReport());
         return Response.ok(report, MediaType.TEXT_PLAIN).build();
+    }
+
+    @GET
+    @Path("/stats/txt")
+    public Response stats() {
+        return Response.ok(tasmoProcessingStats.getTextReport(), MediaType.TEXT_PLAIN).build();
     }
 }

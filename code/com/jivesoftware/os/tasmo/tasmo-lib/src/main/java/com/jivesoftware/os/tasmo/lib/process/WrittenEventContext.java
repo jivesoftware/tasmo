@@ -7,12 +7,14 @@ import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 
 public class WrittenEventContext {
 
     private final WrittenEvent event;
     private final WrittenEventProvider writtenEventProvider;
     private final FieldValueReader fieldValueReader;
+    private final ReferenceTraverser referenceTraverser;
     private final ModifiedViewProvider modifiedViewProvider;
     private final CommitChange commitChange;
     private final TasmoEdgeReport tasmoEdgeReport;
@@ -29,6 +31,7 @@ public class WrittenEventContext {
     public WrittenEventContext(WrittenEvent event,
             WrittenEventProvider writtenEventProvider,
             FieldValueReader fieldValueReader,
+            ReferenceTraverser referenceTraverser,
             ModifiedViewProvider modifiedViewProvider,
             CommitChange commitChange,
             TasmoEdgeReport tasmoEdgeReport,
@@ -36,6 +39,7 @@ public class WrittenEventContext {
         this.event = event;
         this.writtenEventProvider = writtenEventProvider;
         this.fieldValueReader = fieldValueReader;
+        this.referenceTraverser = referenceTraverser;
         this.modifiedViewProvider = modifiedViewProvider;
         this.commitChange = commitChange;
         this.tasmoEdgeReport = tasmoEdgeReport;
@@ -56,6 +60,10 @@ public class WrittenEventContext {
 
     public FieldValueReader getFieldValueReader() {
         return fieldValueReader;
+    }
+
+    public ReferenceTraverser getReferenceTraverser() {
+        return referenceTraverser;
     }
 
     public ModifiedViewProvider getModifiedViewProvider() {

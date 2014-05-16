@@ -8,7 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
@@ -59,8 +59,8 @@ public class InitiateTraversalContext {
         return initialModelPathMember.getRefFieldName();
     }
 
-    public List<String> getInitialFieldNames() {
-        List<String> allInitialFieldNames = Lists.newArrayList();
+    public Set<String> getInitialFieldNames() {
+        Set<String> allInitialFieldNames = Sets.newHashSet();
 
         List<String> fieldNames = initialModelPathMember.getFieldNames();
         if (fieldNames != null && !fieldNames.isEmpty()) {

@@ -65,6 +65,8 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.BatchingReferenceTraverser;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
@@ -234,6 +236,7 @@ public class Materialization {
     RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> rawViewValueStore;
     ExecutorService eventProcessorThreads;
     ExecutorService pathProcessorThreads;
+    ListeningExecutorService traverserExecutors;
     TasmoEventProcessor tasmoEventProcessor;
 
     public void setupModelAndMaterializer(int numberOfEventProcessorThreads) throws Exception {
@@ -351,6 +354,25 @@ public class Materialization {
             }
         };
 
+        traverserExecutors = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+        final BatchingReferenceTraverser batchingReferenceTraverser = new BatchingReferenceTraverser(referenceStore,
+                traverserExecutors, 100, 10000); // TODO expose to config
+        Executors.newSingleThreadExecutor().submit(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    batchingReferenceTraverser.processRequests();
+                } catch (InterruptedException x) {
+                    LOG.error("Reference Traversal failed for the folloing reasons.", x);
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+
+        ReferenceTraverser referenceTraverser = batchingReferenceTraverser;
+//        ReferenceTraverser referenceTraverser = new SerialReferenceTraverser(referenceStore); //??
+
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator, new OrderIdProviderImpl(1));
         tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
                 eventProvider,
@@ -359,6 +381,7 @@ public class Materialization {
                 getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),
                 eventValueStore,
+                referenceTraverser,
                 referenceStore,
                 commitChange,
                 new TasmoEdgeReport());
@@ -441,6 +464,7 @@ public class Materialization {
     public void shutdown() {
         eventProcessorThreads.shutdownNow();
         pathProcessorThreads.shutdownNow();
+        traverserExecutors.shutdownNow();
     }
 
     List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {

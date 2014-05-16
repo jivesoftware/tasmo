@@ -9,16 +9,14 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.google.common.collect.Lists;
-import com.jivesoftware.os.jive.utils.logger.MetricLogger;
-import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.reference.lib.BackRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ForwardRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -27,21 +25,16 @@ import java.util.Set;
  */
 public class PathTraversersFactory {
 
-    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-
     private final String viewClassName;
     private final String modelPathId;
     private final ModelPath modelPath;
-    private final ReferenceStore referenceStore;
 
     public PathTraversersFactory(
             String viewClassName,
-            ModelPath modelPath,
-            ReferenceStore referenceStore) {
+            ModelPath modelPath) {
         this.viewClassName = viewClassName;
         this.modelPathId = modelPath.getId();
         this.modelPath = modelPath;
-        this.referenceStore = referenceStore;
     }
 
     public List<TraversablePath> buildPathTraversers(String viewIdFieldName) {
@@ -114,7 +107,7 @@ public class PathTraversersFactory {
                     };
 
             List<StepTraverser> steps = new ArrayList<>();
-            steps.add(new TraverseBackref(modelPathStep, referenceStore, modelPathStep.getOriginClassNames()));
+            steps.add(new TraverseBackref(modelPathStep, modelPathStep.getOriginClassNames()));
             steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
             steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
             steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPathId));
@@ -137,7 +130,7 @@ public class PathTraversersFactory {
             StepTraverser processStep;
             if (pathIndex == modelPathMembersSize - 1) {
 
-                processStep = new TraverseValue(member.getFieldNames(), initialPathIndex, pathIndex);
+                processStep = new TraverseValue(new HashSet<>(member.getFieldNames()), initialPathIndex, pathIndex);
 
             } else {
                 memberType = member.getStepType();
@@ -158,13 +151,13 @@ public class PathTraversersFactory {
     RefStreamer createLeafwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
-                return new ForwardRefStreamer(referenceStore, fieldName);
+                return new ForwardRefStreamer(fieldName);
             case refs:
-                return new ForwardRefStreamer(referenceStore, fieldName);
+                return new ForwardRefStreamer(fieldName);
             case backRefs:
             case count:
             case latest_backRef:
-                return new BackRefStreamer(referenceStore, classNames, fieldName);
+                return new BackRefStreamer(classNames, fieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support rev streaming");
         }
@@ -191,13 +184,13 @@ public class PathTraversersFactory {
     RefStreamer createRootwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
-                return new BackRefStreamer(referenceStore, classNames, fieldName);
+                return new BackRefStreamer(classNames, fieldName);
             case refs:
-                return new BackRefStreamer(referenceStore, classNames, fieldName);
+                return new BackRefStreamer(classNames, fieldName);
             case backRefs:
             case count:
             case latest_backRef: // For this case we are likely doing more work that we absolutely need to.
-                return new ForwardRefStreamer(referenceStore, fieldName);
+                return new ForwardRefStreamer(fieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support fwd streaming");
         }

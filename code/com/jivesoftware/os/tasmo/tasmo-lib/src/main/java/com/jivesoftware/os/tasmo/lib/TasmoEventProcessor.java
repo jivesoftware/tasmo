@@ -1,6 +1,5 @@
 package com.jivesoftware.os.tasmo.lib;
 
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -30,15 +29,17 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore.BatchLinkTo;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore.LinkTo;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ExistenceUpdate;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -57,6 +58,7 @@ public class TasmoEventProcessor {
     private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
     private final FieldValueReader fieldValueReader;
+    private final ReferenceTraverser referenceTraverser;
     private final CommitChange commitChange;
     private final TasmoEdgeReport tasmoEdgeReport;
     private final TasmoProcessingStats processingStats;
@@ -68,6 +70,7 @@ public class TasmoEventProcessor {
         ViewChangeNotificationProcessor viewChangeNotificationProcessor,
         WrittenInstanceHelper writtenInstanceHelper,
         EventValueStore eventValueStore,
+        ReferenceTraverser referenceTraverser,
         ReferenceStore referenceStore,
         final CommitChange delegateCommitChange,
         TasmoEdgeReport tasmoEdgeReport) {
@@ -97,6 +100,8 @@ public class TasmoEventProcessor {
                 return readFieldValues;
             }
         };
+
+        this.referenceTraverser = referenceTraverser;
 
         this.commitChange = new CommitChange() {
 
@@ -143,7 +148,7 @@ public class TasmoEventProcessor {
 
         long startProcessingEvent = System.currentTimeMillis();
         WrittenEventContext batchContext = new WrittenEventContext(writtenEvent, writtenEventProvider,
-            fieldValueReader, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport, processingStats);
+            fieldValueReader, referenceTraverser, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport, processingStats);
 
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         String className = writtenInstance.getInstanceId().getClassName();
@@ -164,16 +169,14 @@ public class TasmoEventProcessor {
                 }
                 processingStats.latency("UPDATE", className, System.currentTimeMillis() - start);
 
-                ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
-                List<InitiateTraversal> initiateTraversals = dispatchers.get(className);
-                processingStats.latency("TRAVERSER", className, initiateTraversals.size());
-                for (InitiateTraversal initiateTraversal : initiateTraversals) {
-                    if (initiateTraversal == null) {
-                        LOG.warn("No traversal defined for className:{}", className);
-                        continue;
-                    }
-                    eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent);
+                Map<String, InitiateTraversal> dispatchers = model.getDispatchers();
+                InitiateTraversal initiateTraversal = dispatchers.get(className);
+                if (initiateTraversal == null) {
+                    LOG.warn("No traversal defined for className:{}", className);
+                    continue;
                 }
+                eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent);
+
             }
 
             long start = System.currentTimeMillis();
@@ -266,22 +269,22 @@ public class TasmoEventProcessor {
 
         // 1 multiget
         List<Long> highests = concurrencyStore.highests(tenantIdAndCentricId, instanceId, refFieldNames.toArray(new String[refFieldNames.size()]));
-        List<BatchLinkTo> batchLinkTos = new ArrayList<>(refFieldNames.size());
+        List<LinkTo> batchLinkTos = new ArrayList<>(refFieldNames.size());
         for (int i = 0; i < refFieldNames.size(); i++) {
             String fieldName = refFieldNames.get(i);
             if (highests == null || highests.get(i) == null || timestamp >= highests.get(i)) {
                 // 4 multi puts
                 OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
                 if (fieldValue.isNull()) {
-                    batchLinkTos.add(new BatchLinkTo(fieldName, Collections.<Reference>emptyList()));
+                    batchLinkTos.add(new LinkTo(fieldName, Collections.<Reference>emptyList()));
                 } else {
                     Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, fieldName);
-                    batchLinkTos.add(new BatchLinkTo(fieldName, tos));
+                    batchLinkTos.add(new LinkTo(fieldName, tos));
                 }
             }
         }
         if (!batchLinkTos.isEmpty()) {
-            referenceStore.batchLink(tenantIdAndCentricId, instanceId, timestamp, batchLinkTos);
+            referenceStore.link(tenantIdAndCentricId, instanceId, timestamp, batchLinkTos);
         }
         // 3 to 6 multiputs
         eventValueStore.commit(transaction);

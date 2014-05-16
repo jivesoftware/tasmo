@@ -18,6 +18,7 @@ public class EventValueStoreFieldValueReader implements FieldValueReader {
         this.eventValueStore = eventValueStore;
     }
 
+    @Override
     public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] readFieldValues(TenantIdAndCentricId tenantIdAndCentricId,
             ObjectId objectInstanceId,
             String[] fieldNamesArray) {

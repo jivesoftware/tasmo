@@ -1,7 +1,7 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  *
@@ -9,17 +9,17 @@ import java.util.Objects;
  */
 public class PathTraverserKey {
 
-    private final List<String> initialFieldNames;
+    private final Set<String> initialFieldNames;
     private final int pathIndex;
     private final int pathLength;
 
-    public PathTraverserKey(List<String> initialFieldNames, int pathIndex, int pathLength) {
+    public PathTraverserKey(Set<String> initialFieldNames, int pathIndex, int pathLength) {
         this.initialFieldNames = initialFieldNames;
         this.pathIndex = pathIndex;
         this.pathLength = pathLength;
     }
 
-    public List<String> getInitialFieldNames() {
+    public Set<String> getInitialFieldNames() {
         return initialFieldNames;
     }
 

@@ -15,7 +15,6 @@ import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.reference.lib.BackRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Objects;
 import java.util.Set;
@@ -27,13 +26,11 @@ import java.util.Set;
 public class TraverseBackref implements StepTraverser {
 
     private final ModelPathStep initialModelPathMember;
-    private final ReferenceStore referenceStore;
     private final Set<String> validDownStreamTypes;
 
-    public TraverseBackref(ModelPathStep initialModelPathMember, ReferenceStore referenceStore,
+    public TraverseBackref(ModelPathStep initialModelPathMember,
             Set<String> validDownStreamTypes) {
         this.initialModelPathMember = initialModelPathMember;
-        this.referenceStore = referenceStore;
         this.validDownStreamTypes = validDownStreamTypes;
     }
 
@@ -46,11 +43,13 @@ public class TraverseBackref implements StepTraverser {
             final PathId from,
             final StepStream streamTo) throws Exception {
 
-        final RefStreamer streamer = new BackRefStreamer(referenceStore,
-                initialModelPathMember.getOriginClassNames(),
+        final RefStreamer streamer = new BackRefStreamer(initialModelPathMember.getOriginClassNames(),
                 initialModelPathMember.getRefFieldName());
 
-        streamer.stream(tenantIdAndCentricId, from.getObjectId(), context.getThreadTimestamp(),
+        streamer.stream(writtenEventContext.getReferenceTraverser(),
+                tenantIdAndCentricId,
+                from.getObjectId(),
+                context.getThreadTimestamp(),
                 new CallbackStream<ReferenceWithTimestamp>() {
                     @Override
                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {

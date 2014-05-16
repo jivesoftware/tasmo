@@ -18,6 +18,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TasmoViewMaterializer {
 
@@ -26,6 +27,7 @@ public class TasmoViewMaterializer {
     private final TasmoEventProcessor eventProcessor;
     private final ListeningExecutorService processEvents;
     private final ConcurrentHashMap<TenantId, StripingLocksProvider<ObjectId>> instanceIdLocks = new ConcurrentHashMap<>();
+    private final AtomicLong totalProcessed = new AtomicLong();
 
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
             TasmoEventProcessor eventProcessor,
@@ -37,10 +39,11 @@ public class TasmoViewMaterializer {
     }
 
     public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
+
+        final List<WrittenEvent> processed = new ArrayList<>(writtenEvents.size());
         final List<WrittenEvent> failedToProcess = new ArrayList<>(writtenEvents.size());
         try {
             LOG.startTimer("processWrittenEvents");
-            tasmoEventBookkeeper.begin(writtenEvents);
 
             Multimap<Object, WrittenEvent> writtenEventLockGroups = ArrayListMultimap.create();
             for (WrittenEvent writtenEvent : writtenEvents) {
@@ -49,13 +52,12 @@ public class TasmoViewMaterializer {
                     TenantId tenantId = writtenEvent.getTenantId();
                     StripingLocksProvider<ObjectId> tenantLocks = instanceIdLocks.get(tenantId);
                     if (tenantLocks == null) {
-                        tenantLocks = new StripingLocksProvider<>(1024);
+                        tenantLocks = new StripingLocksProvider<>(1024); // Expose to config?
                         StripingLocksProvider<ObjectId> had = instanceIdLocks.putIfAbsent(tenantId, tenantLocks);
                         if (had != null) {
                             tenantLocks = had;
                         }
                     }
-
                     Object lock = tenantLocks.lock(writtenInstance.getInstanceId());
                     writtenEventLockGroups.put(lock, writtenEvent);
                 }
@@ -74,6 +76,7 @@ public class TasmoViewMaterializer {
                             for (WrittenEvent event : events) {
                                 try {
                                     eventProcessor.processWrittenEvent(lock, event);
+                                    processed.add(event);
                                 } catch (Exception x) {
                                     failedToProcess.add(event);
                                     LOG.warn("Failed to process eventId:{} instanceId:{} tenantId:{}", new Object[]{
@@ -99,6 +102,7 @@ public class TasmoViewMaterializer {
                 future.get(); // progagate exceptions to caller.
             }
 
+            tasmoEventBookkeeper.begin(processed);
             tasmoEventBookkeeper.succeeded();
 
         } catch (Exception ex) {
@@ -112,9 +116,18 @@ public class TasmoViewMaterializer {
             throw ex;
         } finally {
             long elapse = LOG.stopTimer("processWrittenEvents");
-            LOG.info("BATCH PROCESSED: {} millis events:{}", new Object[]{elapse, writtenEvents.size()});
+            if (elapse == 0) {
+                elapse = 1;
+            }
+            totalProcessed.addAndGet(writtenEvents.size());
+            double eventsPerSecond = 1000d / ((double) elapse / (double) writtenEvents.size());
+            double eps = eventsPerSecond * 0.5d + lastEventsPerSecond * 0.5d;
+            lastEventsPerSecond = eventsPerSecond;
+            LOG.info("BATCH PROCESSED: events:{} in {} millis  totalEvents:{} currentEventPerSecond:{}",
+                    new Object[]{writtenEvents.size(), elapse, totalProcessed, eps});
         }
         return failedToProcess;
     }
+    double lastEventsPerSecond = 0;
 
 }

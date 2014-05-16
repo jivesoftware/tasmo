@@ -76,33 +76,12 @@ public class CombinatorialMaterializerTest {
         }
     }
 
-//    @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
-//    public void testSingleThreadedTotalOrderAdds(AssertableCase inputCase)
-//            throws Throwable {
-//        new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, false);
-//        inputCase.materialization.shutdown();
-//    }
-//
-//    @Test(dataProvider = "unorderedAdds", invocationCount = 1, singleThreaded = true)
-//    public void testSingleThreadedUnorderedAdds(AssertableCase inputCase)
-//            throws Throwable {
-//        new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, false);
-//        inputCase.materialization.shutdown();
-//    }
-
     @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsOnly(AssertableCase inputCase)
             throws Throwable {
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
         inputCase.materialization.shutdown();
     }
-
-//    @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
-//    public void testSingleThreadedAddsThenRemoves(AssertableCase inputCase)
-//            throws Throwable {
-//        new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, false);
-//        inputCase.materialization.shutdown();
-//    }
 
     @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsThenRemoves(AssertableCase inputCase)
@@ -111,13 +90,6 @@ public class CombinatorialMaterializerTest {
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
         inputCase.materialization.shutdown();
     }
-
-//    @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
-//    public void testSingleThreadedAddsThenRemovesThenAdds(AssertableCase inputCase)
-//            throws Throwable {
-//        new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, false);
-//        inputCase.materialization.shutdown();
-//    }
 
     @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsThenRemovesThenAdds(AssertableCase inputCase)

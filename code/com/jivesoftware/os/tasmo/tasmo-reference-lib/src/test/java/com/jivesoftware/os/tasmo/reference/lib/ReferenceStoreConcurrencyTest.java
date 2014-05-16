@@ -225,7 +225,9 @@ public class ReferenceStoreConcurrencyTest {
                     } else {
                         final long highest = concurrencyStore.highest(tenantIdAndCentricId, from, fromRefFieldName, timestamp);
                         if (timestamp >= highest) {
-                            referenceStore.link(tenantIdAndCentricId, timestamp, from, fromRefFieldName, Arrays.asList(tos));
+
+                            referenceStore.link(tenantIdAndCentricId, from, timestamp,
+                                    Arrays.asList(new ReferenceStore.LinkTo(fromRefFieldName, Arrays.asList(tos))));
                         }
                         // yield
                         referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), from, fromRefFieldName, 0,
@@ -247,7 +249,7 @@ public class ReferenceStoreConcurrencyTest {
                             throw e;
                         }
 
-                        referenceStore.streamForwardRefs(tenantIdAndCentricId, from.getClassName(), fromRefFieldName, from, 0,
+                        referenceStore.streamForwardRefs(tenantIdAndCentricId, Collections.singleton(from.getClassName()), fromRefFieldName, from, 0,
                                 new CallbackStream<ReferenceWithTimestamp>() {
 
                                     @Override

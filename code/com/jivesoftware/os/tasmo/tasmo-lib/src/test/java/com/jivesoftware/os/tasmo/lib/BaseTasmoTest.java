@@ -74,6 +74,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.BatchingReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
@@ -100,10 +101,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 
@@ -249,6 +252,8 @@ public class BaseTasmoTest {
         }
     }
 
+    private ExecutorService executorService;
+
     @BeforeMethod
     public void setupModelAndMaterializer() throws Exception {
 
@@ -342,9 +347,9 @@ public class BaseTasmoTest {
                 return currentVersion;
             }
         };
-
-        ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8));
-        tasmoViewModel = new TasmoViewModel(pathExecutors,
+        executorService = Executors.newFixedThreadPool(8);
+        ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
+        tasmoViewModel = new TasmoViewModel(listeningExecutorService,
                 MASTER_TENANT_ID,
                 viewsProvider,
                 concurrencyStore,
@@ -357,6 +362,21 @@ public class BaseTasmoTest {
             }
         };
 
+        //ReferenceTraverser referenceTraverser = new SerialReferenceTraverser(referenceStore);
+        final BatchingReferenceTraverser referenceTraverser = new BatchingReferenceTraverser(referenceStore, listeningExecutorService, 100, 10000);
+        Executors.newSingleThreadExecutor().submit(new Runnable() {
+
+            @Override
+            public void run() {
+                try {
+                    referenceTraverser.processRequests();
+                } catch (InterruptedException x) {
+                    x.printStackTrace();
+                    Thread.currentThread().interrupt();
+                }
+            }
+        });
+
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator, new OrderIdProviderImpl(1));
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
                 eventProvider,
@@ -365,17 +385,21 @@ public class BaseTasmoTest {
                 getViewChangeNotificationProcessor(),
                 new WrittenInstanceHelper(),
                 eventValueStore,
+                referenceTraverser,
                 referenceStore,
                 commitChange,
                 new TasmoEdgeReport());
 
-        //ListeningExecutorService processEvents = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-        ListeningExecutorService processEvents = MoreExecutors.sameThreadExecutor();
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,
-                processEvents);
+                listeningExecutorService); //MoreExecutors.sameThreadExecutor());
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
+    }
+
+    @AfterMethod
+    public void shutdownMaterializer() throws Exception {
+        executorService.shutdownNow();
     }
 
     Expectations initModelPaths(ArrayNode views) throws Exception {
