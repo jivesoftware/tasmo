@@ -97,7 +97,7 @@ public class TasmoViewModel {
                     Views views = viewsProvider.getViews(new ViewsProcessorId(tenantId, "NotBeingUsedYet"));
 
                     if (views != null) {
-                        ListMultimap<String, InitiateTraversal> dispatchers = bindModelPaths(views);
+                        Map<String, InitiateTraversal> dispatchers = bindModelPaths(views);
                         SetMultimap<String, FieldNameAndType> eventModel = bindEventFieldTypes(views);
                         Set<String> notifiableViewClassNames = buildNotifiableViewClassNames(views);
                         versionedViewModels.put(tenantId, new VersionedTasmoViewModel(views.getVersion(), dispatchers, eventModel, notifiableViewClassNames));
@@ -213,7 +213,7 @@ public class TasmoViewModel {
         }
     }
 
-    private ListMultimap<String, InitiateTraversal> bindModelPaths(Views views) throws IllegalArgumentException {
+    private Map<String, InitiateTraversal> bindModelPaths(Views views) throws IllegalArgumentException {
 
         Map<String, PathTraversersFactory> allFieldProcessorFactories = Maps.newHashMap();
 
@@ -258,15 +258,13 @@ public class TasmoViewModel {
             }
 
         }
-        ListMultimap<String, InitiateTraversal> all = ArrayListMultimap.create();
-        all.putAll(buildInitialStepDispatchers(groupSteps));
-        return all;
+        return buildInitialStepDispatchers(groupSteps);
     }
 
-    private ListMultimap<String, InitiateTraversal> buildInitialStepDispatchers(
+    private Map<String, InitiateTraversal> buildInitialStepDispatchers(
         Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupSteps) {
 
-        ListMultimap<String, InitiateTraversal> all = ArrayListMultimap.create();
+        Map<String, InitiateTraversal> all = new HashMap<>();
         for (String eventClassName : groupSteps.keySet()) {
             Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>> typedSteps = groupSteps.get(eventClassName);
 

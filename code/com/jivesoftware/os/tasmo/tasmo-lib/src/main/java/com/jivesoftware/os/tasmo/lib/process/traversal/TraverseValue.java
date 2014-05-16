@@ -8,20 +8,25 @@
  */
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
+import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
+import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class TraverseValue implements StepTraverser {
 
-    private final List<String> fieldNames;
+    private final Set<String> fieldNames;
     private final int processingPathIndex;
     private final int pathIndex;
 
-    public TraverseValue(List<String> fieldNames,
+    public TraverseValue(Set<String> fieldNames,
             int processingPathIndex,
             int pathIndex) {
 
@@ -44,7 +49,19 @@ public class TraverseValue implements StepTraverser {
             List<ReferenceWithTimestamp> versions = leafContext.removeLeafNodeFields(pathContext);
             pathContext.addVersions(pathIndex, versions);
         } else {
-            List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(tenantIdAndCentricId, pathContext, from.getObjectId(), fieldNames);
+
+            String[] fieldNamesArray = fieldNames.toArray(new String[fieldNames.size()]);
+            ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] got = writtenEventContext
+                    .getFieldValueReader()
+                    .readFieldValues(tenantIdAndCentricId, from.getObjectId(), fieldNamesArray);
+
+            final Map<String, ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>> fieldValues = new HashMap<>();
+            for (int i = 0; i < fieldNamesArray.length; i++) {
+                fieldValues.put(fieldNamesArray[i], got[i]);
+            }
+
+            List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(tenantIdAndCentricId, pathContext, from.getObjectId(), fieldNames,
+                    fieldValues);
             pathContext.addVersions(pathIndex, versions);
         }
         PathId to = pathContext.getPathId(processingPathIndex);

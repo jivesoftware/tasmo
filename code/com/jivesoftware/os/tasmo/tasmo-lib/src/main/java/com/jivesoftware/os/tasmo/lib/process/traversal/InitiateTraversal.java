@@ -15,6 +15,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
@@ -22,6 +23,7 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
@@ -30,8 +32,10 @@ import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -127,6 +131,25 @@ public class InitiateTraversal implements WrittenEventProcessor {
             }
 
         } else {
+            Set<String> fieldNames = new HashSet<>();
+            for (InitiateTraverserKey key : valueTraversers.keySet()) {
+                if (writtenInstance.hasField(key.getTriggerFieldName()) || key.getRefFieldName() == null) { // TODO fix == null HACK!
+                    for (final PathTraverser pathTraverser : valueTraversers.get(key)) {
+                        fieldNames.addAll(pathTraverser.getInitialFieldNames());
+                    }
+                }
+            }
+
+            String[] fieldNamesArray = fieldNames.toArray(new String[fieldNames.size()]);
+            ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] got = writtenEventContext
+                    .getFieldValueReader()
+                    .readFieldValues(tenantIdAndCentricId, instanceId, fieldNamesArray);
+
+            final Map<String, ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>> fieldValues = new HashMap<>();
+            for (int i = 0; i < fieldNamesArray.length; i++) {
+                fieldValues.put(fieldNamesArray[i], got[i]);
+            }
+
             final List<ConcurrencyStore.FieldVersion> want = new ArrayList<>();
             List<Callable<List<ViewFieldChange>>> callables = new ArrayList<>();
             for (InitiateTraverserKey key : valueTraversers.keySet()) {
@@ -139,8 +162,10 @@ public class InitiateTraversal implements WrittenEventProcessor {
                                 PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, false);
                                 PathContext pathContext = pathTraverser.createPathContext();
                                 LeafContext leafContext = new LeafContext(writtenEventContext);
+
+                                Set<String> fieldNames = pathTraverser.getInitialFieldNames();
                                 List<ReferenceWithTimestamp> valueVersions = leafContext.populateLeafNodeFields(tenantIdAndCentricId, pathContext,
-                                        instanceId, pathTraverser.getInitialFieldNames());
+                                        instanceId, fieldNames, fieldValues);
 
                                 pathContext.setPathId(writtenEventContext, pathTraverser.getPathIndex(), instanceId, timestamp);
                                 pathContext.addVersions(pathTraverser.getPathIndex(), valueVersions);

@@ -4,7 +4,7 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
-import java.util.List;
+import java.util.Set;
 
 public class PathTraverser {
 
@@ -35,7 +35,7 @@ public class PathTraverser {
         return new PathContext(pathTraverserKey.getPathLength());
     }
 
-    public List<String> getInitialFieldNames() {
+    public Set<String> getInitialFieldNames() {
         return pathTraverserKey.getInitialFieldNames();
     }
 

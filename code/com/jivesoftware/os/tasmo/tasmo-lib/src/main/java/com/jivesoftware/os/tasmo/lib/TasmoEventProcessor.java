@@ -1,6 +1,5 @@
 package com.jivesoftware.os.tasmo.lib;
 
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -40,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -169,16 +169,14 @@ public class TasmoEventProcessor {
                 }
                 processingStats.latency("UPDATE", className, System.currentTimeMillis() - start);
 
-                ListMultimap<String, InitiateTraversal> dispatchers = model.getDispatchers();
-                List<InitiateTraversal> initiateTraversals = dispatchers.get(className);
-                processingStats.latency("TRAVERSER", className, initiateTraversals.size());
-                for (InitiateTraversal initiateTraversal : initiateTraversals) {
-                    if (initiateTraversal == null) {
-                        LOG.warn("No traversal defined for className:{}", className);
-                        continue;
-                    }
-                    eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent);
+                Map<String, InitiateTraversal> dispatchers = model.getDispatchers();
+                InitiateTraversal initiateTraversal = dispatchers.get(className);
+                if (initiateTraversal == null) {
+                    LOG.warn("No traversal defined for className:{}", className);
+                    continue;
                 }
+                eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent);
+
             }
 
             long start = System.currentTimeMillis();

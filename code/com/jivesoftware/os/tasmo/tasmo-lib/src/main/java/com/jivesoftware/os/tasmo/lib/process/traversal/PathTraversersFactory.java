@@ -16,6 +16,7 @@ import com.jivesoftware.os.tasmo.reference.lib.BackRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.ForwardRefStreamer;
 import com.jivesoftware.os.tasmo.reference.lib.RefStreamer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -129,7 +130,7 @@ public class PathTraversersFactory {
             StepTraverser processStep;
             if (pathIndex == modelPathMembersSize - 1) {
 
-                processStep = new TraverseValue(member.getFieldNames(), initialPathIndex, pathIndex);
+                processStep = new TraverseValue(new HashSet<>(member.getFieldNames()), initialPathIndex, pathIndex);
 
             } else {
                 memberType = member.getStepType();

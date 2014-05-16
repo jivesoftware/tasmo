@@ -39,6 +39,7 @@ public class TasmoViewMaterializer {
     }
 
     public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
+
         final List<WrittenEvent> processed = new ArrayList<>(writtenEvents.size());
         final List<WrittenEvent> failedToProcess = new ArrayList<>(writtenEvents.size());
         try {
@@ -51,13 +52,12 @@ public class TasmoViewMaterializer {
                     TenantId tenantId = writtenEvent.getTenantId();
                     StripingLocksProvider<ObjectId> tenantLocks = instanceIdLocks.get(tenantId);
                     if (tenantLocks == null) {
-                        tenantLocks = new StripingLocksProvider<>(1024);
+                        tenantLocks = new StripingLocksProvider<>(1024); // Expose to config?
                         StripingLocksProvider<ObjectId> had = instanceIdLocks.putIfAbsent(tenantId, tenantLocks);
                         if (had != null) {
                             tenantLocks = had;
                         }
                     }
-
                     Object lock = tenantLocks.lock(writtenInstance.getInstanceId());
                     writtenEventLockGroups.put(lock, writtenEvent);
                 }

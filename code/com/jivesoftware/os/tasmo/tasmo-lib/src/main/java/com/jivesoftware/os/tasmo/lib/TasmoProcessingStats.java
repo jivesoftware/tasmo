@@ -81,6 +81,39 @@ public class TasmoProcessingStats {
         }
     }
 
+    public String getTextReport() {
+        List<SortableStat> latencyStats = new ArrayList<>();
+        for (String catagoryName : latencyCatagories.keySet()) {
+            Map<String, DescriptiveStatistics> catagory = latencyCatagories.get(catagoryName);
+            for (String name : catagory.keySet()) {
+                DescriptiveStatistics descriptiveStatistics = catagory.get(name);
+                double sla = 0;
+                logStats(sla, "STATS " + catagoryName + " OF " + name, descriptiveStatistics, "millis", latencyStats);
+            }
+        }
+
+        Collections.sort(latencyStats);
+        for (SortableStat stat : latencyStats) {
+            LOG.info(stat.value + " " + stat.name);
+        }
+
+        List<SortableStat> tallis = new ArrayList<>();
+        for (String catagoryName : tallyCatagories.keySet()) {
+            Map<String, AtomicLong> catagory = tallyCatagories.get(catagoryName);
+            for (String name : catagory.keySet()) {
+                AtomicLong atomicLong = catagory.get(name);
+                tallis.add(new SortableStat(atomicLong.get(), "TALLY " + catagoryName + " FOR " + name));
+            }
+        }
+
+        Collections.sort(tallis);
+        StringBuilder sb = new StringBuilder();
+        for (SortableStat stat : tallis) {
+            sb.append(stat.value + "," + stat.name).append("\n");
+        }
+        return sb.toString();
+    }
+
     static class SortableStat implements Comparable<SortableStat> {
 
         private final double value;
