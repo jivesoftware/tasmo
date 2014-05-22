@@ -25,6 +25,7 @@ public class InitiateTraversalContext {
     private final int membersSize;
     private final String viewClassName;
     private final String modelPathId;
+    private final Set<String> allInitialFieldNames = Sets.newHashSet();
 
     public InitiateTraversalContext(
         ModelPathStep initialModelPathMember,
@@ -37,6 +38,12 @@ public class InitiateTraversalContext {
         this.membersSize = membersSize;
         this.viewClassName = viewclassName;
         this.modelPathId = modelPathId;
+
+        List<String> fieldNames = initialModelPathMember.getFieldNames();
+        if (fieldNames != null && !fieldNames.isEmpty()) {
+            allInitialFieldNames.addAll(fieldNames);
+        }
+        allInitialFieldNames.add(ReservedFields.DELETED);
     }
 
     public Set<String> getInitialClassNames() {
@@ -60,14 +67,6 @@ public class InitiateTraversalContext {
     }
 
     public Set<String> getInitialFieldNames() {
-        Set<String> allInitialFieldNames = Sets.newHashSet();
-
-        List<String> fieldNames = initialModelPathMember.getFieldNames();
-        if (fieldNames != null && !fieldNames.isEmpty()) {
-            allInitialFieldNames.addAll(fieldNames);
-        }
-
-        allInitialFieldNames.add(ReservedFields.DELETED);
         return allInitialFieldNames;
     }
 

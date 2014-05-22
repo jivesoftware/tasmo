@@ -236,6 +236,7 @@ public class Materialization {
     RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> rawViewValueStore;
     ExecutorService eventProcessorThreads;
     ExecutorService pathProcessorThreads;
+    ExecutorService batchTraverserExecutor;
     ListeningExecutorService traverserExecutors;
     TasmoEventProcessor tasmoEventProcessor;
 
@@ -357,7 +358,8 @@ public class Materialization {
         traverserExecutors = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
         final BatchingReferenceTraverser batchingReferenceTraverser = new BatchingReferenceTraverser(referenceStore,
                 traverserExecutors, 100, 10000); // TODO expose to config
-        Executors.newSingleThreadExecutor().submit(new Runnable() {
+        batchTraverserExecutor = Executors.newSingleThreadExecutor();
+        batchTraverserExecutor.submit(new Runnable() {
 
             @Override
             public void run() {
@@ -465,6 +467,7 @@ public class Materialization {
         eventProcessorThreads.shutdownNow();
         pathProcessorThreads.shutdownNow();
         traverserExecutors.shutdownNow();
+        batchTraverserExecutor.shutdownNow();
     }
 
     List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {

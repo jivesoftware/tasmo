@@ -35,7 +35,7 @@ public class TraverseBackref implements StepTraverser {
     }
 
     @Override
-    public void process(TenantIdAndCentricId tenantIdAndCentricId,
+    public void process(final TenantIdAndCentricId tenantIdAndCentricId,
             final WrittenEventContext writtenEventContext,
             final PathTraversalContext context,
             final PathContext pathContext,
@@ -54,7 +54,8 @@ public class TraverseBackref implements StepTraverser {
                     @Override
                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                         if (to != null && isValidDownStreamObject(to)) {
-                            streamTo.stream(new PathId(to.getObjectId(), to.getTimestamp()));
+                            streamTo.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext,
+                                    new PathId(to.getObjectId(), to.getTimestamp()));
                         }
                         return to;
                     }

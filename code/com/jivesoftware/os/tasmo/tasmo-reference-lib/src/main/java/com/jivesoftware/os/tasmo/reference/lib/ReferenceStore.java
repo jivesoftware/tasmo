@@ -122,7 +122,10 @@ public class ReferenceStore {
 
         for (String className : classNames) {
             final ClassAndField_IdKey aClassAndField_aId = new ClassAndField_IdKey(className, fieldName, id);
-            LOG.trace(System.currentTimeMillis() + " |--> Get bIds Tenant={} A={}", tenantIdAndCentricId, aClassAndField_aId);
+            if (LOG.isTraceEnabled()) {
+
+                LOG.trace(System.currentTimeMillis() + " |--> Get bIds Tenant={} A={}", tenantIdAndCentricId, aClassAndField_aId);
+            }
 
             multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
                     new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
@@ -131,8 +134,11 @@ public class ReferenceStore {
                             if (bId != null) {
 
                                 ReferenceWithTimestamp reference = new ReferenceWithTimestamp(bId.getColumn(), fieldName, bId.getTimestamp());
-                                LOG.trace(System.currentTimeMillis() + " |--> {} Got bIds Tenant={} a={} b={} Timestamp={}", new Object[]{
-                                    threadTimestamp, tenantIdAndCentricId, aClassAndField_aId, bId.getColumn(), bId.getTimestamp()});
+                                if (LOG.isTraceEnabled()) {
+
+                                    LOG.trace(System.currentTimeMillis() + " |--> {} Got bIds Tenant={} a={} b={} Timestamp={}", new Object[]{
+                                        threadTimestamp, tenantIdAndCentricId, aClassAndField_aId, bId.getColumn(), bId.getTimestamp()});
+                                }
 
                                 refs.add(reference);
 
@@ -171,8 +177,11 @@ public class ReferenceStore {
                             if (backRef != null) {
                                 ReferenceWithTimestamp reference = new ReferenceWithTimestamp(backRef.getColumn(),
                                         fieldName, backRef.getTimestamp());
-                                LOG.trace(System.currentTimeMillis() + " |--> {} Got aIds Tenant={} b={} a={} Timestamp={}", new Object[]{
-                                    threadTimestamp, tenantIdAndCentricId, aClassAndField_bId, backRef.getColumn(), backRef.getTimestamp()});
+                                if (LOG.isTraceEnabled()) {
+
+                                    LOG.trace(System.currentTimeMillis() + " |--> {} Got aIds Tenant={} b={} a={} Timestamp={}", new Object[]{
+                                        threadTimestamp, tenantIdAndCentricId, aClassAndField_bId, backRef.getColumn(), backRef.getTimestamp()});
+                                }
                                 refs.add(reference);
 
                                 if (refs.size() > MAX_FAN_OUT_BEFORE_WARN) {
@@ -246,7 +255,9 @@ public class ReferenceStore {
             final long threadTimestamp,
             final CallbackStream<ReferenceWithTimestamp> removedTos) throws Exception {
 
-        //LOG.trace("|--> un-link {}.{}.{} t={}", new Object[]{from.getClassName(), fieldName, from, timestamp});
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("|--> un-link {}.{}.{} t={}", new Object[]{from.getClassName(), fieldName, from, timestamp});
+        }
         LOG.inc("unlink");
 
         final ConstantTimestamper constantTimestamper = new ConstantTimestamper(timestamp + 1);

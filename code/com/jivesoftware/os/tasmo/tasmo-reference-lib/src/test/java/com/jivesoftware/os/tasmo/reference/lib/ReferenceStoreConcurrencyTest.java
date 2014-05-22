@@ -20,8 +20,10 @@ import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -242,8 +244,8 @@ public class ReferenceStoreConcurrencyTest {
                                     }
                                 });
 
-                        List<FieldVersion> want = Arrays.asList(new FieldVersion(from, fromRefFieldName, highest));
-                        List<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+                        Set<FieldVersion> want = new HashSet<>(Arrays.asList(new FieldVersion(from, fromRefFieldName, highest)));
+                        Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
                         if (got != want) {
                             PathConsistencyException e = new PathConsistencyException(want, got);
                             throw e;
@@ -255,8 +257,8 @@ public class ReferenceStoreConcurrencyTest {
                                     @Override
                                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
                                         if (v != null) {
-                                            List<FieldVersion> want = Arrays.asList(new FieldVersion(from, fromRefFieldName, v.getTimestamp()));
-                                            List<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+                                            Set<FieldVersion> want = Collections.singleton(new FieldVersion(from, fromRefFieldName, v.getTimestamp()));
+                                            Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
                                             if (got == want) {
                                                 values.add(tenantIdAndCentricId, v.getObjectId(), fromRefFieldName, value, null,
                                                         new ConstantTimestamper(v.getTimestamp()));

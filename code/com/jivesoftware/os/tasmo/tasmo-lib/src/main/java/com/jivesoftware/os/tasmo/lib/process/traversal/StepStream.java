@@ -1,5 +1,7 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
+import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 
 /**
@@ -8,6 +10,11 @@ import com.jivesoftware.os.tasmo.lib.write.PathId;
  */
 public interface StepStream {
 
-    void stream(PathId pathId) throws Exception; // TODO: Consider batching?
+    void stream(TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEventContext writtenEventContext,
+            PathTraversalContext context,
+            PathContext pathContext,
+            LeafContext leafContext,
+            PathId pathId) throws Exception; // TODO: Consider batching?
 
 }
