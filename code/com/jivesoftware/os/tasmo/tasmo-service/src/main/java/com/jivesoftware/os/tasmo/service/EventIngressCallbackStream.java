@@ -27,9 +27,8 @@ public class EventIngressCallbackStream implements CallbackStream<List<WrittenEv
     @Override
     public List<WrittenEvent> callback(List<WrittenEvent> value) throws Exception {
         if (value != null) {
-            materializer.process(value);
+            return materializer.process(value);
         }
-
         return value;
     }
 }

@@ -23,9 +23,9 @@ import static org.testng.Assert.fail;
 /**
  *
  */
-public class HackTest extends BaseTasmoTest {
+public class DebugHarnessTest extends BaseTasmoTest {
 
-    @Test(invocationCount = 1000, singleThreaded = false, skipFailedInvocations = true, enabled = false)
+    @Test(invocationCount = 1000, singleThreaded = false, skipFailedInvocations = true, enabled = true)
     public void hackTest() throws Exception {
 //        LogManager.getLogger("com.jivesoftware.os.tasmo").setLevel(Level.TRACE);
 //        LogManager.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange").setLevel(Level.TRACE);
