@@ -234,10 +234,8 @@ public class Materialization {
     }
 
     RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> rawViewValueStore;
-    ExecutorService eventProcessorThreads;
-    ExecutorService pathProcessorThreads;
+    ExecutorService threads;
     ExecutorService batchTraverserExecutor;
-    ListeningExecutorService traverserExecutors;
     TasmoEventProcessor tasmoEventProcessor;
 
     public void setupModelAndMaterializer(int numberOfEventProcessorThreads) throws Exception {
@@ -340,9 +338,9 @@ public class Materialization {
                 })
                 .build();
 
-        pathProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, pathProcessorThreadFactory);
-        ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(pathProcessorThreads);
-        tasmoViewModel = new TasmoViewModel(pathExecutors,
+        threads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, pathProcessorThreadFactory);
+        ListeningExecutorService executorService = MoreExecutors.listeningDecorator(threads);
+        tasmoViewModel = new TasmoViewModel(executorService,
                 MASTER_TENANT_ID,
                 viewsProvider,
                 concurrencyStore,
@@ -355,9 +353,8 @@ public class Materialization {
             }
         };
 
-        traverserExecutors = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(numberOfEventProcessorThreads));
         final BatchingReferenceTraverser batchingReferenceTraverser = new BatchingReferenceTraverser(referenceStore,
-                traverserExecutors, 100, 10000); // TODO expose to config
+                executorService, 100, 10000); // TODO expose to config
         batchTraverserExecutor = Executors.newSingleThreadExecutor();
         batchTraverserExecutor.submit(new Runnable() {
 
@@ -398,11 +395,9 @@ public class Materialization {
                 })
                 .build();
 
-        eventProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, eventProcessorThreadFactory);
-
         tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,
-                MoreExecutors.listeningDecorator(eventProcessorThreads));
+                executorService);
 
     }
 
@@ -464,9 +459,7 @@ public class Materialization {
     }
 
     public void shutdown() {
-        eventProcessorThreads.shutdownNow();
-        pathProcessorThreads.shutdownNow();
-        traverserExecutors.shutdownNow();
+        threads.shutdownNow();
         batchTraverserExecutor.shutdownNow();
     }
 

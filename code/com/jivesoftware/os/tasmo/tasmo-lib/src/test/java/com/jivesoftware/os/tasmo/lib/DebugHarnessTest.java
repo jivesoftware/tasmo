@@ -14,8 +14,6 @@ import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.fail;
@@ -37,7 +35,7 @@ public class DebugHarnessTest extends BaseTasmoTest {
         Expectations expectations = initModelPaths(views);
         List<String> stringEvents = Files.readLines(new File("/home/jonathan/jive/os/events.txt"), Charset.defaultCharset());
         final Set<Id> instanceIds = new HashSet<>();
-        ExecutorService executorService = Executors.newFixedThreadPool(20);
+//        ExecutorService executorService = Executors.newFixedThreadPool(20);
         for (final String stringEvent : stringEvents) {
 //            executorService.submit(new Runnable() {
 //                public void run() {
