@@ -48,7 +48,7 @@ public class CombinatorialMaterializerTest {
     private final int numberOfEventProcessorThreads = 10;
     //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
     private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
-    private final Executor executor = Executors.newCachedThreadPool();
+    private final Executor executor = Executors.newFixedThreadPool(32);
     private final OrderIdProviderGenerator orderIdProviderGenerator = new OrderIdProviderGenerator();
     private final TenantId tenantId = new TenantId("test");
     private final TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);

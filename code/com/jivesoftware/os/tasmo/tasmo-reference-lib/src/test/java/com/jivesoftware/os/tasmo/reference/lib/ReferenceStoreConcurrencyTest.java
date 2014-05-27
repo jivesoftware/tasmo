@@ -74,7 +74,7 @@ public class ReferenceStoreConcurrencyTest {
             }
         }
 
-        ExecutorService executor = Executors.newCachedThreadPool();
+        ExecutorService executor = Executors.newFixedThreadPool(32);
         final CountDownLatch latch = new CountDownLatch(eventCount);
         for (final Event e : events) {
             executor.execute(new Runnable() {

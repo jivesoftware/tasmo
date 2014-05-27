@@ -355,7 +355,7 @@ public class Materialization {
             }
         };
 
-        traverserExecutors = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
+        traverserExecutors = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(numberOfEventProcessorThreads));
         final BatchingReferenceTraverser batchingReferenceTraverser = new BatchingReferenceTraverser(referenceStore,
                 traverserExecutors, 100, 10000); // TODO expose to config
         batchTraverserExecutor = Executors.newSingleThreadExecutor();
