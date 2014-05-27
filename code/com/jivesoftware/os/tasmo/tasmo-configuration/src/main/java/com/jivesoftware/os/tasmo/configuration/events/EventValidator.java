@@ -49,13 +49,13 @@ public class EventValidator {
             EventModel modelEvent = eventsModel.getEventsModel().getEvent(ingressEvent.getEventClass());
             if (modelEvent == null) {
                 if (failInvalidEvents) {
-                    LOG.error(ingressEvent.getEventClass() + " is not declared in the current model. Do you need to reload the mode?");
+                    LOG.error(ingressEvent.getEventClass() + " is not declared in the current model. Do you need to reload the model?");
                     return Validated.build()
                         .setVersion(eventsModel.getVersion())
                         .setUnexpectedFields(ingressEvent.getEventFields().keySet())
                         .invalid();
                 } else {
-                    LOG.warn(ingressEvent.getEventClass() + " is not declared in the current model. Do you need to reload the mode?");
+                    LOG.warn(ingressEvent.getEventClass() + " is not declared in the current model. Do you need to reload the model?");
                     return Validated.build().valid();
                 }
             }
