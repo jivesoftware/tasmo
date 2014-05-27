@@ -16,6 +16,7 @@ import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
+import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.IdProviderImpl;
 import com.jivesoftware.os.tasmo.id.ObjectId;
@@ -58,13 +59,15 @@ public class CombinatorialMaterializerTest {
     private final ModelPathGenerator pathGenerator = new ModelPathGenerator();
     private final EventFireGenerator eventFireGenerator = new EventFireGenerator(tenantId, actorId);
 
+
     @BeforeClass
     public void logger() {
 
-        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+
+        Logger rootLogger = (Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         LoggerContext loggerContext = rootLogger.getLoggerContext();
         loggerContext.reset();
-
+        
         if (verbose) {
 
             PatternLayoutEncoder encoder = new PatternLayoutEncoder();
@@ -79,10 +82,10 @@ public class CombinatorialMaterializerTest {
 
             rootLogger.addAppender(appender);
 
-            ((Logger) LoggerFactory.getLogger("com.jivesoftware.os.tasmo")).setLevel(Level.TRACE);
-            ((Logger) LoggerFactory.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange")).setLevel(Level.TRACE);
-            ((Logger) LoggerFactory.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore")).setLevel(Level.TRACE);
-            ((Logger) LoggerFactory.getLogger("com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore")).setLevel(Level.TRACE);
+            ((Logger)LoggerFactory.getLogger("com.jivesoftware.os.tasmo")).setLevel(Level.TRACE);
+            ((Logger)LoggerFactory.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange")).setLevel(Level.TRACE);
+            ((Logger)LoggerFactory.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore")).setLevel(Level.TRACE);
+            ((Logger)LoggerFactory.getLogger("com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore")).setLevel(Level.TRACE);
         } else {
 
             rootLogger.setLevel(Level.OFF);
@@ -362,11 +365,9 @@ public class CombinatorialMaterializerTest {
     }
 
     public List<ViewBinding> buildBindings(List<ModelPathStepType> refTypes, int maxNumSteps) throws Exception {
-        Materialization materialization = new Materialization();
-        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
 
         List<String> pathStrings = pathGenerator.generateModelPaths(refTypes, maxNumSteps);
-        List<ViewBinding> allViewBindings = materialization.parseModelPathStrings(pathStrings);
+        List<ViewBinding> allViewBindings = Materialization.parseModelPathStrings(false, pathStrings);
 
         if (allViewBindings.size() > 1) {
             throw new IllegalStateException("Unexpectedly generated model paths with more than one view class name");
@@ -375,7 +376,8 @@ public class CombinatorialMaterializerTest {
     }
 
     private EventWriterProvider buildEventWriterProvider(Materialization materialization, OrderIdProvider idProvider) {
-        final EventWriter writer = new EventWriter(materialization.jsonEventWriter(materialization.tasmoMaterializer, idProvider));
+        JsonEventWriter jsonEventWriter = materialization.jsonEventWriter(materialization.tasmoMaterializer, idProvider);
+        final EventWriter writer = new EventWriter(jsonEventWriter);
 
         return new EventWriterProvider() {
             @Override

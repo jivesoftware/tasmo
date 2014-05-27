@@ -186,7 +186,7 @@ public class TasmoServiceInitializer {
             @Override
             public void run() {
                 try {
-                    batchingReferenceTraverser.processRequests();
+                    batchingReferenceTraverser.startProcessingRequests();
                 } catch (InterruptedException x) {
                     LOG.error("Reference Traversal failed for the folloing reasons.", x);
                     Thread.currentThread().interrupt();
