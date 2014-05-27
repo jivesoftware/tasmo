@@ -93,8 +93,10 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Materialization {
@@ -234,20 +236,35 @@ public class Materialization {
     }
 
     RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> rawViewValueStore;
-    ExecutorService eventProcessorThreads;
-    ExecutorService pathProcessorThreads;
-    ListeningExecutorService traverserExecutors;
+    private ExecutorService eventProcessorThreads;
+    private ExecutorService pathProcessorThreads;
+    private ExecutorService batchTraverserThread;
+    private ExecutorService traverserThreads;
+    private BatchingReferenceTraverser batchingReferenceTraverser;
     TasmoEventProcessor tasmoEventProcessor;
+
+    private ExecutorService newThreadPool(int maxThread, String name) {
+        ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
+                .setNameFormat(name + "-%d")
+                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
+                    }
+                })
+                .build();
+
+        return new ThreadPoolExecutor(0, maxThread,
+                5L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(), eventProcessorThreadFactory);
+    }
 
     public void setupModelAndMaterializer(int numberOfEventProcessorThreads) throws Exception {
 
         String uuid = UUID.randomUUID().toString();
-        //        Logger logger = Logger.getLogger("com.jivesoftware.soa.modules");
-        //        logger.setLevel(Level.TRACE);
 
         RowColumnValueStoreProvider rowColumnValueStoreProvider = getRowColumnValueStoreProvider(uuid);
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore = rowColumnValueStoreProvider.eventStore();
-        RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStorage = rowColumnValueStoreProvider.existenceStore();
 
         EventValueCacheProvider cacheProvider = new EventValueCacheProvider() {
             @Override
@@ -329,17 +346,7 @@ public class Materialization {
             }
         };
 
-        ThreadFactory pathProcessorThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("path-processor-%d")
-                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
-                    }
-                })
-                .build();
-
-        pathProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, pathProcessorThreadFactory);
+        pathProcessorThreads = newThreadPool(numberOfEventProcessorThreads, "process-path-");
         ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(pathProcessorThreads);
         tasmoViewModel = new TasmoViewModel(pathExecutors,
                 MASTER_TENANT_ID,
@@ -354,15 +361,16 @@ public class Materialization {
             }
         };
 
-        traverserExecutors = MoreExecutors.listeningDecorator(Executors.newCachedThreadPool());
-        final BatchingReferenceTraverser batchingReferenceTraverser = new BatchingReferenceTraverser(referenceStore,
-                traverserExecutors, 100, 10000); // TODO expose to config
-        Executors.newSingleThreadExecutor().submit(new Runnable() {
+        traverserThreads = newThreadPool(numberOfEventProcessorThreads, "travers-path-");
+        ListeningExecutorService traverserExecutor = MoreExecutors.listeningDecorator(traverserThreads);
+        batchingReferenceTraverser = new BatchingReferenceTraverser(referenceStore, traverserExecutor, 100, 10000); // TODO expose to config
+        batchTraverserThread = newThreadPool(1, "batch-traverser");
+        batchTraverserThread.submit(new Runnable() {
 
             @Override
             public void run() {
                 try {
-                    batchingReferenceTraverser.processRequests();
+                    batchingReferenceTraverser.startProcessingRequests();
                 } catch (InterruptedException x) {
                     LOG.error("Reference Traversal failed for the folloing reasons.", x);
                     Thread.currentThread().interrupt();
@@ -386,18 +394,7 @@ public class Materialization {
                 commitChange,
                 new TasmoEdgeReport());
 
-        ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("event-processor-%d")
-                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
-                    }
-                })
-                .build();
-
-        eventProcessorThreads = Executors.newFixedThreadPool(numberOfEventProcessorThreads, eventProcessorThreadFactory);
-
+        eventProcessorThreads = newThreadPool(numberOfEventProcessorThreads, "process-event-");
         tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,
                 MoreExecutors.listeningDecorator(eventProcessorThreads));
@@ -462,20 +459,14 @@ public class Materialization {
     }
 
     public void shutdown() {
+        batchingReferenceTraverser.stopProcessingRequests();
         eventProcessorThreads.shutdownNow();
         pathProcessorThreads.shutdownNow();
-        traverserExecutors.shutdownNow();
+        traverserThreads.shutdownNow();
+        batchTraverserThread.shutdownNow();
     }
 
-    List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {
-        return parseModelPathStrings(simpleBindings.toArray(new String[simpleBindings.size()]));
-    }
-
-    List<ViewBinding> parseModelPathStrings(String... simpleBindings) {
-        return parseModelPathStrings(false, simpleBindings);
-    }
-
-    List<ViewBinding> parseModelPathStrings(boolean idCentric, String... simpleBindings) {
+    static List<ViewBinding> parseModelPathStrings(boolean idCentric, List<String> simpleBindings) {
         ArrayListMultimap<String, ModelPath> viewBindings = ArrayListMultimap.create();
 
         for (String simpleBinding : simpleBindings) {
@@ -493,17 +484,12 @@ public class Materialization {
         return viewBindingsList;
     }
 
-    Expectations initModelPaths(TenantId tenantId, String... simpleBindings) throws Exception {
-        List<ViewBinding> viewBindingsList = parseModelPathStrings(simpleBindings);
-        return initModelPaths(tenantId, viewBindingsList);
-    }
-
-    Expectations initModelPaths(TenantId tenantId, boolean idCentric, String... simpleBindings) throws Exception {
+    Expectations initModelPaths(TenantId tenantId, boolean idCentric, List<String> simpleBindings) throws Exception {
         List<ViewBinding> viewBindingsList = parseModelPathStrings(idCentric, simpleBindings);
         return initModelPaths(tenantId, viewBindingsList);
     }
 
-    ModelPath buildPath(String id, String path) {
+    static ModelPath buildPath(String id, String path) {
         String[] pathMembers = toStringArray(path, "|");
         ModelPath.Builder builder = ModelPath.builder(id);
         int i = 0;
@@ -514,7 +500,7 @@ public class Materialization {
         return builder.build();
     }
 
-    ModelPathStep toModelPathMember(int sortPrecedence, String pathMember) {
+    static ModelPathStep toModelPathMember(int sortPrecedence, String pathMember) {
 
         try {
             String[] memberParts = toStringArray(pathMember, ".");
@@ -561,7 +547,7 @@ public class Materialization {
         }
     }
 
-    private Set<String> splitClassNames(String classNames) {
+    static private Set<String> splitClassNames(String classNames) {
         if (classNames.startsWith("[")) {
             classNames = classNames.replace("[", "");
             classNames = classNames.replace("]", "");
@@ -572,7 +558,7 @@ public class Materialization {
         }
     }
 
-    JsonEventWriter jsonEventWriter(final TasmoViewMaterializer tasmoViewMaterializer, final OrderIdProvider idProvider) {
+    JsonEventWriter jsonEventWriter(final Materialization materialization, final OrderIdProvider idProvider) {
         return new JsonEventWriter() {
             JsonEventConventions jsonEventConventions = new JsonEventConventions();
 
@@ -601,7 +587,7 @@ public class Materialization {
                         writtenEvents.add(eventProvider.convertEvent(eventNode));
                     }
 
-                    tasmoViewMaterializer.process(writtenEvents);
+                    materialization.tasmoMaterializer.process(writtenEvents);
 
                     return new EventWriterResponse(eventIds, objectIds);
 
@@ -619,7 +605,7 @@ public class Materialization {
         return viewResponse.getStatusCode() == ViewResponse.StatusCode.OK ? viewResponse.getViewBody() : null;
     }
 
-    private String[] toStringArray(String string, String delim) {
+    static private String[] toStringArray(String string, String delim) {
         if (string == null || delim == null) {
             return new String[0];
         }

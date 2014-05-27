@@ -5,7 +5,6 @@ import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -187,7 +186,7 @@ public class TasmoServiceInitializer {
             @Override
             public void run() {
                 try {
-                    batchingReferenceTraverser.processRequests();
+                    batchingReferenceTraverser.startProcessingRequests();
                 } catch (InterruptedException x) {
                     LOG.error("Reference Traversal failed for the folloing reasons.", x);
                     Thread.currentThread().interrupt();
@@ -227,22 +226,8 @@ public class TasmoServiceInitializer {
 
         EventIngressCallbackStream eventIngressCallbackStream = new EventIngressCallbackStream(materializer);
         Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()
-                .withWaitStrategy(WaitStrategies.fixedWait(1, TimeUnit.SECONDS))
-                .withStopStrategy(StopStrategies.stopAfterDelay(TimeUnit.SECONDS.toSeconds(30))) // TODO expose to config
-                .retryIfException(new Predicate<Throwable>() {
-                    @Override
-                    public boolean apply(Throwable t) {
-                        LOG.error("Ingress failed due to: " + t);
-                        LOG.debug("", t);
-                        LOG.inc("ingress>errors");
-                        if (t instanceof InterruptedException) {
-                            Thread.currentThread().interrupt();
-                            return false;
-                        } else {
-                            return Exception.class.isAssignableFrom(t.getClass()) | RuntimeException.class.isAssignableFrom(t.getClass());
-                        }
-                    }
-                })
+                .withWaitStrategy(WaitStrategies.randomWait(1, TimeUnit.MILLISECONDS, 1000, TimeUnit.MILLISECONDS))
+                .withStopStrategy(StopStrategies.neverStop())
                 .build();
 
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
@@ -254,7 +239,7 @@ public class TasmoServiceInitializer {
                     LOG.error("Issue with logging stats. ", x);
                 }
             }
-        }, 60, 60, TimeUnit.SECONDS);
+        }, 1, 1, TimeUnit.SECONDS);
 
         return new EventIngressRetryingCallbackStream(eventIngressCallbackStream, retryer);
     }

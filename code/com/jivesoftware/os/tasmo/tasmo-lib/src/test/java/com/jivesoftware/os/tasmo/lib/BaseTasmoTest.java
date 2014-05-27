@@ -74,7 +74,8 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.traverser.BatchingReferenceTraverser;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
+import com.jivesoftware.os.tasmo.reference.lib.traverser.SerialReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
@@ -349,6 +350,7 @@ public class BaseTasmoTest {
         };
         executorService = Executors.newFixedThreadPool(8);
         ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
+        //ListeningExecutorService listeningExecutorService = MoreExecutors.sameThreadExecutor();
         tasmoViewModel = new TasmoViewModel(listeningExecutorService,
                 MASTER_TENANT_ID,
                 viewsProvider,
@@ -362,20 +364,20 @@ public class BaseTasmoTest {
             }
         };
 
-        //ReferenceTraverser referenceTraverser = new SerialReferenceTraverser(referenceStore);
-        final BatchingReferenceTraverser referenceTraverser = new BatchingReferenceTraverser(referenceStore, listeningExecutorService, 100, 10000);
-        Executors.newSingleThreadExecutor().submit(new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    referenceTraverser.processRequests();
-                } catch (InterruptedException x) {
-                    x.printStackTrace();
-                    Thread.currentThread().interrupt();
-                }
-            }
-        });
+        ReferenceTraverser referenceTraverser = new SerialReferenceTraverser(referenceStore);
+//        final BatchingReferenceTraverser referenceTraverser = new BatchingReferenceTraverser(referenceStore, listeningExecutorService, 100, 10000);
+//        Executors.newSingleThreadExecutor().submit(new Runnable() {
+//
+//            @Override
+//            public void run() {
+//                try {
+//                    referenceTraverser.processRequests();
+//                } catch (InterruptedException x) {
+//                    x.printStackTrace();
+//                    Thread.currentThread().interrupt();
+//                }
+//            }
+//        });
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator, new OrderIdProviderImpl(1));
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,

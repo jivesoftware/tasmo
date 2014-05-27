@@ -79,10 +79,11 @@ public class TasmoViewMaterializer {
                                     processed.add(event);
                                 } catch (Exception x) {
                                     failedToProcess.add(event);
-                                    LOG.warn("Failed to process eventId:{} instanceId:{} tenantId:{}", new Object[]{
+                                    LOG.warn("CONSISTENCY Failed to process eventId:{} instanceId:{} tenantId:{} exception: {}", new Object[]{
                                         event.getEventId(),
                                         event.getWrittenInstance().getInstanceId(),
-                                        event.getTenantId()
+                                        event.getTenantId(),
+                                        x
                                     });
                                     if (LOG.isTraceEnabled()) {
                                         LOG.trace("Failed to process writtenEvent:" + event, x);
@@ -98,10 +99,9 @@ public class TasmoViewMaterializer {
             }
             batchCompletionLatch.await();
 
-            for (Future future : futures) {
-                future.get(); // progagate exceptions to caller.
-            }
-
+//            for (Future future : futures) {
+//                future.get(); // progagate exceptions to caller.
+//            }
             tasmoEventBookkeeper.begin(processed);
             tasmoEventBookkeeper.succeeded();
 
@@ -125,6 +125,10 @@ public class TasmoViewMaterializer {
             lastEventsPerSecond = eventsPerSecond;
             LOG.info("BATCH PROCESSED: events:{} in {} millis  totalEvents:{} currentEventPerSecond:{}",
                     new Object[]{writtenEvents.size(), elapse, totalProcessed, eps});
+        }
+
+        if (failedToProcess.size() > 0) {
+            LOG.warn("CONSISTENCY please retry " + failedToProcess.size()+ " later.");
         }
         return failedToProcess;
     }

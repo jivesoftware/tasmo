@@ -17,16 +17,20 @@ package com.jivesoftware.os.tasmo.service;
 
 import com.github.rholder.retry.Retryer;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.jive.utils.logger.MetricLogger;
+import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  *
  * @author jonathan
  */
 public class EventIngressRetryingCallbackStream implements CallbackStream<List<WrittenEvent>> {
+
+    private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final CallbackStream<List<WrittenEvent>> delegate;
     private final Retryer<Boolean> retryer;
@@ -39,16 +43,36 @@ public class EventIngressRetryingCallbackStream implements CallbackStream<List<W
     @Override
     public List<WrittenEvent> callback(final List<WrittenEvent> events) throws Exception {
 
-        final AtomicReference<List<WrittenEvent>> callbackResult = new AtomicReference<>();
-        retryer.call(new Callable<Boolean>() {
+        Callable<Boolean> callable = new Callable<Boolean>() {
+            final List<WrittenEvent> batch = new ArrayList<>(events);
+            boolean retry = false;
 
             @Override
             public Boolean call() throws Exception {
-                List<WrittenEvent> callback = delegate.callback(events);
-                callbackResult.set(callback);
-                return Boolean.TRUE;
+                if (retry) {
+                    LOG.info("CONSISTENCY retrying these:" + batch);
+                }
+                try {
+                    List<WrittenEvent> callback = delegate.callback(batch);
+                    if (callback.isEmpty()) {
+                        return true;
+                    } else {
+                        retry = true;
+                        batch.clear();
+                        batch.addAll(callback);
+                        LOG.info("CONSISTENCY will retry these later:" + batch);
+                        return false;
+                    }
+                } catch (Exception x) {
+                    LOG.error("CONSISTENCY THIS SHOULD NEVER HAPPEN:" + x);
+                    return true;
+                }
             }
-        });
-        return callbackResult.get();
+        };
+
+        while (Boolean.FALSE.equals(callable.call())) {
+            Thread.sleep((int) Math.random() * 1000);
+        }
+        return events;
     }
 }

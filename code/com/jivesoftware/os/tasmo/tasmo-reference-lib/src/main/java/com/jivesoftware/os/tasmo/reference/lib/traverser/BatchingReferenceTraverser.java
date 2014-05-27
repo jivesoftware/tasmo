@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
@@ -26,6 +27,7 @@ public class BatchingReferenceTraverser implements ReferenceTraverser {
     private final ListeningExecutorService traverserExecutors;
     private final int processUpToNRequestAtATime;
     private final BlockingQueue<RefStreamRequestContext> requestsQueue;
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     public BatchingReferenceTraverser(ReferenceStore referenceStore,
             ListeningExecutorService traverserExecutors,
@@ -37,32 +39,38 @@ public class BatchingReferenceTraverser implements ReferenceTraverser {
         this.requestsQueue = new ArrayBlockingQueue<>(requestQueueCapacity);
     }
 
-    public void processRequests() throws InterruptedException {
-        while (true) {
-            final List<RefStreamRequestContext> requests = new ArrayList<>();
-            RefStreamRequestContext took = requestsQueue.take();
-            requests.add(took);
-            requestsQueue.drainTo(requests, processUpToNRequestAtATime);
-            if (requests.isEmpty()) {
-                return;
-            }
-            traverserExecutors.submit(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        if (requests.size() > 1) {
-                            LOG.info("Request aggregation size:" + requests.size());
-                        }
-                        referenceStore.multiStreamRefs(requests);
-                    } catch (Exception ex) {
-                        LOG.warn("Failed to process request:" + requests, ex);
-                        for (RefStreamRequestContext request : requests) {
-                            request.failure(ex);
+    public void startProcessingRequests() throws InterruptedException {
+        if (running.compareAndSet(false, true)) {
+            while (running.get()) {
+                final List<RefStreamRequestContext> requests = new ArrayList<>();
+                RefStreamRequestContext took = requestsQueue.take();
+                requests.add(took);
+                requestsQueue.drainTo(requests, processUpToNRequestAtATime);
+                if (requests.isEmpty()) {
+                    return;
+                }
+                traverserExecutors.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            if (requests.size() > 1) {
+                                LOG.info("Request aggregation size:" + requests.size());
+                            }
+                            referenceStore.multiStreamRefs(requests);
+                        } catch (Exception ex) {
+                            LOG.warn("Failed to process request:" + requests, ex);
+                            for (RefStreamRequestContext request : requests) {
+                                request.failure(ex);
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
         }
+    }
+
+    public void stopProcessingRequests() {
+        running.compareAndSet(true, false);
     }
 
     @Override

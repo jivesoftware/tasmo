@@ -203,7 +203,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             @Override
             public void run() {
                 try {
-                    referenceTraverser.processRequests();
+                    referenceTraverser.startProcessingRequests();
                 } catch (InterruptedException x) {
                     LOG.error("Reference Traversal failed for the folloing reasons.", x);
                     Thread.currentThread().interrupt();

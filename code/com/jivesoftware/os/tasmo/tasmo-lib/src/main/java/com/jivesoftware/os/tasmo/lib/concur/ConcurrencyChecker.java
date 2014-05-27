@@ -6,6 +6,7 @@ import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
 import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -27,14 +28,13 @@ public class ConcurrencyChecker {
         return concurrencyStore.highests(tenantId, instanceId, refFieldNames);
     }
 
-    public List<ConcurrencyStore.FieldVersion> checkIfModifiedOutFromUnderneathMe(TenantIdAndCentricId tenantIdAndCentricId,
-            List<FieldVersion> want) throws PathConsistencyException {
-        List<ConcurrencyStore.FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+    public void checkIfModifiedOutFromUnderneathMe(TenantIdAndCentricId tenantIdAndCentricId,
+            Set<FieldVersion> want) throws PathConsistencyException {
+        Set<ConcurrencyStore.FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
         if (got != want) {
             PathConsistencyException e = new PathConsistencyException(want, got);
             throw e;
         }
-        return want;
     }
 
 }

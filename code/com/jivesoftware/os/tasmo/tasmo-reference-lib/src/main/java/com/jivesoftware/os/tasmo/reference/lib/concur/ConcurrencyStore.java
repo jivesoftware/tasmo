@@ -44,7 +44,10 @@ public class ConcurrencyStore {
                     existenceUpdate.objectId, EXISTS,
                     existenceUpdate.timestamp,
                     new ConstantTimestamper(existenceUpdate.timestamp)));
-            LOG.trace("Object EXISTS:{} time:{}", new Object[]{existenceUpdate.objectId, existenceUpdate.timestamp});
+            if (LOG.isTraceEnabled()) {
+
+                LOG.trace("Object EXISTS:{} time:{}", new Object[]{existenceUpdate.objectId, existenceUpdate.timestamp});
+            }
         }
         updatedStore.multiRowsMultiAdd(batch);
     }
@@ -55,7 +58,10 @@ public class ConcurrencyStore {
             batch.add(new TenantRowColumnTimestampRemove<>(existenceUpdate.tenantId,
                     existenceUpdate.objectId, EXISTS,
                     new ConstantTimestamper(existenceUpdate.timestamp)));
-            LOG.trace("Object REMOVED:{} time:{}", new Object[]{existenceUpdate.objectId, existenceUpdate.timestamp});
+            if (LOG.isTraceEnabled()) {
+
+                LOG.trace("Object REMOVED:{} time:{}", new Object[]{existenceUpdate.objectId, existenceUpdate.timestamp});
+            }
         }
         updatedStore.multiRowsMultiRemove(batch);
     }
@@ -67,9 +73,13 @@ public class ConcurrencyStore {
         for (int i = 0; i < orderObjectIds.size(); i++) {
             if (multiRowGet.get(i) != null) {
                 existence.add(orderObjectIds.get(i));
-                LOG.trace("Check existence {} TRUE", new Object[]{orderObjectIds.get(i)});
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("Check existence {} TRUE", new Object[]{orderObjectIds.get(i)});
+                }
             } else {
-                LOG.trace("Check existence {} FALSE", new Object[]{orderObjectIds.get(i)});
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("Check existence {} FALSE", new Object[]{orderObjectIds.get(i)});
+                }
             }
         }
         return existence;
@@ -93,16 +103,20 @@ public class ConcurrencyStore {
      * @param expected
      * @return expected instance if no instance was modified.
      */
-    public List<FieldVersion> checkIfModified(TenantIdAndCentricId tenantId, List<FieldVersion> expected) {
+    public Set<FieldVersion> checkIfModified(TenantIdAndCentricId tenantId, Set<FieldVersion> expectedSet) {
+        List<FieldVersion> expected = new ArrayList<>(expectedSet);
         List<ObjectId> rows = new ArrayList<>();
         List<String> columns = new ArrayList<>();
         for (FieldVersion e : expected) {
             rows.add(e.getObjectId());
             columns.add(e.getFieldName());
         }
+        if (expected.size() > 100) {
+            System.out.println("expected:" + expected.size() + " vs " + new HashSet<>(expected).size());
+        }
 
         List<Map<String, Long>> results = updatedStore.multiRowMultiGet(tenantId, rows, columns, null, null);
-        List<FieldVersion> was = new ArrayList<>(expected.size());
+        Set<FieldVersion> was = new HashSet<>(expected.size());
         for (int i = 0; i < expected.size(); i++) {
             FieldVersion e = expected.get(i);
             Map<String, Long> result = results.get(i);
@@ -120,7 +134,7 @@ public class ConcurrencyStore {
                 }
             }
         }
-        return expected;
+        return expectedSet;
 
     }
 

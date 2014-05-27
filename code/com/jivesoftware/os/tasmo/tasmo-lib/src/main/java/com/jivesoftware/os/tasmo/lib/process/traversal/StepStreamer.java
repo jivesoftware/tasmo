@@ -11,37 +11,28 @@ import java.util.List;
  */
 public class StepStreamer implements StepStream {
 
-    private final TenantIdAndCentricId tenantIdAndCentricId;
-    private final WrittenEventContext writtenEventContext;
-    private final PathTraversalContext context;
-    private final PathContext pathContext;
-    private final LeafContext leafContext;
     private final List<StepTraverser> steps;
     private final int stepIndex;
 
-    public StepStreamer(TenantIdAndCentricId tenantIdAndCentricId,
-            WrittenEventContext writtenEventContext,
-            PathTraversalContext context,
-            PathContext pathContext,
-            LeafContext leafContext,
+    public StepStreamer(
             List<StepTraverser> steps,
             int stepIndex) {
-        this.tenantIdAndCentricId = tenantIdAndCentricId;
-        this.writtenEventContext = writtenEventContext;
-        this.context = context;
-        this.pathContext = pathContext;
-        this.leafContext = leafContext;
         this.steps = steps;
         this.stepIndex = stepIndex;
     }
 
     @Override
-    public void stream(PathId pathId) throws Exception {
+    public void stream(TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEventContext writtenEventContext,
+            PathTraversalContext context,
+            PathContext pathContext,
+            LeafContext leafContext,
+            PathId pathId) throws Exception {
         steps.get(stepIndex).process(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId, nextStepStreamer());
     }
 
     private StepStreamer nextStepStreamer() {
-        return new StepStreamer(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, steps, stepIndex + 1);
+        return new StepStreamer(steps, stepIndex + 1);
     }
 
 }

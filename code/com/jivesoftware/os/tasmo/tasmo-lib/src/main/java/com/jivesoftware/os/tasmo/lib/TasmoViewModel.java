@@ -322,7 +322,9 @@ public class TasmoViewModel {
         }
         ListMultimap<InitiateTraverserKey, PathTraverser> transformed = ArrayListMultimap.create();
         for (InitiateTraverserKey key : traversablePaths.keySet()) {
-            LOG.trace("-------- " + family + " TRIGGER:" + key);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("-------- " + family + " TRIGGER:" + key);
+            }
             Map<PathTraverserKey, StepTree> subTrees = new ConcurrentHashMap<>();
             for (TraversablePath traversablePath : traversablePaths.get(key)) {
                 InitiateTraversalContext initialStepContext = traversablePath.getInitialStepContext();
@@ -336,9 +338,10 @@ public class TasmoViewModel {
                     subTrees.put(pathTraverserKey, stepTree);
                 }
 
-                LOG.trace("???????????? " + traversablePath);
-                LOG.trace("---------------- Steps:" + Joiner.on(" || ").join(traversablePath.getStepTraversers()));
-
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("???????????? " + traversablePath);
+                    LOG.trace("---------------- Steps:" + Joiner.on(" || ").join(traversablePath.getStepTraversers()));
+                }
                 stepTree.add(traversablePath.getStepTraversers());
             }
 
@@ -405,62 +408,3 @@ public class TasmoViewModel {
         }
     }
 }
-
-//for (String eventClassName : all.keySet()) {
-//                LOG.trace("---- Traversers for class:" + eventClassName);
-//                for (InitiateTraversal initiateTraversal : all.get(eventClassName)) {
-//
-//                    ArrayListMultimap<InitiateTraverserKey, PathTraverser> valueTraversers = initiateTraversal.getValueTraversers();
-//                    if (valueTraversers != null) {
-//                        for (InitiateTraverserKey key : valueTraversers.keySet()) {
-//                            LOG.trace("-------- Value TRIGGER:" + key);
-//                            List<PathTraverser> pathTraversers = valueTraversers.get(key);
-//                            TraversalTree prefixMergingTree = new TraversalTree();
-//                            for (PathTraverser pathTraverser : pathTraversers) {
-//                                LOG.trace("???????????? "+pathTraverser);
-//                                LOG.trace("---------------- Steps:" + Joiner.on(" || ").join(pathTraverser.getStepTraversers()));
-//                                prefixMergingTree.add(pathTraverser.getPathTraverserKey(), pathTraverser.getStepTraversers());
-//                            }
-//                            LOG.trace("*** Prefix Tree ***");
-//                            prefixMergingTree.print();
-//                            LOG.trace("******");
-//
-//                        }
-//                    }
-//
-//                    ArrayListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers = initiateTraversal.getBackRefTraversers();
-//                    if (backRefTraversers != null) {
-//                        for (InitiateTraverserKey key : backRefTraversers.keySet()) {
-//                            LOG.trace("-------- BackRef TRIGGER:" + key);
-//
-//                            TraversalTree prefixMergingTree = new TraversalTree();
-//                            for (PathTraverser pathTraverser : backRefTraversers.get(key)) {
-//                                LOG.trace("???????????? "+pathTraverser);
-//                                LOG.trace("---------------- Steps:" + Joiner.on(" || ").join(pathTraverser.getStepTraversers()));
-//                                prefixMergingTree.add(pathTraverser.getPathTraverserKey(), pathTraverser.getStepTraversers());
-//                            }
-//                            LOG.trace("*** Prefix Tree ***");
-//                            prefixMergingTree.print();
-//                            LOG.trace("******");
-//}
-//                    }
-//
-//                    ArrayListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers = initiateTraversal.getForwardRefTraversers();
-//                    if (forwardRefTraversers != null) {
-//                        for (InitiateTraverserKey key : forwardRefTraversers.keySet()) {
-//                            LOG.trace("-------- Ref TRIGGER:" + key);
-//                            TraversalTree prefixMergingTree = new TraversalTree();
-//                            for (PathTraverser pathTraverser : forwardRefTraversers.get(key)) {
-//                                LOG.trace("???????????? "+pathTraverser);
-//                                LOG.trace("---------------- Steps:" + Joiner.on(" || ").join(pathTraverser.getStepTraversers()));
-//                                prefixMergingTree.add(pathTraverser.getPathTraverserKey(), pathTraverser.getStepTraversers());
-//                            }
-//                            LOG.trace("*** Prefix Tree ***");
-//                            prefixMergingTree.print();
-//                            LOG.trace("******");
-//}
-//                    }
-//                    LOG.trace("");
-//
-//            }
-//        }

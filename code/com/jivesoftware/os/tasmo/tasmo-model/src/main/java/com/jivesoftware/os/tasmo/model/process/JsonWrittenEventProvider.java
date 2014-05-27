@@ -258,6 +258,7 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
 
         private final ObjectMapper mapper;
         private final ObjectNode fieldsNode;
+        private volatile byte[] bytes;
 
         public JsonLeafNodeFields(ObjectMapper mapper) {
             this.mapper = mapper;
@@ -266,11 +267,13 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
 
         @Override
         public void addField(String fieldName, OpaqueFieldValue value) {
+            bytes = null;
             fieldsNode.put(fieldName, ((JsonLiteralFieldValue) value).fieldVal);
         }
 
         @Override
         public void removeField(String fieldName) {
+            bytes = null;
             fieldsNode.remove(fieldName);
         }
 
@@ -287,7 +290,12 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
 
         @Override
         public byte[] toBytes() throws IOException {
-            return mapper.writeValueAsBytes(fieldsNode);
+            byte[] asBytes = bytes;
+            if (asBytes == null) {
+                asBytes = mapper.writeValueAsBytes(fieldsNode);
+                bytes = asBytes;
+            }
+            return asBytes;
         }
 
         @Override
@@ -306,6 +314,7 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
 
         @Override
         public void addBooleanField(String fieldName, boolean value) {
+            bytes = null;
             fieldsNode.put(fieldName, value);
         }
 

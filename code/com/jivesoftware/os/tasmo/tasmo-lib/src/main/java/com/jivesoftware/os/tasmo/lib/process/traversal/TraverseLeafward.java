@@ -37,12 +37,14 @@ class TraverseLeafward implements StepTraverser {
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
             final WrittenEventContext writtenEventContext,
             final PathTraversalContext context,
-            final PathContext pathContext,
+            PathContext pathContext,
             final LeafContext leafContext,
             final PathId from,
             final StepStream streamTo) throws Exception {
 
-        pathContext.setPathId(writtenEventContext, pathIndex, from.getObjectId(), from.getTimestamp());
+        final PathContext copyOfPathContext = pathContext.getCopy();
+        copyOfPathContext.setPathId(writtenEventContext, pathIndex, from.getObjectId(), from.getTimestamp());
+
         streamer.stream(writtenEventContext.getReferenceTraverser(), tenantIdAndCentricId, from.getObjectId(), context.getThreadTimestamp(),
                 new CallbackStream<ReferenceWithTimestamp>() {
                     @Override
@@ -54,8 +56,9 @@ class TraverseLeafward implements StepTraverser {
                                     to.getFieldName(),
                                     to.getTimestamp());
 
-                            pathContext.addVersions(pathIndex, Arrays.asList(ref));
-                            streamTo.stream(new PathId(to.getObjectId(), to.getTimestamp()));
+                            copyOfPathContext.addVersions(pathIndex, Arrays.asList(ref));
+                            streamTo.stream(tenantIdAndCentricId, writtenEventContext, context, copyOfPathContext, leafContext,
+                                    new PathId(to.getObjectId(), to.getTimestamp()));
                         }
                         return to;
                     }

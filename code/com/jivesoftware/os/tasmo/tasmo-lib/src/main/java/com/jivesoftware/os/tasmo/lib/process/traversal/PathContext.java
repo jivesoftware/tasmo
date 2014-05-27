@@ -33,6 +33,20 @@ public class PathContext {
         }
     }
 
+    private PathContext(PathId[] modelPathInstanceIds,
+            long[] modelPathTimestamps,
+            List<ReferenceWithTimestamp>[] modelPathVersionState,
+            int lastPathIndex) {
+        this.modelPathInstanceIds = modelPathInstanceIds;
+        this.modelPathTimestamps = modelPathTimestamps;
+        this.modelPathVersionState = modelPathVersionState;
+        this.lastPathIndex = lastPathIndex;
+    }
+
+    public PathContext getCopy() {
+        return new PathContext(modelPathInstanceIds, modelPathTimestamps, modelPathVersionState, lastPathIndex);
+    }
+
     public void setPathId(WrittenEventContext writtenEventContext, int pathIndex, ObjectId id, long timestamp) {
         this.modelPathInstanceIds[pathIndex] = new PathId(id, timestamp);
         this.modelPathTimestamps[pathIndex] = timestamp;

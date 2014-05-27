@@ -20,12 +20,7 @@ import java.util.Set;
  */
 public class LeafContext {
 
-    private final WrittenEventContext writtenEventContext;
     private LeafNodeFields leafNodeFields; // uck
-
-    public LeafContext(WrittenEventContext writtenEventContext) {
-        this.writtenEventContext = writtenEventContext;
-    }
 
     public byte[] toBytes() throws IOException {
         if (leafNodeFields == null) {
@@ -34,7 +29,7 @@ public class LeafContext {
         return leafNodeFields.toBytes();
     }
 
-    public List<ReferenceWithTimestamp> removeLeafNodeFields(PathContext pathContext) {
+    public List<ReferenceWithTimestamp> removeLeafNodeFields(WrittenEventContext writtenEventContext, PathContext pathContext) {
         WrittenEvent writtenEvent = writtenEventContext.getEvent();
         long latestTimestamp = writtenEvent.getEventId();
         LeafNodeFields fieldsToPopulate = writtenEventContext.getWrittenEventProvider().createLeafNodeFields();
@@ -45,6 +40,7 @@ public class LeafContext {
     }
 
     public List<ReferenceWithTimestamp> populateLeafNodeFields(TenantIdAndCentricId tenantIdAndCentricId,
+            WrittenEventContext writtenEventContext,
             PathContext pathContext,
             ObjectId objectInstanceId,
             Set<String> fieldNames,

@@ -4,12 +4,19 @@
  */
 package com.jivesoftware.os.tasmo.test;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.ConsoleAppender;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
+import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.IdProviderImpl;
 import com.jivesoftware.os.tasmo.id.ObjectId;
@@ -20,7 +27,6 @@ import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -28,10 +34,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PatternLayout;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -48,7 +51,7 @@ public class CombinatorialMaterializerTest {
     private final int numberOfEventProcessorThreads = 10;
     //private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.backRefs, ModelPathStepType.value));
     private final List<ModelPathStepType> stepTypes = new ArrayList<>(Arrays.asList(ModelPathStepType.values()));
-    private final Executor executor = Executors.newCachedThreadPool();
+    private final Executor executor = Executors.newFixedThreadPool(32);
     private final OrderIdProviderGenerator orderIdProviderGenerator = new OrderIdProviderGenerator();
     private final TenantId tenantId = new TenantId("test");
     private final TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
@@ -59,26 +62,40 @@ public class CombinatorialMaterializerTest {
 
     @BeforeClass
     public void logger() {
-        String PATTERN = "%t %m%n";
 
-        Enumeration allAppenders = LogManager.getRootLogger().getAllAppenders();
-        while (allAppenders.hasMoreElements()) {
-            Appender appender = (Appender) allAppenders.nextElement();
-            appender.setLayout(new PatternLayout(PATTERN));
-        }
+
+        Logger rootLogger = (Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        LoggerContext loggerContext = rootLogger.getLoggerContext();
+        loggerContext.reset();
+
         if (verbose) {
-            LogManager.getLogger("com.jivesoftware.os.tasmo").setLevel(Level.TRACE);
-            LogManager.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange").setLevel(Level.TRACE);
-            LogManager.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore").setLevel(Level.TRACE);
-            LogManager.getLogger("com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore").setLevel(Level.TRACE);
+
+            PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+            encoder.setContext(loggerContext);
+            encoder.setPattern("[%thread]: %message%n");
+            encoder.start();
+
+            ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
+            appender.setContext(loggerContext);
+            appender.setEncoder(encoder);
+            appender.start();
+
+            rootLogger.addAppender(appender);
+
+            ((Logger)LoggerFactory.getLogger("com.jivesoftware.os.tasmo")).setLevel(Level.TRACE);
+            ((Logger)LoggerFactory.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange")).setLevel(Level.TRACE);
+            ((Logger)LoggerFactory.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore")).setLevel(Level.TRACE);
+            ((Logger)LoggerFactory.getLogger("com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore")).setLevel(Level.TRACE);
         } else {
-            LogManager.getRootLogger().setLevel(Level.OFF);
+
+            rootLogger.setLevel(Level.OFF);
         }
     }
 
     @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsOnly(AssertableCase inputCase)
             throws Throwable {
+        inputCase.materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
         inputCase.materialization.shutdown();
     }
@@ -86,7 +103,7 @@ public class CombinatorialMaterializerTest {
     @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsThenRemoves(AssertableCase inputCase)
             throws Throwable {
-
+        inputCase.materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
         inputCase.materialization.shutdown();
     }
@@ -94,6 +111,7 @@ public class CombinatorialMaterializerTest {
     @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsThenRemovesThenAdds(AssertableCase inputCase)
             throws Throwable {
+        inputCase.materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
         inputCase.materialization.shutdown();
     }
@@ -118,11 +136,11 @@ public class CombinatorialMaterializerTest {
                 long highestId = idProvider.nextId();
 
                 Materialization materialization = new Materialization();
-                try {
-                    materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
-                } catch (Exception x) {
-                    throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
-                }
+//                try {
+//                    materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+//                } catch (Exception x) {
+//                    throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
+//                }
                 idProvider = monatomic(highestId);
                 EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
                 Set<Id> deletedIds = new HashSet<>();
@@ -172,11 +190,11 @@ public class CombinatorialMaterializerTest {
                     @Override
                     public Object[] apply(OrderIdProvider idProvider) {
                         Materialization materialization = new Materialization();
-                        try {
-                            materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
-                        } catch (Exception x) {
-                            throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
-                        }
+//                        try {
+//                            materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+//                        } catch (Exception x) {
+//                            throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
+//                        }
                         EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
                         EventFire eventFire = new EventFire(viewId,
                                 deriedEventsAndViewId.getEvents(),
@@ -236,7 +254,7 @@ public class CombinatorialMaterializerTest {
                             new IdBatchConfig(Order.shuffle, deleteEvents.size(), randomBatchSize))) {
 
                         Materialization materialization = new Materialization();
-                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+//                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
                         EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
 
                         List<Event> allEvents = new ArrayList<>();
@@ -318,7 +336,7 @@ public class CombinatorialMaterializerTest {
                             new IdBatchConfig(Order.shuffle, undeletes.size(), randomBatchSize))) {
 
                         Materialization materialization = new Materialization();
-                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+//                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
                         EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
 
                         List<Event> allEvents = new ArrayList<>();
@@ -349,11 +367,9 @@ public class CombinatorialMaterializerTest {
     }
 
     public List<ViewBinding> buildBindings(List<ModelPathStepType> refTypes, int maxNumSteps) throws Exception {
-        Materialization materialization = new Materialization();
-        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
 
         List<String> pathStrings = pathGenerator.generateModelPaths(refTypes, maxNumSteps);
-        List<ViewBinding> allViewBindings = materialization.parseModelPathStrings(pathStrings);
+        List<ViewBinding> allViewBindings = Materialization.parseModelPathStrings(false, pathStrings);
 
         if (allViewBindings.size() > 1) {
             throw new IllegalStateException("Unexpectedly generated model paths with more than one view class name");
@@ -362,7 +378,8 @@ public class CombinatorialMaterializerTest {
     }
 
     private EventWriterProvider buildEventWriterProvider(Materialization materialization, OrderIdProvider idProvider) {
-        final EventWriter writer = new EventWriter(materialization.jsonEventWriter(materialization.tasmoMaterializer, idProvider));
+        JsonEventWriter jsonEventWriter = materialization.jsonEventWriter(materialization, idProvider);
+        final EventWriter writer = new EventWriter(jsonEventWriter);
 
         return new EventWriterProvider() {
             @Override

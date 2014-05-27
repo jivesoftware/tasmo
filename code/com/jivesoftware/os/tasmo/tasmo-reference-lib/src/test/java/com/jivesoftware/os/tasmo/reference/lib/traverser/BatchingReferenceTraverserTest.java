@@ -74,7 +74,7 @@ public class BatchingReferenceTraverserTest {
             public void run() {
                 while (running.get()) {
                     try {
-                        instance.processRequests();
+                        instance.startProcessingRequests();
                         Thread.sleep(10);
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();

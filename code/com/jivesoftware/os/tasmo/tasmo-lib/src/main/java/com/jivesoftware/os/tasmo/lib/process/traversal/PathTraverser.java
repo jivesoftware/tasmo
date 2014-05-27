@@ -49,8 +49,8 @@ public class PathTraverser {
             PathContext pathContext,
             LeafContext leafContext,
             PathId pathId) throws Exception {
-        StepStream stepStream = streamerFactory.create(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext);
-        stepStream.stream(pathId);
+        StepStream stepStream = streamerFactory.create();
+        stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
     }
 
     @Override

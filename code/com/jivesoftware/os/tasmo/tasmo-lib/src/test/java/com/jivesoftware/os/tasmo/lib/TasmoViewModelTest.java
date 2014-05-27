@@ -8,8 +8,6 @@ import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.TenantId;
-import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -17,7 +15,6 @@ import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
@@ -36,24 +33,19 @@ import org.testng.annotations.Test;
  */
 public class TasmoViewModelTest {
 
-    private ObjectMapper mapper = new ObjectMapper();
-    private TenantId tenantId = new TenantId("master");
+    private final ObjectMapper mapper = new ObjectMapper();
+    private final TenantId tenantId = new TenantId("master");
     private ViewsProvider viewsProvider;
     private TasmoViewModel tasmoViewModel;
-    private WrittenEventProvider writtenEventProvider;
     private ConcurrencyStore concurrencyStore;
     private ReferenceStore referenceStore;
-    private EventValueStore eventValueStore;
-    private CommitChange changeWriter;
 
     @BeforeMethod
     public void setUpMethod() throws Exception {
 
         viewsProvider = Mockito.mock(ViewsProvider.class);
         concurrencyStore = Mockito.mock(ConcurrencyStore.class);
-        writtenEventProvider = Mockito.mock(WrittenEventProvider.class);
         referenceStore = Mockito.mock(ReferenceStore.class);
-        changeWriter = Mockito.mock(CommitChange.class);
         tasmoViewModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
             tenantId,
             viewsProvider,

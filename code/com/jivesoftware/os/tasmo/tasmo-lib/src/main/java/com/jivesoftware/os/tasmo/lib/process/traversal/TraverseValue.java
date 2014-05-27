@@ -46,7 +46,7 @@ public class TraverseValue implements StepTraverser {
 
         pathContext.setPathId(writtenEventContext, pathIndex, from.getObjectId(), from.getTimestamp());
         if (pathTraversalContext.isRemovalContext()) {
-            List<ReferenceWithTimestamp> versions = leafContext.removeLeafNodeFields(pathContext);
+            List<ReferenceWithTimestamp> versions = leafContext.removeLeafNodeFields(writtenEventContext, pathContext);
             pathContext.addVersions(pathIndex, versions);
         } else {
 
@@ -60,12 +60,16 @@ public class TraverseValue implements StepTraverser {
                 fieldValues.put(fieldNamesArray[i], got[i]);
             }
 
-            List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(tenantIdAndCentricId, pathContext, from.getObjectId(), fieldNames,
+            List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(tenantIdAndCentricId,
+                    writtenEventContext,
+                    pathContext,
+                    from.getObjectId(),
+                    fieldNames,
                     fieldValues);
             pathContext.addVersions(pathIndex, versions);
         }
         PathId to = pathContext.getPathId(processingPathIndex);
-        streamTo.stream(to);
+        streamTo.stream(tenantIdAndCentricId, writtenEventContext, pathTraversalContext, pathContext, leafContext, to);
     }
 
     @Override

@@ -1,8 +1,5 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-
 /**
  *
  * @author jonathan
@@ -16,12 +13,8 @@ public class PrefixCollapsedStepStreamerFactory implements StepStreamerFactory {
     }
 
     @Override
-    public StepStream create(TenantIdAndCentricId tenantIdAndCentricId,
-            WrittenEventContext writtenEventContext,
-            PathTraversalContext context,
-            PathContext pathContext,
-            LeafContext leafContext) {
-        return new StepTreeStreamer(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, stepTree);
+    public StepStream create() {
+        return new StepTreeStreamer(stepTree);
     }
 
     @Override

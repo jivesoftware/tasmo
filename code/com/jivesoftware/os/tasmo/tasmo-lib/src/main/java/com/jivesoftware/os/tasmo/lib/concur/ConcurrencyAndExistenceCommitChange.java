@@ -88,8 +88,8 @@ public class ConcurrencyAndExistenceCommitChange implements CommitChange {
         }
 
         if (!fieldVersions.isEmpty()) {
-            List<FieldVersion> expected = new ArrayList(fieldVersions);
-            List<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId, expected);
+            Set<FieldVersion> expected = new HashSet<>(fieldVersions);
+            Set<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId, expected);
             if (expected != was) {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
