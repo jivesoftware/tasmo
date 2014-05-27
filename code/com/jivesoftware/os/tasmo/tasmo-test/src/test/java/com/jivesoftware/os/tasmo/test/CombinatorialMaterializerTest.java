@@ -4,6 +4,12 @@
  */
 package com.jivesoftware.os.tasmo.test;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.ConsoleAppender;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
@@ -20,7 +26,6 @@ import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -28,10 +33,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.log4j.Appender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PatternLayout;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -56,23 +58,34 @@ public class CombinatorialMaterializerTest {
     private final ModelPathGenerator pathGenerator = new ModelPathGenerator();
     private final EventFireGenerator eventFireGenerator = new EventFireGenerator(tenantId, actorId);
 
-
     @BeforeClass
     public void logger() {
-        String PATTERN = "%t %m%n";
 
-        Enumeration allAppenders = LogManager.getRootLogger().getAllAppenders();
-        while (allAppenders.hasMoreElements()) {
-            Appender appender = (Appender) allAppenders.nextElement();
-            appender.setLayout(new PatternLayout(PATTERN));
-        }
+        Logger rootLogger = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        LoggerContext loggerContext = rootLogger.getLoggerContext();
+        loggerContext.reset();
+
         if (verbose) {
-            LogManager.getLogger("com.jivesoftware.os.tasmo").setLevel(Level.TRACE);
-            LogManager.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange").setLevel(Level.TRACE);
-            LogManager.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore").setLevel(Level.TRACE);
-            LogManager.getLogger("com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore").setLevel(Level.TRACE);
+
+            PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+            encoder.setContext(loggerContext);
+            encoder.setPattern("[%thread]: %message%n");
+            encoder.start();
+
+            ConsoleAppender<ILoggingEvent> appender = new ConsoleAppender<>();
+            appender.setContext(loggerContext);
+            appender.setEncoder(encoder);
+            appender.start();
+
+            rootLogger.addAppender(appender);
+
+            ((Logger) LoggerFactory.getLogger("com.jivesoftware.os.tasmo")).setLevel(Level.TRACE);
+            ((Logger) LoggerFactory.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange")).setLevel(Level.TRACE);
+            ((Logger) LoggerFactory.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore")).setLevel(Level.TRACE);
+            ((Logger) LoggerFactory.getLogger("com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore")).setLevel(Level.TRACE);
         } else {
-            LogManager.getRootLogger().setLevel(Level.OFF);
+
+            rootLogger.setLevel(Level.OFF);
         }
     }
 
