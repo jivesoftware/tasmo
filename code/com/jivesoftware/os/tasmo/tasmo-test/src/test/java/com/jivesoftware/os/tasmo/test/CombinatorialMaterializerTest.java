@@ -67,7 +67,7 @@ public class CombinatorialMaterializerTest {
         Logger rootLogger = (Logger)LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         LoggerContext loggerContext = rootLogger.getLoggerContext();
         loggerContext.reset();
-        
+
         if (verbose) {
 
             PatternLayoutEncoder encoder = new PatternLayoutEncoder();
@@ -95,6 +95,7 @@ public class CombinatorialMaterializerTest {
     @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsOnly(AssertableCase inputCase)
             throws Throwable {
+        inputCase.materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
         inputCase.materialization.shutdown();
     }
@@ -102,7 +103,7 @@ public class CombinatorialMaterializerTest {
     @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsThenRemoves(AssertableCase inputCase)
             throws Throwable {
-
+        inputCase.materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
         inputCase.materialization.shutdown();
     }
@@ -110,6 +111,7 @@ public class CombinatorialMaterializerTest {
     @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsThenRemovesThenAdds(AssertableCase inputCase)
             throws Throwable {
+        inputCase.materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
         inputCase.materialization.shutdown();
     }
@@ -134,11 +136,11 @@ public class CombinatorialMaterializerTest {
                 long highestId = idProvider.nextId();
 
                 Materialization materialization = new Materialization();
-                try {
-                    materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
-                } catch (Exception x) {
-                    throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
-                }
+//                try {
+//                    materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+//                } catch (Exception x) {
+//                    throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
+//                }
                 idProvider = monatomic(highestId);
                 EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
                 Set<Id> deletedIds = new HashSet<>();
@@ -188,11 +190,11 @@ public class CombinatorialMaterializerTest {
                     @Override
                     public Object[] apply(OrderIdProvider idProvider) {
                         Materialization materialization = new Materialization();
-                        try {
-                            materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
-                        } catch (Exception x) {
-                            throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
-                        }
+//                        try {
+//                            materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+//                        } catch (Exception x) {
+//                            throw new RuntimeException("Failed to setupModelAndMaterializer()" + x);
+//                        }
                         EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
                         EventFire eventFire = new EventFire(viewId,
                                 deriedEventsAndViewId.getEvents(),
@@ -252,7 +254,7 @@ public class CombinatorialMaterializerTest {
                             new IdBatchConfig(Order.shuffle, deleteEvents.size(), randomBatchSize))) {
 
                         Materialization materialization = new Materialization();
-                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+//                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
                         EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
 
                         List<Event> allEvents = new ArrayList<>();
@@ -334,7 +336,7 @@ public class CombinatorialMaterializerTest {
                             new IdBatchConfig(Order.shuffle, undeletes.size(), randomBatchSize))) {
 
                         Materialization materialization = new Materialization();
-                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+//                        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
                         EventWriterProvider writerProvider = buildEventWriterProvider(materialization, idProvider);
 
                         List<Event> allEvents = new ArrayList<>();
@@ -376,7 +378,7 @@ public class CombinatorialMaterializerTest {
     }
 
     private EventWriterProvider buildEventWriterProvider(Materialization materialization, OrderIdProvider idProvider) {
-        JsonEventWriter jsonEventWriter = materialization.jsonEventWriter(materialization.tasmoMaterializer, idProvider);
+        JsonEventWriter jsonEventWriter = materialization.jsonEventWriter(materialization, idProvider);
         final EventWriter writer = new EventWriter(jsonEventWriter);
 
         return new EventWriterProvider() {

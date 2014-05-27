@@ -255,7 +255,7 @@ public class Materialization {
                 .build();
 
         return new ThreadPoolExecutor(0, maxThread,
-                0L, TimeUnit.MILLISECONDS,
+                5L, TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<Runnable>(), eventProcessorThreadFactory);
     }
 
@@ -558,7 +558,7 @@ public class Materialization {
         }
     }
 
-    JsonEventWriter jsonEventWriter(final TasmoViewMaterializer tasmoViewMaterializer, final OrderIdProvider idProvider) {
+    JsonEventWriter jsonEventWriter(final Materialization materialization, final OrderIdProvider idProvider) {
         return new JsonEventWriter() {
             JsonEventConventions jsonEventConventions = new JsonEventConventions();
 
@@ -587,7 +587,7 @@ public class Materialization {
                         writtenEvents.add(eventProvider.convertEvent(eventNode));
                     }
 
-                    tasmoViewMaterializer.process(writtenEvents);
+                    materialization.tasmoMaterializer.process(writtenEvents);
 
                     return new EventWriterResponse(eventIds, objectIds);
 
