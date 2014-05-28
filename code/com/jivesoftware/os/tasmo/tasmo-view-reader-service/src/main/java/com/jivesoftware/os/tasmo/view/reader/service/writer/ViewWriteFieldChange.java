@@ -8,8 +8,6 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.service.writer;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
@@ -18,8 +16,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
- * This is the read side of com.jivesoftware.os.tasmo.service.write.ViewFieldChange. If you changes this you will likely need to change
- * ViewFieldChange.
+ * This is the read side of com.jivesoftware.os.tasmo.service.write.ViewFieldChange. If you changes this you will likely need to change ViewFieldChange.
  */
 public class ViewWriteFieldChange {
 
@@ -32,28 +29,26 @@ public class ViewWriteFieldChange {
     private final Id actorId;
     private final Type type;
     private final ObjectId viewObjectId;
-    private final String modelPathId;
+    private final long modelPathIdHashcode;
     private final ObjectId[] modelPathInstanceIds;
     private final ViewValue value;
     private final long timestamp;
 
-    @JsonCreator
-    public ViewWriteFieldChange(
-        @JsonProperty("eventId") long eventId,
-        @JsonProperty("tenantIdAndCentricId") TenantIdAndCentricId tenantIdAndCentricId,
-        @JsonProperty("actorId") Id actorId,
-        @JsonProperty("type") Type type,
-        @JsonProperty("viewObjectId") ObjectId viewObjectId,
-        @JsonProperty("modelPathId") String modelPathId,
-        @JsonProperty("modelPathInstanceIds") ObjectId[] modelPathInstanceIds,
-        @JsonProperty("value") ViewValue value,
-        @JsonProperty("timestamp") long timestamp) {
+    public ViewWriteFieldChange(long eventId,
+            TenantIdAndCentricId tenantIdAndCentricId,
+            Id actorId,
+            Type type,
+            ObjectId viewObjectId,
+            long modelPathIdHashcode,
+            ObjectId[] modelPathInstanceIds,
+            ViewValue value,
+            long timestamp) {
         this.eventId = eventId;
         this.tenantIdAndCentricId = tenantIdAndCentricId;
         this.actorId = actorId;
         this.type = type;
         this.viewObjectId = viewObjectId;
-        this.modelPathId = modelPathId;
+        this.modelPathIdHashcode = modelPathIdHashcode;
         this.modelPathInstanceIds = modelPathInstanceIds;
         this.value = value;
         this.timestamp = timestamp;
@@ -79,8 +74,8 @@ public class ViewWriteFieldChange {
         return viewObjectId;
     }
 
-    public String getModelPathId() {
-        return modelPathId;
+    public long getModelPathIdHashcode() {
+        return modelPathIdHashcode;
     }
 
     public ObjectId[] getModelPathInstanceIds() {
@@ -98,15 +93,15 @@ public class ViewWriteFieldChange {
     @Override
     public String toString() {
         return "ViewWriteFieldChange{"
-            + "eventId=" + eventId
-            + ", tenantIdAndCentricId=" + tenantIdAndCentricId
-            + ", actorId=" + actorId
-            + ", type=" + type
-            + ", viewObjectId=" + viewObjectId
-            + ", modelPathId=" + modelPathId
-            + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
-            + ", value=" + value
-            + ", timestamp=" + timestamp + '}';
+                + "eventId=" + eventId
+                + ", tenantIdAndCentricId=" + tenantIdAndCentricId
+                + ", actorId=" + actorId
+                + ", type=" + type
+                + ", viewObjectId=" + viewObjectId
+                + ", modelPathIdHashcode=" + modelPathIdHashcode
+                + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
+                + ", value=" + value
+                + ", timestamp=" + timestamp + '}';
     }
 
     @Override
@@ -117,7 +112,7 @@ public class ViewWriteFieldChange {
         hash = 67 * hash + Objects.hashCode(this.actorId);
         hash = 67 * hash + (this.type != null ? this.type.hashCode() : 0);
         hash = 67 * hash + Objects.hashCode(this.viewObjectId);
-        hash = 67 * hash + Objects.hashCode(this.modelPathId);
+        hash = 67 * hash + (int) (this.modelPathIdHashcode ^ (this.modelPathIdHashcode >>> 32));
         hash = 67 * hash + Arrays.deepHashCode(this.modelPathInstanceIds);
         hash = 67 * hash + Objects.hashCode(this.value);
         hash = 67 * hash + (int) (this.timestamp ^ (this.timestamp >>> 32));
@@ -148,7 +143,7 @@ public class ViewWriteFieldChange {
         if (!Objects.equals(this.viewObjectId, other.viewObjectId)) {
             return false;
         }
-        if (!Objects.equals(this.modelPathId, other.modelPathId)) {
+        if (this.modelPathIdHashcode != other.modelPathIdHashcode) {
             return false;
         }
         if (!Arrays.deepEquals(this.modelPathInstanceIds, other.modelPathInstanceIds)) {

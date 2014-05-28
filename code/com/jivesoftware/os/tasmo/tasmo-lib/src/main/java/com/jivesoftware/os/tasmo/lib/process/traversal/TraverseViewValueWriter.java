@@ -26,12 +26,12 @@ public class TraverseViewValueWriter implements StepTraverser {
 
     private final String viewIdFieldName;
     private final String viewClassName;
-    private final String modelPathId;
+    private final long modelPathIdHashcode;
 
-    public TraverseViewValueWriter(String viewIdFieldName, String viewClassName, String modelPathId) {
+    public TraverseViewValueWriter(String viewIdFieldName, String viewClassName, long modelPathIdHashcode) {
         this.viewIdFieldName = viewIdFieldName;
         this.viewClassName = viewClassName;
-        this.modelPathId = modelPathId;
+        this.modelPathIdHashcode = modelPathIdHashcode;
     }
 
     @Override
@@ -49,30 +49,30 @@ public class TraverseViewValueWriter implements StepTraverser {
             viewId = objectId.getId();
         }
 
-        writeViewFields(writtenEventContext, pathTraversalContext, pathContext, leafContext, viewClassName, modelPathId, viewId);
+        writeViewFields(writtenEventContext, pathTraversalContext, pathContext, leafContext, viewClassName, modelPathIdHashcode, viewId);
     }
 
     public void writeViewFields(WrittenEventContext writtenEventContext,
-        PathTraversalContext pathTraversalContext,
-        PathContext pathContext,
-        LeafContext leafContext,
-        String viewClassName,
-        String modelPathId,
-        Id viewId) throws IOException {
+            PathTraversalContext pathTraversalContext,
+            PathContext pathContext,
+            LeafContext leafContext,
+            String viewClassName,
+            long modelPathIdHashcode,
+            Id viewId) throws IOException {
 
         byte[] leafAsBytes = leafContext.toBytes();
         if (leafAsBytes != null) {
             WrittenEvent writtenEvent = writtenEventContext.getEvent();
             ViewFieldChange update = new ViewFieldChange(writtenEvent.getEventId(),
-                writtenEvent.getActorId(),
-                (pathTraversalContext.isRemovalContext()) ? ViewFieldChange.ViewFieldChangeType.remove : ViewFieldChange.ViewFieldChangeType.add, // uck
-                new ObjectId(viewClassName, viewId),
-                modelPathId,
-                pathContext.copyOfModelPathInstanceIds(),
-                pathContext.copyOfVersions(),
-                pathContext.copyOfModelPathTimestamps(),
-                leafAsBytes,
-                pathTraversalContext.getThreadTimestamp());
+                    writtenEvent.getActorId(),
+                    (pathTraversalContext.isRemovalContext()) ? ViewFieldChange.ViewFieldChangeType.remove : ViewFieldChange.ViewFieldChangeType.add, // uck
+                    new ObjectId(viewClassName, viewId),
+                    modelPathIdHashcode,
+                    pathContext.copyOfModelPathInstanceIds(),
+                    pathContext.copyOfVersions(),
+                    pathContext.copyOfModelPathTimestamps(),
+                    leafAsBytes,
+                    pathTraversalContext.getThreadTimestamp());
             pathTraversalContext.addChange(update);
         }
     }
@@ -106,7 +106,7 @@ public class TraverseViewValueWriter implements StepTraverser {
 
     @Override
     public String toString() {
-        return "TraverseViewValueWriter{" + "viewIdFieldName=" + viewIdFieldName + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathId + '}';
+        return "TraverseViewValueWriter{" + "viewIdFieldName=" + viewIdFieldName + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathIdHashcode + '}';
     }
 
     @Override
@@ -114,7 +114,7 @@ public class TraverseViewValueWriter implements StepTraverser {
         int hash = 7;
         hash = 89 * hash + Objects.hashCode(this.viewIdFieldName);
         hash = 89 * hash + Objects.hashCode(this.viewClassName);
-        hash = 89 * hash + Objects.hashCode(this.modelPathId);
+        hash = 89 * hash + Objects.hashCode(this.modelPathIdHashcode);
         return hash;
     }
 
@@ -133,7 +133,7 @@ public class TraverseViewValueWriter implements StepTraverser {
         if (!Objects.equals(this.viewClassName, other.viewClassName)) {
             return false;
         }
-        if (!Objects.equals(this.modelPathId, other.modelPathId)) {
+        if (!Objects.equals(this.modelPathIdHashcode, other.modelPathIdHashcode)) {
             return false;
         }
         return true;

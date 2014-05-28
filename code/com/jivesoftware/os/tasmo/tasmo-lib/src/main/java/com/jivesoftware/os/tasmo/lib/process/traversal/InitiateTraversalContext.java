@@ -24,7 +24,7 @@ public class InitiateTraversalContext {
     private final int pathIndex;
     private final int membersSize;
     private final String viewClassName;
-    private final String modelPathId;
+    private final long modelPathIdHashcode;
     private final Set<String> allInitialFieldNames = Sets.newHashSet();
 
     public InitiateTraversalContext(
@@ -32,12 +32,12 @@ public class InitiateTraversalContext {
         int pathIndex,
         int membersSize,
         String viewclassName,
-        String modelPathId) {
+        long modelPathIdHashcode) {
         this.initialModelPathMember = initialModelPathMember;
         this.pathIndex = pathIndex;
         this.membersSize = membersSize;
         this.viewClassName = viewclassName;
-        this.modelPathId = modelPathId;
+        this.modelPathIdHashcode = modelPathIdHashcode;
 
         List<String> fieldNames = initialModelPathMember.getFieldNames();
         if (fieldNames != null && !fieldNames.isEmpty()) {
@@ -80,7 +80,7 @@ public class InitiateTraversalContext {
             + ", initialModelPathMember=" + initialModelPathMember
             + ", pathIndex=" + pathIndex
             + ", membersSize=" + membersSize
-            + ", modelPathId=" + modelPathId
+            + ", modelPathId=" + modelPathIdHashcode
             + '}';
     }
 }

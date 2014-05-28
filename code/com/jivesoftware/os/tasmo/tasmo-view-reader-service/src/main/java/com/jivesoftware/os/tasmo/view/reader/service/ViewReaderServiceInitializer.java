@@ -60,10 +60,12 @@ public class ViewReaderServiceInitializer {
     public static ViewReader<ViewResponse> initializeViewReader(ViewReaderServiceConfig config,
             SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
             ViewPermissionChecker viewPermissionChecker,
-            ViewsProvider viewsProvider) throws Exception {
+            ViewsProvider viewsProvider,
+            ViewPathKeyProvider viewPathKeyProvider) throws Exception {
         return build(setOfSortedMapsImplInitializer,
                 viewPermissionChecker,
                 viewsProvider,
+                viewPathKeyProvider,
                 new ViewAsObjectNode(),
                 config);
     }
@@ -72,6 +74,7 @@ public class ViewReaderServiceInitializer {
             SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
             final ViewPermissionChecker viewPermissionChecker,
             ViewsProvider viewsProvider,
+            ViewPathKeyProvider viewPathKeyProvider,
             ViewFormatter<V> viewFormatter,
             ViewReaderServiceConfig config) throws IOException {
 
@@ -80,17 +83,17 @@ public class ViewReaderServiceInitializer {
                 ImmutableByteArray,
                 ViewValue,
                 RuntimeException> store = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
-                                "tasmo.views", "v", new DefaultRowColumnValueStoreMarshaller<>(
-                                        new TenantIdAndCentricIdMarshaller(),
-                                        new ImmutableByteArrayMarshaller(),
-                                        new ImmutableByteArrayMarshaller(),
-                                        new ViewValueMarshaller()), new CurrentTimestamper()));
+                "tasmo.views", "v", new DefaultRowColumnValueStoreMarshaller<>(
+                        new TenantIdAndCentricIdMarshaller(),
+                        new ImmutableByteArrayMarshaller(),
+                        new ImmutableByteArrayMarshaller(),
+                        new ViewValueMarshaller()), new CurrentTimestamper()));
 
-        final ViewValueStore viewValueStore = new ViewValueStore(store, new ViewPathKeyProvider());
+        final ViewValueStore viewValueStore = new ViewValueStore(store, viewPathKeyProvider);
         ViewValueReader viewValueReader = new ViewValueReader(viewValueStore);
 
         TenantId tenantId = new TenantId(config.getModelMasterTenantId());
-        final TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(tenantId, viewsProvider);
+        final TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(tenantId, viewsProvider, viewPathKeyProvider);
         tenantViewsProvider.loadModel(tenantId);
 
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
@@ -118,7 +121,6 @@ public class ViewReaderServiceInitializer {
                 }
             }
         };
-
 
         long viewMaxSizeInBytes = config.getViewMaxSizeInBytes();
 

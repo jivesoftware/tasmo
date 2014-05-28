@@ -1,6 +1,7 @@
 package com.jivesoftware.os.tasmo.view.reader.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
@@ -19,6 +20,7 @@ import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import com.jivesoftware.os.tasmo.model.path.StringHashcodeViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -68,7 +70,7 @@ public class ViewProviderTest {
             }
         };
 
-        tenantViewsProvider = new TenantViewsProvider(new TenantId("master"), viewsProvider);
+        tenantViewsProvider = new TenantViewsProvider(new TenantId("master"), viewsProvider, new StringHashcodeViewPathKeyProvider());
         staleViewFieldStream = Mockito.mock(StaleViewFieldStream.class);
         viewPermissionChecker = new ViewPermissionChecker() {
 
@@ -95,7 +97,7 @@ public class ViewProviderTest {
         };
         viewFormatter = new ViewAsObjectNode();
         store = new RowColumnValueStoreImpl<>();
-        viewValueReader = new ViewValueReader(new ViewValueStore(store, new ViewPathKeyProvider()));
+        viewValueReader = new ViewValueReader(new ViewValueStore(store, new StringHashcodeViewPathKeyProvider()));
 
         viewProvider = new ViewProvider(viewPermissionChecker,
                 viewValueReader,
@@ -111,16 +113,19 @@ public class ViewProviderTest {
     public void testReadView() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         TenantId tenantId = new TenantId("tenantId");
-        ViewValueWriter viewValueWriter = new ViewValueWriter(new ViewValueStore(store, new ViewPathKeyProvider()));
+        ViewPathKeyProvider viewPathKeyProvider = new StringHashcodeViewPathKeyProvider();
+        ViewValueWriter viewValueWriter = new ViewValueWriter(new ViewValueStore(store, viewPathKeyProvider));
         ViewValueWriter.Transaction transaction = viewValueWriter.begin(new TenantIdAndCentricId(tenantId, new Id(1)));
-        transaction.set(new ObjectId("view", new Id(2)), "1", new ObjectId[]{new ObjectId("view", new Id(2))},
+        transaction.set(new ObjectId("view", new Id(2)), viewPathKeyProvider.modelPathHashcode("1"), new ObjectId[]{new ObjectId("view", new Id(2))},
                 new ViewValue(new long[]{1}, mapper.writeValueAsBytes(ImmutableMap.of("title", "booya"))), 1);
         viewValueWriter.commit(transaction);
 
         ViewDescriptor request = new ViewDescriptor(new TenantIdAndCentricId(tenantId, new Id(1)), new Id(1), new ObjectId("view", new Id(2)));
         ViewResponse readView = (ViewResponse) viewProvider.readView(request);
         System.out.println("Result:" + readView + " " + readView.getClass());
-        Assert.assertEquals(readView.getViewBody().get("title").asText(), "booya");
+        ObjectNode viewBody = readView.getViewBody();
+        Assert.assertNotNull(viewBody);
+        Assert.assertEquals(viewBody.get("title").asText(), "booya");
     }
 
     @Test
@@ -137,9 +142,10 @@ public class ViewProviderTest {
 
         ObjectMapper mapper = new ObjectMapper();
         TenantId tenantId = new TenantId("tenantId");
-        ViewValueWriter viewValueWriter = new ViewValueWriter(new ViewValueStore(store, new ViewPathKeyProvider()));
+        ViewPathKeyProvider viewPathKeyProvider = new StringHashcodeViewPathKeyProvider();
+        ViewValueWriter viewValueWriter = new ViewValueWriter(new ViewValueStore(store, viewPathKeyProvider));
         ViewValueWriter.Transaction transaction = viewValueWriter.begin(new TenantIdAndCentricId(tenantId, new Id(1)));
-        transaction.set(new ObjectId("view", new Id(2)), "1", new ObjectId[]{new ObjectId("view", new Id(2))},
+        transaction.set(new ObjectId("view", new Id(2)), viewPathKeyProvider.modelPathHashcode("1"), new ObjectId[]{new ObjectId("view", new Id(2))},
                 new ViewValue(new long[]{1}, mapper.writeValueAsBytes(ImmutableMap.of("title", "booya"))), 1);
         viewValueWriter.commit(transaction);
 

@@ -129,7 +129,7 @@ public class ViewProvider<V> implements ViewReader<V> {
                 permisionCheckTheseIds.put(tenantAndActor, accumulateIdsToBePermissionsChecked);
             }
 
-            Map<Integer, PathAndDictionary> viewFieldBindings = tenantViewsProvider.getViewFieldBinding(
+            Map<Long, PathAndDictionary> viewFieldBindings = tenantViewsProvider.getViewFieldBinding(
                     viewDescriptor.getTenantIdAndCentricId().getTenantId(), viewDescriptor.getViewId().getClassName());
 
             // TODO: be able to pass back error result per descriptor to front end
@@ -173,7 +173,7 @@ public class ViewProvider<V> implements ViewReader<V> {
 
         private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
         private final ViewDescriptor viewDescriptor;
-        private final Map<Integer, PathAndDictionary> viewClassFieldBindings;
+        private final Map<Long, PathAndDictionary> viewClassFieldBindings;
         private final ViewFieldsCollector viewFieldsCollector;
         private final StaleViewFieldStream staleViewFieldStream;
         private final Set<Id> permissionCheckTheseIds;
@@ -181,7 +181,7 @@ public class ViewProvider<V> implements ViewReader<V> {
 
         public ViewCollectorImpl(
                 ViewDescriptor viewDescriptor,
-                Map<Integer, PathAndDictionary> viewClassFieldBindings,
+                Map<Long, PathAndDictionary> viewClassFieldBindings,
                 ViewFieldsCollector viewFieldsCollector,
                 StaleViewFieldStream staleViewFieldStream,
                 Set<Id> permissionCheckTheseIds,
@@ -213,13 +213,13 @@ public class ViewProvider<V> implements ViewReader<V> {
             }
             if (fieldValue != null) {
                 ByteBuffer bb = ByteBuffer.wrap(fieldValue.getColumn().getImmutableBytes());
-                Integer modelPathIdHashCode = bb.getInt();
+                long modelPathIdHashCode = bb.getLong();
                 PathAndDictionary pathAndDictionary = viewClassFieldBindings.get(modelPathIdHashCode);
 
                 if (pathAndDictionary != null) {
                     ModelPath modelPath = pathAndDictionary.getPath();
                     if (modelPath != null) {
-                        int pathComboKey = bb.getInt();
+                        long pathComboKey = bb.getLong();
                         String[] viewPathClasses = pathAndDictionary.getDictionary().lookupModelPathClasses(pathComboKey);
 
                         if (viewPathClasses != null && viewPathClasses.length > 0) {

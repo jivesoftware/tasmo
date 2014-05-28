@@ -18,6 +18,7 @@ import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
+import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import java.io.ByteArrayInputStream;
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.testng.Assert;
 
 /**
@@ -36,8 +38,9 @@ class Expectations {
     private final ViewValueStore viewValueStore;
     private final Map<ViewKey, ModelPath> viewModelPaths = Maps.newHashMap();
     private final List<Expectation> expectations = Lists.newArrayList();
+    private final ViewPathKeyProvider viewPathKeyProvider;
 
-    public Expectations(ViewValueStore viewValueStore, Views views) {
+    public Expectations(ViewValueStore viewValueStore, Views views, ViewPathKeyProvider viewPathKeyProvider) {
         this.viewValueStore = viewValueStore;
 
         List<ViewBinding> bindings = views.getViewBindings();
@@ -46,20 +49,23 @@ class Expectations {
                 viewModelPaths.put(new ViewKey(viewBinding.getViewClassName(), modelPath.getId()), modelPath);
             }
         }
+
+        this.viewPathKeyProvider = viewPathKeyProvider;
     }
 
     void addExpectation(ObjectId rootId, String viewClassName, String viewFieldName, ObjectId[] pathIds, String fieldName, Object value) {
         ObjectId viewId = new ObjectId(viewClassName, rootId.getId());
         ModelPath modelPath = viewModelPaths.get(new ViewKey(viewClassName, viewFieldName));
-        expectations.add(new Expectation(viewId, viewClassName, viewFieldName, modelPath, pathIds, fieldName, value));
+        long modelPathIdHashcode = viewPathKeyProvider.modelPathHashcode(modelPath.getId());
+        expectations.add(new Expectation(viewId, viewClassName, modelPathIdHashcode, modelPath, pathIds, fieldName, value));
     }
 
     void assertExpectation(TenantIdAndCentricId tenantIdAndCentricId) throws IOException {
         for (Expectation expectation : expectations) {
             ViewValue got = viewValueStore.get(tenantIdAndCentricId,
-                expectation.viewId,
-                expectation.modelPathId,
-                expectation.modelPathInstanceIds);
+                    expectation.viewId,
+                    expectation.modelPathHashcode,
+                    expectation.modelPathInstanceIds);
             JsonNode node = null;
             if (got != null) {
                 node = MAPPER.readValue(new ByteArrayInputStream(got.getValue()), JsonNode.class);
@@ -81,7 +87,7 @@ class Expectations {
                     }
                     JsonNode convertValue = MAPPER.convertValue(expectation.value, JsonNode.class);
                     Assert.assertEquals(toTest, convertValue,
-                        expectation.toString() + " WAS:" + toTest + " WANTED:" + convertValue);
+                            expectation.toString() + " WAS:" + toTest + " WANTED:" + convertValue);
                 }
             } catch (IllegalArgumentException x) {
                 System.out.println("Failed while asserting " + expectation);
@@ -135,22 +141,22 @@ class Expectations {
 
         ObjectId viewId;
         String viewClassName;
-        String modelPathId;
+        long modelPathHashcode;
         ModelPath path;
         ObjectId[] modelPathInstanceIds;
         String fieldName;
         Object value;
 
         public Expectation(ObjectId viewId,
-            String viewClassName,
-            String viewFieldName,
-            ModelPath path,
-            ObjectId[] modelPathInstanceIds,
-            String fieldName,
-            Object value) {
+                String viewClassName,
+                long modelPathHashcode,
+                ModelPath path,
+                ObjectId[] modelPathInstanceIds,
+                String fieldName,
+                Object value) {
             this.viewId = viewId;
             this.viewClassName = viewClassName;
-            this.modelPathId = viewFieldName;
+            this.modelPathHashcode = modelPathHashcode;
             this.path = path;
             this.modelPathInstanceIds = modelPathInstanceIds;
             this.fieldName = fieldName;
@@ -159,20 +165,20 @@ class Expectations {
 
         @Override
         public String toString() {
-            return "Expectation{" + "viewId=" + viewId + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathId + ", path=" + path
-                + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds) + ", fieldName=" + fieldName + ", value=" + value + '}';
+            return "Expectation{" + "viewId=" + viewId + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathHashcode + ", path=" + path
+                    + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds) + ", fieldName=" + fieldName + ", value=" + value + '}';
         }
 
         @Override
         public int hashCode() {
-            int hash = 3;
-            hash = 37 * hash + (this.viewId != null ? this.viewId.hashCode() : 0);
-            hash = 37 * hash + (this.viewClassName != null ? this.viewClassName.hashCode() : 0);
-            hash = 37 * hash + (this.modelPathId != null ? this.modelPathId.hashCode() : 0);
-            hash = 37 * hash + (this.path != null ? this.path.hashCode() : 0);
-            hash = 37 * hash + (this.modelPathInstanceIds != null ? this.modelPathInstanceIds.hashCode() : 0);
-            hash = 37 * hash + (this.fieldName != null ? this.fieldName.hashCode() : 0);
-            hash = 37 * hash + (this.value != null ? this.value.hashCode() : 0);
+            int hash = 7;
+            hash = 29 * hash + Objects.hashCode(this.viewId);
+            hash = 29 * hash + Objects.hashCode(this.viewClassName);
+            hash = 29 * hash + (int) (this.modelPathHashcode ^ (this.modelPathHashcode >>> 32));
+            hash = 29 * hash + Objects.hashCode(this.path);
+            hash = 29 * hash + Arrays.deepHashCode(this.modelPathInstanceIds);
+            hash = 29 * hash + Objects.hashCode(this.fieldName);
+            hash = 29 * hash + Objects.hashCode(this.value);
             return hash;
         }
 
@@ -185,29 +191,29 @@ class Expectations {
                 return false;
             }
             final Expectation other = (Expectation) obj;
-            if (this.viewId != other.viewId && (this.viewId == null || !this.viewId.equals(other.viewId))) {
+            if (!Objects.equals(this.viewId, other.viewId)) {
                 return false;
             }
-            if ((this.viewClassName == null) ? (other.viewClassName != null) : !this.viewClassName.equals(other.viewClassName)) {
+            if (!Objects.equals(this.viewClassName, other.viewClassName)) {
                 return false;
             }
-            if ((this.modelPathId == null) ? (other.modelPathId != null) : !this.modelPathId.equals(other.modelPathId)) {
+            if (this.modelPathHashcode != other.modelPathHashcode) {
                 return false;
             }
-            if (this.path != other.path && (this.path == null || !this.path.equals(other.path))) {
+            if (!Objects.equals(this.path, other.path)) {
                 return false;
             }
-            if (this.modelPathInstanceIds != other.modelPathInstanceIds
-                && (this.modelPathInstanceIds == null || !this.modelPathInstanceIds.equals(other.modelPathInstanceIds))) {
+            if (!Arrays.deepEquals(this.modelPathInstanceIds, other.modelPathInstanceIds)) {
                 return false;
             }
-            if ((this.fieldName == null) ? (other.fieldName != null) : !this.fieldName.equals(other.fieldName)) {
+            if (!Objects.equals(this.fieldName, other.fieldName)) {
                 return false;
             }
-            if (this.value != other.value && (this.value == null || !this.value.equals(other.value))) {
+            if (!Objects.equals(this.value, other.value)) {
                 return false;
             }
             return true;
         }
+
     }
 }

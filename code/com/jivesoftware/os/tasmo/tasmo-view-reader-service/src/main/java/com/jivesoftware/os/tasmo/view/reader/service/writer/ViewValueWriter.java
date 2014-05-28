@@ -80,7 +80,7 @@ public class ViewValueWriter {
             this.constructingThread = Thread.currentThread();
         }
 
-        public void set(ObjectId viewObjectId, String modelPathId, ObjectId[] modelPathInstanceIds, ViewValue value, long timestamp) throws IOException {
+        public void set(ObjectId viewObjectId, long modelPathIdHashcode, ObjectId[] modelPathInstanceIds, ViewValue value, long timestamp) throws IOException {
             if (!Thread.currentThread().equals(constructingThread)) {
                 throw new IllegalStateException("calling thread must be the same as creating thread.");
             }
@@ -90,13 +90,13 @@ public class ViewValueWriter {
                 new Id(0), // not used
                 ViewWriteFieldChange.Type.add,
                 viewObjectId,
-                modelPathId,
+                modelPathIdHashcode,
                 modelPathInstanceIds,
                 value,
                 timestamp));
         }
 
-        public void remove(ObjectId viewObjectId, String modelPathId, ObjectId[] modelPathInstanceIds, long timestamp) throws IOException {
+        public void remove(ObjectId viewObjectId, long modelPathIdHashcode, ObjectId[] modelPathInstanceIds, long timestamp) throws IOException {
             if (!Thread.currentThread().equals(constructingThread)) {
                 throw new IllegalStateException("calling thread must be the same as creating thread.");
             }
@@ -106,7 +106,7 @@ public class ViewValueWriter {
                 new Id(0), // not used
                 ViewWriteFieldChange.Type.remove,
                 viewObjectId,
-                modelPathId,
+                modelPathIdHashcode,
                 modelPathInstanceIds,
                 null,
                 timestamp));

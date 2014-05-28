@@ -15,6 +15,7 @@ import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import com.jivesoftware.os.tasmo.model.path.StringHashcodeViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
@@ -47,10 +48,11 @@ public class TasmoViewModelTest {
         concurrencyStore = Mockito.mock(ConcurrencyStore.class);
         referenceStore = Mockito.mock(ReferenceStore.class);
         tasmoViewModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
-            tenantId,
-            viewsProvider,
-            concurrencyStore,
-            referenceStore);
+                tenantId,
+                viewsProvider,
+                new StringHashcodeViewPathKeyProvider(),
+                concurrencyStore,
+                referenceStore);
     }
 
     @AfterMethod
@@ -105,8 +107,8 @@ public class TasmoViewModelTest {
     private Views makeViews(String className, ChainedVersion version, String pathName, String... fieldNames) {
         List<ModelPath> modelPaths = new ArrayList<>();
         modelPaths.add(ModelPath.builder(pathName)
-            .addPathMember(new ModelPathStep(true, Sets.newHashSet(pathName), null, ModelPathStepType.value, null, Arrays.asList(fieldNames)))
-            .build());
+                .addPathMember(new ModelPathStep(true, Sets.newHashSet(pathName), null, ModelPathStepType.value, null, Arrays.asList(fieldNames)))
+                .build());
         ViewBinding viewBinding = new ViewBinding(className, modelPaths, false, false, false, null);
         List<ViewBinding> viewBindings = new ArrayList<>();
         viewBindings.add(viewBinding);

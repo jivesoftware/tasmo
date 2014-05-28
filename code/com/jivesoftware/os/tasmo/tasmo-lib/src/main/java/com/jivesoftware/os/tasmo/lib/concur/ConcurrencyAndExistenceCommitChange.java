@@ -65,7 +65,7 @@ public class ConcurrencyAndExistenceCommitChange implements CommitChange {
                         c.getActorId(),
                         ViewFieldChangeType.remove,
                         c.getViewObjectId(),
-                        c.getModelPathId(),
+                        c.getModelPathIdHashcode(),
                         c.getModelPathInstanceIds(),
                         c.getModelPathVersions(),
                         c.getModelPathTimestamps(),

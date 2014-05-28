@@ -33,8 +33,7 @@ public class ViewValueStore {
     private final RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore;
     private final ViewPathKeyProvider viewPathKeyProvider;
 
-    public ViewValueStore(RowColumnValueStore<TenantIdAndCentricId,
-            ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore,
+    public ViewValueStore(RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore,
             ViewPathKeyProvider viewPathKeyProvider) {
         this.viewValueStore = viewValueStore;
         this.viewPathKeyProvider = viewPathKeyProvider;
@@ -46,10 +45,10 @@ public class ViewValueStore {
         return new ImmutableByteArray(key.toByteArray());
     }
 
-    private ImmutableByteArray columnKey(String modelPathId, ObjectId[] modelPathInstanceIds) throws IOException {
+    private ImmutableByteArray columnKey(long modelPathId, ObjectId[] modelPathInstanceIds) throws IOException {
         ByteArrayOutputStream keyStream = new ByteArrayOutputStream();
-        keyStream.write(intBytes(modelPathId.hashCode()));
-        keyStream.write(intBytes(viewPathKey(modelPathInstanceIds)));
+        keyStream.write(longBytes(modelPathId));
+        keyStream.write(longBytes(viewPathKey(modelPathInstanceIds)));
         if (modelPathInstanceIds != null) {
             Id[] allRawPathIds = allRawPathIds(modelPathInstanceIds);
             for (Id id : allRawPathIds) {
@@ -59,25 +58,28 @@ public class ViewValueStore {
         return new ImmutableByteArray(keyStream.toByteArray());
     }
 
-    private byte[] intBytes(int v) {
-        return intBytes(v, new byte[4], 0);
+    private byte[] longBytes(long v) {
+        return longBytes(v, new byte[8], 0);
     }
 
-    private byte[] intBytes(int v, byte[] _bytes, int _offset) {
-        _bytes[_offset + 0] = (byte) (v >>> 24);
-        _bytes[_offset + 1] = (byte) (v >>> 16);
-        _bytes[_offset + 2] = (byte) (v >>> 8);
-        _bytes[_offset + 3] = (byte) v;
+    private byte[] longBytes(long v, byte[] _bytes, int _offset) {
+        _bytes[_offset + 0] = (byte) (v >>> 56);
+        _bytes[_offset + 1] = (byte) (v >>> 48);
+        _bytes[_offset + 2] = (byte) (v >>> 40);
+        _bytes[_offset + 3] = (byte) (v >>> 32);
+        _bytes[_offset + 4] = (byte) (v >>> 24);
+        _bytes[_offset + 5] = (byte) (v >>> 16);
+        _bytes[_offset + 6] = (byte) (v >>> 8);
+        _bytes[_offset + 7] = (byte) v;
         return _bytes;
     }
 
-    private int viewPathKey(ObjectId[] objectIds) {
+    private long viewPathKey(ObjectId[] objectIds) {
         String[] classes = new String[objectIds.length];
         for (int i = 0; i < objectIds.length; i++) {
             classes[i] = objectIds[i].getClassName();
         }
-
-        return viewPathKeyProvider.pathKeyForClasses(classes);
+        return viewPathKeyProvider.pathKeyHashcode(classes);
     }
 
     private Id[] allRawPathIds(ObjectId[] pathId) {
@@ -89,7 +91,7 @@ public class ViewValueStore {
     }
 
     public ViewValue get(TenantIdAndCentricId tenantIdAndCentricId,
-            ObjectId viewObjectId, String modelPathId, ObjectId[] modelPathInstanceState) throws IOException {
+            ObjectId viewObjectId, long modelPathId, ObjectId[] modelPathInstanceState) throws IOException {
         ImmutableByteArray rowKey = rowKey(viewObjectId);
         ImmutableByteArray columnKey = columnKey(modelPathId, modelPathInstanceState);
         ViewValue got = viewValueStore.get(tenantIdAndCentricId, rowKey, columnKey, null, null);
@@ -117,7 +119,7 @@ public class ViewValueStore {
         MultiAdd<ImmutableByteArray, ImmutableByteArray, ViewValue> rawAdds = new MultiAdd<>();
         for (ViewWriteFieldChange change : adds) {
             rawAdds.add(rowKey(change.getViewObjectId()),
-                    columnKey(change.getModelPathId(),
+                    columnKey(change.getModelPathIdHashcode(),
                             change.getModelPathInstanceIds()),
                     change.getValue(),
                     new ConstantTimestamper(change.getTimestamp()));
@@ -132,7 +134,7 @@ public class ViewValueStore {
         MultiRemove<ImmutableByteArray, ImmutableByteArray> rawRemoves = new MultiRemove<>();
         for (ViewWriteFieldChange change : removes) {
             rawRemoves.add(rowKey(change.getViewObjectId()),
-                    columnKey(change.getModelPathId(),
+                    columnKey(change.getModelPathIdHashcode(),
                             change.getModelPathInstanceIds()),
                     new ConstantTimestamper(change.getTimestamp()));
 

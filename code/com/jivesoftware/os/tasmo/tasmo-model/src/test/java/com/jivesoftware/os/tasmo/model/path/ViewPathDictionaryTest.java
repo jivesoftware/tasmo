@@ -31,28 +31,28 @@ public class ViewPathDictionaryTest {
 
         ModelPath path = builder.build();
 
-        ViewPathDictionary dictionary = new ViewPathDictionary(path, new ViewPathKeyProvider());
+        ViewPathDictionary dictionary = new ViewPathDictionary(path, new StringHashcodeViewPathKeyProvider());
 
         String[] combo = {"A", "C", "E"};
-        int key = dictionary.pathKeyForClasses(combo);
+        long key = dictionary.pathKeyHashcode(combo);
         String[] result = dictionary.lookupModelPathClasses(key);
 
         assertEquals(result, combo);
 
         combo = new String[]{"B", "C", "F"};
-        key = dictionary.pathKeyForClasses(combo);
+        key = dictionary.pathKeyHashcode(combo);
         result = dictionary.lookupModelPathClasses(key);
 
         assertEquals(result, combo);
 
         combo = new String[]{"B", "D", "E"};
-        key = dictionary.pathKeyForClasses(combo);
+        key = dictionary.pathKeyHashcode(combo);
         result = dictionary.lookupModelPathClasses(key);
 
         assertEquals(result, combo);
 
         combo = new String[]{"B", "B", "E"};
-        key = dictionary.pathKeyForClasses(combo);
+        key = dictionary.pathKeyHashcode(combo);
         result = dictionary.lookupModelPathClasses(key);
 
         assertNull(result);
@@ -73,10 +73,10 @@ public class ViewPathDictionaryTest {
 
         ModelPath path = builder.build();
 
-        ViewPathDictionary dictionary = new ViewPathDictionary(path, new ViewPathKeyProvider());
+        ViewPathDictionary dictionary = new ViewPathDictionary(path, new StringHashcodeViewPathKeyProvider());
 
         String[] combo = {"A", "C", "E"};
-        int key = dictionary.pathKeyForClasses(combo);
+        long key = dictionary.pathKeyHashcode(combo);
         String[] result = dictionary.lookupModelPathClasses(key);
 
         assertEquals(result, combo);

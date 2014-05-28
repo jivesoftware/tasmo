@@ -26,14 +26,15 @@ import java.util.Set;
 public class PathTraversersFactory {
 
     private final String viewClassName;
-    private final String modelPathId;
+    private final long modelPathIdHashcode;
     private final ModelPath modelPath;
 
     public PathTraversersFactory(
             String viewClassName,
+            long modelPathIdHashcode,
             ModelPath modelPath) {
         this.viewClassName = viewClassName;
-        this.modelPathId = modelPath.getId();
+        this.modelPathIdHashcode = modelPathIdHashcode;
         this.modelPath = modelPath;
     }
 
@@ -55,12 +56,12 @@ public class PathTraversersFactory {
                 initialPathIndex,
                 modelPathSteps.size(),
                 viewClassName,
-                modelPathId);
+                modelPathIdHashcode);
 
         List<StepTraverser> steps = new ArrayList<>();
         steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
         steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
-        steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPathId));
+        steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPathIdHashcode));
         return new TraversablePath(firstStep, steps);
     }
 
@@ -89,7 +90,7 @@ public class PathTraversersFactory {
                     initialPathIndex,
                     modelPathMembersSize,
                     viewClassName,
-                    modelPathId) {
+                    modelPathIdHashcode) {
                         @Override
                         public String getRefFieldName() {
                             return null;
@@ -110,7 +111,7 @@ public class PathTraversersFactory {
             steps.add(new TraverseBackref(modelPathStep, modelPathStep.getOriginClassNames()));
             steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
             steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
-            steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPathId));
+            steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPathIdHashcode));
             return new TraversablePath(firstStep, steps);
         } else {
             return null;
