@@ -10,10 +10,7 @@ import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange.ViewFieldChangeType;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
-import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -74,30 +71,48 @@ public class ConcurrencyAndExistenceCommitChange implements CommitChange {
             }
         }
 
-        Set<FieldVersion> fieldVersions = new HashSet<>();
-        for (ViewFieldChange fieldChange : acceptableChanges) {
-            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
-                List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
-                for (ReferenceWithTimestamp version : versions) {
-                    if (version != null) {
-                        // TODO this could grow rather large should consider adding batching!
-                        fieldVersions.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
-                    }
-                }
-            }
-        }
-
-        if (!fieldVersions.isEmpty()) {
-            Set<FieldVersion> expected = new HashSet<>(fieldVersions);
-            Set<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId, expected);
-            if (expected != was) {
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
-                }
-                PathConsistencyException pmofume = new PathConsistencyException(expected, was);
-                throw pmofume;
-            }
-        }
+// TODO eval if this block is really necessary.
+//
+//        Set<FieldVersion> fieldVersions = new HashSet<>();
+//        for (ViewFieldChange fieldChange : acceptableChanges) {
+//            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+//                List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
+//                for (ReferenceWithTimestamp version : versions) {
+//                    if (version != null) {
+//                        // TODO this could grow rather large should consider adding batching!
+//                        fieldVersions.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (!fieldVersions.isEmpty()) {
+//            Set<FieldVersion> expected = new HashSet<>(fieldVersions);
+//            Set<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId, expected);
+//            for (ViewFieldChange fieldChange : acceptableChanges) {
+//                if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+//
+//                }
+//            }
+//
+//            if (expected != was) {
+//                PathConsistencyException pmofume = new PathConsistencyException(expected, was);
+//                if (LOG.isTraceEnabled()) {
+//                    LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY. ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
+//
+//                    StringBuilder sb = new StringBuilder();
+//                    sb.append("BOOYA ~");
+//                    sb.append(pmofume);
+//                    sb.append("~");
+//                    for (ViewFieldChange fieldChange : acceptableChanges) {
+//                        sb.append(fieldChange);
+//                        sb.append("~");
+//                    }
+//                    LOG.info(sb.toString());
+//                }
+//                throw pmofume;
+//            }
+//        }
 
         commitChange.commitChange(batchContext, tenantIdAndCentricId, acceptableChanges);
 
