@@ -481,14 +481,18 @@ public class DeletesTest extends BaseTasmoTest {
     public void testDeleteRootWithInitialBackRefOnly() throws Exception {
         String viewClass = "ViewToDelete";
         String viewClass2 = "AnotherViewToDelete";
-        Expectations expectations = initModelPaths(viewClass + "::path4::Document.latest_backRef.Tag.ref_tagged|Tag.instanceId",
-                viewClass2 + "::path5::Document.latest_backRef.Tag.ref_tagged|Tag.instanceId");
+        Expectations expectations = initModelPaths(
+                viewClass + "::path4::Document.latest_backRef.Tag.ref_tagged|Tag.name",
+                viewClass2 + "::path5::Document.latest_backRef.Tag.ref_tagged|Tag.name");
 
         ObjectId docId = write(EventBuilder.create(idProvider, "Document", tenantId, actorId).build());
-        ObjectId tagId = write(EventBuilder.create(idProvider, "Tag", tenantId, actorId).set("ref_tagged", docId).build());
+        ObjectId tagId = write(EventBuilder.create(idProvider, "Tag", tenantId, actorId)
+                .set("ref_tagged", docId)
+                .set("name", "foo")
+                .build());
 
-        expectations.addExpectation(docId, viewClass, "path4", new ObjectId[]{docId, tagId}, "instanceId", tagId.getId().toStringForm());
-        expectations.addExpectation(docId, viewClass2, "path5", new ObjectId[]{docId, tagId}, "instanceId", tagId.getId().toStringForm());
+        expectations.addExpectation(docId, viewClass, "path4", new ObjectId[]{docId, tagId}, "name", "foo");
+        expectations.addExpectation(docId, viewClass2, "path5", new ObjectId[]{docId, tagId}, "name", "foo");
 
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();
@@ -498,8 +502,8 @@ public class DeletesTest extends BaseTasmoTest {
 
         write(EventBuilder.update(docId, tenantId, actorId).set(ReservedFields.DELETED, true).build());
 
-        expectations.addExpectation(docId, viewClass, "path4", new ObjectId[]{docId, tagId}, "instanceId", null);
-        expectations.addExpectation(docId, viewClass2, "path5", new ObjectId[]{docId, tagId}, "instanceId", null);
+        expectations.addExpectation(docId, viewClass, "path4", new ObjectId[]{docId, tagId}, "name", null);
+        expectations.addExpectation(docId, viewClass2, "path5", new ObjectId[]{docId, tagId}, "name", null);
 
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();

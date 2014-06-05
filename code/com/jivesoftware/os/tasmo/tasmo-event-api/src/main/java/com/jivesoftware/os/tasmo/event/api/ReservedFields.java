@@ -46,6 +46,11 @@ public class ReservedFields {
      */
     public static final String INSTANCE_ID = "instanceId";
     /**
+     * Field name used to represent a specific field which can never exist.  This is used when there is a desire to
+     * bind a view to an INSTANCE_ID in a view binding.
+     */
+    public static final String NIL_FIELD = "__nil";
+    /**
      * This is the field in view json which holds the object id of some object represented in the view. Every level of the view json will have this field
      */
     public static final String VIEW_OBJECT_ID = "objectId";

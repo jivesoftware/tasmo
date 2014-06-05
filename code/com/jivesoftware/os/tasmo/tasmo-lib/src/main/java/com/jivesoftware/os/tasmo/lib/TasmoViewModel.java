@@ -11,6 +11,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
@@ -230,12 +231,13 @@ public class TasmoViewModel {
             String viewIdFieldName = viewBinding.getViewIdFieldName();
             boolean idCentric = viewBinding.isIdCentric();
 
-            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> accumlulate = groupSteps;
+            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> accumulate = groupSteps;
             if (idCentric) {
-                accumlulate = groupIdCentricSteps;
+                accumulate = groupIdCentricSteps;
             }
 
             for (ModelPath modelPath : viewBinding.getModelPaths()) {
+                assertNoInstanceIdBindings(modelPath);
 
                 String factoryKey = viewBinding.getViewClassName() + "_" + modelPath.getId();
                 if (allFieldProcessorFactories.containsKey(factoryKey)) {
@@ -255,16 +257,28 @@ public class TasmoViewModel {
 
                 List<TraversablePath> pathTraversers = fieldProcessorFactory.buildPathTraversers(viewIdFieldName);
 
-                groupPathTraverserByClass(accumlulate, pathTraversers, true);
+                groupPathTraverserByClass(accumulate, pathTraversers, true);
 
                 List<TraversablePath> initialBackRefStep = fieldProcessorFactory.buildBackPathTraversers(viewIdFieldName);
                 if (initialBackRefStep != null) {
-                    groupPathTraverserByClass(accumlulate, initialBackRefStep, false);
+                    groupPathTraverserByClass(accumulate, initialBackRefStep, false);
                 }
             }
 
         }
         return buildInitialStepDispatchers(groupSteps);
+    }
+
+    private void assertNoInstanceIdBindings(ModelPath modelPath) {
+        for (ModelPathStep step : modelPath.getPathMembers()) {
+            if (step.getStepType() == ModelPathStepType.value) {
+                for (String fieldName : step.getFieldNames()) {
+                    if (ReservedFields.INSTANCE_ID.equals(fieldName)) {
+                        throw(new IllegalStateException("It is illegal to directly bind to the '" + ReservedFields.INSTANCE_ID + "' field."));
+                    }
+                }
+            }
+        }
     }
 
     private Map<String, InitiateTraversal> buildInitialStepDispatchers(

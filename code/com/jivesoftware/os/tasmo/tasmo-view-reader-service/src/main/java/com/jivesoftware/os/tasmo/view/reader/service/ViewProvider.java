@@ -208,7 +208,7 @@ public class ViewProvider<V> implements ViewReader<V> {
         @Override
         public ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> callback(
                 ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> fieldValue) throws Exception {
-            if (viewClassFieldBindings == null) { // if factoed out so that we dont exceed 4 levels of if nesting.
+            if (viewClassFieldBindings == null) { // if factored out so that we don't exceed 4 levels of if nesting.
                 return fieldValue;
             }
             if (fieldValue != null) {

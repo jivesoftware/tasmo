@@ -4,6 +4,7 @@ import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
+import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.TenantId;
@@ -252,7 +253,10 @@ public class TasmoEventProcessor {
         List<String> refFieldNames = new ArrayList<>();
         for (TasmoViewModel.FieldNameAndType fieldNameAndType : eventModel.get(className)) {
             String fieldName = fieldNameAndType.getFieldName();
-            if (writtenInstance.hasField(fieldName)) {
+            if (ReservedFields.NIL_FIELD.equals(fieldName)) {
+                OpaqueFieldValue nilValue = writtenEventProvider.createNilValue();
+                transaction.set(ReservedFields.NIL_FIELD, nilValue);
+            } else if (writtenInstance.hasField(fieldName)) {
                 if (fieldNameAndType.getFieldType() == ModelPathStepType.ref) {
                     refFieldNames.add(fieldName);
                 } else {
