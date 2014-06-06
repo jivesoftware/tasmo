@@ -237,7 +237,7 @@ public class TasmoViewModel {
             }
 
             for (ModelPath modelPath : viewBinding.getModelPaths()) {
-                assertNoInstanceIdBindings(modelPath);
+                assertNoInstanceIdBindings(viewBinding, modelPath);
 
                 String factoryKey = viewBinding.getViewClassName() + "_" + modelPath.getId();
                 if (allFieldProcessorFactories.containsKey(factoryKey)) {
@@ -269,12 +269,12 @@ public class TasmoViewModel {
         return buildInitialStepDispatchers(groupSteps);
     }
 
-    private void assertNoInstanceIdBindings(ModelPath modelPath) {
+    private void assertNoInstanceIdBindings(ViewBinding viewBinding, ModelPath modelPath) {
         for (ModelPathStep step : modelPath.getPathMembers()) {
             if (step.getStepType() == ModelPathStepType.value) {
                 for (String fieldName : step.getFieldNames()) {
                     if (ReservedFields.INSTANCE_ID.equals(fieldName)) {
-                        throw(new IllegalStateException("It is illegal to directly bind to the '" + ReservedFields.INSTANCE_ID + "' field."));
+                        throw(new IllegalStateException("It is illegal to directly bind to the '" + ReservedFields.INSTANCE_ID + "' field.  " + viewBinding));
                     }
                 }
             }
