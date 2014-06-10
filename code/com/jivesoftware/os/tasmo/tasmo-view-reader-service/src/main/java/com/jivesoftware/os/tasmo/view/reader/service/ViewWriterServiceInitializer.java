@@ -30,7 +30,8 @@ public class ViewWriterServiceInitializer {
     }
 
     public static ViewValueWriter initializeViewWriter(ViewWriterServiceConfig config,
-        SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer) throws Exception {
+        SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+        ViewPathKeyProvider viewPathKeyProvider) throws Exception {
 
         RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> store =
             new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
@@ -40,7 +41,7 @@ public class ViewWriterServiceInitializer {
             new ImmutableByteArrayMarshaller(),
             new ViewValueMarshaller()), new CurrentTimestamper()));
 
-        ViewValueWriter viewValueWriter = new ViewValueWriter(new ViewValueStore(store, new ViewPathKeyProvider()));
+        ViewValueWriter viewValueWriter = new ViewValueWriter(new ViewValueStore(store, viewPathKeyProvider));
         return viewValueWriter;
     }
 }

@@ -33,11 +33,13 @@ public class TenantViewsProvider {
     private final TenantId masterTenantId;
     private final ConcurrentHashMap<TenantId, VersionedViewsModel> versionedViewModel;
     private final ViewsProvider viewsProvider;
+    private final ViewPathKeyProvider viewPathKeyProvider;
 
-    public TenantViewsProvider(TenantId masterTenantId, ViewsProvider viewsProvider) {
+    public TenantViewsProvider(TenantId masterTenantId, ViewsProvider viewsProvider, ViewPathKeyProvider viewPathKeyProvider) {
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.versionedViewModel = new ConcurrentHashMap<>();
+        this.viewPathKeyProvider = viewPathKeyProvider;
     }
 
     public void reloadModels() {
@@ -55,19 +57,19 @@ public class TenantViewsProvider {
             if (currentVersionedViewsModel == null
                 || !currentVersionedViewsModel.getVersion().equals(currentVersion)) {
 
-                Map<String, Map<Integer, PathAndDictionary>> newViewValueBindings = Maps.newHashMap();
+                Map<String, Map<Long, PathAndDictionary>> newViewValueBindings = Maps.newHashMap();
                 Views views = this.viewsProvider.getViews(new ViewsProcessorId(tenantId, "NotBeingUsedYet"));
 
                 for (ViewBinding viewBinding : views.getViewBindings()) {
-                    Map<Integer, PathAndDictionary> got = newViewValueBindings.get(viewBinding.getViewClassName());
+                    Map<Long, PathAndDictionary> got = newViewValueBindings.get(viewBinding.getViewClassName());
                     if (got == null) {
                         got = Maps.newHashMap();
                         newViewValueBindings.put(viewBinding.getViewClassName(), got);
                     }
 
                     for (ModelPath modelPath : viewBinding.getModelPaths()) {
-                        PathAndDictionary pathAndDictionary = new PathAndDictionary(modelPath, new ViewPathDictionary(modelPath, new ViewPathKeyProvider()));
-                        got.put(modelPath.getId().hashCode(), pathAndDictionary);
+                        PathAndDictionary pathAndDictionary = new PathAndDictionary(modelPath, new ViewPathDictionary(modelPath, viewPathKeyProvider));
+                        got.put(viewPathKeyProvider.modelPathHashcode(modelPath.getId()), pathAndDictionary);
                     }
 
                 }
@@ -79,7 +81,7 @@ public class TenantViewsProvider {
         }
     }
 
-    public Map<Integer, PathAndDictionary> getViewFieldBinding(TenantId tenantId, String className) {
+    public Map<Long, PathAndDictionary> getViewFieldBinding(TenantId tenantId, String className) {
         if (!versionedViewModel.containsKey(tenantId)) {
             loadModel(tenantId);
         }

@@ -43,6 +43,7 @@ import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotification
 import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
+import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
@@ -91,6 +92,7 @@ public class TasmoServiceInitializer {
     public static CallbackStream<List<WrittenEvent>> initializeEventIngressCallbackStream(
             OrderIdProvider threadTimestamp,
             ViewsProvider viewsProvider,
+            ViewPathKeyProvider viewPathKeyProvider,
             WrittenEventProvider eventProvider,
             SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
             EventValueCacheProvider eventValueCacheProvider,
@@ -149,6 +151,7 @@ public class TasmoServiceInitializer {
         final TasmoViewModel tasmoViewModel = new TasmoViewModel(pathExecutors,
                 masterTenantId,
                 viewsProvider,
+                viewPathKeyProvider,
                 concurrencyStore,
                 referenceStore);
 
@@ -160,7 +163,7 @@ public class TasmoServiceInitializer {
                 try {
                     tasmoViewModel.reloadModels();
                 } catch (Exception x) {
-                    LOG.error("Scheduled reloadig of tasmo view model failed. ", x);
+                    LOG.error("Scheduled reloading of tasmo view model failed. ", x);
                 }
             }
         }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);

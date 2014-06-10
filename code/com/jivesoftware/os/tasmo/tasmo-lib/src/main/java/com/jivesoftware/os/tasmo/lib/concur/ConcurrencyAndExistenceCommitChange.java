@@ -10,10 +10,7 @@ import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange.ViewFieldChangeType;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
-import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -65,7 +62,7 @@ public class ConcurrencyAndExistenceCommitChange implements CommitChange {
                         c.getActorId(),
                         ViewFieldChangeType.remove,
                         c.getViewObjectId(),
-                        c.getModelPathId(),
+                        c.getModelPathIdHashcode(),
                         c.getModelPathInstanceIds(),
                         c.getModelPathVersions(),
                         c.getModelPathTimestamps(),
@@ -74,30 +71,31 @@ public class ConcurrencyAndExistenceCommitChange implements CommitChange {
             }
         }
 
-        Set<FieldVersion> fieldVersions = new HashSet<>();
-        for (ViewFieldChange fieldChange : acceptableChanges) {
-            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
-                List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
-                for (ReferenceWithTimestamp version : versions) {
-                    if (version != null) {
-                        // TODO this could grow rather large should consider adding batching!
-                        fieldVersions.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
-                    }
-                }
-            }
-        }
-
-        if (!fieldVersions.isEmpty()) {
-            Set<FieldVersion> expected = new HashSet<>(fieldVersions);
-            Set<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId, expected);
-            if (expected != was) {
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
-                }
-                PathConsistencyException pmofume = new PathConsistencyException(expected, was);
-                throw pmofume;
-            }
-        }
+//        // TODO eval if this block is really necessary.
+//        Set<FieldVersion> fieldVersions = new HashSet<>();
+//        for (ViewFieldChange fieldChange : acceptableChanges) {
+//            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+//                List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
+//                for (ReferenceWithTimestamp version : versions) {
+//                    if (version != null) {
+//                        // TODO this could grow rather large should consider adding batching!
+//                        fieldVersions.add(new FieldVersion(version.getObjectId(), version.getFieldName(), version.getTimestamp()));
+//                    }
+//                }
+//            }
+//        }
+//
+//        if (!fieldVersions.isEmpty()) {
+//            Set<FieldVersion> expected = new HashSet<>(fieldVersions);
+//            Set<FieldVersion> was = concurrencyStore.checkIfModified(tenantIdAndCentricId, expected);
+//            if (expected != was) {
+//                if (LOG.isTraceEnabled()) {
+//                    LOG.trace("!!!!!!!!!!!!!!!!!!!!!!!!!!!! RETRY ADD is based on inconsistent view. !!!!!!!!!!!!!!!!!!!!!!!!");
+//                }
+//                PathConsistencyException pmofume = new PathConsistencyException(expected, was);
+//                throw pmofume;
+//            }
+//        }
 
         commitChange.commitChange(batchContext, tenantIdAndCentricId, acceptableChanges);
 

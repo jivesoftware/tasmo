@@ -14,6 +14,7 @@ import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import com.jivesoftware.os.tasmo.model.path.StringHashcodeViewPathKeyProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -31,7 +32,7 @@ import org.testng.annotations.Test;
  */
 public class ViewModelTest {
 
-    private TenantId tenantId = new TenantId("master");
+    private final TenantId tenantId = new TenantId("master");
 
     private ViewsProvider viewsProvider;
     private TenantViewsProvider viewModel;
@@ -40,7 +41,7 @@ public class ViewModelTest {
     public void setUpMethod() throws Exception {
 
         viewsProvider = Mockito.mock(ViewsProvider.class);
-        viewModel = new TenantViewsProvider(tenantId, viewsProvider);
+        viewModel = new TenantViewsProvider(tenantId, viewsProvider, new StringHashcodeViewPathKeyProvider());
     }
 
     /**
@@ -59,7 +60,7 @@ public class ViewModelTest {
         Mockito.when(viewsProvider.getViews(Mockito.any(ViewsProcessorId.class))).thenReturn(views1, views2);
 
         viewModel.loadModel(tenantId);
-        Map<Integer, PathAndDictionary> viewFieldBinding = viewModel.getViewFieldBinding(tenantId, "Bar");
+        Map<Long, PathAndDictionary> viewFieldBinding = viewModel.getViewFieldBinding(tenantId, "Bar");
         Assert.assertNull(viewFieldBinding);
         viewFieldBinding = viewModel.getViewFieldBinding(tenantId, "Foo");
         Assert.assertNotNull(viewFieldBinding);

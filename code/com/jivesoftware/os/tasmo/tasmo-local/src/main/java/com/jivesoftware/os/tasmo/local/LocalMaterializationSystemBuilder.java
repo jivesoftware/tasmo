@@ -53,6 +53,7 @@ import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
+import com.jivesoftware.os.tasmo.model.path.MurmurHashViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
@@ -94,6 +95,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
     private RowColumnValueStoreProvider rowColumnValueStoreProvider;
     private ViewChangeNotificationProcessor viewChangeNotificationProcessor;
     private OrderIdProvider orderIdProvider;
+    private final ViewPathKeyProvider viewPathKeyProvider = new MurmurHashViewPathKeyProvider();
 
     public LocalMaterializationSystemBuilder setViewChangeNotificationProcessor(ViewChangeNotificationProcessor viewChangeNotificationProcessor) {
         this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
@@ -118,7 +120,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
         rowColumnValueStoreProvider = rowColumnValueStoreUtil.getInMemoryRowColumnValueStoreProvider(uuid, writtenEventProvider);
 
-        ViewValueStore viewValueStore = buildViewValueStore(rowColumnValueStoreProvider);
+        ViewValueStore viewValueStore = buildViewValueStore(rowColumnValueStoreProvider, viewPathKeyProvider);
         CommitChange commitChange = buildCommitChange(viewValueStore);
         TasmoViewMaterializer viewMaterializer = buildViewMaterializer(viewsProvider, rowColumnValueStoreProvider,
                 writtenEventProvider, commitChange, masterTenantId);
@@ -146,8 +148,9 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         });
     }
 
-    private ViewValueStore buildViewValueStore(RowColumnValueStoreProvider rowColumnValueStoreProvider) throws Exception {
-        return new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), new ViewPathKeyProvider());
+    private ViewValueStore buildViewValueStore(RowColumnValueStoreProvider rowColumnValueStoreProvider,
+            ViewPathKeyProvider viewPathKeyProvider) throws Exception {
+        return new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), viewPathKeyProvider);
     }
 
     private TasmoViewMaterializer buildViewMaterializer(ViewsProvider viewsProvider,
@@ -179,6 +182,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         TasmoViewModel viewMaterializerModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
                 masterTenantId,
                 viewsProvider,
+                viewPathKeyProvider,
                 concurrencyStore,
                 referenceStore);
 
@@ -306,7 +310,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             }
         };
 
-        TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(tenantId, viewsProvider);
+        TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(tenantId, viewsProvider, viewPathKeyProvider);
         tenantViewsProvider.loadModel(tenantId);
 
         return new ViewProvider<>(viewPermissionChecker,
@@ -376,7 +380,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                                 change.getActorId(),
                                 ViewWriteFieldChange.Type.valueOf(change.getType().name()),
                                 change.getViewObjectId(),
-                                change.getModelPathId(),
+                                change.getModelPathIdHashcode(),
                                 ids,
                                 new ViewValue(change.getModelPathTimestamps(), change.getValue()),
                                 change.getTimestamp()));

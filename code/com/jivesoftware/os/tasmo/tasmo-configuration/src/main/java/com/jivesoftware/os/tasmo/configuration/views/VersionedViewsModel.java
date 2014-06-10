@@ -18,9 +18,9 @@ import java.util.Map;
 class VersionedViewsModel {
 
     private final ChainedVersion version;
-    private final Map<String, Map<Integer, PathAndDictionary>> viewValueBindings;
+    private final Map<String, Map<Long, PathAndDictionary>> viewValueBindings;
 
-    VersionedViewsModel(ChainedVersion version, Map<String, Map<Integer, PathAndDictionary>> viewValueBindings) {
+    VersionedViewsModel(ChainedVersion version, Map<String, Map<Long, PathAndDictionary>> viewValueBindings) {
         this.version = version;
         this.viewValueBindings = viewValueBindings;
     }
@@ -29,7 +29,7 @@ class VersionedViewsModel {
         return version;
     }
 
-    public Map<String, Map<Integer, PathAndDictionary>> getViewsModel() {
+    public Map<String, Map<Long, PathAndDictionary>> getViewsModel() {
         return viewValueBindings;
     }
 

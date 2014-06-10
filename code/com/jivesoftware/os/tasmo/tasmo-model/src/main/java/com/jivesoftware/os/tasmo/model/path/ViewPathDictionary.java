@@ -15,32 +15,38 @@ import java.util.Set;
  * Allows lookup from view path id to the set of classes along the path
  *
  */
-public class ViewPathDictionary {
+public class ViewPathDictionary implements ViewPathKeyProvider {
 
-    private final Map<Integer, String[]> dictionary = new HashMap<>();
+    private final Map<Long, String[]> dictionary = new HashMap<>();
     private final ViewPathKeyProvider viewPathKeyProvider;
 
     public ViewPathDictionary(ModelPath path, ViewPathKeyProvider viewPathKeyProvider) {
         this.viewPathKeyProvider = viewPathKeyProvider;
 
         for (String[] combination : computeAllCombinationsForPath(path.getPathMembers())) {
-            int key = pathKeyForClasses(combination);
+            long key = pathKeyHashcode(combination);
             if (dictionary.containsKey(key)) {
                 String[] existingCombination = dictionary.get(key);
                 throw new IllegalStateException("Hash collision detected between these two view paths: "
-                    + Arrays.toString(existingCombination) + " and " + Arrays.toString(combination));
+                        + Arrays.toString(existingCombination) + " and " + Arrays.toString(combination));
             }
 
-            dictionary.put(pathKeyForClasses(combination), combination);
+            dictionary.put(key, combination);
         }
     }
 
-    public String[] lookupModelPathClasses(int pathKey) {
+    public String[] lookupModelPathClasses(long pathKey) {
         return dictionary.get(pathKey);
     }
 
-    public final int pathKeyForClasses(String[] classes) {
-        return viewPathKeyProvider.pathKeyForClasses(classes);
+    @Override
+    public final long pathKeyHashcode(String[] classes) {
+        return viewPathKeyProvider.pathKeyHashcode(classes);
+    }
+
+    @Override
+    public long modelPathHashcode(String modelPathId) {
+        return viewPathKeyProvider.modelPathHashcode(modelPathId);
     }
 
     private Iterable<String[]> computeAllCombinationsForPath(List<ModelPathStep> pathMembers) {
@@ -59,7 +65,6 @@ public class ViewPathDictionary {
 
             odometers[odometers.length - 1 - i] = stepOdometer;
         }
-
 
         Odometer last = null;
         for (Odometer step : odometers) {
@@ -157,7 +162,7 @@ public class ViewPathDictionary {
          */
         public Object[] toArray() {
             if (next == null) {
-                return new Object[]{ values[index] };
+                return new Object[]{values[index]};
             } else {
                 return push(next.toArray(), values[index]);
             }

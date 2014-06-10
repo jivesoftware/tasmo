@@ -26,6 +26,7 @@ import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import java.io.ByteArrayInputStream;
@@ -34,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.testng.Assert;
 
@@ -47,8 +49,9 @@ public class Expectations {
     private final ViewValueStore viewValueStore;
     private final Map<ViewKey, ModelPath> viewModelPaths = Maps.newHashMap();
     private final List<Expectation> expectations = Lists.newArrayList();
+    private final ViewPathKeyProvider viewPathKeyProvider;
 
-    public Expectations(ViewValueStore viewValueStore, Views views) {
+    public Expectations(ViewValueStore viewValueStore, Views views, ViewPathKeyProvider viewPathKeyProvider) {
         this.viewValueStore = viewValueStore;
 
         List<ViewBinding> bindings = views.getViewBindings();
@@ -57,6 +60,7 @@ public class Expectations {
                 viewModelPaths.put(new ViewKey(viewBinding.getViewClassName(), modelPath.getId()), modelPath);
             }
         }
+        this.viewPathKeyProvider = viewPathKeyProvider;
     }
 
     public void buildExpectations(long testCase, Expectations expectations, ViewBinding binding, EventFire input, Set<Id> deletedIds) throws Exception {
@@ -142,7 +146,8 @@ public class Expectations {
     void addExpectation(long testCase, ObjectId rootId, String viewClassName, String viewFieldName, ObjectId[] pathIds, String fieldName, Object value) {
         ObjectId viewId = new ObjectId(viewClassName, rootId.getId());
         ModelPath modelPath = viewModelPaths.get(new ViewKey(viewClassName, viewFieldName));
-        expectations.add(new Expectation(testCase, viewId, viewClassName, viewFieldName, modelPath, pathIds, fieldName, value));
+        long modelPathHashcode = viewPathKeyProvider.modelPathHashcode(modelPath.getId());
+        expectations.add(new Expectation(testCase, viewId, viewClassName, modelPathHashcode, modelPath, pathIds, fieldName, value));
     }
 
     void assertExpectations(TenantIdAndCentricId tenantIdAndCentricId, ObjectNode view) throws IOException {
@@ -150,7 +155,7 @@ public class Expectations {
         for (Expectation expectation : expectations) {
             ViewValue got = viewValueStore.get(tenantIdAndCentricId,
                     expectation.viewId,
-                    expectation.modelPathId,
+                    expectation.modelPathIdHashcode,
                     expectation.modelPathInstanceIds);
             JsonNode node = null;
             if (got != null) {
@@ -318,7 +323,7 @@ public class Expectations {
         long testCase;
         ObjectId viewId;
         String viewClassName;
-        String modelPathId;
+        long modelPathIdHashcode;
         ModelPath path;
         ObjectId[] modelPathInstanceIds;
         String fieldName;
@@ -327,7 +332,7 @@ public class Expectations {
         public Expectation(long testCase,
                 ObjectId viewId,
                 String viewClassName,
-                String viewFieldName,
+                long modelPathIdHashcode,
                 ModelPath path,
                 ObjectId[] modelPathInstanceIds,
                 String fieldName,
@@ -335,7 +340,7 @@ public class Expectations {
             this.testCase = testCase;
             this.viewId = viewId;
             this.viewClassName = viewClassName;
-            this.modelPathId = viewFieldName;
+            this.modelPathIdHashcode = modelPathIdHashcode;
             this.path = path;
             this.modelPathInstanceIds = modelPathInstanceIds;
             this.fieldName = fieldName;
@@ -348,7 +353,7 @@ public class Expectations {
                     + "testCase=" + testCase
                     + ", viewId=" + viewId
                     + ", viewClassName=" + viewClassName
-                    + ", modelPathId=" + modelPathId
+                    + ", modelPathId=" + modelPathIdHashcode
                     + ", path=" + path
                     + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds)
                     + ", fieldName=" + fieldName
@@ -359,13 +364,14 @@ public class Expectations {
         @Override
         public int hashCode() {
             int hash = 3;
-            hash = 37 * hash + (this.viewId != null ? this.viewId.hashCode() : 0);
-            hash = 37 * hash + (this.viewClassName != null ? this.viewClassName.hashCode() : 0);
-            hash = 37 * hash + (this.modelPathId != null ? this.modelPathId.hashCode() : 0);
-            hash = 37 * hash + (this.path != null ? this.path.hashCode() : 0);
-            hash = 37 * hash + (this.modelPathInstanceIds != null ? this.modelPathInstanceIds.hashCode() : 0);
-            hash = 37 * hash + (this.fieldName != null ? this.fieldName.hashCode() : 0);
-            hash = 37 * hash + (this.value != null ? this.value.hashCode() : 0);
+            hash = 41 * hash + (int) (this.testCase ^ (this.testCase >>> 32));
+            hash = 41 * hash + Objects.hashCode(this.viewId);
+            hash = 41 * hash + Objects.hashCode(this.viewClassName);
+            hash = 41 * hash + (int) (this.modelPathIdHashcode ^ (this.modelPathIdHashcode >>> 32));
+            hash = 41 * hash + Objects.hashCode(this.path);
+            hash = 41 * hash + Arrays.deepHashCode(this.modelPathInstanceIds);
+            hash = 41 * hash + Objects.hashCode(this.fieldName);
+            hash = 41 * hash + Objects.hashCode(this.value);
             return hash;
         }
 
@@ -378,29 +384,33 @@ public class Expectations {
                 return false;
             }
             final Expectation other = (Expectation) obj;
-            if (this.viewId != other.viewId && (this.viewId == null || !this.viewId.equals(other.viewId))) {
+            if (this.testCase != other.testCase) {
                 return false;
             }
-            if ((this.viewClassName == null) ? (other.viewClassName != null) : !this.viewClassName.equals(other.viewClassName)) {
+            if (!Objects.equals(this.viewId, other.viewId)) {
                 return false;
             }
-            if ((this.modelPathId == null) ? (other.modelPathId != null) : !this.modelPathId.equals(other.modelPathId)) {
+            if (!Objects.equals(this.viewClassName, other.viewClassName)) {
                 return false;
             }
-            if (this.path != other.path && (this.path == null || !this.path.equals(other.path))) {
+            if (this.modelPathIdHashcode != other.modelPathIdHashcode) {
                 return false;
             }
-            if (this.modelPathInstanceIds != other.modelPathInstanceIds
-                    && (this.modelPathInstanceIds == null || !this.modelPathInstanceIds.equals(other.modelPathInstanceIds))) {
+            if (!Objects.equals(this.path, other.path)) {
                 return false;
             }
-            if ((this.fieldName == null) ? (other.fieldName != null) : !this.fieldName.equals(other.fieldName)) {
+            if (!Arrays.deepEquals(this.modelPathInstanceIds, other.modelPathInstanceIds)) {
                 return false;
             }
-            if (this.value != other.value && (this.value == null || !this.value.equals(other.value))) {
+            if (!Objects.equals(this.fieldName, other.fieldName)) {
+                return false;
+            }
+            if (!Objects.equals(this.value, other.value)) {
                 return false;
             }
             return true;
         }
+
+
     }
 }

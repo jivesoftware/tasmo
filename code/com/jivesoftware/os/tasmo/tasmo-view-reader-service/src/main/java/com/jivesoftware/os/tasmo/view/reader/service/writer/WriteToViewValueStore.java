@@ -37,7 +37,7 @@ public class WriteToViewValueStore implements ViewWriter {
                     LOG.trace(" >>>>>> VVS ADD:{}", fieldChange);
 
                     transaction.set(fieldChange.getViewObjectId(),
-                            fieldChange.getModelPathId(),
+                            fieldChange.getModelPathIdHashcode(),
                             fieldChange.getModelPathInstanceIds(),
                             fieldChange.getValue(),
                             fieldChange.getTimestamp());
@@ -45,7 +45,7 @@ public class WriteToViewValueStore implements ViewWriter {
                     LOG.trace(" >>>>>> VVS REMOVE:{}", fieldChange);
 
                     transaction.remove(fieldChange.getViewObjectId(),
-                            fieldChange.getModelPathId(),
+                            fieldChange.getModelPathIdHashcode(),
                             fieldChange.getModelPathInstanceIds(),
                             fieldChange.getTimestamp());
                 } else {
