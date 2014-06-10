@@ -242,7 +242,7 @@ public class TasmoServiceInitializer {
                     LOG.error("Issue with logging stats. ", x);
                 }
             }
-        }, 1, 1, TimeUnit.SECONDS);
+        }, 60, 60, TimeUnit.SECONDS);
 
         return new EventIngressRetryingCallbackStream(eventIngressCallbackStream, retryer);
     }

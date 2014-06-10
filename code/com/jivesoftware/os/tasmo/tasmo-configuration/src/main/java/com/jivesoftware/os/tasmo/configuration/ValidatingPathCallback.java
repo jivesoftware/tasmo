@@ -8,6 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.configuration;
 
+import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,6 +30,9 @@ public class ValidatingPathCallback implements PathCallback {
         if (type != ValueType.backrefs && type != ValueType.latest_backref && type != ValueType.count) {
             for (String fieldName : fieldNames) {
                 int foundEventsWithField = 0;
+                if (isIgnoredField(fieldName)) {
+                    continue;
+                }
                 for (String className : classNames) {
                     EventModel eventConfiguration = eventsModel.getEvent(className);
                     Map<String, ValueType> event = eventConfiguration.getEventFields();
@@ -55,8 +59,12 @@ public class ValidatingPathCallback implements PathCallback {
         }
     }
 
+    private boolean isIgnoredField(String fieldName) {
+        return ReservedFields.NIL_FIELD.equals(fieldName);
+    }
+
     @Override
-        public void push(Set<String> fieldType, ValueType valueType, String... fieldNames) {
+    public void push(Set<String> fieldType, ValueType valueType, String... fieldNames) {
         assertFieldIsPresent(fieldType, valueType, fieldNames);
         pathCallback.push(fieldType, valueType, fieldNames);
     }

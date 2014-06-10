@@ -54,7 +54,7 @@ public class BatchingReferenceTraverser implements ReferenceTraverser {
                     public void run() {
                         try {
                             if (requests.size() > 1) {
-                                LOG.info("Request aggregation size:" + requests.size());
+                                LOG.debug("Request aggregation size: {}", requests.size());
                             }
                             referenceStore.multiStreamRefs(requests);
                         } catch (Exception ex) {

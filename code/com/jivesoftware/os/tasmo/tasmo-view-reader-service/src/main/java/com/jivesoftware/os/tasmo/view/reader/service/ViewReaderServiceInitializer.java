@@ -102,7 +102,7 @@ public class ViewReaderServiceInitializer {
                 try {
                     tenantViewsProvider.reloadModels();
                 } catch (Exception x) {
-                    LOG.error("Scheduled reloadig of view model failed. ", x);
+                    LOG.error("Scheduled reloading of view model failed. ", x);
                 }
             }
         }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);

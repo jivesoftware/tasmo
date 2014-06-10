@@ -253,10 +253,7 @@ public class TasmoEventProcessor {
         List<String> refFieldNames = new ArrayList<>();
         for (TasmoViewModel.FieldNameAndType fieldNameAndType : eventModel.get(className)) {
             String fieldName = fieldNameAndType.getFieldName();
-            if (ReservedFields.NIL_FIELD.equals(fieldName)) {
-                OpaqueFieldValue nilValue = writtenEventProvider.createNilValue();
-                transaction.set(ReservedFields.NIL_FIELD, nilValue);
-            } else if (writtenInstance.hasField(fieldName)) {
+            if (writtenInstance.hasField(fieldName)) {
                 if (fieldNameAndType.getFieldType() == ModelPathStepType.ref) {
                     refFieldNames.add(fieldName);
                 } else {
@@ -270,6 +267,9 @@ public class TasmoEventProcessor {
             }
         }
 
+        // Always emit the nil field to signal presence
+        OpaqueFieldValue nilValue = writtenEventProvider.createNilValue();
+        transaction.set(ReservedFields.NIL_FIELD, nilValue);
 
         // 1 multiget
         List<Long> highests = concurrencyStore.highests(tenantIdAndCentricId, instanceId, refFieldNames.toArray(new String[refFieldNames.size()]));

@@ -396,8 +396,7 @@ public class ViewObject {
         }
 
         private boolean isIgnoredField(String fieldName) {
-            return ReservedFields.VIEW_CLASS.equals(fieldName)
-                    || ReservedFields.NIL_FIELD.equals(fieldName);
+            return ReservedFields.VIEW_CLASS.equals(fieldName);
         }
 
         private boolean isValidRefValue(String exampleValue) {
