@@ -163,7 +163,7 @@ public class TasmoServiceInitializer {
                 try {
                     tasmoViewModel.reloadModels();
                 } catch (Exception x) {
-                    LOG.error("Scheduled reloadig of tasmo view model failed. ", x);
+                    LOG.error("Scheduled reloading of tasmo view model failed. ", x);
                 }
             }
         }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);
