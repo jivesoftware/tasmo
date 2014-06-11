@@ -10,15 +10,15 @@ import java.util.Set;
  * @author jonathan
  */
 public class AssertableCase {
-    public final String category;
-    public final long testId;
-    public final Materialization materialization;
-    public final TenantIdAndCentricId tenantIdAndCentricId;
-    public final Id actorId;
-    public final ViewBinding binding;
-    public final EventWriterProvider eventWriterProvider;
-    public final EventFire input;
-    public final Set<Id> deletedId;
+    public String category;
+    public long testId;
+    public Materialization materialization;
+    public TenantIdAndCentricId tenantIdAndCentricId;
+    public Id actorId;
+    public ViewBinding binding;
+    public EventWriterProvider eventWriterProvider;
+    public EventFire input;
+    public Set<Id> deletedId;
 
     public AssertableCase(String category,
             long testId,
@@ -38,6 +38,22 @@ public class AssertableCase {
         this.eventWriterProvider = eventWriterProvider;
         this.input = input;
         this.deletedId = deletedId;
+    }
+
+    public void prepare(int numberOfEventProcessorThreads) throws Exception {
+        materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+    }
+
+    public void dispose() {
+        materialization.shutdown();
+        this.category = null;
+        this.materialization = null;
+        this.tenantIdAndCentricId = null;
+        this.actorId = null;
+        this.binding = null;
+        this.eventWriterProvider = null;
+        this.input = null;
+        this.deletedId = null;
     }
 
 }

@@ -95,25 +95,25 @@ public class CombinatorialMaterializerTest {
     @Test(dataProvider = "totalOrderAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsOnly(AssertableCase inputCase)
             throws Throwable {
-        inputCase.materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+        inputCase.prepare(numberOfEventProcessorThreads);
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
-        inputCase.materialization.shutdown();
+        inputCase.dispose();
     }
 
     @Test(dataProvider = "addsThenRemoves", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsThenRemoves(AssertableCase inputCase)
             throws Throwable {
-        inputCase.materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+        inputCase.prepare(numberOfEventProcessorThreads);
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
-        inputCase.materialization.shutdown();
+        inputCase.dispose();
     }
 
     @Test(dataProvider = "addsThenRemovesThenAdds", invocationCount = 1, singleThreaded = true)
     public void testMultiThreadedAddsThenRemovesThenAdds(AssertableCase inputCase)
             throws Throwable {
-        inputCase.materialization.setupModelAndMaterializer(numberOfEventProcessorThreads);
+        inputCase.prepare(numberOfEventProcessorThreads);
         new AssertInputCase(executor, seed, tenantIdAndCentricId, actorId, maxFanOut, verbose).assertCombination(inputCase, null, true);
-        inputCase.materialization.shutdown();
+        inputCase.dispose();
     }
 
     @DataProvider(name = "totalOrderAdds")
