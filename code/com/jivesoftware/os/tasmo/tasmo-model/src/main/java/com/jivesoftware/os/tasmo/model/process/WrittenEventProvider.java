@@ -14,5 +14,11 @@ public interface WrittenEventProvider<E, V> {
 
     OpaqueFieldValue convertFieldValue(V fieldValue);
 
+    /**
+     * Create an opaque field value for use in representing nil values.  The nil value must be positively represented
+     * by a concrete values that is non-null.
+     */
+    OpaqueFieldValue createNilValue();
+
     LeafNodeFields createLeafNodeFields();
 }

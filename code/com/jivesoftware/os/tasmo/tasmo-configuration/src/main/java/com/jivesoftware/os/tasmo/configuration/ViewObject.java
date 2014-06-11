@@ -332,6 +332,10 @@ public class ViewObject {
 
             for (Iterator<String> fieldIter = objectNode.fieldNames(); fieldIter.hasNext();) {
                 String fieldName = fieldIter.next();
+                if (isIgnoredField(fieldName)) {
+                    continue;
+                }
+
                 JsonNode value = objectNode.get(fieldName);
 
                 if (value == null || value.isNull()) {
@@ -346,8 +350,6 @@ public class ViewObject {
                     } else {
                         throw new IllegalArgumentException("Encountered an instanceId that is not an objectId in string form." + value);
                     }
-                } else if (fieldName.equals(ReservedFields.VIEW_CLASS)) {
-                    //ignore
                 } else if (fieldName.startsWith(ReservedFields.ALL_BACK_REF_FIELD_PREFIX) ||
                     fieldName.startsWith(ReservedFields.COUNT_BACK_REF_FIELD_PREFIX)) {
                     if (value.isArray() && value.size() == 1 && value.get(0).isObject()) {
@@ -391,6 +393,10 @@ public class ViewObject {
             }
 
             return new ViewObject(nodeIds, valueFields, arrayFields, refFields, backRefFields, countFields, latestBackRefFields);
+        }
+
+        private boolean isIgnoredField(String fieldName) {
+            return ReservedFields.VIEW_CLASS.equals(fieldName);
         }
 
         private boolean isValidRefValue(String exampleValue) {

@@ -55,6 +55,7 @@ public class JsonEventConventions {
                     && !fieldName.equals(ReservedFields.CAUSED_BY)
                     && !fieldName.equals(ReservedFields.ACTIVITY_VERB)
                     && !fieldName.equals(ReservedFields.MODEL_VERSION_ID)
+                    && !fieldName.equals(ReservedFields.NIL_FIELD)
                     && !fieldName.equals(ReservedFields.TRACK_EVENT_PROCESSED_LIFECYCLE)) {
                     return fieldName;
                 }
@@ -309,7 +310,16 @@ public class JsonEventConventions {
         if (event.has(ReservedFields.TRACK_EVENT_PROCESSED_LIFECYCLE)) {
             expectedSize++;
         }
+        if (event.has(ReservedFields.EVENT_ID)) {
+            expectedSize++;
+        }
+        if (event.has(ReservedFields.TRACE)) {
+            expectedSize++;
+        }
         String className = Strings.nullToEmpty(getInstanceClassName(event)).trim();
+        if (event.has(ReservedFields.NIL_FIELD) || hasInstanceField(event, className, ReservedFields.NIL_FIELD)) {
+            throw(new IllegalArgumentException("Nil field may never be emitted"));
+        }
         if (Strings.isNullOrEmpty(className)) {
             throw new IllegalArgumentException("Event is missing payload");
         }

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.NumericNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -67,6 +69,12 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
     @Override
     public OpaqueFieldValue convertFieldValue(JsonNode fieldValue) {
         return new JsonLiteralFieldValue(fieldValue);
+    }
+
+    @Override
+    public OpaqueFieldValue createNilValue() {
+        NumericNode jsonNode = JsonNodeFactory.instance.numberNode(0);
+        return new JsonLiteralFieldValue(jsonNode);
     }
 
     @Override

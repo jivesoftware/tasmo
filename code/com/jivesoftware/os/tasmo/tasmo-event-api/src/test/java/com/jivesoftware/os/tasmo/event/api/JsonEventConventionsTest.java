@@ -118,6 +118,28 @@ public class JsonEventConventionsTest {
         jsonEventConventions.validate(event);
     }
 
+    /*
+     * The nil field identifier is meant to be used in view model definitions only.  Prevent it from being used elsewhere.
+     */
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testValidateNilNotInEventWrapper() throws Exception {
+        ObjectNode event = createValidEvent();
+        event.put(ReservedFields.NIL_FIELD, "bar");
+        jsonEventConventions.validate(event);
+    }
+
+    /*
+     * The nil field identifier is meant to be used in view model definitions only.  Prevent it from being used elsewhere.
+     */
+    @Test (expectedExceptions = IllegalArgumentException.class)
+    public void testValidateNilNotInEventPayload() throws Exception {
+        ObjectNode event = createValidEvent();
+        String className = jsonEventConventions.getInstanceClassName(event);
+        ObjectNode instanceNode = jsonEventConventions.getInstanceNode(event, className);
+        instanceNode.put(ReservedFields.NIL_FIELD, "bar");
+        jsonEventConventions.validate(event);
+    }
+
     private ObjectNode createValidEvent() {
         ObjectNode event = objectMapper.createObjectNode();
         jsonEventConventions.setTenantId(event, new TenantId("foobar"));
