@@ -60,12 +60,12 @@ public class ViewProvider<V> implements ViewReader<V> {
     private final long viewMaxSizeInBytes; // This is the number of bytes that can be read for a single view. Defends against posion view that could cause OOM
 
     public ViewProvider(ViewPermissionChecker viewPermissionChecker,
-            ViewValueReader viewValueReader,
-            TenantViewsProvider viewModel,
-            ViewFormatter<V> viewFormatter,
-            JsonViewMerger merger,
-            StaleViewFieldStream staleViewFieldStream,
-            long viewMaxSizeInBytes) {
+        ViewValueReader viewValueReader,
+        TenantViewsProvider viewModel,
+        ViewFormatter<V> viewFormatter,
+        JsonViewMerger merger,
+        StaleViewFieldStream staleViewFieldStream,
+        long viewMaxSizeInBytes) {
         this.viewPermissionChecker = viewPermissionChecker;
         this.viewValueReader = viewValueReader;
         this.tenantViewsProvider = viewModel;
@@ -130,7 +130,7 @@ public class ViewProvider<V> implements ViewReader<V> {
             }
 
             Map<Long, PathAndDictionary> viewFieldBindings = tenantViewsProvider.getViewFieldBinding(
-                    viewDescriptor.getTenantIdAndCentricId().getTenantId(), viewDescriptor.getViewId().getClassName());
+                viewDescriptor.getTenantIdAndCentricId().getTenantId(), viewDescriptor.getViewId().getClassName());
 
             // TODO: be able to pass back error result per descriptor to front end
             if (viewFieldBindings == null) {
@@ -139,11 +139,11 @@ public class ViewProvider<V> implements ViewReader<V> {
 
             ViewFieldsCollector viewFieldsCollector = new ViewFieldsCollector(merger, viewMaxSizeInBytes);
             viewCollectors.add(new ViewCollectorImpl<>(viewDescriptor,
-                    viewFieldBindings,
-                    viewFieldsCollector,
-                    staleViewFieldStream,
-                    accumulateIdsToBePermissionsChecked,
-                    viewFormatter));
+                viewFieldBindings,
+                viewFieldsCollector,
+                staleViewFieldStream,
+                accumulateIdsToBePermissionsChecked,
+                viewFormatter));
         }
         return viewCollectors;
     }
@@ -163,7 +163,7 @@ public class ViewProvider<V> implements ViewReader<V> {
         for (TenantAndActor tenantAndActor : permissionCheckTheseIds.keySet()) { // 1 permissions check call per tenant and actor id tuple.
             Collection<Id> ids = permissionCheckTheseIds.get(tenantAndActor);
             ViewPermissionCheckResult checkResult = viewPermissionChecker.check(tenantAndActor.tenantId,
-                    tenantAndActor.actorId, new HashSet<>(ids));
+                tenantAndActor.actorId, new HashSet<>(ids));
             canViewTheseIds.put(tenantAndActor, Sets.union(checkResult.allowed(), checkResult.unknown())); // For now... TODO
         }
         return canViewTheseIds;
@@ -180,12 +180,12 @@ public class ViewProvider<V> implements ViewReader<V> {
         private final ViewFormatter<VV> viewFormatter;
 
         public ViewCollectorImpl(
-                ViewDescriptor viewDescriptor,
-                Map<Long, PathAndDictionary> viewClassFieldBindings,
-                ViewFieldsCollector viewFieldsCollector,
-                StaleViewFieldStream staleViewFieldStream,
-                Set<Id> permissionCheckTheseIds,
-                ViewFormatter<VV> viewFormatter) {
+            ViewDescriptor viewDescriptor,
+            Map<Long, PathAndDictionary> viewClassFieldBindings,
+            ViewFieldsCollector viewFieldsCollector,
+            StaleViewFieldStream staleViewFieldStream,
+            Set<Id> permissionCheckTheseIds,
+            ViewFormatter<VV> viewFormatter) {
             this.viewDescriptor = viewDescriptor;
             this.viewClassFieldBindings = viewClassFieldBindings;
             this.viewFieldsCollector = viewFieldsCollector;
@@ -207,7 +207,7 @@ public class ViewProvider<V> implements ViewReader<V> {
 
         @Override
         public ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> callback(
-                ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> fieldValue) throws Exception {
+            ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> fieldValue) throws Exception {
             if (viewClassFieldBindings == null) { // if factored out so that we don't exceed 4 levels of if nesting.
                 return fieldValue;
             }
@@ -225,15 +225,18 @@ public class ViewProvider<V> implements ViewReader<V> {
                         if (viewPathClasses != null && viewPathClasses.length > 0) {
                             Id[] modelPathIds = modelPathIds(bb, modelPath.getPathMemberSize());
                             if (viewFieldsCollector.add(viewDescriptor,
-                                    modelPath, modelPathIds, viewPathClasses, fieldValue.getValue(), fieldValue.getTimestamp())) {
+                                modelPath, modelPathIds, viewPathClasses, fieldValue.getValue(), fieldValue.getTimestamp())) {
                                 permissionCheckTheseIds.addAll(Arrays.asList(modelPathIds));
                             }
                         } else {
-                            LOG.warn("Unable to look up model path classes for view path with path combination key: " + pathComboKey);
+                            LOG.
+                                warn("Unable to look up model path " + modelPathIdHashCode
+                                    + " classes for view path with path combination key: " + pathComboKey
+                                    + " dropping value: " + fieldValue.getValue() + " on the floor.");
                         }
                     } else {
-                        LOG.warn("failed to load ViewValueBinding for viewValueBindingKey={}, fieldValue={} ", new Object[]{modelPathIdHashCode,
-                            fieldValue});
+                        LOG.warn("failed to load ViewValueBinding for viewValueBindingKey={}, fieldValue={} ", new Object[]{ modelPathIdHashCode,
+                            fieldValue });
                     }
                 } else {
                     LOG.debug("Failed to load model path and view path dictionary from column key. Older column key format is likely the case.");

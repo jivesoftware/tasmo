@@ -42,6 +42,7 @@ class LatestTreeNode implements MultiTreeNode {
     @Override
     public void add(ModelPathStep[] steps, ObjectId[] ids, ViewValue value, Long threadTimestamp) {
         arrayTreeNode.add(steps, ids, value, threadTimestamp);
+        //System.out.println("value " + value + " " + threadTimestamp);
     }
 
     @Override
@@ -49,8 +50,15 @@ class LatestTreeNode implements MultiTreeNode {
         Ordering<MapTreeNode> timestampOrdering = Ordering.from(new Comparator<MapTreeNode>() {
             @Override
             public int compare(MapTreeNode o1, MapTreeNode o2) {
-                long diff = o1.getHighWaterTimestamp() - o2.getHighWaterTimestamp();
-                return diff < 0 ? -1 : (diff > 0 ? 1 : 0);
+                long[] t1 = o1.getModelPathTimestamps();
+                long[] t2 = o2.getModelPathTimestamps();
+                for (int i = 0; i < t1.length; i++) {
+                    int compare = Long.compare(t1[i], t2[i]);
+                    if (compare != 0) {
+                        return compare;
+                    }
+                }
+                return Long.compare(o1.getThreadTimestamp(), o2.getThreadTimestamp());
             }
         });
 

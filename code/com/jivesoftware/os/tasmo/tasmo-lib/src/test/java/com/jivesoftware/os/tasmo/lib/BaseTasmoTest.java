@@ -66,6 +66,7 @@ import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import com.jivesoftware.os.tasmo.model.path.MurmurHashViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.path.StringHashcodeViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
@@ -281,7 +282,7 @@ public class BaseTasmoTest {
         ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrency);
         eventValueStore = new EventValueStore(concurrencyStore, eventStore, cacheProvider);
 
-        viewValueStore = new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), new StringHashcodeViewPathKeyProvider());
+        viewValueStore = new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), new MurmurHashViewPathKeyProvider());
         viewValueWriter = new ViewValueWriter(viewValueStore);
         viewValueReader = new ViewValueReader(viewValueStore);
 
@@ -354,7 +355,7 @@ public class BaseTasmoTest {
         tasmoViewModel = new TasmoViewModel(listeningExecutorService,
                 MASTER_TENANT_ID,
                 viewsProvider,
-                new StringHashcodeViewPathKeyProvider(),
+                new MurmurHashViewPathKeyProvider(),
                 concurrencyStore,
                 referenceStore);
 
@@ -448,7 +449,7 @@ public class BaseTasmoTest {
             }
         };
         TenantId masterTenantId = new TenantId("master");
-        TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(masterTenantId, viewsProvider, new StringHashcodeViewPathKeyProvider());
+        TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(masterTenantId, viewsProvider, new MurmurHashViewPathKeyProvider());
         tenantViewsProvider.loadModel(masterTenantId);
 
         StaleViewFieldStream staleViewFieldStream = new StaleViewFieldStream() {
@@ -465,7 +466,7 @@ public class BaseTasmoTest {
                 merger,
                 staleViewFieldStream,
                 1024 * 1024 * 10);
-        return new Expectations(viewValueStore, newViews, new StringHashcodeViewPathKeyProvider());
+        return new Expectations(viewValueStore, newViews, new MurmurHashViewPathKeyProvider());
 
     }
 

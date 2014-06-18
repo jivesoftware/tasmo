@@ -31,4 +31,27 @@ public class RefTest extends BaseTasmoTest {
         ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
         System.out.println(mapper.writeValueAsString(view));
     }
+
+    @Test
+    public void testUpdateRef() throws Exception {
+        String viewClassName = "RefToValues";
+        String viewFieldName = "userInfo";
+        Expectations expectations = initModelPaths(viewClassName + "::" + viewFieldName + "::Content.ref_user.ref.User|User.userName,age");
+        ObjectId user1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "ted").build());
+        ObjectId content1 = write(EventBuilder.create(idProvider, "Content", tenantId, actorId).set("ref_user", user1).build());
+        expectations.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
+        expectations.assertExpectation(tenantIdAndCentricId);
+        expectations.clear();
+        ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        System.out.println(mapper.writeValueAsString(view));
+
+        ObjectId user2 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "jane").build());
+        write(EventBuilder.update(content1, tenantId, actorId).set("ref_user", user2).build());
+
+        expectations.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "jane");
+        expectations.assertExpectation(tenantIdAndCentricId);
+        expectations.clear();
+        view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        System.out.println(mapper.writeValueAsString(view));
+    }
 }
