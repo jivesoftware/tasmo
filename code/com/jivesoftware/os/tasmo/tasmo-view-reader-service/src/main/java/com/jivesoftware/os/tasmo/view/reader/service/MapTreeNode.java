@@ -40,7 +40,8 @@ public class MapTreeNode implements TreeNode {
     private final Collection<ViewValue> values = new ArrayList<>();
     private final Map<String, MapTreeNode> singleChildren = new HashMap<>();
     private final Map<StepTypeAndFieldName, MultiTreeNode> multiChildren = new HashMap<>();
-    private long highWaterTimestamp;
+    private Long threadTimestamp;
+    private long[] modelPathTimestamps;
 
     public MapTreeNode(ObjectId objectId) {
         this.objectId = objectId;
@@ -48,13 +49,8 @@ public class MapTreeNode implements TreeNode {
 
     @Override
     public void add(ModelPathStep[] steps, ObjectId[] ids, ViewValue value, Long threadTimestamp) {
-        if (value.getModelPathTimeStamps() != null) {
-            for (long modelPathTimestamp : value.getModelPathTimeStamps()) {
-                if (modelPathTimestamp > highWaterTimestamp) {
-                    this.highWaterTimestamp = modelPathTimestamp;
-                }
-            }
-        }
+        this.modelPathTimestamps = value.getModelPathTimeStamps();
+        this.threadTimestamp = threadTimestamp;
         ModelPathStep thisStep = steps[0];
         switch (thisStep.getStepType()) {
             case value:
@@ -123,8 +119,12 @@ public class MapTreeNode implements TreeNode {
         return objectId;
     }
 
-    public long getHighWaterTimestamp() {
-        return highWaterTimestamp;
+    public Long getThreadTimestamp() {
+        return threadTimestamp;
+    }
+
+    public long[] getModelPathTimestamps() {
+        return modelPathTimestamps;
     }
 
     private static final class StepTypeAndFieldName {
