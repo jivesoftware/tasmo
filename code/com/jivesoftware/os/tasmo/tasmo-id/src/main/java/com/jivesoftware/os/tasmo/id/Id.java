@@ -12,6 +12,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.io.BaseEncoding;
+
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -23,7 +25,8 @@ public class Id implements Comparable<Id> {
 
     @JsonCreator
     public static Id idFromJsonObject(@JsonProperty("id") String stringForm) {
-        return new Id(stringForm);
+        byte [] id = coder.decode(stringForm);
+        return (id.length == 8) ? new Id(id) : new Id(stringForm, true);
     }
 
     public Id(long id) {
@@ -37,8 +40,26 @@ public class Id implements Comparable<Id> {
         this.id = id;
     }
 
-    @JsonCreator
+    @Deprecated
     public Id(String stringForm) {
+        if (stringForm == null || stringForm.length() == 0) {
+            throw new IllegalArgumentException("stringForm can not be null and must be at least 1 or more chars." + stringForm);
+        }
+
+        if(NULL.toStringForm().equals(stringForm)) {
+            this.id = coder.decode(stringForm);
+        } else {
+            byte[] decodedString = coder.decode(stringForm);
+            if (decodedString.length < 8) decodedString = Arrays.copyOf(decodedString, 8);
+            ByteBuffer buffer = ByteBuffer.wrap(decodedString);
+            this.id = ByteBuffer.allocate(8).putLong(buffer.getLong()).array();
+        }
+    }
+
+    protected Id(String stringForm, boolean legacy) {
+        if (!legacy) {
+            throw new IllegalArgumentException("this private constructor is for legacy purposes only");
+        }
         if (stringForm == null || stringForm.length() == 0) {
             throw new IllegalArgumentException("stringForm can not be null and must be at least 1 or more chars." + stringForm);
         }
