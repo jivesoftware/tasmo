@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.io.BaseEncoding;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.id.Id;
@@ -31,6 +32,7 @@ public class JsonEventConventions {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private static final ObjectMapper mapper = new ObjectMapper();
+    private static final BaseEncoding coder = BaseEncoding.base32().lowerCase().omitPadding();
 
     public JsonEventConventions() {
     }
@@ -84,7 +86,7 @@ public class JsonEventConventions {
             return null;
         }
         try {
-            return new Id(got.textValue());
+            return new Id(coder.decode(getTextValue(got)));
         } catch (Exception ex) {
             LOG.debug("Failed to get instanceId for className '" + className + "': " + eventNode, ex);
             return null;
@@ -159,6 +161,13 @@ public class JsonEventConventions {
         }
     }
 
+    private String getTextValue(JsonNode got) {
+        String gotTextValue = got.textValue();
+        if (gotTextValue == null || gotTextValue.length() == 0) {
+            throw new IllegalArgumentException("stringForm can not be null and must be at least 1 or more chars." + gotTextValue);
+        }
+        return gotTextValue;
+    }
 
     private Id getId(ObjectNode objectNode, String fieldName) {
         JsonNode got = objectNode.get(fieldName);
@@ -166,7 +175,7 @@ public class JsonEventConventions {
             return null;
         }
         try {
-            return new Id(got.textValue());
+            return new Id(coder.decode(getTextValue(got)));
         } catch (Exception ex) {
             LOG.debug("Failed to get objectId for field " + fieldName + ": " + objectNode, ex);
             return null;
