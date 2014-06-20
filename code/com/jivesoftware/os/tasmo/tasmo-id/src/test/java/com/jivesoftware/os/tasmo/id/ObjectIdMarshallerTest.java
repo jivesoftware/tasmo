@@ -1,5 +1,7 @@
 package com.jivesoftware.os.tasmo.id;
 
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

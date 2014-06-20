@@ -8,14 +8,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
+import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
 import com.jivesoftware.os.tasmo.event.api.EventVerb;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import java.io.IOException;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -28,7 +29,7 @@ public class JsonWrittenEventProviderTest {
 
     private ObjectMapper mapper = new ObjectMapper();
     JsonEventConventions eventHelper = new JsonEventConventions();
-    OrderIdProvider idProvider = new OrderIdProviderImpl(36);
+    OrderIdProvider idProvider = new OrderIdProviderImpl(new ConstantWriterIdProvider(36));
 
     @Test
     public void testLiteralFieldValueMarshalling() throws Exception {

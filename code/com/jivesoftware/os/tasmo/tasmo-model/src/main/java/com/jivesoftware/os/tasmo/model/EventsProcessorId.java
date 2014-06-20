@@ -9,7 +9,7 @@
 
 package com.jivesoftware.os.tasmo.model;
 
-import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import java.util.Objects;
 
 public class EventsProcessorId {

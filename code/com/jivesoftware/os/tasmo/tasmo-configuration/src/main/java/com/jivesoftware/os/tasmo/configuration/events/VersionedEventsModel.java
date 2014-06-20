@@ -1,16 +1,7 @@
-/*
- * $Revision$
- * $Date$
- *
- * Copyright (C) 1999-$year$ Jive Software. All rights reserved.
- *
- * This software is the proprietary information of Jive Software. Use is subject to license terms.
- */
-
 package com.jivesoftware.os.tasmo.configuration.events;
 
+import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.configuration.EventsModel;
-import com.jivesoftware.os.tasmo.id.ChainedVersion;
 
 /**
  *

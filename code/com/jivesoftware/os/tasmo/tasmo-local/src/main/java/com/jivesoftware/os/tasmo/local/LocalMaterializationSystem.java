@@ -1,8 +1,8 @@
 package com.jivesoftware.os.tasmo.local;
 
+import com.jivesoftware.os.jive.utils.id.IdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
-import com.jivesoftware.os.tasmo.id.IdProvider;
 import com.jivesoftware.os.tasmo.id.IdProviderImpl;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;

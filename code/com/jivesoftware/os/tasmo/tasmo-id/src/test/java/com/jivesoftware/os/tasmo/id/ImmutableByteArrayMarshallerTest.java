@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.id;
 
+import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

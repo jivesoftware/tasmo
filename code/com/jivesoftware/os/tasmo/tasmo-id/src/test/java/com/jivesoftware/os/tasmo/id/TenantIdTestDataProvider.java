@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.id;
 
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import org.testng.annotations.DataProvider;
 
 public class TenantIdTestDataProvider {

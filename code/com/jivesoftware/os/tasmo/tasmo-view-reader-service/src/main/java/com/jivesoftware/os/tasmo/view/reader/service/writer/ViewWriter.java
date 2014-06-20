@@ -8,7 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.service.writer;
 
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import java.util.List;
 
 /**

@@ -1,9 +1,9 @@
 package com.jivesoftware.os.tasmo.view.notification.api;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 
 public class ViewNotification {
 

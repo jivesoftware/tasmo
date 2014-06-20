@@ -2,7 +2,7 @@ package com.jivesoftware.os.tasmo.reference.lib;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import java.util.Objects;
 
 public class Reference {

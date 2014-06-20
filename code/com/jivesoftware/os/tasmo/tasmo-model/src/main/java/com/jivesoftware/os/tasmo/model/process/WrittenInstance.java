@@ -1,7 +1,7 @@
 package com.jivesoftware.os.tasmo.model.process;
 
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 
 /**
  * Represents the logical object instance being modified by an incoming event. This contains the actual data object fields being modified as well as the

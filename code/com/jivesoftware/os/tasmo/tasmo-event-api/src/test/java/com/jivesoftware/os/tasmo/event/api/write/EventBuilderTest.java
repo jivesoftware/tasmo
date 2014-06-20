@@ -1,10 +1,11 @@
 package com.jivesoftware.os.tasmo.event.api.write;
 
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
+import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
-import com.jivesoftware.os.tasmo.id.Id;
 import com.jivesoftware.os.tasmo.id.IdProviderImpl;
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
@@ -17,7 +18,7 @@ public class EventBuilderTest {
     @Test
     public void testJsonEventCreateUpdate() throws Exception {
         //create jsonevent
-        IdProviderImpl idProvider = new IdProviderImpl(new OrderIdProviderImpl(100));
+        IdProviderImpl idProvider = new IdProviderImpl(new OrderIdProviderImpl(new ConstantWriterIdProvider(100)));
         Event event = EventBuilder.create(idProvider, EventBuilderTest.class.getSimpleName(), tenantId, actorId).build();
         Assert.assertEquals(event.getObjectId().getClassName(), EventBuilderTest.class.getSimpleName(), "compare class name");
 
@@ -37,7 +38,7 @@ public class EventBuilderTest {
     public void testJsonEventSet(String key, Object value) throws Exception {
 
         //create jsonEvent
-        IdProviderImpl idProvider = new IdProviderImpl(new OrderIdProviderImpl(100));
+        IdProviderImpl idProvider = new IdProviderImpl(new OrderIdProviderImpl(new ConstantWriterIdProvider(100)));
         Event event = EventBuilder.create(idProvider, EventBuilderTest.class.getSimpleName(), tenantId, actorId)
                 .set(key, value)
             .build();
@@ -52,7 +53,7 @@ public class EventBuilderTest {
         expectedExceptions = RuntimeException.class)
     public void testJsonEventSetBadData(String key, Object value) throws Exception {
         //create jsonEvent
-        IdProviderImpl idProvider = new IdProviderImpl(new OrderIdProviderImpl(100));
+        IdProviderImpl idProvider = new IdProviderImpl(new OrderIdProviderImpl(new ConstantWriterIdProvider(100)));
         Event event = EventBuilder.create(idProvider, EventBuilderTest.class.getSimpleName(), tenantId, actorId)
                 .set(key, value)
             .build();

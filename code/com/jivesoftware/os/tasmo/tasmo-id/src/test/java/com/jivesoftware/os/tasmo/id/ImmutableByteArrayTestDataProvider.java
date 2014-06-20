@@ -1,6 +1,9 @@
 package com.jivesoftware.os.tasmo.id;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import java.io.IOException;
 import org.testng.annotations.DataProvider;
 

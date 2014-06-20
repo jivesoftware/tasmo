@@ -1,14 +1,14 @@
 package com.jivesoftware.os.tasmo.local;
 
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.IdProvider;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.tasmo.configuration.ViewModelParser;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriter;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.IdProvider;
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.view.reader.api.JsonViewProxyProvider;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;

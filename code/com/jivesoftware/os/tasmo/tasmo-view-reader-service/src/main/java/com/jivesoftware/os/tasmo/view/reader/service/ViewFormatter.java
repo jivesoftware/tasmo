@@ -4,8 +4,8 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.service;
 
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 
 /** @author jonathan.colt */

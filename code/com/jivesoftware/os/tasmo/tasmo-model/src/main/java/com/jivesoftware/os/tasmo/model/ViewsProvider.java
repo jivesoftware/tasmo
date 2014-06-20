@@ -8,8 +8,9 @@
  */
 package com.jivesoftware.os.tasmo.model;
 
-import com.jivesoftware.os.tasmo.id.ChainedVersion;
-import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.ChainedVersion;
+import com.jivesoftware.os.jive.utils.id.TenantId;
+
 
 public interface ViewsProvider {
 

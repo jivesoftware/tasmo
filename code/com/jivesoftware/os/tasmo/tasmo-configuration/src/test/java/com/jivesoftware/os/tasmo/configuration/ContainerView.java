@@ -1,6 +1,6 @@
 package com.jivesoftware.os.tasmo.configuration;
 
-import com.jivesoftware.os.tasmo.id.Id;
+import com.jivesoftware.os.jive.utils.id.Id;
 
 public class ContainerView {
 

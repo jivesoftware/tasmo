@@ -8,7 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.lib.process;
 
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 
 public interface WrittenEventProcessor {

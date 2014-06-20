@@ -1,6 +1,8 @@
 package com.jivesoftware.os.tasmo.id;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;

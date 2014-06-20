@@ -8,6 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.id;
 
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
 
 

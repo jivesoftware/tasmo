@@ -1,7 +1,7 @@
 package com.jivesoftware.os.tasmo.model.process;
 
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 
 public class ModifiedViewInfo {
 

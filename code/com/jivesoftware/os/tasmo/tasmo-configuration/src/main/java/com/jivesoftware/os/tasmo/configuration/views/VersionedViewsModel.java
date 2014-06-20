@@ -8,7 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.configuration.views;
 
-import com.jivesoftware.os.tasmo.id.ChainedVersion;
+import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import java.util.Map;
 
 /**

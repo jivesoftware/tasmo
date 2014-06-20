@@ -1,8 +1,8 @@
 package com.jivesoftware.os.tasmo.model.process;
 
 import com.google.common.base.Optional;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 
 /**
  * Represents one write against one logical object. This is the unit of processing within Tasmo. Events have header fields and a payload. Payloads contain both

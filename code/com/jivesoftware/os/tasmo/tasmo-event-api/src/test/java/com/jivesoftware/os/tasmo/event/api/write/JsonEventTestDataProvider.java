@@ -1,7 +1,7 @@
 package com.jivesoftware.os.tasmo.event.api.write;
 
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import org.testng.annotations.DataProvider;

@@ -1,6 +1,6 @@
 package com.jivesoftware.os.tasmo.reference.lib;
 
-import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

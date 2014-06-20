@@ -1,12 +1,12 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.IdProvider;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.IdProvider;
-import com.jivesoftware.os.tasmo.id.ObjectId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,7 +15,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.junit.Assert;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -25,15 +25,21 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
     public static final Random rand = new Random();
 
-    @Test (enabled = false, invocationCount = 10, singleThreaded = true)
+    @Test (enabled = true, invocationCount = 10, singleThreaded = true)
     public void concurrencyTest() throws Exception {
 
         // Folder->Doc->User
         String[] binding = new String[]{
-            //"ATest::1::A.x"
-            //,"ATest::2::A.ref_toB.ref.B|B.i"
-            //,"ATest::3::A.ref_toB.ref.B|B.j"
-            "ATest::4::A.ref_toB.ref.B|B.ref_toC.ref.C|C.a,b,c", "CTest::5::C.backRefs.B.ref_toC|B.backRefs.A.ref_toB|A.x"
+            "ATest::1::A.x",
+            "ATest::2::A.ref_toB.ref.B|B.i",
+            "ATest::3::A.ref_toB.ref.B|B.j",
+            "ATest::4::A.ref_toB.ref.B|B.ref_toC.ref.C|C.a,b,c",
+            "CTest::5::C.backRefs.B.ref_toC|B.backRefs.A.ref_toB|A.x",
+            "ATestDup::1::A.x",
+            "ATestDup::2::A.ref_toB.ref.B|B.i",
+            "ATestDup::3::A.ref_toB.ref.B|B.j",
+            "ATestDup::4::A.ref_toB.ref.B|B.ref_toC.ref.C|C.a,b,c",
+            "CTestDup::5::C.backRefs.B.ref_toC|B.backRefs.A.ref_toB|A.x"
         };
 
         Expectations expectations = initModelPaths(binding);
@@ -59,17 +65,15 @@ public class ConcurrencyTest extends BaseTasmoTest {
         threads.shutdown();
         threads.awaitTermination(30, TimeUnit.SECONDS);
 
-
-        for(RandomFireable rf:fireables) {
+        for (RandomFireable rf : fireables) {
             System.out.println(rf.lifespan);
         }
 
-//        a1.create();
-//        b1.create();
-//        c1.create();
-//        refA.create();
-//        refB.create();
-
+        a1.create();
+        b1.create();
+        c1.create();
+        refA.create();
+        refB.create();
 
         System.out.println(a1.id);
         System.out.println(b1.id);
@@ -77,16 +81,27 @@ public class ConcurrencyTest extends BaseTasmoTest {
         System.out.println(refA.lastEdge);
         System.out.println(refB.lastEdge);
 
+        System.out.println("-------------------------");
+        ObjectNode aTestView = readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
+        System.out.println(mapper.writeValueAsString(aTestView));
+        System.out.println("-------------------------");
+        ObjectNode cTestView = readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
+        System.out.println(mapper.writeValueAsString(cTestView));
 
         System.out.println("-------------------------");
-        ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
-        System.out.println(mapper.writeValueAsString(view));
+        ObjectNode aTestDupView = readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
+        System.out.println(mapper.writeValueAsString(aTestDupView));
         System.out.println("-------------------------");
-        view = readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
-        System.out.println(mapper.writeValueAsString(view));
-        Assert.assertNotNull(view);
+        ObjectNode cTestDupView = readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
+        System.out.println(mapper.writeValueAsString(cTestDupView));
+
+        Assert.assertNotNull(aTestView);
+        Assert.assertNotNull(cTestView);
+        Assert.assertNotNull(aTestDupView);
+        Assert.assertNotNull(cTestDupView);
 
     }
+
     class FireableValue implements Fireable<String> {
 
         private final long instanceId;
@@ -116,7 +131,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
             }
             id = write(create.build());
-            System.out.println("CREATE NODE "+id);
+            System.out.println("CREATE NODE " + id);
         }
 
         @Override
@@ -132,7 +147,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                     update.set(fieldName, value);
                 }
                 write(update.build());
-                System.out.println("UPDATE NODE "+id);
+                System.out.println("UPDATE NODE " + id);
             }
         }
 
@@ -141,7 +156,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
             EventBuilder update = EventBuilder.update(id, tenantId, actorId);
             update.set(ReservedFields.DELETED, true);
             write(update.build());
-            System.out.println("REMOVE NODE "+id);
+            System.out.println("REMOVE NODE " + id);
             id = null;
         }
 
@@ -277,7 +292,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                         fireable.remove();
                     }
                 }
-                lifespan = System.currentTimeMillis()-start;
+                lifespan = System.currentTimeMillis() - start;
             } catch (Exception x) {
                 x.printStackTrace();
             }
@@ -285,7 +300,6 @@ public class ConcurrencyTest extends BaseTasmoTest {
         }
 
     }
-
 
     class ConstantIdProvider implements IdProvider {
 
@@ -301,7 +315,6 @@ public class ConcurrencyTest extends BaseTasmoTest {
         }
 
     }
-
 
     class AssertExpectation {
 

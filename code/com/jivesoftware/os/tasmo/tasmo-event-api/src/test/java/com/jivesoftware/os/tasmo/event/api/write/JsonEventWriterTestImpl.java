@@ -1,17 +1,18 @@
 package com.jivesoftware.os.tasmo.event.api.write;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
-import com.jivesoftware.os.tasmo.id.ObjectId;
 import java.util.ArrayList;
 import java.util.List;
 
 public class JsonEventWriterTestImpl implements JsonEventWriter {
 
     private static final JsonEventConventions jsonEventConventions = new JsonEventConventions();
-    private final OrderIdProvider orderIdProvider = new OrderIdProviderImpl(1);
+    private final OrderIdProvider orderIdProvider = new OrderIdProviderImpl(new ConstantWriterIdProvider(1));
 
     @Override
     public EventWriterResponse write(List<ObjectNode> events, EventWriterOptions options) throws JsonEventWriteException {

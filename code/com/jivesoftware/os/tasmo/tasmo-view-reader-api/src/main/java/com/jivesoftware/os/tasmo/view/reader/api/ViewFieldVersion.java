@@ -4,7 +4,7 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.api;
 
-import com.jivesoftware.os.tasmo.id.Id;
+import com.jivesoftware.os.jive.utils.id.Id;
 import java.util.Arrays;
 
 public class ViewFieldVersion {

@@ -2,6 +2,8 @@ package com.jivesoftware.os.tasmo.id;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

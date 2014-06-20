@@ -9,8 +9,8 @@
 package com.jivesoftware.os.tasmo.lib.process.bookkeeping;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import java.util.ArrayList;
 import java.util.List;
