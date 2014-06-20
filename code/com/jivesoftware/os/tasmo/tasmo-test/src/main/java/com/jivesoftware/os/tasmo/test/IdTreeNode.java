@@ -1,6 +1,6 @@
 package com.jivesoftware.os.tasmo.test;
 
-import com.jivesoftware.os.tasmo.id.Id;
+import com.jivesoftware.os.jive.utils.id.Id;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

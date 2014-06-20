@@ -93,5 +93,9 @@
             <artifactId>row-column-value-store-inmemory</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.jive.utils</groupId>
+            <artifactId>id</artifactId>
+        </dependency>
     </dependencies>
 </project>

@@ -9,8 +9,8 @@
 package com.jivesoftware.os.tasmo.lib.write;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Arrays;
 import java.util.List;

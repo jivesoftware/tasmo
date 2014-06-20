@@ -1,6 +1,6 @@
 package com.jivesoftware.os.tasmo.lib.process;
 
-import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import java.util.ArrayList;

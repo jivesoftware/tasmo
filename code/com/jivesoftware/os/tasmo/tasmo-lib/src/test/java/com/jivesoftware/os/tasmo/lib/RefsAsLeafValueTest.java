@@ -10,9 +10,9 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Lists;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ObjectId;
 import java.util.List;
 import org.testng.annotations.Test;
 

@@ -61,5 +61,9 @@
             <groupId>com.jivesoftware.os.jive.utils</groupId>
             <artifactId>logger</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.jive.utils</groupId>
+            <artifactId>id</artifactId>
+        </dependency>
     </dependencies>
 </project>

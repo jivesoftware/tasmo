@@ -2,11 +2,11 @@ package com.jivesoftware.os.tasmo.reference.lib;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
 import com.jivesoftware.os.tasmo.id.JsonNodeMarshaller;
-import com.jivesoftware.os.tasmo.id.ObjectId;
 import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
 import org.testng.annotations.DataProvider;
 

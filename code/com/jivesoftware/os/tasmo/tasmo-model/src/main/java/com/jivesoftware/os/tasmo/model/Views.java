@@ -10,8 +10,8 @@ package com.jivesoftware.os.tasmo.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.jivesoftware.os.tasmo.id.ChainedVersion;
-import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.ChainedVersion;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import java.util.List;
 
 /**

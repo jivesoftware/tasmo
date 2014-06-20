@@ -10,7 +10,7 @@
     <artifactId>global-version-management</artifactId>
     <packaging>pom</packaging>
     <properties>
-        <jive-utils-version>0.17</jive-utils-version>
+        <jive-utils-version>0.20</jive-utils-version>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -57,7 +57,11 @@
                 <type>jar</type>
             </dependency>
 
-
+            <dependency>
+                <groupId>com.jivesoftware.os.jive.utils</groupId>
+                <artifactId>id</artifactId>
+                <version>${jive-utils-version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.jivesoftware.os.jive.utils</groupId>
                 <artifactId>http-client</artifactId>

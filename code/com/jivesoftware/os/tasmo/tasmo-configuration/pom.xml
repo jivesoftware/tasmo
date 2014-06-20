@@ -54,5 +54,9 @@
             <artifactId>tasmo-event-api</artifactId>
             <type>jar</type>
         </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.jive.utils</groupId>
+            <artifactId>id</artifactId>
+        </dependency>
     </dependencies>
 </project>

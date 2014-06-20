@@ -8,8 +8,15 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.jive.utils.id.ChainedVersion;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
@@ -23,12 +30,6 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
-import com.jivesoftware.os.tasmo.id.ChainedVersion;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.ImmutableByteArray;
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
 import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
@@ -197,7 +198,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         };
 
         TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
-                new OrderIdProviderImpl(1));
+                new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
 
         ListeningExecutorService traverserExecutors = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(32));
         final BatchingReferenceTraverser referenceTraverser = new BatchingReferenceTraverser(referenceStore,
@@ -236,7 +237,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             final WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider) {
 
         if (orderIdProvider == null) {
-            orderIdProvider = new OrderIdProviderImpl(1);
+            orderIdProvider = new OrderIdProviderImpl(new ConstantWriterIdProvider(1));
         }
         final OrderIdProvider idProvider = orderIdProvider;
         JsonEventWriter jsonEventWriter = new JsonEventWriter() {

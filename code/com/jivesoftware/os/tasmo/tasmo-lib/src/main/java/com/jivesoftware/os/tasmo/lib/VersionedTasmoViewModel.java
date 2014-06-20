@@ -1,7 +1,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.collect.SetMultimap;
-import com.jivesoftware.os.tasmo.id.ChainedVersion;
+import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
 import java.util.Map;
 import java.util.Set;

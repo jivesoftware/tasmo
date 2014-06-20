@@ -8,8 +8,8 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.service;
 
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import java.util.Set;
 
 public interface ViewPermissionChecker {

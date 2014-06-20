@@ -6,10 +6,11 @@ package com.jivesoftware.os.tasmo.lib.process.bookkeeping;
 
 import com.google.common.base.Optional;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.TenantId;
+import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ import org.testng.annotations.Test;
  */
 public class TasmoEventBookkeeperTest {
 
-    private final OrderIdProvider idProvider = new OrderIdProviderImpl(45);
+    private final OrderIdProvider idProvider = new OrderIdProviderImpl(new ConstantWriterIdProvider(45));
 
     @Test
     public void testBooKeeping() throws Exception {

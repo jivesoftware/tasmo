@@ -8,8 +8,8 @@
  */
 package com.jivesoftware.os.tasmo.reference.lib;
 
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
-import com.jivesoftware.os.tasmo.id.ObjectId;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

@@ -1,7 +1,7 @@
 package com.jivesoftware.os.tasmo.reference.lib.concur;
 
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 
 public class ExistenceUpdate {
 

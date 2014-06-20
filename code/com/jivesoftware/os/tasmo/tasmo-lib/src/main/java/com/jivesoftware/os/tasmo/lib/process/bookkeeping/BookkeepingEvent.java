@@ -9,8 +9,8 @@
 package com.jivesoftware.os.tasmo.lib.process.bookkeeping;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.jivesoftware.os.tasmo.id.Id;
-import com.jivesoftware.os.tasmo.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import java.util.Objects;
 
 public class BookkeepingEvent {

@@ -1,19 +1,11 @@
-/*
- * $Revision$
- * $Date$
- *
- * Copyright (C) 1999-$year$ Jive Software. All rights reserved.
- *
- * This software is the proprietary information of Jive Software. Use is subject to license terms.
- */
 package com.jivesoftware.os.tasmo.configuration.events;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.ChainedVersion;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.configuration.EventsModel;
-import com.jivesoftware.os.tasmo.id.ChainedVersion;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import com.jivesoftware.os.tasmo.model.EventsProcessorId;
 import com.jivesoftware.os.tasmo.model.EventsProvider;
 import java.util.List;

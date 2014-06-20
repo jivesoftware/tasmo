@@ -9,7 +9,7 @@
 
 package com.jivesoftware.os.tasmo.event.api.write;
 
-import com.jivesoftware.os.tasmo.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import java.util.List;
 
 /**

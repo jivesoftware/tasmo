@@ -1,6 +1,9 @@
 package com.jivesoftware.os.tasmo.id;
 
 import com.google.common.base.Preconditions;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
 
 public class TenantIdAndCentricIdMarshaller implements TypeMarshaller<TenantIdAndCentricId> {

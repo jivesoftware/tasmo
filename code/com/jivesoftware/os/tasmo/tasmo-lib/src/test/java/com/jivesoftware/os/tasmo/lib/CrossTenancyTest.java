@@ -1,9 +1,9 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
-import com.jivesoftware.os.tasmo.id.ObjectId;
-import com.jivesoftware.os.tasmo.id.TenantId;
 import java.util.Arrays;
 import org.testng.Assert;
 import org.testng.annotations.Test;

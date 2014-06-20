@@ -8,9 +8,9 @@
  */
 package com.jivesoftware.os.tasmo.view.reader.service.writer;
 
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter.Transaction;
 import java.io.IOException;
 import java.util.List;
