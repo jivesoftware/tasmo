@@ -11,24 +11,8 @@ package com.jivesoftware.os.tasmo.lib;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
-import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
-import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateReadTraversal;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
-import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
-import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
-import com.jivesoftware.os.tasmo.model.path.ModelPath;
-import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
-import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
-import com.jivesoftware.os.tasmo.view.reader.service.ViewFieldsCollector;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 import junit.framework.Assert;
 import org.testng.annotations.Test;
 
@@ -56,22 +40,6 @@ public class RefTest extends BaseTasmoTest {
 
         Assert.assertEquals(view, materializedView);
 
-    }
-
-    private Id[] ids(PathId[] pathIds) {
-        Id[] ids = new Id[pathIds.length];
-        for (int i = 0; i < ids.length; i++) {
-           ids[i] = pathIds[i].getObjectId().getId();
-        }
-        return ids;
-    }
-
-    private String[] classes(PathId[] pathIds) {
-       String[] classes = new String[pathIds.length];
-        for (int i = 0; i < classes.length; i++) {
-           classes[i] = pathIds[i].getObjectId().getClassName();
-        }
-        return classes;
     }
 
     @Test

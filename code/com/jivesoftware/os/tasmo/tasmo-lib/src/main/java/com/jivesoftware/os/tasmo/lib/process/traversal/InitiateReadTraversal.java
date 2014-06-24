@@ -22,13 +22,16 @@ public class InitiateReadTraversal {
 
     private final Set<String> rootingEventClassNames;
     private final List<PathAtATimeStepStreamerFactory> pathTraversers;
+    private final int pathLength;
     private final boolean idCentric;
 
     public InitiateReadTraversal(Set<String> rootingEventClassNames,
         List<PathAtATimeStepStreamerFactory> pathTraversers,
+        int pathLength,
         boolean idCentric) {
         this.rootingEventClassNames = rootingEventClassNames;
         this.pathTraversers = pathTraversers;
+        this.pathLength = pathLength;
         this.idCentric = idCentric;
     }
 
@@ -65,7 +68,7 @@ public class InitiateReadTraversal {
             processingStats);
 
         PathTraversalContext context = new PathTraversalContext(1, false);
-        PathContext pathContext = new PathContext(2);
+        PathContext pathContext = new PathContext(pathLength);
         LeafContext leafContext = new ReadLeafContext();
         for (PathAtATimeStepStreamerFactory pathTraverser : pathTraversers) {
             StepStreamer stepStreamer = pathTraverser.create();

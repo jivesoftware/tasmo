@@ -232,7 +232,8 @@ public class TasmoViewModel {
 
             Set<String> rootingEventClassNames = new HashSet<>();
             List<PathAtATimeStepStreamerFactory> streamers = new ArrayList<>();
-            for (ModelPath modelPath : viewBinding.getModelPaths()) {
+            List<ModelPath> modelPaths = viewBinding.getModelPaths();
+            for (ModelPath modelPath : modelPaths) {
                 assertNoInstanceIdBindings(viewBinding, modelPath);
 
                 rootingEventClassNames.addAll(modelPath.getRootClassNames());
@@ -249,7 +250,8 @@ public class TasmoViewModel {
                 List<StepTraverser> steps = fieldProcessorFactory.buildReadSteps(viewIdFieldName);
                 streamers.add(new PathAtATimeStepStreamerFactory(steps));
             }
-            readTraversers.put(viewClassName, new InitiateReadTraversal(rootingEventClassNames, streamers, idCentric));
+
+            readTraversers.put(viewClassName, new InitiateReadTraversal(rootingEventClassNames, streamers, modelPaths.size() + 1, idCentric));
 
         }
         return readTraversers;
