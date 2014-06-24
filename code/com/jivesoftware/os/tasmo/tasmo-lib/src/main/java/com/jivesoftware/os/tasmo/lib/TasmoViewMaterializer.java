@@ -30,8 +30,8 @@ public class TasmoViewMaterializer {
     private final AtomicLong totalProcessed = new AtomicLong();
 
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
-            TasmoEventProcessor eventProcessor,
-            ListeningExecutorService processEvents
+        TasmoEventProcessor eventProcessor,
+        ListeningExecutorService processEvents
     ) {
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
         this.eventProcessor = eventProcessor;
@@ -124,11 +124,11 @@ public class TasmoViewMaterializer {
             double eps = eventsPerSecond * 0.5d + lastEventsPerSecond * 0.5d;
             lastEventsPerSecond = eventsPerSecond;
             LOG.info("BATCH PROCESSED: events:{} in {} millis  totalEvents:{} currentEventPerSecond:{}",
-                    new Object[]{writtenEvents.size(), elapse, totalProcessed, eps});
+                new Object[]{ writtenEvents.size(), elapse, totalProcessed, eps });
         }
 
         if (failedToProcess.size() > 0) {
-            LOG.warn("CONSISTENCY please retry " + failedToProcess.size()+ " later.");
+            LOG.warn("CONSISTENCY please retry " + failedToProcess.size() + " later.");
         }
         return failedToProcess;
     }

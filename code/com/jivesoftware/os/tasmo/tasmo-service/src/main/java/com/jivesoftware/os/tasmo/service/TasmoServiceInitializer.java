@@ -145,10 +145,7 @@ public class TasmoServiceInitializer {
                 })
                 .build();
 
-        ExecutorService pathProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), pathProcessorThreadFactory);
-        ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(pathProcessorThreads);
-
-        final TasmoViewModel tasmoViewModel = new TasmoViewModel(pathExecutors,
+        final TasmoViewModel tasmoViewModel = new TasmoViewModel(
                 masterTenantId,
                 viewsProvider,
                 viewPathKeyProvider,

@@ -180,8 +180,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         ReferenceStore referenceStore = buildReferenceStore(concurrencyStore, rowColumnValueStoreProvider);
         EventValueStore eventValueStore = buildEventValueStore(concurrencyStore, rowColumnValueStoreProvider);
 
-        TasmoViewModel viewMaterializerModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
-                masterTenantId,
+        TasmoViewModel viewMaterializerModel = new TasmoViewModel(masterTenantId,
                 viewsProvider,
                 viewPathKeyProvider,
                 concurrencyStore,

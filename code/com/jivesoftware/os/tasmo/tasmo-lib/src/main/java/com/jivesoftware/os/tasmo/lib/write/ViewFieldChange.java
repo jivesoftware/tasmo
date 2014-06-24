@@ -11,6 +11,7 @@ package com.jivesoftware.os.tasmo.lib.write;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +31,7 @@ public class ViewFieldChange {
     private final Id actorId;
     private final ViewFieldChangeType type;
     private final ObjectId viewObjectId;
+    private final ModelPath modelPath;
     private final long modelPathIdHashcode;
     private final PathId[] modelPathInstanceIds;
     private final List<ReferenceWithTimestamp> modelPathVersions;
@@ -42,6 +44,7 @@ public class ViewFieldChange {
             Id actorId,
             ViewFieldChangeType type,
             ObjectId viewObjectId,
+            ModelPath modelPath,
             long modelPathIdHashcode,
             PathId[] modelPathInstanceIds,
             List<ReferenceWithTimestamp> modelPathVersions,
@@ -52,6 +55,7 @@ public class ViewFieldChange {
         this.actorId = actorId;
         this.type = type;
         this.viewObjectId = viewObjectId;
+        this.modelPath = modelPath;
         this.modelPathIdHashcode = modelPathIdHashcode;
         this.modelPathInstanceIds = modelPathInstanceIds;
         this.modelPathVersions = modelPathVersions;
@@ -76,6 +80,10 @@ public class ViewFieldChange {
         return viewObjectId;
     }
 
+    public ModelPath getModelPath() {
+        return modelPath;
+    }
+    
     public long getModelPathIdHashcode() {
         return modelPathIdHashcode;
     }

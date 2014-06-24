@@ -15,10 +15,6 @@
     </properties>
     <dependencies>
         <dependency>
-            <groupId>com.jivesoftware.os.tasmo</groupId>
-            <artifactId>tasmo-id</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.google.code.findbugs</groupId>
             <artifactId>jsr305</artifactId>
         </dependency>

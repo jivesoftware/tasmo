@@ -1,13 +1,11 @@
 package com.jivesoftware.os.tasmo.lib;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.SetMultimap;
-import com.google.common.util.concurrent.ListeningExecutorService;
 import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import com.jivesoftware.os.jive.utils.id.TenantId;
@@ -15,14 +13,16 @@ import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateReadTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversalContext;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraverserKey;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateWriteTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PathAtATimeStepStreamerFactory;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraverser;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraverserKey;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraversersFactory;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PrefixCollapsedStepStreamerFactory;
+import com.jivesoftware.os.tasmo.lib.process.traversal.StepTraverser;
 import com.jivesoftware.os.tasmo.lib.process.traversal.StepTree;
 import com.jivesoftware.os.tasmo.lib.process.traversal.TraversablePath;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
@@ -35,6 +35,7 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,15 +53,13 @@ public class TasmoViewModel {
     private final ConcurrencyStore concurrencyStore;
     private final ReferenceStore referenceStore;
     private final StripingLocksProvider<TenantId> loadModelLocks = new StripingLocksProvider<>(1024);
-    private final ListeningExecutorService pathExecutors;
 
-    public TasmoViewModel(ListeningExecutorService pathExecutors,
-            TenantId masterTenantId,
-            ViewsProvider viewsProvider,
-            ViewPathKeyProvider viewPathKeyProvider,
-            ConcurrencyStore concurrencyStore,
-            ReferenceStore referenceStore) {
-        this.pathExecutors = pathExecutors;
+    public TasmoViewModel(
+        TenantId masterTenantId,
+        ViewsProvider viewsProvider,
+        ViewPathKeyProvider viewPathKeyProvider,
+        ConcurrencyStore concurrencyStore,
+        ReferenceStore referenceStore) {
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.viewPathKeyProvider = viewPathKeyProvider;
@@ -69,7 +68,7 @@ public class TasmoViewModel {
         this.versionedViewModels = new ConcurrentHashMap<>();
     }
 
-    VersionedTasmoViewModel getVersionedTasmoViewModel(TenantId tenantId) throws Exception {
+    public VersionedTasmoViewModel getVersionedTasmoViewModel(TenantId tenantId) throws Exception {
         if (!versionedViewModels.containsKey(tenantId)) {
             loadModel(tenantId);
         }
@@ -93,19 +92,21 @@ public class TasmoViewModel {
         synchronized (loadModelLocks.lock(tenantId)) {
             ChainedVersion currentVersion = viewsProvider.getCurrentViewsVersion(tenantId);
             if (currentVersion == ChainedVersion.NULL) {
-                versionedViewModels.put(tenantId, new VersionedTasmoViewModel(ChainedVersion.NULL, null, null, null));
+                versionedViewModels.put(tenantId, new VersionedTasmoViewModel(ChainedVersion.NULL, null, null, null, null));
             } else {
                 VersionedTasmoViewModel currentVersionedViewsModel = versionedViewModels.get(tenantId);
                 if (currentVersionedViewsModel == null
-                        || !currentVersionedViewsModel.getVersion().equals(currentVersion)) {
+                    || !currentVersionedViewsModel.getVersion().equals(currentVersion)) {
 
                     Views views = viewsProvider.getViews(new ViewsProcessorId(tenantId, "NotBeingUsedYet"));
 
                     if (views != null) {
-                        Map<String, InitiateTraversal> dispatchers = bindModelPaths(views);
+                        Map<String, InitiateWriteTraversal> writeTraversal = bindModelPaths(views);
+                        Map<String, InitiateReadTraversal> readTraversal = buildViewReaderTraveral(views);
                         SetMultimap<String, FieldNameAndType> eventModel = bindEventFieldTypes(views);
                         Set<String> notifiableViewClassNames = buildNotifiableViewClassNames(views);
-                        versionedViewModels.put(tenantId, new VersionedTasmoViewModel(views.getVersion(), dispatchers, eventModel, notifiableViewClassNames));
+                        versionedViewModels.put(tenantId, new VersionedTasmoViewModel(views.getVersion(),
+                            writeTraversal, readTraversal, eventModel, notifiableViewClassNames));
                     } else {
                         LOG.info("ViewsProvider failed to provide a 'Views' instance for tenantId:" + tenantId);
                     }
@@ -179,10 +180,10 @@ public class TasmoViewModel {
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
-                    .add("fieldName", fieldName)
-                    .add("fieldType", fieldType)
-                    .add("idCentric", idCentric)
-                    .toString();
+                .add("fieldName", fieldName)
+                .add("fieldType", fieldType)
+                .add("idCentric", idCentric)
+                .toString();
         }
 
         @Override
@@ -218,7 +219,73 @@ public class TasmoViewModel {
         }
     }
 
-    private Map<String, InitiateTraversal> bindModelPaths(Views views) throws IllegalArgumentException {
+    private Map<String, InitiateReadTraversal> buildViewReaderTraveral(Views views) throws IllegalArgumentException {
+
+        Map<String, PathTraversersFactory> allFieldProcessorFactories = Maps.newHashMap();
+
+        Map<String, InitiateReadTraversal> readTraversers = new HashMap<>();
+        for (ViewBinding viewBinding : views.getViewBindings()) {
+
+            String viewClassName = viewBinding.getViewClassName();
+            String viewIdFieldName = viewBinding.getViewIdFieldName();
+            boolean idCentric = viewBinding.isIdCentric();
+
+            Set<String> rootingEventClassNames = new HashSet<>();
+            List<PathAtATimeStepStreamerFactory> streamers = new ArrayList<>();
+            for (ModelPath modelPath : viewBinding.getModelPaths()) {
+                assertNoInstanceIdBindings(viewBinding, modelPath);
+
+                rootingEventClassNames.addAll(modelPath.getRootClassNames());
+
+                String factoryKey = viewBinding.getViewClassName() + "_" + modelPath.getId();
+                if (allFieldProcessorFactories.containsKey(factoryKey)) {
+                    throw new IllegalArgumentException("you have already created this binding:" + factoryKey);
+                }
+
+                long modelPathHashcode = viewPathKeyProvider.modelPathHashcode(modelPath.getId());
+                PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName, modelPathHashcode, modelPath);
+                allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
+
+                List<StepTraverser> steps = fieldProcessorFactory.buildReadSteps(viewIdFieldName);
+                streamers.add(new PathAtATimeStepStreamerFactory(steps));
+            }
+            readTraversers.put(viewClassName, new InitiateReadTraversal(rootingEventClassNames, streamers, idCentric));
+
+        }
+        return readTraversers;
+    }
+
+    List<PathTraverser> transformToPrefixCollapsedTree(List<TraversablePath> traversablePaths) {
+        if (traversablePaths == null) {
+            return null;
+        }
+
+        Map<PathTraverserKey, StepTree> subTrees = new ConcurrentHashMap<>();
+        for (TraversablePath traversablePath : traversablePaths) {
+            InitiateTraversalContext initialStepContext = traversablePath.getInitialStepContext();
+            PathTraverserKey pathTraverserKey = new PathTraverserKey(initialStepContext.getInitialFieldNames(),
+                initialStepContext.getPathIndex(),
+                initialStepContext.getMembersSize());
+
+            StepTree stepTree = subTrees.get(pathTraverserKey);
+            if (stepTree == null) {
+                stepTree = new StepTree();
+                subTrees.put(pathTraverserKey, stepTree);
+            }
+            stepTree.add(traversablePath.getStepTraversers());
+            stepTree.print();
+        }
+
+        List<PathTraverser> pathTraversers = new ArrayList<>();
+        for (PathTraverserKey pathTraverserKey : subTrees.keySet()) {
+            StepTree stepTree = subTrees.get(pathTraverserKey);
+            pathTraversers.add(new PathTraverser(pathTraverserKey, new PrefixCollapsedStepStreamerFactory(stepTree)));
+        }
+
+        return pathTraversers;
+    }
+
+    private Map<String, InitiateWriteTraversal> bindModelPaths(Views views) throws IllegalArgumentException {
 
         Map<String, PathTraversersFactory> allFieldProcessorFactories = Maps.newHashMap();
 
@@ -256,12 +323,11 @@ public class TasmoViewModel {
                 allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
 
                 List<TraversablePath> pathTraversers = fieldProcessorFactory.buildPathTraversers(viewIdFieldName);
-
-                groupPathTraverserByClass(accumulate, pathTraversers, true);
+                groupPathTraverserByClass(accumulate, pathTraversers);
 
                 List<TraversablePath> initialBackRefStep = fieldProcessorFactory.buildBackPathTraversers(viewIdFieldName);
                 if (initialBackRefStep != null) {
-                    groupPathTraverserByClass(accumulate, initialBackRefStep, false);
+                    groupPathTraverserByClass(accumulate, initialBackRefStep);
                 }
             }
 
@@ -274,17 +340,17 @@ public class TasmoViewModel {
             if (step.getStepType() == ModelPathStepType.value) {
                 for (String fieldName : step.getFieldNames()) {
                     if (ReservedFields.INSTANCE_ID.equals(fieldName)) {
-                        throw(new IllegalStateException("It is illegal to directly bind to the '" + ReservedFields.INSTANCE_ID + "' field.  " + viewBinding));
+                        throw (new IllegalStateException("It is illegal to directly bind to the '" + ReservedFields.INSTANCE_ID + "' field.  " + viewBinding));
                     }
                 }
             }
         }
     }
 
-    private Map<String, InitiateTraversal> buildInitialStepDispatchers(
-            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupSteps) {
+    private Map<String, InitiateWriteTraversal> buildInitialStepDispatchers(
+        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupSteps) {
 
-        Map<String, InitiateTraversal> all = new HashMap<>();
+        Map<String, InitiateWriteTraversal> all = new HashMap<>();
         for (String eventClassName : groupSteps.keySet()) {
             Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>> typedSteps = groupSteps.get(eventClassName);
 
@@ -315,19 +381,17 @@ public class TasmoViewModel {
             }
             ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore);
 
-//            InitiateTraversal initiateTraversal = new InitiateTraversal(
-//                    pathExecutors,
+//            InitiateWriteTraversal initiateTraversal = new InitiateWriteTraversal(
 //                    concurrencyChecker,
 //                    transformToPathAtATime(valueTraversers),
 //                    referenceStore,
 //                    transformToPathAtATime(refTraversers),
 //                    transformToPathAtATime(backRefTraversers));
-            InitiateTraversal initiateTraversal = new InitiateTraversal(pathExecutors,
-                    concurrencyChecker,
-                    transformToPrefixCollapsedTree("values", valueTraversers),
-                    referenceStore,
-                    transformToPrefixCollapsedTree("refs", refTraversers),
-                    transformToPrefixCollapsedTree("backrefs", backRefTraversers));
+            InitiateWriteTraversal initiateTraversal = new InitiateWriteTraversal(concurrencyChecker,
+                transformToPrefixCollapsedTree("values", valueTraversers),
+                referenceStore,
+                transformToPrefixCollapsedTree("refs", refTraversers),
+                transformToPrefixCollapsedTree("backrefs", backRefTraversers));
 
             all.put(eventClassName, initiateTraversal);
         }
@@ -336,41 +400,29 @@ public class TasmoViewModel {
     }
 
     ListMultimap<InitiateTraverserKey, PathTraverser> transformToPrefixCollapsedTree(String family,
-            ListMultimap<InitiateTraverserKey, TraversablePath> traversablePaths) {
+        ListMultimap<InitiateTraverserKey, TraversablePath> traversablePaths) {
         if (traversablePaths == null) {
             return null;
         }
         ListMultimap<InitiateTraverserKey, PathTraverser> transformed = ArrayListMultimap.create();
         for (InitiateTraverserKey key : traversablePaths.keySet()) {
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("-------- " + family + " TRIGGER:" + key);
-            }
             Map<PathTraverserKey, StepTree> subTrees = new ConcurrentHashMap<>();
             for (TraversablePath traversablePath : traversablePaths.get(key)) {
                 InitiateTraversalContext initialStepContext = traversablePath.getInitialStepContext();
                 PathTraverserKey pathTraverserKey = new PathTraverserKey(initialStepContext.getInitialFieldNames(),
-                        initialStepContext.getPathIndex(),
-                        initialStepContext.getMembersSize());
+                    initialStepContext.getPathIndex(),
+                    initialStepContext.getMembersSize());
 
                 StepTree stepTree = subTrees.get(pathTraverserKey);
                 if (stepTree == null) {
                     stepTree = new StepTree();
                     subTrees.put(pathTraverserKey, stepTree);
                 }
-
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("???????????? " + traversablePath);
-                    LOG.trace("---------------- Steps:" + Joiner.on(" || ").join(traversablePath.getStepTraversers()));
-                }
                 stepTree.add(traversablePath.getStepTraversers());
             }
 
             for (PathTraverserKey pathTraverserKey : subTrees.keySet()) {
                 StepTree stepTree = subTrees.get(pathTraverserKey);
-//                System.out.println("*** Prefix Tree ***");
-//                System.out.println(pathTraverserKey);
-//                stepTree.print();
-//                System.out.println("******");
                 PathTraverser pathTraverser = new PathTraverser(pathTraverserKey, new PrefixCollapsedStepStreamerFactory(stepTree));
                 transformed.put(key, pathTraverser);
             }
@@ -387,10 +439,10 @@ public class TasmoViewModel {
             for (TraversablePath traversablePath : traversablePaths.get(initiateTraverserKey)) {
                 InitiateTraversalContext initialStepContext = traversablePath.getInitialStepContext();
                 PathTraverserKey pathTraverserKey = new PathTraverserKey(initialStepContext.getInitialFieldNames(),
-                        initialStepContext.getPathIndex(),
-                        initialStepContext.getMembersSize());
+                    initialStepContext.getPathIndex(),
+                    initialStepContext.getMembersSize());
                 PathTraverser pathTraverser = new PathTraverser(pathTraverserKey,
-                        new PathAtATimeStepStreamerFactory(traversablePath.getStepTraversers()));
+                    new PathAtATimeStepStreamerFactory(traversablePath.getStepTraversers()));
                 transformed.put(initiateTraverserKey, pathTraverser);
             }
         }
@@ -398,9 +450,8 @@ public class TasmoViewModel {
     }
 
     private void groupPathTraverserByClass(
-            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupedPathTraversers,
-            List<TraversablePath> pathTraverers,
-            boolean groupRefs) {
+        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupedPathTraversers,
+        List<TraversablePath> pathTraverers) {
 
         for (TraversablePath traversablePath : pathTraverers) {
             for (String className : traversablePath.getInitialClassNames()) {

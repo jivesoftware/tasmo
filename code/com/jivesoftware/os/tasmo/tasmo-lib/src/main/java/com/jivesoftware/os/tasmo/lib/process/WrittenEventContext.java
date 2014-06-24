@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.lib.process;
 
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
@@ -11,6 +12,8 @@ import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 
 public class WrittenEventContext {
 
+    private final long eventId;
+    private final Id actorId;
     private final WrittenEvent event;
     private final WrittenEventProvider writtenEventProvider;
     private final FieldValueReader fieldValueReader;
@@ -28,7 +31,9 @@ public class WrittenEventContext {
     public int readLeaves; // hack
     public int changes;
 
-    public WrittenEventContext(WrittenEvent event,
+    public WrittenEventContext(long eventId,
+            Id actorId,
+            WrittenEvent event,
             WrittenEventProvider writtenEventProvider,
             FieldValueReader fieldValueReader,
             ReferenceTraverser referenceTraverser,
@@ -36,6 +41,8 @@ public class WrittenEventContext {
             CommitChange commitChange,
             TasmoEdgeReport tasmoEdgeReport,
             TasmoProcessingStats processingStats) {
+        this.eventId = eventId;
+        this.actorId = actorId;
         this.event = event;
         this.writtenEventProvider = writtenEventProvider;
         this.fieldValueReader = fieldValueReader;
@@ -44,6 +51,14 @@ public class WrittenEventContext {
         this.commitChange = commitChange;
         this.tasmoEdgeReport = tasmoEdgeReport;
         this.processingStats = processingStats;
+    }
+
+    public long getEventId() {
+        return eventId;
+    }
+
+    public Id getActorId() {
+        return actorId;
     }
 
     public TasmoProcessingStats getProcessingStats() {

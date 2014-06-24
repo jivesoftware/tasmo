@@ -38,6 +38,15 @@ public class PathTraversersFactory {
         this.modelPath = modelPath;
     }
 
+    public List<StepTraverser> buildReadSteps(String viewIdFieldName) {
+        List<StepTraverser> steps = new ArrayList<>();
+        List<ModelPathStep> modelPathSteps = modelPath.getPathMembers();
+        steps.addAll(buildLeafwardTraversers(-1, modelPathSteps));
+        steps.addAll(buildRootwardTraversers(-1, modelPathSteps));
+        steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPath, modelPathIdHashcode));
+        return steps;
+    }
+
     public List<TraversablePath> buildPathTraversers(String viewIdFieldName) {
         List<TraversablePath> pathTraversers = Lists.newArrayList();
         List<ModelPathStep> modelPathMembers = modelPath.getPathMembers();
@@ -61,7 +70,7 @@ public class PathTraversersFactory {
         List<StepTraverser> steps = new ArrayList<>();
         steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
         steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
-        steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPathIdHashcode));
+        steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPath, modelPathIdHashcode));
         return new TraversablePath(firstStep, steps);
     }
 
@@ -111,14 +120,14 @@ public class PathTraversersFactory {
             steps.add(new TraverseBackref(modelPathStep, modelPathStep.getOriginClassNames()));
             steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
             steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
-            steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPathIdHashcode));
+            steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPath, modelPathIdHashcode));
             return new TraversablePath(firstStep, steps);
         } else {
             return null;
         }
     }
 
-    List<StepTraverser> buildLeafwardTraversers(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
+    private List<StepTraverser> buildLeafwardTraversers(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
         List<StepTraverser> steps = new ArrayList<>();
 
         int modelPathMembersSize = modelPathMembers.size();
@@ -149,7 +158,7 @@ public class PathTraversersFactory {
         return steps;
     }
 
-    RefStreamer createLeafwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
+    private RefStreamer createLeafwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
                 return new ForwardRefStreamer(fieldName);
@@ -164,7 +173,7 @@ public class PathTraversersFactory {
         }
     }
 
-    List<StepTraverser> buildRootwardTraversers(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
+    private List<StepTraverser> buildRootwardTraversers(int initialPathIndex, List<ModelPathStep> modelPathMembers) {
         List<StepTraverser> steps = new ArrayList<>();
         ModelPathStep member;
         // rootward
@@ -182,7 +191,7 @@ public class PathTraversersFactory {
         return steps;
     }
 
-    RefStreamer createRootwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
+    private RefStreamer createRootwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
                 return new BackRefStreamer(classNames, fieldName);

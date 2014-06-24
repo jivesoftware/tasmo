@@ -2,7 +2,8 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateReadTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateWriteTraversal;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,16 +14,19 @@ import java.util.Set;
 public class VersionedTasmoViewModel {
 
     private final ChainedVersion version;
-    private final Map<String, InitiateTraversal> dispatchers;
+    private final Map<String, InitiateWriteTraversal> dispatchers;
+    private final Map<String, InitiateReadTraversal> readTraversers;
     private final SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel;
     private final Set<String> notifiableViews;
 
     public VersionedTasmoViewModel(ChainedVersion version,
-        Map<String, InitiateTraversal> dispatchers,
+        Map<String, InitiateWriteTraversal> dispatchers,
+        Map<String, InitiateReadTraversal> readTraversers,
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel,
         Set<String> notifiableViews) {
         this.version = version;
         this.dispatchers = dispatchers;
+        this.readTraversers = readTraversers;
         this.eventModel = eventModel;
         this.notifiableViews = notifiableViews;
     }
@@ -31,8 +35,12 @@ public class VersionedTasmoViewModel {
         return version;
     }
 
-    public Map<String, InitiateTraversal> getDispatchers() {
+    public Map<String, InitiateWriteTraversal> getDispatchers() {
         return dispatchers;
+    }
+
+    public Map<String, InitiateReadTraversal> getReadTraversers() {
+        return readTraversers;
     }
 
     public SetMultimap<String, TasmoViewModel.FieldNameAndType> getEventModel() {

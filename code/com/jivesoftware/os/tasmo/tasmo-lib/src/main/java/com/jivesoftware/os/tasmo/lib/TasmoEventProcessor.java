@@ -13,7 +13,7 @@ import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateWriteTraversal;
 import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
@@ -148,7 +148,8 @@ public class TasmoEventProcessor {
         };
 
         long startProcessingEvent = System.currentTimeMillis();
-        WrittenEventContext batchContext = new WrittenEventContext(writtenEvent, writtenEventProvider,
+        WrittenEventContext batchContext = new WrittenEventContext(writtenEvent.getEventId(),
+            writtenEvent.getActorId(), writtenEvent, writtenEventProvider,
             fieldValueReader, referenceTraverser, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport, processingStats);
 
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
@@ -170,8 +171,8 @@ public class TasmoEventProcessor {
                 }
                 processingStats.latency("UPDATE", className, System.currentTimeMillis() - start);
 
-                Map<String, InitiateTraversal> dispatchers = model.getDispatchers();
-                InitiateTraversal initiateTraversal = dispatchers.get(className);
+                Map<String, InitiateWriteTraversal> dispatchers = model.getDispatchers();
+                InitiateWriteTraversal initiateTraversal = dispatchers.get(className);
                 if (initiateTraversal == null) {
                     LOG.warn("No traversal defined for className:{}", className);
                     continue;

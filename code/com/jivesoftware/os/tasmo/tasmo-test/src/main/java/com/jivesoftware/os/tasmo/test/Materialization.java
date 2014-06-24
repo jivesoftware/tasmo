@@ -11,8 +11,15 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.jive.utils.id.ChainedVersion;
+import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
@@ -24,13 +31,6 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
-import com.jivesoftware.os.jive.utils.id.ChainedVersion;
-import com.jivesoftware.os.jive.utils.id.Id;
-import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
-import com.jivesoftware.os.jive.utils.id.ObjectId;
-import com.jivesoftware.os.jive.utils.id.TenantId;
-import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
 import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
@@ -350,8 +350,7 @@ public class Materialization {
         };
 
         pathProcessorThreads = newThreadPool(numberOfEventProcessorThreads, "process-path-");
-        ListeningExecutorService pathExecutors = MoreExecutors.listeningDecorator(pathProcessorThreads);
-        tasmoViewModel = new TasmoViewModel(pathExecutors,
+        tasmoViewModel = new TasmoViewModel(
                 MASTER_TENANT_ID,
                 viewsProvider,
                 viewPathKeyProvider,

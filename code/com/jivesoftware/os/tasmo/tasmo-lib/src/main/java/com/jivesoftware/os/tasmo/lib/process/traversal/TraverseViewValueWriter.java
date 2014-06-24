@@ -14,6 +14,7 @@ import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.io.IOException;
@@ -26,26 +27,29 @@ public class TraverseViewValueWriter implements StepTraverser {
 
     private final String viewIdFieldName;
     private final String viewClassName;
+    private final ModelPath modelPath;
     private final long modelPathIdHashcode;
 
-    public TraverseViewValueWriter(String viewIdFieldName, String viewClassName, long modelPathIdHashcode) {
+    public TraverseViewValueWriter(String viewIdFieldName, String viewClassName,ModelPath modelPath, long modelPathIdHashcode) {
         this.viewIdFieldName = viewIdFieldName;
         this.viewClassName = viewClassName;
+        this.modelPath = modelPath;
         this.modelPathIdHashcode = modelPathIdHashcode;
     }
 
     @Override
     public void process(final TenantIdAndCentricId tenantIdAndCentricId,
-            WrittenEventContext writtenEventContext,
-            PathTraversalContext pathTraversalContext,
-            PathContext pathContext,
-            LeafContext leafContext,
-            PathId from,
-            StepStream streamTo) throws Exception {
+        WrittenEventContext writtenEventContext,
+        PathTraversalContext pathTraversalContext,
+        PathContext pathContext,
+        LeafContext leafContext,
+        PathId from,
+        StepStream streamTo) throws Exception {
+        System.out.println("FROM:" + from);
 
-        ObjectId objectId = from.getObjectId();
         Id viewId = buildAlternateViewId(writtenEventContext.getEvent());
-        if (viewId == null) {
+        if (viewId == null && from != null) {
+            ObjectId objectId = from.getObjectId();
             viewId = objectId.getId();
         }
 
@@ -53,26 +57,35 @@ public class TraverseViewValueWriter implements StepTraverser {
     }
 
     public void writeViewFields(WrittenEventContext writtenEventContext,
-            PathTraversalContext pathTraversalContext,
-            PathContext pathContext,
-            LeafContext leafContext,
-            String viewClassName,
-            long modelPathIdHashcode,
-            Id viewId) throws IOException {
+        PathTraversalContext pathTraversalContext,
+        PathContext pathContext,
+        LeafContext leafContext,
+        String viewClassName,
+        long modelPathIdHashcode,
+        Id viewId) throws IOException {
 
         byte[] leafAsBytes = leafContext.toBytes();
         if (leafAsBytes != null) {
-            WrittenEvent writtenEvent = writtenEventContext.getEvent();
-            ViewFieldChange update = new ViewFieldChange(writtenEvent.getEventId(),
-                    writtenEvent.getActorId(),
-                    (pathTraversalContext.isRemovalContext()) ? ViewFieldChange.ViewFieldChangeType.remove : ViewFieldChange.ViewFieldChangeType.add, // uck
-                    new ObjectId(viewClassName, viewId),
-                    modelPathIdHashcode,
-                    pathContext.copyOfModelPathInstanceIds(),
-                    pathContext.copyOfVersions(),
-                    pathContext.copyOfModelPathTimestamps(),
-                    leafAsBytes,
-                    pathTraversalContext.getThreadTimestamp());
+            ViewFieldChange.ViewFieldChangeType type = ViewFieldChange.ViewFieldChangeType.add;
+            if (pathTraversalContext.isRemovalContext()) {
+                type = ViewFieldChange.ViewFieldChangeType.remove;
+            }
+
+            if (viewId == null) {
+                viewId = Id.NULL; // HACK
+            }
+
+            ViewFieldChange update = new ViewFieldChange(writtenEventContext.getEventId(),
+                writtenEventContext.getActorId(),
+                type,
+                new ObjectId(viewClassName, viewId),
+                modelPath,
+                modelPathIdHashcode,
+                pathContext.copyOfModelPathInstanceIds(),
+                pathContext.copyOfVersions(),
+                pathContext.copyOfModelPathTimestamps(),
+                leafAsBytes,
+                pathTraversalContext.getThreadTimestamp());
             pathTraversalContext.addChange(update);
         }
     }
@@ -92,13 +105,13 @@ public class TraverseViewValueWriter implements StepTraverser {
                     alternateViewId = writtenEvent.getWrittenInstance().getIdFieldValue(viewIdFieldName);
                 } catch (Exception x) {
                     throw new IllegalStateException("instanceClassName:" + payload.getInstanceId().getClassName() + " requires that field:"
-                            + viewIdFieldName
-                            + " always be present and of type ObjectId. Please check that you have marked this field as mandatory.", x);
+                        + viewIdFieldName
+                        + " always be present and of type ObjectId. Please check that you have marked this field as mandatory.", x);
                 }
             } else {
                 throw new IllegalStateException("instanceClassName:" + payload.getInstanceId().getClassName() + " requires that field:"
-                        + viewIdFieldName
-                        + " always be present and of type ObjectId. Please check that you have marked this field as mandatory.");
+                    + viewIdFieldName
+                    + " always be present and of type ObjectId. Please check that you have marked this field as mandatory.");
             }
         }
         return alternateViewId;
@@ -106,7 +119,11 @@ public class TraverseViewValueWriter implements StepTraverser {
 
     @Override
     public String toString() {
-        return "TraverseViewValueWriter{" + "viewIdFieldName=" + viewIdFieldName + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathIdHashcode + '}';
+        return "TraverseViewValueWriter{"
+            + "viewIdFieldName=" + viewIdFieldName
+            + ", viewClassName=" + viewClassName
+            + ", modelPathId=" + modelPathIdHashcode
+            + '}';
     }
 
     @Override

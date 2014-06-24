@@ -25,7 +25,6 @@
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-view-reader-api</artifactId>
-            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
@@ -90,7 +89,6 @@
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-view-reader-service</artifactId>
-            <scope>test</scope>
         </dependency>
         <!--        <dependency>
             <groupId>com.jivesoftware.jive.platform.shared</groupId>
@@ -115,7 +113,6 @@
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>1.2.16</version>
             <scope>test</scope>
         </dependency>
         <dependency>
