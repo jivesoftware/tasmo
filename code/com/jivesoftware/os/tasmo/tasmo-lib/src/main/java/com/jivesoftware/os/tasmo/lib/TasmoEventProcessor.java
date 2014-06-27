@@ -67,10 +67,6 @@ public class TasmoEventProcessor {
         this.tasmoEdgeReport = tasmoEdgeReport;
     }
 
-    public void logStats() {
-        processingStats.logStats();
-    }
-
     public void processWrittenEvent(Object lock, WrittenEvent writtenEvent) throws Exception {
         TenantId tenantId = writtenEvent.getTenantId();
         final VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(tenantId);

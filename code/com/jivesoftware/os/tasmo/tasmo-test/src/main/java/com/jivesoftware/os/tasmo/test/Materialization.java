@@ -31,10 +31,14 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
+import com.jivesoftware.os.tasmo.lib.StatCollectingFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
+import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
@@ -51,6 +55,7 @@ import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -123,7 +128,7 @@ public class Materialization {
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
     }
-    WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
+    WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider = new JsonWrittenEventProvider();
 
     public ViewChangeNotificationProcessor getViewChangeNotificationProcessor() {
         // default is a no op processor
@@ -153,7 +158,7 @@ public class Materialization {
 //                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "eventValueTable", "v",
 //                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
 //                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-//                        eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
+//                        writtenEventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
 //                }
 //
 //                @Override
@@ -245,6 +250,7 @@ public class Materialization {
     private ExecutorService traverserThreads;
     private BatchingReferenceTraverser batchingReferenceTraverser;
     TasmoEventProcessor tasmoEventProcessor;
+    TasmoProcessingStats processingStats;
 
     private ExecutorService newThreadPool(int maxThread, String name) {
         ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
@@ -384,19 +390,28 @@ public class Materialization {
         ReferenceTraverser referenceTraverser = batchingReferenceTraverser;
 //        ReferenceTraverser referenceTraverser = new SerialReferenceTraverser(referenceStore); //??
 
-        TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
+        TasmoEventTraverser eventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
             new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
+
+        WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
+
+        TasmoWriteFanoutEventPersistor eventPersistor = new TasmoWriteFanoutEventPersistor(writtenEventProvider,
+            writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
+
+        processingStats = new TasmoProcessingStats();
+        StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
+            new EventValueStoreFieldValueReader(eventValueStore));
+
         tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
-                eventProvider,
-                concurrencyStore,
-                retryingEventTraverser,
-                getViewChangeNotificationProcessor(),
-                new WrittenInstanceHelper(),
-                eventValueStore,
-                referenceTraverser,
-                referenceStore,
-                commitChange,
-                new TasmoEdgeReport());
+            eventPersistor,
+            writtenEventProvider,
+            eventTraverser,
+            getViewChangeNotificationProcessor(),
+            fieldValueReader,
+            referenceTraverser,
+            commitChange,
+            processingStats,
+            new TasmoEdgeReport());
 
         eventProcessorThreads = newThreadPool(numberOfEventProcessorThreads, "process-event-");
         tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
@@ -406,7 +421,7 @@ public class Materialization {
     }
 
     public void logStats() {
-        tasmoEventProcessor.logStats();
+        processingStats.logStats();
     }
 
     Expectations initModelPaths(TenantId tenantId, List<ViewBinding> bindings) throws Exception {
@@ -588,7 +603,7 @@ public class Materialization {
 
                     List<WrittenEvent> writtenEvents = new ArrayList<>();
                     for (ObjectNode eventNode : events) {
-                        writtenEvents.add(eventProvider.convertEvent(eventNode));
+                        writtenEvents.add(writtenEventProvider.convertEvent(eventNode));
                     }
 
                     materialization.tasmoMaterializer.process(writtenEvents);

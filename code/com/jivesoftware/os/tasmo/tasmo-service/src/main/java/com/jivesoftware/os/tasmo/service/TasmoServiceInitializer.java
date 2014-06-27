@@ -14,7 +14,9 @@ import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
+import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.DefaultRowColumnValueStoreMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.NeverAcceptsFailureSetOfSortedMaps;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
@@ -26,10 +28,14 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
 import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
+import com.jivesoftware.os.tasmo.lib.StatCollectingFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
+import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
@@ -42,6 +48,7 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
+import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
@@ -93,7 +100,7 @@ public class TasmoServiceInitializer {
             OrderIdProvider threadTimestamp,
             ViewsProvider viewsProvider,
             ViewPathKeyProvider viewPathKeyProvider,
-            WrittenEventProvider eventProvider,
+            WrittenEventProvider writtenEventProvider,
             SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
             EventValueCacheProvider eventValueCacheProvider,
             CommitChange changeWriter,
@@ -107,7 +114,7 @@ public class TasmoServiceInitializer {
             new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.event.values", "v",
                                 new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
                                         new ObjectIdMarshaller(), new StringTypeMarshaller(),
-                                        (TypeMarshaller<OpaqueFieldValue>) eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
+                                        (TypeMarshaller<OpaqueFieldValue>) writtenEventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
 
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyTable =
             new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
@@ -196,18 +203,29 @@ public class TasmoServiceInitializer {
 
         ReferenceTraverser referenceTraverser = batchingReferenceTraverser; //new SerialReferenceTraverser(referenceStore);
 
-        TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(bookKeepingEventProcessor, threadTimestamp);
-        final TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
-                eventProvider,
-                concurrencyStore,
-                retryingEventTraverser,
-                viewChangeNotificationProcessor,
-                new WrittenInstanceHelper(),
-                eventValueStore,
-                referenceTraverser,
-                referenceStore,
-                existenceCommitChange,
-                tasmoEdgeReport);
+        TasmoEventTraverser eventTraverser = new TasmoRetryingEventTraverser(bookKeepingEventProcessor,
+            new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
+
+        WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
+
+        TasmoWriteFanoutEventPersistor eventPersistor = new TasmoWriteFanoutEventPersistor(writtenEventProvider,
+            writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
+
+        final TasmoProcessingStats processingStats = new TasmoProcessingStats();
+        StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
+            new EventValueStoreFieldValueReader(eventValueStore));
+
+        TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+            eventPersistor,
+            writtenEventProvider,
+            eventTraverser,
+            viewChangeNotificationProcessor,
+            fieldValueReader,
+            referenceTraverser,
+            changeWriter,
+            processingStats,
+            tasmoEdgeReport);
+
 
         ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("event-processor-%d")
@@ -234,7 +252,7 @@ public class TasmoServiceInitializer {
             @Override
             public void run() {
                 try {
-                    tasmoEventProcessor.logStats();
+                    processingStats.logStats();
                 } catch (Exception x) {
                     LOG.error("Issue with logging stats. ", x);
                 }

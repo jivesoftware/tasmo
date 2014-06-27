@@ -149,7 +149,7 @@ public class BaseTasmoTest {
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
     }
-    WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
+    WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider = new JsonWrittenEventProvider();
     private static BaseTasmoTest base;
 
     public static BaseTasmoTest create() {
@@ -180,7 +180,7 @@ public class BaseTasmoTest {
 //                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "eventValueTable", "v",
 //                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
 //                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-//                        eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
+//                        writtenEventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
 //                }
 //
 //                @Override
@@ -411,14 +411,20 @@ public class BaseTasmoTest {
             new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
 
         WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
-        TasmoWriteFanoutEventPersistor eventPersistor = new TasmoWriteFanoutEventPersistor(eventProvider, writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
+
+        TasmoWriteFanoutEventPersistor eventPersistor = new TasmoWriteFanoutEventPersistor(writtenEventProvider,
+            writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
+
         TasmoProcessingStats processingStats = new TasmoProcessingStats();
+        StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
+            new EventValueStoreFieldValueReader(eventValueStore));
+
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
                 eventPersistor,
-                eventProvider,
+                writtenEventProvider,
                 eventTraverser,
                 getViewChangeNotificationProcessor(),
-                new StatCollectingFieldValueReader(null, new EventValueStoreFieldValueReader(eventValueStore)),
+                fieldValueReader,
                 referenceTraverser,
                 commitChange,
                 processingStats,
@@ -629,7 +635,7 @@ public class BaseTasmoTest {
 
                     List<WrittenEvent> writtenEvents = new ArrayList<>();
                     for (ObjectNode eventNode : events) {
-                        writtenEvents.add(eventProvider.convertEvent(eventNode));
+                        writtenEvents.add(writtenEventProvider.convertEvent(eventNode));
                     }
 
                     tasmoViewMaterializer.process(writtenEvents);
