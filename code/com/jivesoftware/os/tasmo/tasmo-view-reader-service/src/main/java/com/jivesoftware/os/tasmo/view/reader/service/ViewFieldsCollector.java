@@ -35,8 +35,12 @@ public class ViewFieldsCollector {
         this.viewMaxSizeInBytes = viewMaxSizeInBytes;
     }
 
-    boolean add(ViewDescriptor viewDescriptor,
-            ModelPath modelPath, Id[] modelPathIds, String[] viewPathClasses, ViewValue viewValue, Long timestamp) throws IOException {
+    public boolean add(ViewDescriptor viewDescriptor,
+            ModelPath modelPath,
+            Id[] modelPathIds,
+            String[] viewPathClasses,
+            ViewValue viewValue,
+            Long timestamp) throws IOException {
 
         byte[] value = (viewValue == null) ? null : viewValue.getValue();
         viewSizeInBytes += (value == null) ? 0 : value.length;
@@ -67,7 +71,7 @@ public class ViewFieldsCollector {
     public void done() {
     }
 
-    ViewResponse getView(Set<Id> canViewTheseIds) throws Exception {
+    public ViewResponse getView(Set<Id> canViewTheseIds) throws Exception {
         if (viewSizeInBytes > viewMaxSizeInBytes) {
             return ViewResponse.toLarge();
         }

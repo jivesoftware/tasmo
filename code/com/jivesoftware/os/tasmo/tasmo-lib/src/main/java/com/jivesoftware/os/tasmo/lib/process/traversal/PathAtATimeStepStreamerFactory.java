@@ -20,4 +20,8 @@ public class PathAtATimeStepStreamerFactory implements StepStreamerFactory {
         return new StepStreamer(stepTraversers, 0);
     }
 
+    @Override
+    public String toString() {
+        return "PathAtATimeStepStreamerFactory{" + "stepTraversers=" + stepTraversers + '}';
+    }
 }

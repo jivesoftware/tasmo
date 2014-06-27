@@ -30,10 +30,14 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
+import com.jivesoftware.os.tasmo.lib.StatCollectingFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
+import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
@@ -50,6 +54,7 @@ import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -180,8 +185,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         ReferenceStore referenceStore = buildReferenceStore(concurrencyStore, rowColumnValueStoreProvider);
         EventValueStore eventValueStore = buildEventValueStore(concurrencyStore, rowColumnValueStoreProvider);
 
-        TasmoViewModel viewMaterializerModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
-                masterTenantId,
+        TasmoViewModel viewMaterializerModel = new TasmoViewModel(masterTenantId,
                 viewsProvider,
                 viewPathKeyProvider,
                 concurrencyStore,
@@ -216,17 +220,28 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             }
         });
 
+        TasmoEventTraverser eventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
+            new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
+
+        WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
+
+        TasmoWriteFanoutEventPersistor eventPersistor = new TasmoWriteFanoutEventPersistor(writtenEventProvider,
+            writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
+
+        TasmoProcessingStats processingStats = new TasmoProcessingStats();
+        StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
+            new EventValueStoreFieldValueReader(eventValueStore));
+
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(viewMaterializerModel,
-                writtenEventProvider,
-                concurrencyStore,
-                retryingEventTraverser,
-                viewChangeNotificationProcessor,
-                new WrittenInstanceHelper(),
-                eventValueStore,
-                referenceTraverser,
-                referenceStore,
-                commitChange,
-                new TasmoEdgeReport());
+            eventPersistor,
+            writtenEventProvider,
+            eventTraverser,
+            viewChangeNotificationProcessor,
+            fieldValueReader,
+            referenceTraverser,
+            commitChange,
+            processingStats,
+            new TasmoEdgeReport());
 
         return new TasmoViewMaterializer(materializerEventBookkeeper,
                 tasmoEventProcessor,

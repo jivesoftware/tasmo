@@ -2,7 +2,8 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateReadTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateWriteTraversal;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,16 +14,22 @@ import java.util.Set;
 public class VersionedTasmoViewModel {
 
     private final ChainedVersion version;
-    private final Map<String, InitiateTraversal> dispatchers;
+    private final Map<String, InitiateWriteTraversal> writeTraversers;
+    private final Map<String, InitiateWriteTraversal> centricWriteTraversers;
+    private final Map<String, InitiateReadTraversal> readTraversers;
     private final SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel;
     private final Set<String> notifiableViews;
 
     public VersionedTasmoViewModel(ChainedVersion version,
-        Map<String, InitiateTraversal> dispatchers,
+        Map<String, InitiateWriteTraversal> writeTraversers,
+        Map<String, InitiateWriteTraversal> centricWriteTraversers,
+        Map<String, InitiateReadTraversal> readTraversers,
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel,
         Set<String> notifiableViews) {
         this.version = version;
-        this.dispatchers = dispatchers;
+        this.writeTraversers = writeTraversers;
+        this.centricWriteTraversers = centricWriteTraversers;
+        this.readTraversers = readTraversers;
         this.eventModel = eventModel;
         this.notifiableViews = notifiableViews;
     }
@@ -31,8 +38,15 @@ public class VersionedTasmoViewModel {
         return version;
     }
 
-    public Map<String, InitiateTraversal> getDispatchers() {
-        return dispatchers;
+    public Map<String, InitiateWriteTraversal> getWriteTraversers() {
+        return writeTraversers;
+    }
+    public Map<String, InitiateWriteTraversal> getCentricWriteTraversers() {
+        return centricWriteTraversers;
+    }
+
+    public Map<String, InitiateReadTraversal> getReadTraversers() {
+        return readTraversers;
     }
 
     public SetMultimap<String, TasmoViewModel.FieldNameAndType> getEventModel() {
@@ -47,7 +61,7 @@ public class VersionedTasmoViewModel {
     public String toString() {
         return "VersionedViewTasmoModel{"
             + "version=" + version
-            + ", dispatchers=" + dispatchers
+            + ", dispatchers=" + writeTraversers
             + '}';
     }
 }

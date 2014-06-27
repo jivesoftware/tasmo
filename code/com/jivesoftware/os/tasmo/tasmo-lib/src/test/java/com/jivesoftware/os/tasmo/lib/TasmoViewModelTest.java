@@ -3,7 +3,6 @@ package com.jivesoftware.os.tasmo.lib;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.TenantId;
@@ -21,7 +20,6 @@ import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executors;
 import org.mockito.Mockito;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -47,7 +45,7 @@ public class TasmoViewModelTest {
         viewsProvider = Mockito.mock(ViewsProvider.class);
         concurrencyStore = Mockito.mock(ConcurrencyStore.class);
         referenceStore = Mockito.mock(ReferenceStore.class);
-        tasmoViewModel = new TasmoViewModel(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8)),
+        tasmoViewModel = new TasmoViewModel(
                 tenantId,
                 viewsProvider,
                 new StringHashcodeViewPathKeyProvider(),
@@ -92,15 +90,15 @@ public class TasmoViewModelTest {
         tasmoViewModel.loadModel(tenantId);
         VersionedTasmoViewModel first = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
         Assert.assertEquals(version1, first.getVersion());
-        Assert.assertTrue(first.getDispatchers().containsKey("A"));
-        Assert.assertFalse(first.getDispatchers().containsKey("B"));
+        Assert.assertTrue(first.getWriteTraversers().containsKey("A"));
+        Assert.assertFalse(first.getWriteTraversers().containsKey("B"));
 
         tasmoViewModel.loadModel(tenantId);
         VersionedTasmoViewModel second = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
         Assert.assertNotEquals(first, second);
         Assert.assertEquals(version2, second.getVersion());
-        Assert.assertTrue(second.getDispatchers().containsKey("B"));
-        Assert.assertFalse(second.getDispatchers().containsKey("A"));
+        Assert.assertTrue(second.getWriteTraversers().containsKey("B"));
+        Assert.assertFalse(second.getWriteTraversers().containsKey("A"));
 
     }
 

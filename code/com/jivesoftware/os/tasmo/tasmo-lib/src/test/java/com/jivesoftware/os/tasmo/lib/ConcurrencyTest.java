@@ -5,15 +5,19 @@ import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.IdProvider;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -25,7 +29,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
     public static final Random rand = new Random();
 
-    @Test (enabled = true, invocationCount = 10, singleThreaded = true)
+    @Test (enabled = false, invocationCount = 1000, singleThreaded = true, skipFailedInvocations = true)
     public void concurrencyTest() throws Exception {
 
         // Folder->Doc->User
@@ -34,70 +38,124 @@ public class ConcurrencyTest extends BaseTasmoTest {
             "ATest::2::A.ref_toB.ref.B|B.i",
             "ATest::3::A.ref_toB.ref.B|B.j",
             "ATest::4::A.ref_toB.ref.B|B.ref_toC.ref.C|C.a,b,c",
+            "ATest::5::A.ref_toB.ref.B|B.ref_toC.ref.C|C.ref_toD.ref.D|D.k,l,m",
             "CTest::5::C.backRefs.B.ref_toC|B.backRefs.A.ref_toB|A.x",
             "ATestDup::1::A.x",
             "ATestDup::2::A.ref_toB.ref.B|B.i",
             "ATestDup::3::A.ref_toB.ref.B|B.j",
             "ATestDup::4::A.ref_toB.ref.B|B.ref_toC.ref.C|C.a,b,c",
+            "ATestDup::5::A.ref_toB.ref.B|B.ref_toC.ref.C|C.ref_toD.ref.D|D.k,l,m",
             "CTestDup::5::C.backRefs.B.ref_toC|B.backRefs.A.ref_toB|A.x"
         };
 
-        Expectations expectations = initModelPaths(binding);
+        initModelPaths(binding);
 
-        FireableValue a1 = new FireableValue(1_000_000, "A", new String[]{ "x", "y", "z" });
-        FireableValue b1 = new FireableValue(1_000_002, "B", new String[]{ "h", "i", "j" });
-        FireableValue c1 = new FireableValue(1_000_004, "C", new String[]{ "a", "b", "c" });
+        FireableValue a1 = new FireableValue(1_000_000, "A", new String[]{ "x", "y", "z" }, new String[]{ "1", "2", "3" });
+        FireableValue b1 = new FireableValue(1_001_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
+        FireableValue b2 = new FireableValue(1_002_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
+        FireableValue b3 = new FireableValue(1_003_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
+        FireableValue c1 = new FireableValue(1_001_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
+        FireableValue c2 = new FireableValue(1_002_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
+        FireableValue c3 = new FireableValue(1_003_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
+        FireableValue d1 = new FireableValue(1_001_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
+        FireableValue d2 = new FireableValue(1_002_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
+        FireableValue d3 = new FireableValue(1_003_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
 
-        FireableRef refA = new FireableRef(a1, "toB", Arrays.asList(b1));
-        FireableRef refB = new FireableRef(b1, "toC", Arrays.asList(c1));
+        FireableRef refA = new FireableRef(a1, "toB", Arrays.asList(b1, b2, b3), b1);
+        FireableRef refB1 = new FireableRef(b1, "toC", Arrays.asList(c1, c2, c3), c1);
+        FireableRef refB2 = new FireableRef(b2, "toC", Arrays.asList(c1, c2, c3), c2);
+        FireableRef refB3 = new FireableRef(b3, "toC", Arrays.asList(c1, c2, c3), c3);
+        FireableRef refC1 = new FireableRef(c1, "toD", Arrays.asList(d1, d2, d3), d1);
+        FireableRef refC2 = new FireableRef(c2, "toD", Arrays.asList(d1, d2, d3), d2);
+        FireableRef refC3 = new FireableRef(c3, "toD", Arrays.asList(d1, d2, d3), d3);
+
 
         //ExecutorService threads = MoreExecutors.sameThreadExecutor();
         ExecutorService threads = Executors.newCachedThreadPool();
         List<RandomFireable<?>> fireables = new ArrayList<>();
 
-        fireables.add(new RandomFireable<>(a1, true, 1, 250));
-        fireables.add(new RandomFireable<>(b1, true, 1, 250));
-        fireables.add(new RandomFireable<>(c1, true, 1, 250));
-        fireables.add(new RandomFireable<>(refA, true, 10, 2000));
-        fireables.add(new RandomFireable<>(refB, true, 10, 2000));
-        threads.invokeAll(fireables);
+        CountDownLatch latch = new CountDownLatch(30);
+        fireables.add(new RandomFireable<>(a1, 1, 250, latch));
+        fireables.add(new RandomFireable<>(a1, 1, 250, latch));
+        fireables.add(new RandomFireable<>(b1, 1, 250, latch));
+        fireables.add(new RandomFireable<>(b2, 1, 250, latch));
+        fireables.add(new RandomFireable<>(b3, 1, 250, latch));
+        fireables.add(new RandomFireable<>(b1, 1, 250, latch));
+        fireables.add(new RandomFireable<>(b2, 1, 250, latch));
+        fireables.add(new RandomFireable<>(b3, 1, 250, latch));
+        fireables.add(new RandomFireable<>(c1, 1, 250, latch));
+        fireables.add(new RandomFireable<>(c2, 1, 250, latch));
+        fireables.add(new RandomFireable<>(c3, 1, 250, latch));
+        fireables.add(new RandomFireable<>(c1, 1, 250, latch));
+        fireables.add(new RandomFireable<>(c2, 1, 250, latch));
+        fireables.add(new RandomFireable<>(c3, 1, 250, latch));
+        fireables.add(new RandomFireable<>(d1, 1, 250, latch));
+        fireables.add(new RandomFireable<>(d2, 1, 250, latch));
+        fireables.add(new RandomFireable<>(d3, 1, 250, latch));
+        fireables.add(new RandomFireable<>(d1, 1, 250, latch));
+        fireables.add(new RandomFireable<>(d2, 1, 250, latch));
+        fireables.add(new RandomFireable<>(d3, 1, 250, latch));
+        fireables.add(new RandomFireable<>(refA, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refA, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refB1, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refB2, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refB3, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refB1, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refB2, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refB3, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refC1, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refC2, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refC3, 10, 2000, latch));
+
+        List<Future<Void>> futures = threads.invokeAll(fireables);
+        latch.await();
 
         threads.shutdown();
-        threads.awaitTermination(30, TimeUnit.SECONDS);
+        threads.awaitTermination(60, TimeUnit.SECONDS);
 
-        for (RandomFireable rf : fireables) {
-            System.out.println(rf.lifespan);
+        for (Future<Void> future : futures) {
+            future.get();
         }
 
-        a1.create();
-        b1.create();
-        c1.create();
-        refA.create();
-        refB.create();
-
-        System.out.println(a1.id);
-        System.out.println(b1.id);
-        System.out.println(c1.id);
-        System.out.println(refA.lastEdge);
-        System.out.println(refB.lastEdge);
-
-        System.out.println("-------------------------");
+        System.out.println("- Write AView ------------------------");
         ObjectNode aTestView = readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
         System.out.println(mapper.writeValueAsString(aTestView));
-        System.out.println("-------------------------");
-        ObjectNode cTestView = readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
-        System.out.println(mapper.writeValueAsString(cTestView));
+        ObjectNode aTestView1 = readMaterializeView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
+        System.out.println("- vs - ");
+        System.out.println(mapper.writeValueAsString(aTestView1));
+        Assert.assertEquals(aTestView, aTestView1);
 
-        System.out.println("-------------------------");
+
+
+        System.out.println("- Write AViewDup-");
         ObjectNode aTestDupView = readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
         System.out.println(mapper.writeValueAsString(aTestDupView));
-        System.out.println("-------------------------");
-        ObjectNode cTestDupView = readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
-        System.out.println(mapper.writeValueAsString(cTestDupView));
+        ObjectNode aTestDupView1 = readMaterializeView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
+        System.out.println("- vs Read - ");
+        System.out.println(mapper.writeValueAsString(aTestDupView1));
+        Assert.assertEquals(aTestDupView, aTestDupView1);
 
         Assert.assertNotNull(aTestView);
-        Assert.assertNotNull(cTestView);
         Assert.assertNotNull(aTestDupView);
+
+
+        System.out.println("- Write CView -");
+        ObjectNode cTestView = readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
+        System.out.println(mapper.writeValueAsString(cTestView));
+        ObjectNode cTestView1 = readMaterializeView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
+        System.out.println("- vs Read - ");
+        System.out.println(mapper.writeValueAsString(cTestView1));
+        Assert.assertEquals(cTestView, cTestView1);
+
+        System.out.println("- Write CViewDup -");
+        ObjectNode cTestDupView = readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
+        System.out.println(mapper.writeValueAsString(cTestDupView));
+        ObjectNode cTestDupView1 = readMaterializeView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
+        System.out.println("- vs Read - ");
+        System.out.println(mapper.writeValueAsString(cTestDupView1));
+        Assert.assertEquals(cTestDupView, cTestDupView1);
+
+        Assert.assertNotNull(cTestView);
         Assert.assertNotNull(cTestDupView);
 
     }
@@ -108,14 +166,45 @@ public class ConcurrencyTest extends BaseTasmoTest {
         private final String eventClassName;
         private final String[] fieldNames;
         String[] fieldValues;
+        String[] finalFieldValues;
         int fieldValue;
         ObjectId id;
+        Event lastEvent;
 
-        public FireableValue(long instanceId, String eventClassName, String[] fieldNames) {
+        public FireableValue(long instanceId, String eventClassName, String[] fieldNames, String[] finalFieldValues) {
             this.instanceId = instanceId;
             this.eventClassName = eventClassName;
             this.fieldNames = fieldNames;
             this.fieldValues = new String[fieldNames.length];
+            this.finalFieldValues = finalFieldValues;
+        }
+
+        public ObjectId id() {
+            return new ObjectId(eventClassName, new Id(instanceId));
+        }
+
+        @Override
+        public void finalEvent() throws Exception {
+            if (finalFieldValues == null) {
+                remove();
+            } else {
+                EventBuilder create = EventBuilder.create(new ConstantIdProvider(instanceId), eventClassName, tenantId, actorId);
+                int i = 0;
+                for (String fieldName : fieldNames) {
+                    String value = finalFieldValues[i];
+                    fieldValues[i] = value;
+                    i++;
+                    fieldValue++;
+                    if (value == null) {
+                        create.clear(fieldName);
+                    } else {
+                        create.set(fieldName, value);
+                    }
+
+                }
+                lastEvent = create.build();
+                id = write(create.build());
+            }
         }
 
         @Override
@@ -130,8 +219,9 @@ public class ConcurrencyTest extends BaseTasmoTest {
                 create.set(fieldName, value);
 
             }
+            lastEvent = create.build();
             id = write(create.build());
-            System.out.println("CREATE NODE " + id);
+            //System.out.println("CREATE NODE " + id);
         }
 
         @Override
@@ -146,23 +236,39 @@ public class ConcurrencyTest extends BaseTasmoTest {
                     fieldValue++;
                     update.set(fieldName, value);
                 }
-                write(update.build());
-                System.out.println("UPDATE NODE " + id);
+                lastEvent = update.build();
+                write(lastEvent);
+                //System.out.println("UPDATE NODE " + id);
             }
         }
 
         @Override
         public void remove() throws EventWriteException {
-            EventBuilder update = EventBuilder.update(id, tenantId, actorId);
-            update.set(ReservedFields.DELETED, true);
-            write(update.build());
-            System.out.println("REMOVE NODE " + id);
-            id = null;
+            if (id != null) {
+                EventBuilder update = EventBuilder.update(id, tenantId, actorId);
+                update.set(ReservedFields.DELETED, true);
+                lastEvent = update.build();
+                write(lastEvent);
+                //System.out.println("REMOVE NODE " + id);
+                id = null;
+            }
         }
 
         @Override
         public ObjectId exists() {
             return id;
+        }
+
+        @Override
+        public String toString() {
+            return "FireableValue{"
+                + "instanceId=" + instanceId
+                + ", eventClassName=" + eventClassName
+                + ", fieldNames=" + Arrays.toString(fieldNames)
+                + ", fieldValues=" + Arrays.toString(fieldValues)
+                + ", fieldValue=" + fieldValue
+                + ", id=" + id
+                + '}';
         }
 
     }
@@ -172,13 +278,33 @@ public class ConcurrencyTest extends BaseTasmoTest {
         private final FireableValue id;
         private final String fieldName;
         private final List<FireableValue> possibleRefs;
+        private final FireableValue finalValue;
         private FireableValue fieldValue;
         private ObjectId lastEdge;
+        private Event lastEvent;
 
-        public FireableRef(FireableValue id, String fieldName, List<FireableValue> possibleRefs) {
+        public FireableRef(FireableValue id, String fieldName, List<FireableValue> possibleRefs, FireableValue finalValue) {
             this.id = id;
             this.fieldName = fieldName;
             this.possibleRefs = possibleRefs;
+            this.finalValue = finalValue;
+        }
+
+        @Override
+        public void finalEvent() throws Exception {
+            ObjectId fromInstanceId = id.id();
+            fieldValue = finalValue;
+            if (fieldValue == null) {
+                remove();
+            } else {
+                ObjectId toInstanceId = finalValue.id();
+                lastEdge = toInstanceId;
+                EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
+                update.set("ref_" + fieldName, toInstanceId);
+                lastEvent = update.build();
+                write(lastEvent);
+                //System.out.println("FINAl EDGE:" + fromInstanceId + " to " + toInstanceId);
+            }
         }
 
         @Override
@@ -192,8 +318,9 @@ public class ConcurrencyTest extends BaseTasmoTest {
                         lastEdge = toInstanceId;
                         EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
                         update.set("ref_" + fieldName, toInstanceId);
-                        write(update.build());
-                        System.out.println("CREATED EDGE:" + fromInstanceId + " to " + toInstanceId);
+                        lastEvent = update.build();
+                        write(lastEvent);
+                        //System.out.println("CREATED EDGE:" + fromInstanceId + " to " + toInstanceId);
                     }
                 }
             }
@@ -207,11 +334,12 @@ public class ConcurrencyTest extends BaseTasmoTest {
                 if (fieldValue != null) {
                     ObjectId toInstanceId = fieldValue.exists();
                     if (toInstanceId != null) {
-                        lastEdge = toInstanceId;
+                        lastEdge = fromInstanceId;
                         EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
                         update.set("ref_" + fieldName, toInstanceId);
-                        write(update.build());
-                        System.out.println("UPDATED EDGE:" + fromInstanceId + " to " + toInstanceId);
+                        lastEvent = update.build();
+                        write(lastEvent);
+                        //System.out.println("UPDATED EDGE:" + fromInstanceId + " to " + toInstanceId);
                     }
                 }
             }
@@ -219,19 +347,134 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
         @Override
         public void remove() throws EventWriteException {
-            if (fieldValue != null) {
+            if (lastEdge != null) {
                 fieldValue = null;
-                EventBuilder update = EventBuilder.update(id.id, tenantId, actorId);
+                EventBuilder update = EventBuilder.update(lastEdge, tenantId, actorId);
                 update.clear("ref_" + fieldName);
-                write(update.build());
-                System.out.println("REMOVED EDGE:" + lastEdge);
+                lastEvent = update.build();
+                write(lastEvent);
+                //System.out.println("REMOVED EDGE:" + lastEdge);
                 lastEdge = null;
             }
         }
 
         @Override
         public ObjectId exists() {
-            return id.id;
+            return lastEdge;
+        }
+
+        @Override
+        public String toString() {
+            return "FireableRef{"
+                + "id=" + id
+                + ", fieldName=" + fieldName
+                + ", possibleRefs=" + possibleRefs
+                + ", fieldValue=" + fieldValue
+                + ", lastEdge=" + lastEdge
+                + '}';
+        }
+
+    }
+
+    class FireableRefs implements Fireable<FireableValue> {
+
+        private final FireableValue id;
+        private final String fieldName;
+        private final List<FireableValue> possibleRefs;
+        private List<FireableValue> fieldValues;
+        private ObjectId lastEdge;
+        private Event lastEvent;
+
+        public FireableRefs(FireableValue id, String fieldName, List<FireableValue> possibleRefs) {
+            this.id = id;
+            this.fieldName = fieldName;
+            this.possibleRefs = possibleRefs;
+        }
+
+        @Override
+        public void finalEvent() throws Exception {
+        }
+
+        List<FireableValue> pickFromPossible() {
+            List<Integer> is = new ArrayList<>();
+            for (int i = 0; i < possibleRefs.size(); i++) {
+                is.add(i);
+            }
+            Collections.shuffle(is, rand);
+            List<FireableValue> picked = new ArrayList<>();
+            int pick = 1 + rand.nextInt(possibleRefs.size() - 1);
+            for (int i = 0; i < pick; i++) {
+                picked.add(possibleRefs.get(is.get(i)));
+            }
+            return picked;
+        }
+
+        List<ObjectId> fieldValueToInstanceId(List<FireableValue> fireableValues) {
+            List<ObjectId> ids = new ArrayList<>();
+            for (FireableValue fireableValue : fireableValues) {
+                ObjectId id = fireableValue.exists();
+                if (id != null) {
+                    ids.add(id);
+                }
+            }
+            return ids;
+        }
+
+        @Override
+        public void create() throws EventWriteException {
+            ObjectId fromInstanceId = id.exists();
+            if (fromInstanceId != null) {
+                lastEdge = fromInstanceId;
+                fieldValues = pickFromPossible();
+                EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
+                update.set("refs_" + fieldName, fieldValueToInstanceId(fieldValues));
+                lastEvent = update.build();
+                write(lastEvent);
+                //System.out.println("CREATED EDGE:" + fromInstanceId + " to " + toInstanceId);
+            }
+        }
+
+        @Override
+        public void update() throws EventWriteException {
+            ObjectId fromInstanceId = id.exists();
+            if (fromInstanceId != null) {
+                lastEdge = fromInstanceId;
+                fieldValues = pickFromPossible();
+                EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
+                update.set("refs_" + fieldName, fieldValueToInstanceId(fieldValues));
+                lastEvent = update.build();
+                write(lastEvent);
+                //System.out.println("UPDATE EDGE:" + fromInstanceId + " to " + toInstanceId);
+            }
+        }
+
+        @Override
+        public void remove() throws EventWriteException {
+            if (lastEdge != null) {
+                fieldValues = null;
+                EventBuilder update = EventBuilder.update(lastEdge, tenantId, actorId);
+                update.clear("refs_" + fieldName);
+                lastEvent = update.build();
+                write(lastEvent);
+                //System.out.println("REMOVED EDGE:" + lastEdge);
+                lastEdge = null;
+            }
+        }
+
+        @Override
+        public ObjectId exists() {
+            return lastEdge;
+        }
+
+        @Override
+        public String toString() {
+            return "FireableRef{"
+                + "id=" + id
+                + ", fieldName=" + fieldName
+                + ", possibleRefs=" + possibleRefs
+                + ", fieldValues=" + fieldValues
+                + ", lastEdge=" + lastEdge
+                + '}';
         }
 
     }
@@ -246,24 +489,26 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
         ObjectId exists();
 
+        void finalEvent() throws Exception;
+
     }
 
     class RandomFireable<V> implements Callable<Void> {
 
         private final Fireable<V> fireable;
-        private final boolean mustExistWhenDone;
         private final long delay;
         private final long duration;
+        private final CountDownLatch latch;
         long lifespan;
 
         public RandomFireable(Fireable<V> fireable,
-            boolean existsWhenDone,
             long delay,
-            long duration) {
+            long duration,
+            CountDownLatch latch) {
             this.fireable = fireable;
-            this.mustExistWhenDone = existsWhenDone;
             this.delay = delay;
             this.duration = duration;
+            this.latch = latch;
         }
 
         @Override
@@ -283,20 +528,13 @@ public class ConcurrencyTest extends BaseTasmoTest {
                     Thread.sleep(delay);
                 }
 
-                if (mustExistWhenDone) {
-                    if (fireable.exists() == null) {
-                        fireable.create();
-                    }
-                } else {
-                    if (fireable.exists() != null) {
-                        fireable.remove();
-                    }
-                }
+                fireable.finalEvent();
                 lifespan = System.currentTimeMillis() - start;
-            } catch (Exception x) {
-                x.printStackTrace();
+                System.out.println("Done " + fireable);
+                return null;
+            } finally {
+                latch.countDown();
             }
-            return null;
         }
 
     }

@@ -11,6 +11,7 @@ package com.jivesoftware.os.tasmo.lib;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -28,8 +29,15 @@ public class RefTest extends BaseTasmoTest {
         expectations.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         expectations.assertExpectation(tenantIdAndCentricId);
         expectations.clear();
-        ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
+        ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         System.out.println(mapper.writeValueAsString(view));
+
+        ObjectNode materializedView = readMaterializeView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        System.out.println("-------------------------");
+        System.out.println(mapper.writeValueAsString(view));
+
+        Assert.assertEquals(view, materializedView);
+
     }
 
     @Test

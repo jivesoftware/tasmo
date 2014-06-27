@@ -79,7 +79,10 @@ public class PathContext {
     }
 
     public PathId getPathId(int pathIndex) {
-        return this.modelPathInstanceIds[pathIndex];
+        if (pathIndex > -1) {
+            return this.modelPathInstanceIds[pathIndex];
+        }
+        return null;
     }
 
     void setLastTimestamp(long latestTimestamp) {

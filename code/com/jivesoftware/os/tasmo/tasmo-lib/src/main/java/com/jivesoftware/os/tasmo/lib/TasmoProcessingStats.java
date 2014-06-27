@@ -109,7 +109,7 @@ public class TasmoProcessingStats {
         Collections.sort(tallis);
         StringBuilder sb = new StringBuilder();
         for (SortableStat stat : tallis) {
-            sb.append(stat.value + "," + stat.name).append("\n");
+            sb.append(stat.value).append(",").append(stat.name).append("\n");
         }
         return sb.toString();
     }

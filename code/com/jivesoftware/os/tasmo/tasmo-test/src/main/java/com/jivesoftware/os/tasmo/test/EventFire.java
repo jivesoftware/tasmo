@@ -8,12 +8,12 @@ package com.jivesoftware.os.tasmo.test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jivesoftware.os.tasmo.event.api.ReservedFields;
-import com.jivesoftware.os.tasmo.event.api.write.Event;
-import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
+import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+import com.jivesoftware.os.tasmo.event.api.write.Event;
+import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import java.util.ArrayList;
 import java.util.HashMap;

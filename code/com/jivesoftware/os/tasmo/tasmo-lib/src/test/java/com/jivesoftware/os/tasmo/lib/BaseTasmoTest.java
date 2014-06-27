@@ -55,11 +55,13 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.lib.read.ReadMaterializedViewProvider;
 import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -129,12 +131,17 @@ public class BaseTasmoTest {
     ViewValueStore viewValueStore;
     ViewValueWriter viewValueWriter;
     ViewValueReader viewValueReader;
+    JsonViewMerger merger;
+    ViewAsObjectNode viewAsObjectNode;
+    ViewPermissionChecker viewPermissionChecker;
     ViewProvider<ViewResponse> viewProvider;
     TasmoViewModel tasmoViewModel;
     TasmoViewMaterializer materializer;
     final ChainedVersion currentVersion = new ChainedVersion("0", "1");
     final AtomicReference<Views> views = new AtomicReference<>();
+    ReferenceTraverser referenceTraverser;
     ViewsProvider viewsProvider;
+    ReadMaterializedViewProvider<ViewResponse> readMaterializedViewProvider;
     boolean useHBase = false;
     ObjectMapper mapper = new ObjectMapper();
 
@@ -142,7 +149,7 @@ public class BaseTasmoTest {
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
     }
-    WrittenEventProvider<ObjectNode, JsonNode> eventProvider = new JsonWrittenEventProvider();
+    WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider = new JsonWrittenEventProvider();
     private static BaseTasmoTest base;
 
     public static BaseTasmoTest create() {
@@ -173,7 +180,7 @@ public class BaseTasmoTest {
 //                    return new NeverAcceptsFailureSetOfSortedMaps<>(hBase.initialize(env, "eventValueTable", "v",
 //                        new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
 //                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-//                        eventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
+//                        writtenEventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
 //                }
 //
 //                @Override
@@ -268,6 +275,35 @@ public class BaseTasmoTest {
 
         String uuid = UUID.randomUUID().toString();
 
+
+        merger = new JsonViewMerger(new ObjectMapper());
+        viewAsObjectNode = new ViewAsObjectNode();
+
+        viewPermissionChecker = new ViewPermissionChecker() {
+            @Override
+            public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, final Set<Id> permissionCheckTheseIds) {
+                //System.out.println("NO-OP permisions check for (" + permissionCheckTheseIds.size() + ") ids.");
+                return new ViewPermissionCheckResult() {
+                    @Override
+                    public Set<Id> allowed() {
+                        return permissionCheckTheseIds;
+                    }
+
+                    @Override
+                    public Set<Id> denied() {
+                        return new HashSet<>();
+                    }
+
+                    @Override
+                    public Set<Id> unknown() {
+                        return new HashSet<>();
+                    }
+                };
+            }
+        };
+
+
+
         RowColumnValueStoreProvider rowColumnValueStoreProvider = getRowColumnValueStoreProvider(uuid);
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore = rowColumnValueStoreProvider.eventStore();
 
@@ -349,11 +385,14 @@ public class BaseTasmoTest {
                 return currentVersion;
             }
         };
+
+
         executorService = Executors.newFixedThreadPool(8);
-        ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
-        //ListeningExecutorService listeningExecutorService = MoreExecutors.sameThreadExecutor();
-        tasmoViewModel = new TasmoViewModel(listeningExecutorService,
-                MASTER_TENANT_ID,
+        //ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(executorService);
+        ListeningExecutorService listeningExecutorService = MoreExecutors.sameThreadExecutor();
+
+
+        tasmoViewModel = new TasmoViewModel(MASTER_TENANT_ID,
                 viewsProvider,
                 new MurmurHashViewPathKeyProvider(),
                 concurrencyStore,
@@ -366,40 +405,46 @@ public class BaseTasmoTest {
             }
         };
 
-        ReferenceTraverser referenceTraverser = new SerialReferenceTraverser(referenceStore);
-//        final BatchingReferenceTraverser referenceTraverser = new BatchingReferenceTraverser(referenceStore, listeningExecutorService, 100, 10000);
-//        Executors.newSingleThreadExecutor().submit(new Runnable() {
-//
-//            @Override
-//            public void run() {
-//                try {
-//                    referenceTraverser.processRequests();
-//                } catch (InterruptedException x) {
-//                    x.printStackTrace();
-//                    Thread.currentThread().interrupt();
-//                }
-//            }
-//        });
+        referenceTraverser = new SerialReferenceTraverser(referenceStore);
 
-        TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
+        TasmoEventTraverser eventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
             new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
+
+        WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
+
+        TasmoWriteFanoutEventPersistor eventPersistor = new TasmoWriteFanoutEventPersistor(writtenEventProvider,
+            writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
+
+        TasmoProcessingStats processingStats = new TasmoProcessingStats();
+        StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
+            new EventValueStoreFieldValueReader(eventValueStore));
+
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
-                eventProvider,
-                concurrencyStore,
-                retryingEventTraverser,
+                eventPersistor,
+                writtenEventProvider,
+                eventTraverser,
                 getViewChangeNotificationProcessor(),
-                new WrittenInstanceHelper(),
-                eventValueStore,
+                fieldValueReader,
                 referenceTraverser,
-                referenceStore,
                 commitChange,
+                processingStats,
                 new TasmoEdgeReport());
 
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,
-                listeningExecutorService); //MoreExecutors.sameThreadExecutor());
+                listeningExecutorService);
 
         writer = new EventWriter(jsonEventWriter(materializer, orderIdProvider));
+
+
+        readMaterializedViewProvider = new ReadMaterializedViewProvider(viewPermissionChecker,
+            referenceTraverser,
+            new EventValueStoreFieldValueReader(eventValueStore),
+            tasmoViewModel,
+            viewAsObjectNode,
+            merger,
+            1024 * 1024 * 10);
+
     }
 
     @AfterMethod
@@ -424,31 +469,6 @@ public class BaseTasmoTest {
 
         tasmoViewModel.loadModel(MASTER_TENANT_ID);
 
-        JsonViewMerger merger = new JsonViewMerger(new ObjectMapper());
-        ViewAsObjectNode viewAsObjectNode = new ViewAsObjectNode();
-
-        ViewPermissionChecker viewPermissionChecker = new ViewPermissionChecker() {
-            @Override
-            public ViewPermissionCheckResult check(TenantId tenantId, Id actorId, final Set<Id> permissionCheckTheseIds) {
-                //System.out.println("NO-OP permisions check for (" + permissionCheckTheseIds.size() + ") ids.");
-                return new ViewPermissionCheckResult() {
-                    @Override
-                    public Set<Id> allowed() {
-                        return permissionCheckTheseIds;
-                    }
-
-                    @Override
-                    public Set<Id> denied() {
-                        return new HashSet<>();
-                    }
-
-                    @Override
-                    public Set<Id> unknown() {
-                        return new HashSet<>();
-                    }
-                };
-            }
-        };
         TenantId masterTenantId = new TenantId("master");
         TenantViewsProvider tenantViewsProvider = new TenantViewsProvider(masterTenantId, viewsProvider, new MurmurHashViewPathKeyProvider());
         tenantViewsProvider.loadModel(masterTenantId);
@@ -615,7 +635,7 @@ public class BaseTasmoTest {
 
                     List<WrittenEvent> writtenEvents = new ArrayList<>();
                     for (ObjectNode eventNode : events) {
-                        writtenEvents.add(eventProvider.convertEvent(eventNode));
+                        writtenEvents.add(writtenEventProvider.convertEvent(eventNode));
                     }
 
                     tasmoViewMaterializer.process(writtenEvents);
@@ -641,6 +661,12 @@ public class BaseTasmoTest {
 
     protected ObjectNode readView(TenantIdAndCentricId tenantIdAndCentricId, Id actorId, ObjectId viewId) throws IOException {
         ViewResponse viewResponse = viewProvider.readView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
+        // kinda patch to refrain from refactoring dozens of tests... readView used to return null in case of a non-existing view
+        return viewResponse.getStatusCode() == ViewResponse.StatusCode.OK ? viewResponse.getViewBody() : null;
+    }
+
+    protected ObjectNode readMaterializeView(TenantIdAndCentricId tenantIdAndCentricId, Id actorId, ObjectId viewId) throws IOException {
+        ViewResponse viewResponse = readMaterializedViewProvider.readMaterializeView(new ViewDescriptor(tenantIdAndCentricId, actorId, viewId));
         // kinda patch to refrain from refactoring dozens of tests... readView used to return null in case of a non-existing view
         return viewResponse.getStatusCode() == ViewResponse.StatusCode.OK ? viewResponse.getViewBody() : null;
     }

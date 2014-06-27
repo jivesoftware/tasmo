@@ -1,7 +1,7 @@
 package com.jivesoftware.os.tasmo.test;
 
-import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.tasmo.event.api.write.Event;
 import java.util.List;
 
 public class EventsAndViewId {
