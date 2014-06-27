@@ -101,8 +101,18 @@ public class TasmoViewModel {
                     Views views = viewsProvider.getViews(new ViewsProcessorId(tenantId, "NotBeingUsedYet"));
 
                     if (views != null) {
-                        Map<String, InitiateWriteTraversal> globalWriteTraversal = buildGlobalWriteTraversers(views);
-                        Map<String, InitiateWriteTraversal> centricWriteTraversal = buildCentricWriteTraversers(views);
+                        List<ViewBinding> globalViewBindings = new ArrayList<>();
+                        List<ViewBinding> centricViewBindings = new ArrayList<>();
+
+                        for (ViewBinding viewBinding : views.getViewBindings()) {
+                            if (viewBinding.isIdCentric()) {
+                                centricViewBindings.add(viewBinding);
+                            } else {
+                                globalViewBindings.add(viewBinding);
+                            }
+                        }
+                        Map<String, InitiateWriteTraversal> globalWriteTraversal = buildWriteTraversers(globalViewBindings);
+                        Map<String, InitiateWriteTraversal> centricWriteTraversal = buildWriteTraversers(centricViewBindings);
                         Map<String, InitiateReadTraversal> readTraversal = buildViewReaderTraveral(views);
                         SetMultimap<String, FieldNameAndType> eventModel = bindEventFieldTypes(views);
                         Set<String> notifiableViewClassNames = buildNotifiableViewClassNames(views);
@@ -288,28 +298,18 @@ public class TasmoViewModel {
         return pathTraversers;
     }
 
-    private Map<String, InitiateWriteTraversal> buildGlobalWriteTraversers(Views views) throws IllegalArgumentException {
+    private Map<String, InitiateWriteTraversal> buildWriteTraversers(List<ViewBinding> viewBindings) throws IllegalArgumentException {
 
         Map<String, PathTraversersFactory> allFieldProcessorFactories = Maps.newHashMap();
-
         Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupSteps = new HashMap<>();
-        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupIdCentricSteps = new HashMap<>();
-
-        for (ViewBinding viewBinding : views.getViewBindings()) {
+        for (ViewBinding viewBinding : viewBindings) {
 
             String viewClassName = viewBinding.getViewClassName();
             String viewIdFieldName = viewBinding.getViewIdFieldName();
-            boolean idCentric = viewBinding.isIdCentric();
-
-            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> accumulate = groupSteps;
-            if (idCentric) {
-                accumulate = groupIdCentricSteps;
-            }
-
             for (ModelPath modelPath : viewBinding.getModelPaths()) {
                 assertNoInstanceIdBindings(viewBinding, modelPath);
 
-                String factoryKey = viewBinding.getViewClassName() + "_" + modelPath.getId();
+                String factoryKey = viewClassName + "_" + modelPath.getId();
                 if (allFieldProcessorFactories.containsKey(factoryKey)) {
                     throw new IllegalArgumentException("you have already created this binding:" + factoryKey);
                 }
@@ -326,64 +326,14 @@ public class TasmoViewModel {
                 allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
 
                 List<TraversablePath> pathTraversers = fieldProcessorFactory.buildPathTraversers(viewIdFieldName);
-                groupPathTraverserByClass(accumulate, pathTraversers);
+                groupPathTraverserByClass(groupSteps, pathTraversers);
 
                 List<TraversablePath> initialBackRefStep = fieldProcessorFactory.buildBackPathTraversers(viewIdFieldName);
                 if (initialBackRefStep != null) {
-                    groupPathTraverserByClass(accumulate, initialBackRefStep);
+                    groupPathTraverserByClass(groupSteps, initialBackRefStep);
+
                 }
             }
-
-        }
-        return buildInitialStepDispatchers(groupSteps);
-    }
-
-    private Map<String, InitiateWriteTraversal> buildCentricWriteTraversers(Views views) throws IllegalArgumentException {
-
-        Map<String, PathTraversersFactory> allFieldProcessorFactories = Maps.newHashMap();
-
-        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupSteps = new HashMap<>();
-        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupIdCentricSteps = new HashMap<>();
-
-        for (ViewBinding viewBinding : views.getViewBindings()) {
-
-            String viewClassName = viewBinding.getViewClassName();
-            String viewIdFieldName = viewBinding.getViewIdFieldName();
-            boolean idCentric = viewBinding.isIdCentric();
-
-            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> accumulate = groupSteps;
-            if (idCentric) {
-                accumulate = groupIdCentricSteps;
-            }
-
-            for (ModelPath modelPath : viewBinding.getModelPaths()) {
-                assertNoInstanceIdBindings(viewBinding, modelPath);
-
-                String factoryKey = viewBinding.getViewClassName() + "_" + modelPath.getId();
-                if (allFieldProcessorFactories.containsKey(factoryKey)) {
-                    throw new IllegalArgumentException("you have already created this binding:" + factoryKey);
-                }
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("MODELPATH " + modelPath);
-                }
-
-                long modelPathHashcode = viewPathKeyProvider.modelPathHashcode(modelPath.getId());
-                PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName, modelPathHashcode, modelPath);
-
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("Bind:{}", factoryKey);
-                }
-                allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
-
-                List<TraversablePath> pathTraversers = fieldProcessorFactory.buildPathTraversers(viewIdFieldName);
-                groupPathTraverserByClass(accumulate, pathTraversers);
-
-                List<TraversablePath> initialBackRefStep = fieldProcessorFactory.buildBackPathTraversers(viewIdFieldName);
-                if (initialBackRefStep != null) {
-                    groupPathTraverserByClass(accumulate, initialBackRefStep);
-                }
-            }
-
         }
         return buildInitialStepDispatchers(groupSteps);
     }
