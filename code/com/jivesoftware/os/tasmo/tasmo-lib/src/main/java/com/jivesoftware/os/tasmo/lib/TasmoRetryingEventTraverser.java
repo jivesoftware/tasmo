@@ -7,7 +7,6 @@ import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateWriteTraversal;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 
@@ -28,7 +27,7 @@ public class TasmoRetryingEventTraverser implements TasmoEventTraverser {
     }
 
     @Override
-    public void traverseEvent(InitiateWriteTraversal initiateTraversal,
+    public void traverseEvent(WrittenEventProcessor writtenEventProcessor,
             WrittenEventContext writtenEventContext,
             TenantIdAndCentricId tenantIdAndCentricId,
             WrittenEvent writtenEvent) throws RuntimeException, Exception {
@@ -42,9 +41,9 @@ public class TasmoRetryingEventTraverser implements TasmoEventTraverser {
             attempts++;
             try {
                 long start = System.currentTimeMillis();
-                WrittenEventProcessor writtenEventProcessor =
-                        writtenEventProcessorDecorator.decorateWrittenEventProcessor(initiateTraversal);
-                writtenEventProcessor.process(writtenEventContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+                WrittenEventProcessor decoratedWrittenEventProcessor =
+                        writtenEventProcessorDecorator.decorateWrittenEventProcessor(writtenEventProcessor);
+                decoratedWrittenEventProcessor.process(writtenEventContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
                 writtenEventContext.getProcessingStats().latency("EVENT TRAVERSAL", instanceClassName, System.currentTimeMillis() - start);
                 break;
             } catch (Exception e) {

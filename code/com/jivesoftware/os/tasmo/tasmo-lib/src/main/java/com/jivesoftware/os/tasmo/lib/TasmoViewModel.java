@@ -92,7 +92,7 @@ public class TasmoViewModel {
         synchronized (loadModelLocks.lock(tenantId)) {
             ChainedVersion currentVersion = viewsProvider.getCurrentViewsVersion(tenantId);
             if (currentVersion == ChainedVersion.NULL) {
-                versionedViewModels.put(tenantId, new VersionedTasmoViewModel(ChainedVersion.NULL, null, null, null, null));
+                versionedViewModels.put(tenantId, new VersionedTasmoViewModel(ChainedVersion.NULL, null, null, null, null, null));
             } else {
                 VersionedTasmoViewModel currentVersionedViewsModel = versionedViewModels.get(tenantId);
                 if (currentVersionedViewsModel == null
@@ -101,12 +101,13 @@ public class TasmoViewModel {
                     Views views = viewsProvider.getViews(new ViewsProcessorId(tenantId, "NotBeingUsedYet"));
 
                     if (views != null) {
-                        Map<String, InitiateWriteTraversal> writeTraversal = bindModelPaths(views);
+                        Map<String, InitiateWriteTraversal> globalWriteTraversal = buildGlobalWriteTraversers(views);
+                        Map<String, InitiateWriteTraversal> centricWriteTraversal = buildCentricWriteTraversers(views);
                         Map<String, InitiateReadTraversal> readTraversal = buildViewReaderTraveral(views);
                         SetMultimap<String, FieldNameAndType> eventModel = bindEventFieldTypes(views);
                         Set<String> notifiableViewClassNames = buildNotifiableViewClassNames(views);
                         versionedViewModels.put(tenantId, new VersionedTasmoViewModel(views.getVersion(),
-                            writeTraversal, readTraversal, eventModel, notifiableViewClassNames));
+                            globalWriteTraversal, centricWriteTraversal, readTraversal, eventModel, notifiableViewClassNames));
                     } else {
                         LOG.info("ViewsProvider failed to provide a 'Views' instance for tenantId:" + tenantId);
                     }
@@ -287,7 +288,57 @@ public class TasmoViewModel {
         return pathTraversers;
     }
 
-    private Map<String, InitiateWriteTraversal> bindModelPaths(Views views) throws IllegalArgumentException {
+    private Map<String, InitiateWriteTraversal> buildGlobalWriteTraversers(Views views) throws IllegalArgumentException {
+
+        Map<String, PathTraversersFactory> allFieldProcessorFactories = Maps.newHashMap();
+
+        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupSteps = new HashMap<>();
+        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupIdCentricSteps = new HashMap<>();
+
+        for (ViewBinding viewBinding : views.getViewBindings()) {
+
+            String viewClassName = viewBinding.getViewClassName();
+            String viewIdFieldName = viewBinding.getViewIdFieldName();
+            boolean idCentric = viewBinding.isIdCentric();
+
+            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> accumulate = groupSteps;
+            if (idCentric) {
+                accumulate = groupIdCentricSteps;
+            }
+
+            for (ModelPath modelPath : viewBinding.getModelPaths()) {
+                assertNoInstanceIdBindings(viewBinding, modelPath);
+
+                String factoryKey = viewBinding.getViewClassName() + "_" + modelPath.getId();
+                if (allFieldProcessorFactories.containsKey(factoryKey)) {
+                    throw new IllegalArgumentException("you have already created this binding:" + factoryKey);
+                }
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("MODELPATH " + modelPath);
+                }
+
+                long modelPathHashcode = viewPathKeyProvider.modelPathHashcode(modelPath.getId());
+                PathTraversersFactory fieldProcessorFactory = new PathTraversersFactory(viewClassName, modelPathHashcode, modelPath);
+
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("Bind:{}", factoryKey);
+                }
+                allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
+
+                List<TraversablePath> pathTraversers = fieldProcessorFactory.buildPathTraversers(viewIdFieldName);
+                groupPathTraverserByClass(accumulate, pathTraversers);
+
+                List<TraversablePath> initialBackRefStep = fieldProcessorFactory.buildBackPathTraversers(viewIdFieldName);
+                if (initialBackRefStep != null) {
+                    groupPathTraverserByClass(accumulate, initialBackRefStep);
+                }
+            }
+
+        }
+        return buildInitialStepDispatchers(groupSteps);
+    }
+
+    private Map<String, InitiateWriteTraversal> buildCentricWriteTraversers(Views views) throws IllegalArgumentException {
 
         Map<String, PathTraversersFactory> allFieldProcessorFactories = Maps.newHashMap();
 

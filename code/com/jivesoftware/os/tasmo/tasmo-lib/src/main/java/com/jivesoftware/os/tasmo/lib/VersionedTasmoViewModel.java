@@ -15,17 +15,20 @@ public class VersionedTasmoViewModel {
 
     private final ChainedVersion version;
     private final Map<String, InitiateWriteTraversal> writeTraversers;
+    private final Map<String, InitiateWriteTraversal> centricWriteTraversers;
     private final Map<String, InitiateReadTraversal> readTraversers;
     private final SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel;
     private final Set<String> notifiableViews;
 
     public VersionedTasmoViewModel(ChainedVersion version,
         Map<String, InitiateWriteTraversal> writeTraversers,
+        Map<String, InitiateWriteTraversal> centricWriteTraversers,
         Map<String, InitiateReadTraversal> readTraversers,
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel,
         Set<String> notifiableViews) {
         this.version = version;
         this.writeTraversers = writeTraversers;
+        this.centricWriteTraversers = centricWriteTraversers;
         this.readTraversers = readTraversers;
         this.eventModel = eventModel;
         this.notifiableViews = notifiableViews;
@@ -37,6 +40,9 @@ public class VersionedTasmoViewModel {
 
     public Map<String, InitiateWriteTraversal> getWriteTraversers() {
         return writeTraversers;
+    }
+    public Map<String, InitiateWriteTraversal> getCentricWriteTraversers() {
+        return centricWriteTraversers;
     }
 
     public Map<String, InitiateReadTraversal> getReadTraversers() {

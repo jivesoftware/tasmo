@@ -7,6 +7,7 @@ import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
+import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateWriteTraversal;
 import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
@@ -100,35 +101,18 @@ public class TasmoEventProcessor {
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         String className = writtenInstance.getInstanceId().getClassName();
 
-        List<TenantIdAndCentricId> tenantIdAndCentricIds = buildTenantIdAndCentricIds(model, className, tenantId, writtenEvent);
-        ObjectId instanceId = writtenInstance.getInstanceId();
-        long timestamp = writtenEvent.getEventId();
+        // Process event globally
+        TenantIdAndCentricId tenantIdAndGloballyCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
+        process(lock, model, model.getWriteTraversers(), className, writtenInstance, tenantIdAndGloballyCentricId, batchContext, writtenEvent);
 
-        for (TenantIdAndCentricId tenantIdAndCentricId : tenantIdAndCentricIds) {
-            synchronized (lock) {
-                long start = System.currentTimeMillis();
-                if (writtenInstance.isDeletion()) {
-                    eventPersistor.removeValueFields(model, className, tenantIdAndCentricId, timestamp, instanceId);
-                } else {
-                    eventPersistor.updateValueFields(tenantIdAndCentricId, timestamp, instanceId, model, className, writtenInstance);
-                }
-                processingStats.latency("UPDATE", className, System.currentTimeMillis() - start);
+        // Process event centrically
+        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, writtenEvent.getCentricId());
+        process(lock, model, model.getCentricWriteTraversers(), className, writtenInstance, tenantIdAndCentricId, batchContext, writtenEvent);
 
-                Map<String, InitiateWriteTraversal> traverser = model.getWriteTraversers();
-                InitiateWriteTraversal initiateTraversal = traverser.get(className);
-                if (initiateTraversal == null) {
-                    LOG.warn("No traversal defined for className:{}", className);
-                    continue;
-                }
-                eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndCentricId, writtenEvent);
+        long start = System.currentTimeMillis();
+        viewChangeNotificationProcessor.process(batchContext, writtenEvent);
+        processingStats.latency("NOTIFICATION", className, System.currentTimeMillis() - start);
 
-            }
-
-            long start = System.currentTimeMillis();
-            viewChangeNotificationProcessor.process(batchContext, writtenEvent);
-            processingStats.latency("NOTIFICATION", className, System.currentTimeMillis() - start);
-
-        }
 
         long elapse = System.currentTimeMillis() - startProcessingEvent;
         LOG.info("{} millis valuePaths:{} refPaths:{} backRefPaths:{} "
@@ -145,6 +129,33 @@ public class TasmoEventProcessor {
                 writtenEvent.getEventId(),
                 writtenEvent.getWrittenInstance().getInstanceId(),
                 writtenEvent.getTenantId() });
+    }
+
+    private void process(Object lock,
+        VersionedTasmoViewModel model,
+        Map<String, InitiateWriteTraversal> traversers,
+        String className,
+        WrittenInstance writtenInstance,
+        TenantIdAndCentricId tenantIdAndGloballyCentricId,
+        WrittenEventContext batchContext,
+        WrittenEvent writtenEvent) throws Exception {
+
+
+        WrittenEventProcessor initiateTraversal = traversers.get(className);
+        if (initiateTraversal != null) {
+            ObjectId instanceId = writtenInstance.getInstanceId();
+            long timestamp = writtenEvent.getEventId();
+            long start = System.currentTimeMillis();
+            synchronized (lock) {
+                if (writtenInstance.isDeletion()) {
+                    eventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, timestamp, instanceId);
+                } else {
+                    eventPersistor.updateValueFields(tenantIdAndGloballyCentricId, timestamp, instanceId, model, className, writtenInstance);
+                }
+                processingStats.latency("UPDATE", className, System.currentTimeMillis() - start);
+                eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndGloballyCentricId, writtenEvent);
+            }
+        }
     }
 
     private List<TenantIdAndCentricId> buildTenantIdAndCentricIds(VersionedTasmoViewModel model,
