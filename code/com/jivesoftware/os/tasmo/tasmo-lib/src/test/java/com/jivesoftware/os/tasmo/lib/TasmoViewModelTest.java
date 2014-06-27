@@ -90,15 +90,15 @@ public class TasmoViewModelTest {
         tasmoViewModel.loadModel(tenantId);
         VersionedTasmoViewModel first = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
         Assert.assertEquals(version1, first.getVersion());
-        Assert.assertTrue(first.getDispatchers().containsKey("A"));
-        Assert.assertFalse(first.getDispatchers().containsKey("B"));
+        Assert.assertTrue(first.getWriteTraversers().containsKey("A"));
+        Assert.assertFalse(first.getWriteTraversers().containsKey("B"));
 
         tasmoViewModel.loadModel(tenantId);
         VersionedTasmoViewModel second = tasmoViewModel.getVersionedTasmoViewModel(tenantId);
         Assert.assertNotEquals(first, second);
         Assert.assertEquals(version2, second.getVersion());
-        Assert.assertTrue(second.getDispatchers().containsKey("B"));
-        Assert.assertFalse(second.getDispatchers().containsKey("A"));
+        Assert.assertTrue(second.getWriteTraversers().containsKey("B"));
+        Assert.assertFalse(second.getWriteTraversers().containsKey("A"));
 
     }
 

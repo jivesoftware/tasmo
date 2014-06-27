@@ -407,18 +407,21 @@ public class BaseTasmoTest {
 
         referenceTraverser = new SerialReferenceTraverser(referenceStore);
 
-        TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
+        TasmoEventTraverser eventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
             new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
+
+        WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
+        TasmoWriteFanoutEventPersistor eventPersistor = new TasmoWriteFanoutEventPersistor(eventProvider, writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
+        TasmoProcessingStats processingStats = new TasmoProcessingStats();
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,
+                eventPersistor,
                 eventProvider,
-                concurrencyStore,
-                retryingEventTraverser,
+                eventTraverser,
                 getViewChangeNotificationProcessor(),
-                new WrittenInstanceHelper(),
-                eventValueStore,
+                new StatCollectingFieldValueReader(null, new EventValueStoreFieldValueReader(eventValueStore)),
                 referenceTraverser,
-                referenceStore,
                 commitChange,
+                processingStats,
                 new TasmoEdgeReport());
 
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,

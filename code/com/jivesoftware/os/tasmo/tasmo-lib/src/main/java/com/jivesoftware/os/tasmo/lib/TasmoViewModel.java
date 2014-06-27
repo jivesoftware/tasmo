@@ -73,7 +73,7 @@ public class TasmoViewModel {
             loadModel(tenantId);
         }
         VersionedTasmoViewModel viewsModel = versionedViewModels.get(tenantId);
-        if (viewsModel == null || viewsModel.getDispatchers() == null) {
+        if (viewsModel == null || viewsModel.getWriteTraversers() == null) {
             if (!tenantId.equals(masterTenantId)) {
                 viewsModel = versionedViewModels.get(masterTenantId);
             }

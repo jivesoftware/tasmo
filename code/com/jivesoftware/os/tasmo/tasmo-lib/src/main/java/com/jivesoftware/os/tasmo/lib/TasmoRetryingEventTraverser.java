@@ -15,7 +15,7 @@ import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
  *
  * @author jonathan
  */
-public class TasmoRetryingEventTraverser {
+public class TasmoRetryingEventTraverser implements TasmoEventTraverser {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
@@ -27,6 +27,7 @@ public class TasmoRetryingEventTraverser {
         this.threadTime = threadTime;
     }
 
+    @Override
     public void traverseEvent(InitiateWriteTraversal initiateTraversal,
             WrittenEventContext writtenEventContext,
             TenantIdAndCentricId tenantIdAndCentricId,

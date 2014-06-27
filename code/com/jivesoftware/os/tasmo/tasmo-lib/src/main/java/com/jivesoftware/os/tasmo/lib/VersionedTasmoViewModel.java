@@ -14,18 +14,18 @@ import java.util.Set;
 public class VersionedTasmoViewModel {
 
     private final ChainedVersion version;
-    private final Map<String, InitiateWriteTraversal> dispatchers;
+    private final Map<String, InitiateWriteTraversal> writeTraversers;
     private final Map<String, InitiateReadTraversal> readTraversers;
     private final SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel;
     private final Set<String> notifiableViews;
 
     public VersionedTasmoViewModel(ChainedVersion version,
-        Map<String, InitiateWriteTraversal> dispatchers,
+        Map<String, InitiateWriteTraversal> writeTraversers,
         Map<String, InitiateReadTraversal> readTraversers,
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel,
         Set<String> notifiableViews) {
         this.version = version;
-        this.dispatchers = dispatchers;
+        this.writeTraversers = writeTraversers;
         this.readTraversers = readTraversers;
         this.eventModel = eventModel;
         this.notifiableViews = notifiableViews;
@@ -35,8 +35,8 @@ public class VersionedTasmoViewModel {
         return version;
     }
 
-    public Map<String, InitiateWriteTraversal> getDispatchers() {
-        return dispatchers;
+    public Map<String, InitiateWriteTraversal> getWriteTraversers() {
+        return writeTraversers;
     }
 
     public Map<String, InitiateReadTraversal> getReadTraversers() {
@@ -55,7 +55,7 @@ public class VersionedTasmoViewModel {
     public String toString() {
         return "VersionedViewTasmoModel{"
             + "version=" + version
-            + ", dispatchers=" + dispatchers
+            + ", dispatchers=" + writeTraversers
             + '}';
     }
 }
