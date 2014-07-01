@@ -19,6 +19,7 @@ import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -35,16 +36,10 @@ public class EventValueStoreTest {
 
     @BeforeTest
     public void setUp() {
-        EventValueCacheProvider cacheProvider = new EventValueCacheProvider() {
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> createValueStoreCache() {
-                return new RowColumnValueStoreImpl<>();
-            }
-        };
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
-        concurrencyStore = new ConcurrencyStore(concurrency);
+        concurrencyStore = new HBaseBackedConcurrencyStore(concurrency);
         eventValueStore = new EventValueStore(concurrencyStore,
-                new RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue>(), cacheProvider);
+                new RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue>());
     }
 
     /**

@@ -6,9 +6,17 @@ import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 
 public interface TasmoEventPersistor {
 
-    void removeValueFields(VersionedTasmoViewModel model, String className, TenantIdAndCentricId tenantIdAndCentricId, long timestamp, ObjectId instanceId);
+    void removeValueFields(VersionedTasmoViewModel model,
+        String className,
+        TenantIdAndCentricId tenantIdAndCentricId,
+        ObjectId instanceId,
+        long timestamp);
 
-    void updateValueFields(TenantIdAndCentricId tenantIdAndCentricId, long timestamp, ObjectId instanceId, VersionedTasmoViewModel model, String className,
+    void updateValueFields(VersionedTasmoViewModel model,
+        String className,
+        TenantIdAndCentricId tenantIdAndCentricId,
+        ObjectId instanceId,
+        long timestamp,
         WrittenInstance writtenInstance) throws Exception;
 
 }

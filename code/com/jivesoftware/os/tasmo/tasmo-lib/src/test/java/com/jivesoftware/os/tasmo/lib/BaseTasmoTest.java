@@ -45,7 +45,6 @@ import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
 import com.jivesoftware.os.tasmo.id.IdProviderImpl;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
-import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
@@ -56,7 +55,6 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.read.ReadMaterializedViewProvider;
-import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
@@ -77,6 +75,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.SerialReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
@@ -307,16 +306,9 @@ public class BaseTasmoTest {
         RowColumnValueStoreProvider rowColumnValueStoreProvider = getRowColumnValueStoreProvider(uuid);
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore = rowColumnValueStoreProvider.eventStore();
 
-        EventValueCacheProvider cacheProvider = new EventValueCacheProvider() {
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> createValueStoreCache() {
-                return new RowColumnValueStoreImpl<>();
-            }
-        };
-
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
-        ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrency);
-        eventValueStore = new EventValueStore(concurrencyStore, eventStore, cacheProvider);
+        ConcurrencyStore concurrencyStore = new HBaseBackedConcurrencyStore(concurrency);
+        eventValueStore = new EventValueStore(concurrencyStore, eventStore);
 
         viewValueStore = new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), new MurmurHashViewPathKeyProvider());
         viewValueWriter = new ViewValueWriter(viewValueStore);
@@ -395,7 +387,6 @@ public class BaseTasmoTest {
         tasmoViewModel = new TasmoViewModel(MASTER_TENANT_ID,
                 viewsProvider,
                 new MurmurHashViewPathKeyProvider(),
-                concurrencyStore,
                 referenceStore);
 
         WrittenEventProcessorDecorator writtenEventProcessorDecorator = new WrittenEventProcessorDecorator() {
@@ -424,11 +415,12 @@ public class BaseTasmoTest {
                 writtenEventProvider,
                 eventTraverser,
                 getViewChangeNotificationProcessor(),
+                concurrencyStore,
+                referenceStore,
                 fieldValueReader,
                 referenceTraverser,
                 commitChange,
-                processingStats,
-                new TasmoEdgeReport());
+                processingStats);
 
         materializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
                 tasmoEventProcessor,

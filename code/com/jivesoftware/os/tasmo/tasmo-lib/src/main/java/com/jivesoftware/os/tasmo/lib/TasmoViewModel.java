@@ -12,7 +12,6 @@ import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
-import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateReadTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraversalContext;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateTraverserKey;
@@ -34,7 +33,6 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,21 +48,16 @@ public class TasmoViewModel {
     private final ViewsProvider viewsProvider;
     private final ViewPathKeyProvider viewPathKeyProvider;
     private final ConcurrentHashMap<TenantId, VersionedTasmoViewModel> versionedViewModels;
-    private final ConcurrencyStore concurrencyStore;
-    private final ReferenceStore referenceStore;
     private final StripingLocksProvider<TenantId> loadModelLocks = new StripingLocksProvider<>(1024);
 
     public TasmoViewModel(
         TenantId masterTenantId,
         ViewsProvider viewsProvider,
         ViewPathKeyProvider viewPathKeyProvider,
-        ConcurrencyStore concurrencyStore,
         ReferenceStore referenceStore) {
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.viewPathKeyProvider = viewPathKeyProvider;
-        this.concurrencyStore = concurrencyStore;
-        this.referenceStore = referenceStore;
         this.versionedViewModels = new ConcurrentHashMap<>();
     }
 
@@ -382,7 +375,6 @@ public class TasmoViewModel {
                 ArrayListMultimap<InitiateTraverserKey, TraversablePath> countPaths = typedSteps.get(ModelPathStepType.count);
                 backRefTraversers.putAll(countPaths);
             }
-            ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore);
 
 //            InitiateWriteTraversal initiateTraversal = new InitiateWriteTraversal(
 //                    concurrencyChecker,
@@ -390,9 +382,8 @@ public class TasmoViewModel {
 //                    referenceStore,
 //                    transformToPathAtATime(refTraversers),
 //                    transformToPathAtATime(backRefTraversers));
-            InitiateWriteTraversal initiateTraversal = new InitiateWriteTraversal(concurrencyChecker,
+            InitiateWriteTraversal initiateTraversal = new InitiateWriteTraversal(
                 transformToPrefixCollapsedTree("values", valueTraversers),
-                referenceStore,
                 transformToPrefixCollapsedTree("refs", refTraversers),
                 transformToPrefixCollapsedTree("backrefs", backRefTraversers));
 

@@ -22,7 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class TasmoWriteFanoutEventPersistor implements TasmoEventPersistor {
+public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
 
     private final WrittenEventProvider writtenEventProvider;
     private final WrittenInstanceHelper writtenInstanceHelper;
@@ -30,7 +30,9 @@ public class TasmoWriteFanoutEventPersistor implements TasmoEventPersistor {
     private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
 
-    public TasmoWriteFanoutEventPersistor(WrittenEventProvider writtenEventProvider, WrittenInstanceHelper writtenInstanceHelper, ConcurrencyStore concurrencyStore,
+    public TasmoSyncWriteEventPersistor(WrittenEventProvider writtenEventProvider,
+        WrittenInstanceHelper writtenInstanceHelper,
+        ConcurrencyStore concurrencyStore,
         EventValueStore eventValueStore, ReferenceStore referenceStore) {
         this.writtenEventProvider = writtenEventProvider;
         this.writtenInstanceHelper = writtenInstanceHelper;

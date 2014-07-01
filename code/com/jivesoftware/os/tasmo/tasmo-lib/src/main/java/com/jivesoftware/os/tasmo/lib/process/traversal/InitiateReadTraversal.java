@@ -5,7 +5,6 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
@@ -53,18 +52,18 @@ public class InitiateReadTraversal {
             }
         };
 
-        TasmoEdgeReport tasmoEdgeReport = new TasmoEdgeReport();
         TasmoProcessingStats processingStats = new TasmoProcessingStats();
 
         WrittenEventContext writtenEventContext = new WrittenEventContext(0,
             Id.NULL,
             null,
             new JsonWrittenEventProvider(),
+            null,
+            null,
             fieldValueReader,
             referenceTraverser,
             modifiedViewProvider,
             commitChange,
-            tasmoEdgeReport,
             processingStats);
 
         PathTraversalContext context = new PathTraversalContext(1, false);

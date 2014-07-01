@@ -15,7 +15,8 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantIdAndRow;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.ConstantTimestamper;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
+import com.jivesoftware.os.tasmo.reference.lib.concur.FieldVersion;
+import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,7 +42,7 @@ public class ReferenceStoreConcurrencyTest {
 
         //System.out.println("\n |--> BEGIN \n");
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> updated = new RowColumnValueStoreImpl<>();
-        ConcurrencyStore concurrencyStore = new ConcurrencyStore(updated);
+        ConcurrencyStore concurrencyStore = new HBaseBackedConcurrencyStore(updated);
 
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks = new RowColumnValueStoreImpl<>();
         RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks = new RowColumnValueStoreImpl<>();

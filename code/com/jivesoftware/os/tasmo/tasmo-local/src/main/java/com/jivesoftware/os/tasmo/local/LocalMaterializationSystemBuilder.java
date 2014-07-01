@@ -20,8 +20,6 @@ import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
@@ -39,7 +37,6 @@ import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
-import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
@@ -49,7 +46,6 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
-import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
@@ -62,11 +58,11 @@ import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.MurmurHashViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
-import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.BatchingReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
@@ -138,7 +134,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
     }
 
     private ConcurrencyStore buildConcurrencyStore(RowColumnValueStoreProvider rowColumnValueStoreProvider) throws Exception {
-        return new ConcurrencyStore(rowColumnValueStoreProvider.concurrencyStore());
+        return new HBaseBackedConcurrencyStore(rowColumnValueStoreProvider.concurrencyStore());
     }
 
     private ReferenceStore buildReferenceStore(ConcurrencyStore concurrencyStore, RowColumnValueStoreProvider rowColumnValueStoreProvider) throws Exception {
@@ -146,12 +142,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
     }
 
     private EventValueStore buildEventValueStore(ConcurrencyStore concurrencyStore, RowColumnValueStoreProvider rowColumnValueStoreProvider) throws Exception {
-        return new EventValueStore(concurrencyStore, rowColumnValueStoreProvider.eventStore(), new EventValueCacheProvider() {
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> createValueStoreCache() {
-                return new RowColumnValueStoreImpl<>();
-            }
-        });
+        return new EventValueStore(concurrencyStore, rowColumnValueStoreProvider.eventStore());
     }
 
     private ViewValueStore buildViewValueStore(RowColumnValueStoreProvider rowColumnValueStoreProvider,
@@ -188,7 +179,6 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         TasmoViewModel viewMaterializerModel = new TasmoViewModel(masterTenantId,
                 viewsProvider,
                 viewPathKeyProvider,
-                concurrencyStore,
                 referenceStore);
 
         viewMaterializerModel.loadModel(masterTenantId);
@@ -237,11 +227,12 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             writtenEventProvider,
             eventTraverser,
             viewChangeNotificationProcessor,
+            concurrencyStore,
+            referenceStore,
             fieldValueReader,
             referenceTraverser,
             commitChange,
-            processingStats,
-            new TasmoEdgeReport());
+            processingStats);
 
         return new TasmoViewMaterializer(materializerEventBookkeeper,
                 tasmoEventProcessor,
