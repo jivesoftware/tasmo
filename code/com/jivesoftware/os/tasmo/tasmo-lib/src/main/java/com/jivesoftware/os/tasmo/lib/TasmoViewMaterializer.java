@@ -53,7 +53,7 @@ public class TasmoViewMaterializer {
             Multimap<Object, WrittenEvent> writtenEventLockGroups = ArrayListMultimap.create();
             for (WrittenEvent writtenEvent : writtenEvents) {
                 if (writtenEvent != null) {
-                    if (tasmoBlacklist.backlisted(writtenEvent)) {
+                    if (tasmoBlacklist.blacklisted(writtenEvent)) {
                         LOG.info("BACKLISTED event" + writtenEvent);
                         processed.add(writtenEvent);
                     } else {

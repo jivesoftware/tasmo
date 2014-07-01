@@ -603,7 +603,7 @@ public class Materialization {
                     List<WrittenEvent> failedToProcess = materialization.tasmoMaterializer.process(writtenEvents);
                     while (!failedToProcess.isEmpty()) {
                         System.out.println("FAILED to process " + failedToProcess.size() + " events likely due to consistency issues.");
-                        failedToProcess = materialization.tasmoMaterializer.process(writtenEvents);
+                        failedToProcess = materialization.tasmoMaterializer.process(failedToProcess);
                     }
                     return new EventWriterResponse(eventIds, objectIds);
 

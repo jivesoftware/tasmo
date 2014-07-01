@@ -628,7 +628,7 @@ public class BaseTasmoTest {
                     List<WrittenEvent> failedToProcess = tasmoViewMaterializer.process(writtenEvents);
                     while (!failedToProcess.isEmpty()) {
                         System.out.println("FAILED to process " + failedToProcess.size() + " events likely due to consistency issues.");
-                        failedToProcess = tasmoViewMaterializer.process(writtenEvents);
+                        failedToProcess = tasmoViewMaterializer.process(failedToProcess);
                     }
 
                     return new EventWriterResponse(eventIds, objectIds);

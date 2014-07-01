@@ -21,7 +21,11 @@ public class TasmoBlacklist {
         backlistedEventIds.remove(eventId);
     }
 
-    public boolean backlisted(WrittenEvent event) {
+    public void clear() {
+        backlistedEventIds.clear();
+    }
+
+    public boolean blacklisted(WrittenEvent event) {
         if (backlistedEventIds.contains(event.getEventId())) {
             return true;
         }

@@ -270,7 +270,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                     List<WrittenEvent> failedToProcess = viewMaterializer.process(writtenEvents);
                     while(!failedToProcess.isEmpty()) {
                         System.out.println("FAILED to process "+failedToProcess.size()+" events likely due to consistency issues.");
-                        failedToProcess = viewMaterializer.process(writtenEvents);
+                        failedToProcess = viewMaterializer.process(failedToProcess);
                     }
                     return new EventWriterResponse(eventIds, objectIds);
 

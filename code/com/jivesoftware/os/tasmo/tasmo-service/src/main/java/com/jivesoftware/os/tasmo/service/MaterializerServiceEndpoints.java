@@ -61,11 +61,19 @@ public class MaterializerServiceEndpoints {
     }
 
     @GET
+    @Path ("/backlisted/events/clear")
+    public Response clearBlacklistedEventIds() {
+        tasmoBlacklist.clear();
+        return Response.ok("done", MediaType.TEXT_PLAIN).build();
+    }
+
+    @GET
     @Path ("/backlist/event")
     public Response blacklistEvent(@QueryParam ("eventId") @DefaultValue ("-1") long eventId) {
         tasmoBlacklist.blacklistEventId(eventId);
         return Response.ok("done", MediaType.TEXT_PLAIN).build();
     }
+
 
     @GET
     @Path ("/whitelist/event")
