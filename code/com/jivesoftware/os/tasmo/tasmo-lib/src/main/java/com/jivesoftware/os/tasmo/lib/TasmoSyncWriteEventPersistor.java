@@ -42,7 +42,11 @@ public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
     }
 
     @Override
-    public void removeValueFields(VersionedTasmoViewModel model, String className, TenantIdAndCentricId tenantIdAndCentricId, ObjectId instanceId, long timestamp) {
+    public void removeValueFields(VersionedTasmoViewModel model,
+        String className,
+        TenantIdAndCentricId tenantIdAndCentricId,
+        ObjectId instanceId,
+        long timestamp) {
         concurrencyStore.removeObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
 
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
@@ -57,7 +61,12 @@ public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
     }
 
     @Override
-    public void updateValueFields(VersionedTasmoViewModel model, String className, TenantIdAndCentricId tenantIdAndCentricId, ObjectId instanceId, long timestamp, WrittenInstance writtenInstance) throws Exception {
+    public void updateValueFields(VersionedTasmoViewModel model,
+        String className,
+        TenantIdAndCentricId tenantIdAndCentricId,
+        ObjectId instanceId,
+        long timestamp,
+        WrittenInstance writtenInstance) throws Exception {
 
         concurrencyStore.addObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
 

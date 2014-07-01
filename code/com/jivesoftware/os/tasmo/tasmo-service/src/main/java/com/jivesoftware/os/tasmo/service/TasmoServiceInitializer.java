@@ -16,10 +16,11 @@ import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.tasmo.lib.StatCollectingFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.TasmoEventTraversal;
 import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
-import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
@@ -85,6 +86,7 @@ public class TasmoServiceInitializer {
             ViewChangeNotificationProcessor viewChangeNotificationProcessor,
             CallbackStream<List<BookkeepingEvent>> bookKeepingStream,
             final Optional<WrittenEventProcessorDecorator> writtenEventProcessorDecorator,
+            TasmoBlacklist tasmoBlacklist,
             TasmoServiceConfig config) throws Exception {
 
 
@@ -146,7 +148,7 @@ public class TasmoServiceInitializer {
 
         ReferenceTraverser referenceTraverser = batchingReferenceTraverser; //new SerialReferenceTraverser(referenceStore);
 
-        TasmoEventTraverser eventTraverser = new TasmoRetryingEventTraverser(bookKeepingEventProcessor,
+        TasmoEventTraversal eventTraverser = new TasmoEventTraverser(bookKeepingEventProcessor,
             new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
 
         WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
@@ -184,7 +186,7 @@ public class TasmoServiceInitializer {
         ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
         TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
                 tasmoEventProcessor,
-                MoreExecutors.listeningDecorator(eventProcessorThreads));
+                MoreExecutors.listeningDecorator(eventProcessorThreads), tasmoBlacklist);
 
         EventIngressCallbackStream eventIngressCallbackStream = new EventIngressCallbackStream(materializer);
         Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()

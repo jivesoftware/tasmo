@@ -29,10 +29,11 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
 import com.jivesoftware.os.tasmo.lib.StatCollectingFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.TasmoEventTraversal;
 import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
-import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.TasmoWriteFanoutEventPersistor;
@@ -191,9 +192,6 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             }
         };
 
-        TasmoRetryingEventTraverser retryingEventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
-                new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
-
         ListeningExecutorService traverserExecutors = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(32));
         final BatchingReferenceTraverser referenceTraverser = new BatchingReferenceTraverser(referenceStore,
                 traverserExecutors, 100, 10000); // TODO expose to config
@@ -210,7 +208,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             }
         });
 
-        TasmoEventTraverser eventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
+        TasmoEventTraversal eventTraverser = new TasmoEventTraverser(writtenEventProcessorDecorator,
             new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
 
         WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
@@ -236,7 +234,8 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
         return new TasmoViewMaterializer(materializerEventBookkeeper,
                 tasmoEventProcessor,
-                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()));
+                MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor()),
+                new TasmoBlacklist());
     }
 
     private EventWriter buildEventWriter(final TasmoViewMaterializer viewMaterializer,
@@ -268,7 +267,11 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
                     for (ObjectNode eventNode : events) {
                         writtenEvents.add(writtenEventProvider.convertEvent(eventNode));
                     }
-                    viewMaterializer.process(writtenEvents);
+                    List<WrittenEvent> failedToProcess = viewMaterializer.process(writtenEvents);
+                    while(!failedToProcess.isEmpty()) {
+                        System.out.println("FAILED to process "+failedToProcess.size()+" events likely due to consistency issues.");
+                        failedToProcess = viewMaterializer.process(writtenEvents);
+                    }
                     return new EventWriterResponse(eventIds, objectIds);
 
                 } catch (Exception ex) {

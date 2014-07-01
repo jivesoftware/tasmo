@@ -38,7 +38,7 @@ public class TasmoEventProcessor {
     private final TasmoViewModel tasmoViewModel;
     private final TasmoEventPersistor eventPersistor;
     private final WrittenEventProvider writtenEventProvider;
-    private final TasmoEventTraverser eventTraverser;
+    private final TasmoEventTraversal eventTraverser;
     private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
     private final ConcurrencyStore concurrencyStore;
     private final ReferenceStore referenceStore;
@@ -50,7 +50,7 @@ public class TasmoEventProcessor {
     public TasmoEventProcessor(TasmoViewModel tasmoViewModel,
         TasmoEventPersistor eventPersistor,
         WrittenEventProvider writtenEventProvider,
-        TasmoEventTraverser eventTraverser,
+        TasmoEventTraversal eventTraverser,
         ViewChangeNotificationProcessor viewChangeNotificationProcessor,
         ConcurrencyStore concurrencyStore,
         ReferenceStore referenceStore,
