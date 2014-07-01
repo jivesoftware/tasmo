@@ -1,7 +1,7 @@
 package com.jivesoftware.os.tasmo.reference.lib.concur;
 
 import com.google.common.collect.Sets;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
+import com.jivesoftware.os.tasmo.reference.lib.concur.FieldVersion;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

@@ -25,8 +25,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore.FieldVersion;
+import com.jivesoftware.os.tasmo.reference.lib.concur.FieldVersion;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,21 +39,16 @@ import java.util.concurrent.Callable;
 public class InitiateWriteTraversal implements WrittenEventProcessor {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-    private final ConcurrencyChecker concurrencyChecker;
-    private final ListMultimap<InitiateTraverserKey, PathTraverser> valueTraversers;
 
-    private final ReferenceStore referenceStore;
+    private final ListMultimap<InitiateTraverserKey, PathTraverser> valueTraversers;
     private final ListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers;
     private final ListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers;
 
-    public InitiateWriteTraversal(ConcurrencyChecker concurrencyChecker,
+    public InitiateWriteTraversal(
         ListMultimap<InitiateTraverserKey, PathTraverser> traversers,
-        ReferenceStore referenceStore,
         ListMultimap<InitiateTraverserKey, PathTraverser> forwardRefTraversers,
         ListMultimap<InitiateTraverserKey, PathTraverser> backRefTraversers) {
-        this.concurrencyChecker = concurrencyChecker;
         this.valueTraversers = traversers;
-        this.referenceStore = referenceStore;
         this.forwardRefTraversers = forwardRefTraversers;
         this.backRefTraversers = backRefTraversers;
     }
@@ -93,7 +87,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
         final TenantIdAndCentricId tenantIdAndCentricId,
         final WrittenEvent writtenEvent,
         final long threadTimestamp) throws Exception {
-
+        final ConcurrencyChecker concurrencyChecker = writtenEventContext.getConcurrencyChecker();
         final long timestamp = writtenEvent.getEventId();
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         final ObjectId instanceId = writtenInstance.getInstanceId();
@@ -178,7 +172,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
                                     new PathId(instanceId, timestamp));
                                 writtenEventContext.valuePaths++;
                                 for (ReferenceWithTimestamp valueVersion : valueVersions) {
-                                    want.add(new ConcurrencyStore.FieldVersion(instanceId, valueVersion.getFieldName(), valueVersion.getTimestamp()));
+                                    want.add(new FieldVersion(instanceId, valueVersion.getFieldName(), valueVersion.getTimestamp()));
                                 }
                                 List<ViewFieldChange> takeChanges = context.takeChanges(); // TODO add auto flush if writeableChanges is to large.
                                 writtenEventContext.changes += takeChanges.size();
@@ -196,7 +190,8 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
 
     private void processRefs(final WrittenEventContext writtenEventContext,
         final TenantIdAndCentricId tenantIdAndCentricId, final WrittenEvent writtenEvent, final long threadTimestamp) throws Exception {
-
+        final ConcurrencyChecker concurrencyChecker = writtenEventContext.getConcurrencyChecker();
+        final ReferenceStore referenceStore = writtenEventContext.getReferenceStore();
         final long timestamp = writtenEvent.getEventId();
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         final ObjectId instanceId = writtenInstance.getInstanceId();
@@ -248,10 +243,10 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
         commit(writtenEventContext, tenantIdAndCentricId, callables);
 
         if (!writtenInstance.isDeletion()) {
-            Set<ConcurrencyStore.FieldVersion> fieldVersions = new HashSet<>();
+            Set<FieldVersion> fieldVersions = new HashSet<>();
             for (int i = 0; i < refFieldNames.length; i++) {
                 long highest = highestVersions.get(i) == null ? timestamp : highestVersions.get(i);
-                fieldVersions.add(new ConcurrencyStore.FieldVersion(instanceId, refFieldNames[i], highest));
+                fieldVersions.add(new FieldVersion(instanceId, refFieldNames[i], highest));
             }
             concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId, fieldVersions);
 

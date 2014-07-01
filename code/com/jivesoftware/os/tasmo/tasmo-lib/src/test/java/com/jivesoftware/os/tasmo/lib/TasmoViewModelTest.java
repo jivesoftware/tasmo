@@ -16,7 +16,6 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.path.StringHashcodeViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,20 +35,17 @@ public class TasmoViewModelTest {
     private final TenantId tenantId = new TenantId("master");
     private ViewsProvider viewsProvider;
     private TasmoViewModel tasmoViewModel;
-    private ConcurrencyStore concurrencyStore;
     private ReferenceStore referenceStore;
 
     @BeforeMethod
     public void setUpMethod() throws Exception {
 
         viewsProvider = Mockito.mock(ViewsProvider.class);
-        concurrencyStore = Mockito.mock(ConcurrencyStore.class);
         referenceStore = Mockito.mock(ReferenceStore.class);
         tasmoViewModel = new TasmoViewModel(
                 tenantId,
                 viewsProvider,
                 new StringHashcodeViewPathKeyProvider(),
-                concurrencyStore,
                 referenceStore);
     }
 

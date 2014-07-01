@@ -9,35 +9,22 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
-import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
-import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.DefaultRowColumnValueStoreMarshaller;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.NeverAcceptsFailureSetOfSortedMaps;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.CurrentTimestamper;
-import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
-import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.ByteArrayTypeMarshaller;
-import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.LongTypeMarshaller;
-import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
-import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.lib.StatCollectingFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.TasmoEventTraversal;
 import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
-import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
+import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.TasmoWriteFanoutEventPersistor;
-import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
-import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
@@ -46,21 +33,17 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
-import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
-import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
-import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
-import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.BatchingReferenceTraverser;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
-import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -72,16 +55,13 @@ import org.merlin.config.defaults.StringDefault;
 
 /**
  *
- *
+ * TODO rename to TasmoWriteMaterializationInitializer
  */
 public class TasmoServiceInitializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     static public interface TasmoServiceConfig extends Config {
-
-        @StringDefault("dev")
-        public String getTableNameSpace();
 
         @IntDefault(-1)
         public Integer getSessionIdCreatorId();
@@ -101,62 +81,27 @@ public class TasmoServiceInitializer {
             ViewsProvider viewsProvider,
             ViewPathKeyProvider viewPathKeyProvider,
             WrittenEventProvider writtenEventProvider,
-            SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
-            EventValueCacheProvider eventValueCacheProvider,
+            TasmoStorageProvider tasmoStorageProvider,
             CommitChange changeWriter,
             ViewChangeNotificationProcessor viewChangeNotificationProcessor,
             CallbackStream<List<BookkeepingEvent>> bookKeepingStream,
             final Optional<WrittenEventProcessorDecorator> writtenEventProcessorDecorator,
-            TasmoEdgeReport tasmoEdgeReport,
-            TasmoServiceConfig config) throws IOException {
+            TasmoBlacklist tasmoBlacklist,
+            TasmoServiceConfig config) throws Exception {
 
-        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore =
-            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.event.values", "v",
-                                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
-                                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-                                        (TypeMarshaller<OpaqueFieldValue>) writtenEventProvider.getLiteralFieldValueMarshaller()), new CurrentTimestamper()));
 
-        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyTable =
-            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
-                                "tasmo.multi.version.concurrency", "v",
-                                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(),
-                                        new ObjectIdMarshaller(), new StringTypeMarshaller(),
-                                        new LongTypeMarshaller()), new CurrentTimestamper()));
-
-        ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrencyTable);
-
-        EventValueStore eventValueStore = new EventValueStore(concurrencyStore, eventStore, eventValueCacheProvider);
-        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks =
-            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.links", "v",
-                                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-                                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
-
-        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks =
-            new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(), "tasmo.back.links", "v",
-                                new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
-                                        new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
-
-        ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, multiLinks, multiBackLinks);
+        ConcurrencyStore concurrencyStore = new HBaseBackedConcurrencyStore(tasmoStorageProvider.concurrencyStorage());
+        EventValueStore eventValueStore = new EventValueStore(concurrencyStore, tasmoStorageProvider.eventStorage());
+        ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, tasmoStorageProvider.multiLinksStorage(),
+            tasmoStorageProvider.multiBackLinksStorage());
 
         TasmoEventBookkeeper bookkeeper = new TasmoEventBookkeeper(bookKeepingStream);
         TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
-        ConcurrencyAndExistenceCommitChange existenceCommitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, changeWriter);
-
-        ThreadFactory pathProcessorThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("path-processor-%d")
-                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
-                    }
-                })
-                .build();
 
         final TasmoViewModel tasmoViewModel = new TasmoViewModel(
                 masterTenantId,
                 viewsProvider,
                 viewPathKeyProvider,
-                concurrencyStore,
                 referenceStore);
 
         tasmoViewModel.loadModel(masterTenantId);
@@ -203,7 +148,7 @@ public class TasmoServiceInitializer {
 
         ReferenceTraverser referenceTraverser = batchingReferenceTraverser; //new SerialReferenceTraverser(referenceStore);
 
-        TasmoEventTraverser eventTraverser = new TasmoRetryingEventTraverser(bookKeepingEventProcessor,
+        TasmoEventTraversal eventTraverser = new TasmoEventTraverser(bookKeepingEventProcessor,
             new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
 
         WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
@@ -220,11 +165,12 @@ public class TasmoServiceInitializer {
             writtenEventProvider,
             eventTraverser,
             viewChangeNotificationProcessor,
+            concurrencyStore,
+            referenceStore,
             fieldValueReader,
             referenceTraverser,
             changeWriter,
-            processingStats,
-            tasmoEdgeReport);
+            processingStats);
 
 
         ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
@@ -240,7 +186,7 @@ public class TasmoServiceInitializer {
         ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
         TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
                 tasmoEventProcessor,
-                MoreExecutors.listeningDecorator(eventProcessorThreads));
+                MoreExecutors.listeningDecorator(eventProcessorThreads), tasmoBlacklist);
 
         EventIngressCallbackStream eventIngressCallbackStream = new EventIngressCallbackStream(materializer);
         Retryer<Boolean> retryer = RetryerBuilder.<Boolean>newBuilder()

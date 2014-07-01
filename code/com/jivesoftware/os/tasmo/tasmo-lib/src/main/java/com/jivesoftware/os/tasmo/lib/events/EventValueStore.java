@@ -28,11 +28,9 @@ public class EventValueStore {
     private final ConcurrencyStore concurrencyStore;
 
     public EventValueStore(ConcurrencyStore concurrencyStore,
-            RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> classFieldValueStore,
-            EventValueCacheProvider cacheProvider) {
+            RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> classFieldValueStore) {
         this.concurrencyStore = concurrencyStore;
         this.eventValueStore = classFieldValueStore;
-        //cache provider is currently unused, but we've left it wired in
     }
 
     public ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] get(

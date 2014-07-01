@@ -26,16 +26,21 @@ public class TasmoViewMaterializer {
     private final TasmoEventBookkeeper tasmoEventBookkeeper;
     private final TasmoEventProcessor eventProcessor;
     private final ListeningExecutorService processEvents;
+    private final TasmoBlacklist tasmoBlacklist;
     private final ConcurrentHashMap<TenantId, StripingLocksProvider<ObjectId>> instanceIdLocks = new ConcurrentHashMap<>();
     private final AtomicLong totalProcessed = new AtomicLong();
 
+    private double lastEventsPerSecond = 0;
+
     public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
         TasmoEventProcessor eventProcessor,
-        ListeningExecutorService processEvents
+        ListeningExecutorService processEvents,
+        TasmoBlacklist tasmoBlacklist
     ) {
         this.tasmoEventBookkeeper = tasmoEventBookkeeper;
         this.eventProcessor = eventProcessor;
         this.processEvents = processEvents;
+        this.tasmoBlacklist = tasmoBlacklist;
     }
 
     public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
@@ -48,18 +53,24 @@ public class TasmoViewMaterializer {
             Multimap<Object, WrittenEvent> writtenEventLockGroups = ArrayListMultimap.create();
             for (WrittenEvent writtenEvent : writtenEvents) {
                 if (writtenEvent != null) {
-                    WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
-                    TenantId tenantId = writtenEvent.getTenantId();
-                    StripingLocksProvider<ObjectId> tenantLocks = instanceIdLocks.get(tenantId);
-                    if (tenantLocks == null) {
-                        tenantLocks = new StripingLocksProvider<>(1024); // Expose to config?
-                        StripingLocksProvider<ObjectId> had = instanceIdLocks.putIfAbsent(tenantId, tenantLocks);
-                        if (had != null) {
-                            tenantLocks = had;
+                    if (tasmoBlacklist.blacklisted(writtenEvent)) {
+                        LOG.info("BACKLISTED event" + writtenEvent);
+                        processed.add(writtenEvent);
+                    } else {
+
+                        WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
+                        TenantId tenantId = writtenEvent.getTenantId();
+                        StripingLocksProvider<ObjectId> tenantLocks = instanceIdLocks.get(tenantId);
+                        if (tenantLocks == null) {
+                            tenantLocks = new StripingLocksProvider<>(1024); // Expose to config?
+                            StripingLocksProvider<ObjectId> had = instanceIdLocks.putIfAbsent(tenantId, tenantLocks);
+                            if (had != null) {
+                                tenantLocks = had;
+                            }
                         }
+                        Object lock = tenantLocks.lock(writtenInstance.getInstanceId());
+                        writtenEventLockGroups.put(lock, writtenEvent);
                     }
-                    Object lock = tenantLocks.lock(writtenInstance.getInstanceId());
-                    writtenEventLockGroups.put(lock, writtenEvent);
                 }
             }
 
@@ -132,6 +143,5 @@ public class TasmoViewMaterializer {
         }
         return failedToProcess;
     }
-    double lastEventsPerSecond = 0;
 
 }

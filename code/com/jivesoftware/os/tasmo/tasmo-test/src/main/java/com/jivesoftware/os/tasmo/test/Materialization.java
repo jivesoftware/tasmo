@@ -32,15 +32,15 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
 import com.jivesoftware.os.tasmo.lib.StatCollectingFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
 import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.TasmoEventTraversal;
 import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
-import com.jivesoftware.os.tasmo.lib.TasmoRetryingEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
-import com.jivesoftware.os.tasmo.lib.events.EventValueCacheProvider;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
@@ -50,7 +50,6 @@ import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
-import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
@@ -72,6 +71,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.BatchingReferenceTraverser;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
@@ -254,18 +254,18 @@ public class Materialization {
 
     private ExecutorService newThreadPool(int maxThread, String name) {
         ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
-                .setNameFormat(name + "-%d")
-                .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
-                    @Override
-                    public void uncaughtException(Thread t, Throwable e) {
-                        LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
-                    }
-                })
-                .build();
+            .setNameFormat(name + "-%d")
+            .setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                @Override
+                public void uncaughtException(Thread t, Throwable e) {
+                    LOG.error("Thread " + t.getName() + " threw uncaught exception", e);
+                }
+            })
+            .build();
 
         return new ThreadPoolExecutor(0, maxThread,
-                5L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(), eventProcessorThreadFactory);
+            5L, TimeUnit.MILLISECONDS,
+            new LinkedBlockingQueue<Runnable>(), eventProcessorThreadFactory);
     }
 
     public void setupModelAndMaterializer(int numberOfEventProcessorThreads) throws Exception {
@@ -275,16 +275,9 @@ public class Materialization {
         RowColumnValueStoreProvider rowColumnValueStoreProvider = getRowColumnValueStoreProvider(uuid);
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore = rowColumnValueStoreProvider.eventStore();
 
-        EventValueCacheProvider cacheProvider = new EventValueCacheProvider() {
-            @Override
-            public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> createValueStoreCache() {
-                return new RowColumnValueStoreImpl<>();
-            }
-        };
-
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
-        ConcurrencyStore concurrencyStore = new ConcurrencyStore(concurrency);
-        eventValueStore = new EventValueStore(concurrencyStore, eventStore, cacheProvider);
+        ConcurrencyStore concurrencyStore = new HBaseBackedConcurrencyStore(concurrency);
+        eventValueStore = new EventValueStore(concurrencyStore, eventStore);
 
         rawViewValueStore = rowColumnValueStoreProvider.viewValueStore();
         viewValueStore = new ViewValueStore(rawViewValueStore, viewPathKeyProvider);
@@ -292,14 +285,14 @@ public class Materialization {
         viewValueReader = new ViewValueReader(viewValueStore);
 
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, rowColumnValueStoreProvider.multiLinks(),
-                rowColumnValueStoreProvider.multiBackLinks());
+            rowColumnValueStoreProvider.multiBackLinks());
 
         final WriteToViewValueStore writeToViewValueStore = new WriteToViewValueStore(viewValueWriter);
         CommitChange commitChange = new CommitChange() {
             @Override
             public void commitChange(WrittenEventContext batchContext,
-                    TenantIdAndCentricId tenantIdAndCentricId,
-                    List<ViewFieldChange> changes) throws CommitChangeException {
+                TenantIdAndCentricId tenantIdAndCentricId,
+                List<ViewFieldChange> changes) throws CommitChangeException {
 
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
                 for (ViewFieldChange change : changes) {
@@ -311,15 +304,15 @@ public class Materialization {
                         }
 
                         write.add(new ViewWriteFieldChange(
-                                change.getEventId(),
-                                tenantIdAndCentricId,
-                                change.getActorId(),
-                                ViewWriteFieldChange.Type.valueOf(change.getType().name()),
-                                change.getViewObjectId(),
-                                change.getModelPathIdHashcode(),
-                                ids,
-                                new ViewValue(change.getModelPathTimestamps(), change.getValue()),
-                                change.getTimestamp()));
+                            change.getEventId(),
+                            tenantIdAndCentricId,
+                            change.getActorId(),
+                            ViewWriteFieldChange.Type.valueOf(change.getType().name()),
+                            change.getViewObjectId(),
+                            change.getModelPathIdHashcode(),
+                            ids,
+                            new ViewValue(change.getModelPathTimestamps(), change.getValue()),
+                            change.getTimestamp()));
                     } catch (Exception ex) {
                         throw new CommitChangeException("Failed to add change for the following reason.", ex);
                     }
@@ -336,12 +329,12 @@ public class Materialization {
         commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, commitChange);
 
         TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
-                new CallbackStream<List<BookkeepingEvent>>() {
-                    @Override
-                    public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
-                        return value;
-                    }
-                });
+            new CallbackStream<List<BookkeepingEvent>>() {
+                @Override
+                public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
+                    return value;
+                }
+            });
 
         viewsProvider = new ViewsProvider() {
             @Override
@@ -357,11 +350,10 @@ public class Materialization {
 
         pathProcessorThreads = newThreadPool(numberOfEventProcessorThreads, "process-path-");
         tasmoViewModel = new TasmoViewModel(
-                MASTER_TENANT_ID,
-                viewsProvider,
-                viewPathKeyProvider,
-                concurrencyStore,
-                referenceStore);
+            MASTER_TENANT_ID,
+            viewsProvider,
+            viewPathKeyProvider,
+            referenceStore);
 
         WrittenEventProcessorDecorator writtenEventProcessorDecorator = new WrittenEventProcessorDecorator() {
             @Override
@@ -390,7 +382,7 @@ public class Materialization {
         ReferenceTraverser referenceTraverser = batchingReferenceTraverser;
 //        ReferenceTraverser referenceTraverser = new SerialReferenceTraverser(referenceStore); //??
 
-        TasmoEventTraverser eventTraverser = new TasmoRetryingEventTraverser(writtenEventProcessorDecorator,
+        TasmoEventTraversal eventTraverser = new TasmoEventTraverser(writtenEventProcessorDecorator,
             new OrderIdProviderImpl(new ConstantWriterIdProvider(1)));
 
         WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
@@ -407,16 +399,18 @@ public class Materialization {
             writtenEventProvider,
             eventTraverser,
             getViewChangeNotificationProcessor(),
+            concurrencyStore,
+            referenceStore,
             fieldValueReader,
             referenceTraverser,
             commitChange,
-            processingStats,
-            new TasmoEdgeReport());
+            processingStats);
 
         eventProcessorThreads = newThreadPool(numberOfEventProcessorThreads, "process-event-");
         tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
-                tasmoEventProcessor,
-                MoreExecutors.listeningDecorator(eventProcessorThreads));
+            tasmoEventProcessor,
+            MoreExecutors.listeningDecorator(eventProcessorThreads),
+            new TasmoBlacklist());
 
     }
 
@@ -467,12 +461,12 @@ public class Materialization {
         };
 
         viewProvider = new ViewProvider<>(viewPermissionChecker,
-                viewValueReader,
-                tenantViewsProvider,
-                viewAsObjectNode,
-                merger,
-                staleViewFieldStream,
-                1024 * 1024 * 10);
+            viewValueReader,
+            tenantViewsProvider,
+            viewAsObjectNode,
+            merger,
+            staleViewFieldStream,
+            1024 * 1024 * 10);
         return new Expectations(viewValueStore, newViews, viewPathKeyProvider);
 
     }
@@ -531,11 +525,11 @@ public class Materialization {
                 Set<String> destinationClassName = splitClassNames(memberParts[3].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                        refFieldName, stepType, destinationClassName, null);
+                    refFieldName, stepType, destinationClassName, null);
 
             } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
-                    || pathMember.contains("." + ModelPathStepType.count + ".")
-                    || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
+                || pathMember.contains("." + ModelPathStepType.count + ".")
+                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
                 // Example: Content.count.VersionedContent.ref_parent
@@ -546,7 +540,7 @@ public class Materialization {
                 String refFieldName = memberParts[3].trim();
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                        refFieldName, stepType, destinationClassName, null);
+                    refFieldName, stepType, destinationClassName, null);
 
             } else {
 
@@ -558,7 +552,7 @@ public class Materialization {
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                        null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
+                    null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
 
             }
         } catch (Exception x) {
@@ -606,8 +600,11 @@ public class Materialization {
                         writtenEvents.add(writtenEventProvider.convertEvent(eventNode));
                     }
 
-                    materialization.tasmoMaterializer.process(writtenEvents);
-
+                    List<WrittenEvent> failedToProcess = materialization.tasmoMaterializer.process(writtenEvents);
+                    while (!failedToProcess.isEmpty()) {
+                        System.out.println("FAILED to process " + failedToProcess.size() + " events likely due to consistency issues.");
+                        failedToProcess = materialization.tasmoMaterializer.process(failedToProcess);
+                    }
                     return new EventWriterResponse(eventIds, objectIds);
 
                 } catch (Exception ex) {

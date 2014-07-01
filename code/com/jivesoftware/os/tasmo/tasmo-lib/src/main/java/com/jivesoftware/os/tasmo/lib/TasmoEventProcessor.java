@@ -6,11 +6,11 @@ import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateWriteTraversal;
-import com.jivesoftware.os.tasmo.lib.report.TasmoEdgeReport;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
@@ -21,6 +21,8 @@ import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,36 +38,38 @@ public class TasmoEventProcessor {
     private final TasmoViewModel tasmoViewModel;
     private final TasmoEventPersistor eventPersistor;
     private final WrittenEventProvider writtenEventProvider;
-    private final TasmoEventTraverser eventTraverser;
+    private final TasmoEventTraversal eventTraverser;
     private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
-
+    private final ConcurrencyStore concurrencyStore;
+    private final ReferenceStore referenceStore;
     private final FieldValueReader fieldValueReader;
     private final ReferenceTraverser referenceTraverser;
     private final CommitChange commitChange;
-    private final TasmoEdgeReport tasmoEdgeReport;
     private final TasmoProcessingStats processingStats;
 
     public TasmoEventProcessor(TasmoViewModel tasmoViewModel,
         TasmoEventPersistor eventPersistor,
         WrittenEventProvider writtenEventProvider,
-        TasmoEventTraverser eventTraverser,
+        TasmoEventTraversal eventTraverser,
         ViewChangeNotificationProcessor viewChangeNotificationProcessor,
+        ConcurrencyStore concurrencyStore,
+        ReferenceStore referenceStore,
         FieldValueReader fieldValueReader,
         ReferenceTraverser referenceTraverser,
         CommitChange commitChange,
-        TasmoProcessingStats processingStats,
-        TasmoEdgeReport tasmoEdgeReport) {
+        TasmoProcessingStats processingStats) {
 
         this.tasmoViewModel = tasmoViewModel;
         this.eventPersistor = eventPersistor;
         this.writtenEventProvider = writtenEventProvider;
         this.eventTraverser = eventTraverser;
         this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
+        this.concurrencyStore = concurrencyStore;
+        this.referenceStore = referenceStore;
         this.fieldValueReader = fieldValueReader;
         this.referenceTraverser = referenceTraverser;
         this.commitChange = commitChange;
         this.processingStats = processingStats;
-        this.tasmoEdgeReport = tasmoEdgeReport;
     }
 
     public void processWrittenEvent(Object lock, WrittenEvent writtenEvent) throws Exception {
@@ -94,9 +98,10 @@ public class TasmoEventProcessor {
         };
 
         long startProcessingEvent = System.currentTimeMillis();
+        ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore);
         WrittenEventContext batchContext = new WrittenEventContext(writtenEvent.getEventId(),
-            writtenEvent.getActorId(), writtenEvent, writtenEventProvider,
-            fieldValueReader, referenceTraverser, modifiedViewProvider, commitChangeNotifier, tasmoEdgeReport, processingStats);
+            writtenEvent.getActorId(), writtenEvent, writtenEventProvider, concurrencyChecker, referenceStore,
+            fieldValueReader, referenceTraverser, modifiedViewProvider, commitChangeNotifier, processingStats);
 
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         String className = writtenInstance.getInstanceId().getClassName();
@@ -148,9 +153,9 @@ public class TasmoEventProcessor {
             long start = System.currentTimeMillis();
             synchronized (lock) {
                 if (writtenInstance.isDeletion()) {
-                    eventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, timestamp, instanceId);
+                    eventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp);
                 } else {
-                    eventPersistor.updateValueFields(tenantIdAndGloballyCentricId, timestamp, instanceId, model, className, writtenInstance);
+                    eventPersistor.updateValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp, writtenInstance);
                 }
                 processingStats.latency("UPDATE", className, System.currentTimeMillis() - start);
                 eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndGloballyCentricId, writtenEvent);
