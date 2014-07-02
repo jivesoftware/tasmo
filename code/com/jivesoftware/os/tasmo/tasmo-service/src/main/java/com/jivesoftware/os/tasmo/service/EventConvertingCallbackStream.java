@@ -34,12 +34,22 @@ public class EventConvertingCallbackStream implements CallbackStream<List<Object
             for (ObjectNode objectNode : objectNodes) {
                 converted.add(writtenEventProvider.convertEvent(objectNode));
             }
+            List<WrittenEvent> failed = eventIngressCallbackStream.callback(converted);
+            List<ObjectNode> failedNodes = new ArrayList<>();
+            for (WrittenEvent f : failed) {
+                for (int i = 0; i < converted.size(); i++) {
+                    if (converted.get(i) == f) {
+                        failedNodes.add(objectNodes.get(i));
+                        break;
+                    }
+                }
+            }
+            return failedNodes;
 
-            eventIngressCallbackStream.callback(converted);
         } else {
             eventIngressCallbackStream.callback(null);
+            return objectNodes;
         }
 
-        return objectNodes;
     }
 }
