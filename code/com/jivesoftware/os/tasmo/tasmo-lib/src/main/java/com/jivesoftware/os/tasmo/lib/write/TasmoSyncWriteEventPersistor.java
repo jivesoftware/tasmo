@@ -37,7 +37,8 @@ public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
     public TasmoSyncWriteEventPersistor(WrittenEventProvider writtenEventProvider,
         WrittenInstanceHelper writtenInstanceHelper,
         ConcurrencyStore concurrencyStore,
-        EventValueStore eventValueStore, ReferenceStore referenceStore) {
+        EventValueStore eventValueStore,
+        ReferenceStore referenceStore) {
         this.writtenEventProvider = writtenEventProvider;
         this.writtenInstanceHelper = writtenInstanceHelper;
         this.concurrencyStore = concurrencyStore;

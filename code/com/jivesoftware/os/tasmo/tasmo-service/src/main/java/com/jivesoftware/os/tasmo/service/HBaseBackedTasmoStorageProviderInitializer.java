@@ -26,4 +26,11 @@ public class HBaseBackedTasmoStorageProviderInitializer {
 
         return new HBaseBackedTasmoStorageProvider(config.getTableNameSpace(), setOfSortedMapsImplInitializer, writtenEventProvider);
     }
+
+    public static TasmoStorageProvider initializeSyncStorageProvider(
+        final HBaseBackedTasmoStorageProviderConfig config,
+        final SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+        final WrittenEventProvider writtenEventProvider) {
+        return new HBaseBackedTasmoStorageProvider(config.getTableNameSpace()+".sync", setOfSortedMapsImplInitializer, writtenEventProvider);
+    }
 }
