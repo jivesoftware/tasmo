@@ -1,9 +1,12 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.write;
 
 import com.google.common.collect.SetMultimap;
+import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.VersionedTasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
@@ -12,6 +15,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
+import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ExistenceUpdate;
 import java.util.ArrayList;
@@ -117,6 +121,18 @@ public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
         if (!batchLinkTos.isEmpty()) {
             referenceStore.link(tenantIdAndCentricId, instanceId, timestamp, batchLinkTos);
         }
+
+        // remove anything older than this events timestamp
+        for (String fieldName : refFieldNames) {
+            referenceStore.unlink(tenantIdAndCentricId, timestamp, instanceId, fieldName, -1, new CallbackStream<ReferenceWithTimestamp>() {
+
+                @Override
+                public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
+                    return v;
+                }
+            });
+        }
+
         // 3 to 6 multiputs
         eventValueStore.commit(transaction);
     }

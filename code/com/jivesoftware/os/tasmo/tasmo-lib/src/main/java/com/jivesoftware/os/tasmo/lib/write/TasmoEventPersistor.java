@@ -1,7 +1,8 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.write;
 
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
+import com.jivesoftware.os.tasmo.lib.VersionedTasmoViewModel;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 
 public interface TasmoEventPersistor {

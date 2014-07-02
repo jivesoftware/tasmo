@@ -24,7 +24,7 @@ import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
-import com.jivesoftware.os.tasmo.lib.TasmoWriteFanoutEventPersistor;
+import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;

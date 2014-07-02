@@ -2,9 +2,9 @@ package com.jivesoftware.os.tasmo.service;
 
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.TasmoEventPersistor;
+import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
 import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
-import com.jivesoftware.os.tasmo.lib.TasmoSyncWriteEventPersistor;
+import com.jivesoftware.os.tasmo.lib.write.TasmoSyncWriteEventPersistor;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;

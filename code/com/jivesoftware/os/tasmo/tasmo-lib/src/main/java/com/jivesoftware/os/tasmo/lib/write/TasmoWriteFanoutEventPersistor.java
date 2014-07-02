@@ -1,9 +1,12 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.write;
 
+import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
 import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.VersionedTasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;

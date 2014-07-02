@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.lib;
 
+import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
