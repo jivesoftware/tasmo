@@ -8,6 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.lib;
 
+import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

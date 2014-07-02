@@ -23,7 +23,6 @@ import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewAsObjectNode;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
-import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.merlin.config.Config;
@@ -46,8 +45,6 @@ public class TasmoReadMaterializationInitializer {
         @IntDefault (10)
         public Integer getPollForModelChangesEveryNSeconds();
 
-        @IntDefault (1)
-        public Integer getNumberOfEventProcessorThreads();
     }
 
     public static ViewReadMaterializer<ViewResponse> initialize(TasmoReadMaterializationConfig config,
