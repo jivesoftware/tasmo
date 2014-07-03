@@ -41,6 +41,8 @@ public class MultiBackRefTest extends BaseTest {
         ObjectId tagId2 = t.write(EventBuilder.create(t.idProvider(), "Tag", tenantId, actorId).build()); //6 - 12
         t.write(EventBuilder.update(contentId1, tenantId, actorId).set("refs_tags", Arrays.asList(tagId1, tagId2)).build()); //  - 13
         t.write(EventBuilder.update(contentId2, tenantId, actorId).set("refs_tags", Arrays.asList(tagId1, tagId2)).build()); //  - 14
+        ObjectNode view1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId(TaggedContentOtherAuthorsView, tagId1.getId()));
+
         t.addExpectation(tagId1, TaggedContentOtherAuthorsView, taggedContentOtherAuthors, new ObjectId[]{tagId1, contentId1, otherAuthorId1},
             "userName", "ted");
         t.addExpectation(tagId1, TaggedContentOtherAuthorsView, taggedContentOtherAuthors, new ObjectId[]{tagId1, contentId1, otherAuthorId2},
@@ -62,7 +64,6 @@ public class MultiBackRefTest extends BaseTest {
             "userName", "john");
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        ObjectNode view1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId(TaggedContentOtherAuthorsView, tagId1.getId()));
         System.out.println(mapper.writeValueAsString(view1));
         ObjectNode view2 = t.readView(tenantIdAndCentricId, actorId, new ObjectId(TaggedContentOtherAuthorsView, tagId2.getId()));
         System.out.println(mapper.writeValueAsString(view2));

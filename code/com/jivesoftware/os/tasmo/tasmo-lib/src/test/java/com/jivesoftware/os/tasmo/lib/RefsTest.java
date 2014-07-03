@@ -31,6 +31,7 @@ public class RefsTest extends BaseTest {
         ObjectId user2 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "bill").build());
         ObjectId content1 = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("refs_users", Arrays.asList(user1, user2)).build());
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
 
@@ -56,19 +57,19 @@ public class RefsTest extends BaseTest {
         ObjectId content1
             = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("refs_users", Arrays.asList(user1, user2)).build());
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
         ObjectId avatar = t.write(EventBuilder.create(t.idProvider(), "Avatar", tenantId, actorId).set("creationDate", "someday").build());
         t.write(EventBuilder.update(user1, tenantId, actorId).set("avatar", avatar).build());
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
         t.addExpectation(content1, viewClassName, viewFieldName2, new ObjectId[]{ content1, user1, avatar }, "creationDate", "someday");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
