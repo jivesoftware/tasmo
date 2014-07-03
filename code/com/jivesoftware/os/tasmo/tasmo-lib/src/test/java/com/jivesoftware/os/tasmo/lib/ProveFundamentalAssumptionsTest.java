@@ -13,7 +13,7 @@ public class ProveFundamentalAssumptionsTest {
     public static final Random rand = new Random();
 
     @Test (enabled = false, invocationCount = 1000, singleThreaded = true, skipFailedInvocations = true)
-    public void proofTest() throws Exception {
+    public void proofTest(TasmoMaterializerHarness t) throws Exception {
 
         // The problem
         // 1. We have a graph.

@@ -8,6 +8,7 @@ import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
+import com.jivesoftware.os.tasmo.model.Views;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -25,12 +26,12 @@ import org.testng.annotations.Test;
 /**
  *
  */
-public class ConcurrencyTest extends BaseTasmoTest {
+public class ConcurrencyTest extends BaseTest {
 
     public static final Random rand = new Random();
 
-    @Test (enabled = false, invocationCount = 1000, singleThreaded = true, skipFailedInvocations = true)
-    public void concurrencyTest() throws Exception {
+    @Test (dataProvider = "tasmoMaterializer", enabled = false, invocationCount = 1000, singleThreaded = true, skipFailedInvocations = true)
+    public void concurrencyTest(TasmoMaterializerHarness t) throws Exception {
 
         // Folder->Doc->User
         String[] binding = new String[]{
@@ -48,26 +49,27 @@ public class ConcurrencyTest extends BaseTasmoTest {
             "CTestDup::5::C.backRefs.B.ref_toC|B.backRefs.A.ref_toB|A.x"
         };
 
-        initModelPaths(binding);
+        Views views = TasmoModelFactory.modelToViews(binding);
+        t.initModel(views);
 
-        FireableValue a1 = new FireableValue(1_000_000, "A", new String[]{ "x", "y", "z" }, new String[]{ "1", "2", "3" });
-        FireableValue b1 = new FireableValue(1_001_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
-        FireableValue b2 = new FireableValue(1_002_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
-        FireableValue b3 = new FireableValue(1_003_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
-        FireableValue c1 = new FireableValue(1_001_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
-        FireableValue c2 = new FireableValue(1_002_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
-        FireableValue c3 = new FireableValue(1_003_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
-        FireableValue d1 = new FireableValue(1_001_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
-        FireableValue d2 = new FireableValue(1_002_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
-        FireableValue d3 = new FireableValue(1_003_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
+        FireableValue a1 = new FireableValue(t, 1_000_000, "A", new String[]{ "x", "y", "z" }, new String[]{ "1", "2", "3" });
+        FireableValue b1 = new FireableValue(t, 1_001_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
+        FireableValue b2 = new FireableValue(t, 1_002_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
+        FireableValue b3 = new FireableValue(t, 1_003_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
+        FireableValue c1 = new FireableValue(t, 1_001_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
+        FireableValue c2 = new FireableValue(t, 1_002_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
+        FireableValue c3 = new FireableValue(t, 1_003_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
+        FireableValue d1 = new FireableValue(t, 1_001_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
+        FireableValue d2 = new FireableValue(t, 1_002_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
+        FireableValue d3 = new FireableValue(t, 1_003_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
 
-        FireableRef refA = new FireableRef(a1, "toB", Arrays.asList(b1, b2, b3), b1);
-        FireableRef refB1 = new FireableRef(b1, "toC", Arrays.asList(c1, c2, c3), c1);
-        FireableRef refB2 = new FireableRef(b2, "toC", Arrays.asList(c1, c2, c3), c2);
-        FireableRef refB3 = new FireableRef(b3, "toC", Arrays.asList(c1, c2, c3), c3);
-        FireableRef refC1 = new FireableRef(c1, "toD", Arrays.asList(d1, d2, d3), d1);
-        FireableRef refC2 = new FireableRef(c2, "toD", Arrays.asList(d1, d2, d3), d2);
-        FireableRef refC3 = new FireableRef(c3, "toD", Arrays.asList(d1, d2, d3), d3);
+        FireableRef refA = new FireableRef(t, a1, "toB", Arrays.asList(b1, b2, b3), b1);
+        FireableRef refB1 = new FireableRef(t, b1, "toC", Arrays.asList(c1, c2, c3), c1);
+        FireableRef refB2 = new FireableRef(t, b2, "toC", Arrays.asList(c1, c2, c3), c2);
+        FireableRef refB3 = new FireableRef(t, b3, "toC", Arrays.asList(c1, c2, c3), c3);
+        FireableRef refC1 = new FireableRef(t, c1, "toD", Arrays.asList(d1, d2, d3), d1);
+        FireableRef refC2 = new FireableRef(t, c2, "toD", Arrays.asList(d1, d2, d3), d2);
+        FireableRef refC3 = new FireableRef(t, c3, "toD", Arrays.asList(d1, d2, d3), d3);
 
 
         //ExecutorService threads = MoreExecutors.sameThreadExecutor();
@@ -118,9 +120,9 @@ public class ConcurrencyTest extends BaseTasmoTest {
         }
 
         System.out.println("- Write AView ------------------------");
-        ObjectNode aTestView = readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
+        ObjectNode aTestView = t.readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
         System.out.println(mapper.writeValueAsString(aTestView));
-        ObjectNode aTestView1 = readMaterializeView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
+        ObjectNode aTestView1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
         System.out.println("- vs - ");
         System.out.println(mapper.writeValueAsString(aTestView1));
         Assert.assertEquals(aTestView, aTestView1);
@@ -128,9 +130,9 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
 
         System.out.println("- Write AViewDup-");
-        ObjectNode aTestDupView = readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
+        ObjectNode aTestDupView = t.readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
         System.out.println(mapper.writeValueAsString(aTestDupView));
-        ObjectNode aTestDupView1 = readMaterializeView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
+        ObjectNode aTestDupView1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
         System.out.println("- vs Read - ");
         System.out.println(mapper.writeValueAsString(aTestDupView1));
         Assert.assertEquals(aTestDupView, aTestDupView1);
@@ -140,17 +142,17 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
 
         System.out.println("- Write CView -");
-        ObjectNode cTestView = readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
+        ObjectNode cTestView = t.readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
         System.out.println(mapper.writeValueAsString(cTestView));
-        ObjectNode cTestView1 = readMaterializeView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
+        ObjectNode cTestView1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
         System.out.println("- vs Read - ");
         System.out.println(mapper.writeValueAsString(cTestView1));
         Assert.assertEquals(cTestView, cTestView1);
 
         System.out.println("- Write CViewDup -");
-        ObjectNode cTestDupView = readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
+        ObjectNode cTestDupView = t.readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
         System.out.println(mapper.writeValueAsString(cTestDupView));
-        ObjectNode cTestDupView1 = readMaterializeView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
+        ObjectNode cTestDupView1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
         System.out.println("- vs Read - ");
         System.out.println(mapper.writeValueAsString(cTestDupView1));
         Assert.assertEquals(cTestDupView, cTestDupView1);
@@ -161,7 +163,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
     }
 
     class FireableValue implements Fireable<String> {
-
+        private final TasmoMaterializerHarness t;
         private final long instanceId;
         private final String eventClassName;
         private final String[] fieldNames;
@@ -171,7 +173,8 @@ public class ConcurrencyTest extends BaseTasmoTest {
         ObjectId id;
         Event lastEvent;
 
-        public FireableValue(long instanceId, String eventClassName, String[] fieldNames, String[] finalFieldValues) {
+        public FireableValue(TasmoMaterializerHarness t, long instanceId, String eventClassName, String[] fieldNames, String[] finalFieldValues) {
+            this.t =t;
             this.instanceId = instanceId;
             this.eventClassName = eventClassName;
             this.fieldNames = fieldNames;
@@ -203,7 +206,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
                 }
                 lastEvent = create.build();
-                id = write(create.build());
+                id = t.write(create.build());
             }
         }
 
@@ -220,7 +223,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
             }
             lastEvent = create.build();
-            id = write(create.build());
+            id = t.write(create.build());
             //System.out.println("CREATE NODE " + id);
         }
 
@@ -237,7 +240,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                     update.set(fieldName, value);
                 }
                 lastEvent = update.build();
-                write(lastEvent);
+                t.write(lastEvent);
                 //System.out.println("UPDATE NODE " + id);
             }
         }
@@ -248,7 +251,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                 EventBuilder update = EventBuilder.update(id, tenantId, actorId);
                 update.set(ReservedFields.DELETED, true);
                 lastEvent = update.build();
-                write(lastEvent);
+                t.write(lastEvent);
                 //System.out.println("REMOVE NODE " + id);
                 id = null;
             }
@@ -274,7 +277,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
     }
 
     class FireableRef implements Fireable<FireableValue> {
-
+        private final TasmoMaterializerHarness t;
         private final FireableValue id;
         private final String fieldName;
         private final List<FireableValue> possibleRefs;
@@ -283,7 +286,8 @@ public class ConcurrencyTest extends BaseTasmoTest {
         private ObjectId lastEdge;
         private Event lastEvent;
 
-        public FireableRef(FireableValue id, String fieldName, List<FireableValue> possibleRefs, FireableValue finalValue) {
+        public FireableRef(TasmoMaterializerHarness t, FireableValue id, String fieldName, List<FireableValue> possibleRefs, FireableValue finalValue) {
+            this.t = t;
             this.id = id;
             this.fieldName = fieldName;
             this.possibleRefs = possibleRefs;
@@ -302,7 +306,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                 EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
                 update.set("ref_" + fieldName, toInstanceId);
                 lastEvent = update.build();
-                write(lastEvent);
+                t.write(lastEvent);
                 //System.out.println("FINAl EDGE:" + fromInstanceId + " to " + toInstanceId);
             }
         }
@@ -319,7 +323,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                         EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
                         update.set("ref_" + fieldName, toInstanceId);
                         lastEvent = update.build();
-                        write(lastEvent);
+                        t.write(lastEvent);
                         //System.out.println("CREATED EDGE:" + fromInstanceId + " to " + toInstanceId);
                     }
                 }
@@ -337,8 +341,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                         lastEdge = fromInstanceId;
                         EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
                         update.set("ref_" + fieldName, toInstanceId);
-                        lastEvent = update.build();
-                        write(lastEvent);
+                        t.write(lastEvent);
                         //System.out.println("UPDATED EDGE:" + fromInstanceId + " to " + toInstanceId);
                     }
                 }
@@ -352,7 +355,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                 EventBuilder update = EventBuilder.update(lastEdge, tenantId, actorId);
                 update.clear("ref_" + fieldName);
                 lastEvent = update.build();
-                write(lastEvent);
+                t.write(lastEvent);
                 //System.out.println("REMOVED EDGE:" + lastEdge);
                 lastEdge = null;
             }
@@ -378,6 +381,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
     class FireableRefs implements Fireable<FireableValue> {
 
+        private final TasmoMaterializerHarness t;
         private final FireableValue id;
         private final String fieldName;
         private final List<FireableValue> possibleRefs;
@@ -385,7 +389,8 @@ public class ConcurrencyTest extends BaseTasmoTest {
         private ObjectId lastEdge;
         private Event lastEvent;
 
-        public FireableRefs(FireableValue id, String fieldName, List<FireableValue> possibleRefs) {
+        public FireableRefs(TasmoMaterializerHarness t, FireableValue id, String fieldName, List<FireableValue> possibleRefs) {
+            this.t = t;
             this.id = id;
             this.fieldName = fieldName;
             this.possibleRefs = possibleRefs;
@@ -429,7 +434,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                 EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
                 update.set("refs_" + fieldName, fieldValueToInstanceId(fieldValues));
                 lastEvent = update.build();
-                write(lastEvent);
+                t.write(lastEvent);
                 //System.out.println("CREATED EDGE:" + fromInstanceId + " to " + toInstanceId);
             }
         }
@@ -443,7 +448,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                 EventBuilder update = EventBuilder.update(fromInstanceId, tenantId, actorId);
                 update.set("refs_" + fieldName, fieldValueToInstanceId(fieldValues));
                 lastEvent = update.build();
-                write(lastEvent);
+                t.write(lastEvent);
                 //System.out.println("UPDATE EDGE:" + fromInstanceId + " to " + toInstanceId);
             }
         }
@@ -455,7 +460,7 @@ public class ConcurrencyTest extends BaseTasmoTest {
                 EventBuilder update = EventBuilder.update(lastEdge, tenantId, actorId);
                 update.clear("refs_" + fieldName);
                 lastEvent = update.build();
-                write(lastEvent);
+                t.write(lastEvent);
                 //System.out.println("REMOVED EDGE:" + lastEdge);
                 lastEdge = null;
             }
@@ -554,35 +559,4 @@ public class ConcurrencyTest extends BaseTasmoTest {
 
     }
 
-    class AssertExpectation {
-
-        Expectations expectations;
-        String viewClassName;
-        String viewFieldName;
-        FireableRef[] fireables;
-
-        public AssertExpectation(Expectations expectations, String viewClassName, String viewFieldName, FireableRef[] fireables) {
-            this.expectations = expectations;
-            this.viewClassName = viewClassName;
-            this.viewFieldName = viewFieldName;
-            this.fireables = fireables;
-        }
-
-        //expectations.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
-        void assertExpectation() {
-            expectations.clear();
-            List<ObjectId> pathIds = new ArrayList<>();
-            ObjectId rootId = fireables[0].exists();
-            if (rootId == null) {
-                return; // Doesn't exists so nothing to assert
-            }
-            pathIds.add(rootId);
-
-            for (int i = 0; i < fireables.length; i++) {
-                ObjectId toId = fireables[i].exists();
-
-            }
-            expectations.addExpectation(pathIds.get(0), viewClassName, viewFieldName, pathIds.toArray(new ObjectId[pathIds.size()]), viewFieldName, views);
-        }
-    }
 }

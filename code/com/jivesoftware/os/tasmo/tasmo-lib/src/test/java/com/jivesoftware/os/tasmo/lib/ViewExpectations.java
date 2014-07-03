@@ -32,7 +32,7 @@ import org.testng.Assert;
 /**
  *
  */
-class Expectations {
+class ViewExpectations {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final ViewValueStore viewValueStore;
@@ -40,17 +40,18 @@ class Expectations {
     private final List<Expectation> expectations = Lists.newArrayList();
     private final ViewPathKeyProvider viewPathKeyProvider;
 
-    public Expectations(ViewValueStore viewValueStore, Views views, ViewPathKeyProvider viewPathKeyProvider) {
+    public ViewExpectations(ViewValueStore viewValueStore, ViewPathKeyProvider viewPathKeyProvider) {
         this.viewValueStore = viewValueStore;
+        this.viewPathKeyProvider = viewPathKeyProvider;
+    }
 
+    public void init(Views views) {
         List<ViewBinding> bindings = views.getViewBindings();
         for (ViewBinding viewBinding : bindings) {
             for (ModelPath modelPath : viewBinding.getModelPaths()) {
                 viewModelPaths.put(new ViewKey(viewBinding.getViewClassName(), modelPath.getId()), modelPath);
             }
         }
-
-        this.viewPathKeyProvider = viewPathKeyProvider;
     }
 
     void addExpectation(ObjectId rootId, String viewClassName, String viewFieldName, ObjectId[] pathIds, String fieldName, Object value) {
@@ -61,6 +62,9 @@ class Expectations {
     }
 
     void assertExpectation(TenantIdAndCentricId tenantIdAndCentricId) throws IOException {
+
+
+
         for (Expectation expectation : expectations) {
             ViewValue got = viewValueStore.get(tenantIdAndCentricId,
                     expectation.viewId,

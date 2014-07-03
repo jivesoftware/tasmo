@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
+import com.google.common.collect.Lists;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
@@ -13,6 +14,7 @@ import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -78,6 +80,20 @@ public class InitiateReadTraversal {
             }
         }
         List<ViewFieldChange> took = context.takeChanges();
-        commitChange.commitChange(writtenEventContext, tenantIdAndCentricId, took);
+        List<ViewFieldChange> changes = new ArrayList<>();
+        for (ViewFieldChange t : took) {
+            changes.add(new ViewFieldChange(t.getEventId(),
+                t.getActorId(),
+                t.getType(),
+                id,
+                t.getModelPath(),
+                t.getModelPathIdHashcode(),
+                t.getModelPathInstanceIds(),
+                t.getModelPathVersions(),
+                t.getModelPathTimestamps(),
+                t.getValue(),
+                t.getTimestamp()));
+        }
+        commitChange.commitChange(writtenEventContext, tenantIdAndCentricId, changes);
     }
 }

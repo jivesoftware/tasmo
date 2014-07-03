@@ -3,6 +3,7 @@ package com.jivesoftware.os.tasmo.lib;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
@@ -25,7 +26,7 @@ import java.util.concurrent.Future;
  *
  * @author jonathan.colt
  */
-public class TasmoSyncEventWriter {
+public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
@@ -46,7 +47,7 @@ public class TasmoSyncEventWriter {
         this.tasmoBlacklist = tasmoBlacklist;
     }
 
-    public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
+    public List<WrittenEvent> callback(List<WrittenEvent> writtenEvents) throws Exception {
 
         final List<WrittenEvent> processed = new ArrayList<>(writtenEvents.size());
         final List<WrittenEvent> failedToProcess = new ArrayList<>(writtenEvents.size());

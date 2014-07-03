@@ -1,13 +1,13 @@
-package com.jivesoftware.os.tasmo.service;
+package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.read.ReadMaterializedViewProvider;
+import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
@@ -41,9 +41,11 @@ public class TasmoReadMaterializationInitializer {
 
         @StringDefault ("master")
         public String getModelMasterTenantId();
+        public void setModelMasterTenantId(String tenantId);
 
         @IntDefault (10)
         public Integer getPollForModelChangesEveryNSeconds();
+        public void setPollForModelChangesEveryNSeconds(Integer seconds);
 
     }
 
@@ -52,7 +54,8 @@ public class TasmoReadMaterializationInitializer {
         ViewPathKeyProvider viewPathKeyProvider,
         WrittenEventProvider writtenEventProvider,
         TasmoStorageProvider tasmoStorageProvider,
-        ViewPermissionChecker viewPermissionChecker) throws Exception {
+        ViewPermissionChecker viewPermissionChecker,
+        Optional<CommitChange> commitChangeVistor) throws Exception {
 
 
         ConcurrencyStore concurrencyStore = new NoOpConcurrencyStore();
@@ -89,9 +92,11 @@ public class TasmoReadMaterializationInitializer {
         ViewReadMaterializer<ViewResponse> viewReadMaterializer = new ReadMaterializedViewProvider<>(viewPermissionChecker,
             referenceTraverser,
             fieldValueReader,
+            concurrencyStore,
             tasmoViewModel,
             viewAsObjectNode,
             new JsonViewMerger(new ObjectMapper()),
+            commitChangeVistor,
             1024 * 1024 * 10); // TODO expose to config
 
         return viewReadMaterializer;

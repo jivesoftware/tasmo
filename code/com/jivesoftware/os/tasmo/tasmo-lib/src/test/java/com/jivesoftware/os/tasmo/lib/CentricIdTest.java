@@ -6,43 +6,51 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
+import com.jivesoftware.os.tasmo.model.Views;
 import java.util.List;
 import org.testng.annotations.Test;
+
 
 /**
  *
  */
-public class CentricIdTest extends BaseTasmoTest {
+public class CentricIdTest extends BaseTest {
 
-    @Test
-    public void testCentricAndNonCentricViews() throws Exception {
+    @Test (dataProvider = "tasmoMaterializer", invocationCount = 1, singleThreaded = true)
+    public void testCentricAndNonCentricViews(TasmoMaterializerHarness t) throws Exception {
         String idCentricViewClassName = "IdCentricView";
         String idCentricViewFieldName = "idCentricUserInfo";
         String nonIdCentricViewClassName = "NonIdCentricView";
         String nonIdCentricViewFieldName = "nonIdCentricUserInfo";
 
-        List<ViewBinding> viewBindings = parseModelPathStrings(true, idCentricViewClassName + "::" + idCentricViewFieldName + "::User.userName,age");
-        viewBindings.addAll(parseModelPathStrings(false, nonIdCentricViewClassName + "::" + nonIdCentricViewFieldName + "::User.userName,age"));
+        List<ViewBinding> viewBindings = TasmoModelFactory
+            .parseModelPathStrings(true, idCentricViewClassName + "::" + idCentricViewFieldName + "::User.userName,age");
+        viewBindings.addAll(TasmoModelFactory
+            .parseModelPathStrings(false, nonIdCentricViewClassName + "::" + nonIdCentricViewFieldName + "::User.userName,age"));
+
+
 
         tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, actorId);
-        Expectations expectations = initModelPaths(viewBindings);
-        ObjectId user1 = write(EventBuilder.create(idProvider, "User", tenantId, actorId).set("userName", "ted").build());
+        Views views = TasmoModelFactory.bindsAsViews(viewBindings);
+        t.initModel(views);
+        
+        ObjectId user1 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "ted").build());
 
-        ObjectNode view = readView(tenantIdAndCentricId, actorId, new ObjectId(idCentricViewClassName, user1.getId()));
+        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(idCentricViewClassName, user1.getId()));
         System.out.println("Centric View:" + mapper.writeValueAsString(view));
         // assert id centric
-        expectations.addExpectation(user1, idCentricViewClassName, idCentricViewFieldName, new ObjectId[]{user1}, "userName", "ted");
-        //expectations.assertExpectation(tenantIdAndCentricId);
-        expectations.clear();
+        t.addExpectation(user1, idCentricViewClassName, idCentricViewFieldName, new ObjectId[]{user1}, "userName", "ted");
+        //t.assertExpectation(tenantIdAndCentricId);
+        t.clearExpectations();
 
         // assert non id centric
         tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
-        view = readView(tenantIdAndCentricId, actorId, new ObjectId(nonIdCentricViewClassName, user1.getId()));
+        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(nonIdCentricViewClassName, user1.getId()));
         System.out.println("System View:" + mapper.writeValueAsString(view));
 
-        expectations.addExpectation(user1, nonIdCentricViewClassName, nonIdCentricViewFieldName, new ObjectId[]{user1}, "userName", "ted");
-        //expectations.assertExpectation(tenantIdAndCentricId);
-        expectations.clear();
+        t.addExpectation(user1, nonIdCentricViewClassName, nonIdCentricViewFieldName, new ObjectId[]{user1}, "userName", "ted");
+        //t.assertExpectation(tenantIdAndCentricId);
+        t.clearExpectations();
 
     }
 
