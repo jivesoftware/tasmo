@@ -38,6 +38,7 @@ public class Refs2Test extends BaseTest {
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag2}, "name", "tag2");
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag3}, "name", "tag3");
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag4}, "name", null);
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         t.write(EventBuilder.update(tag1, tenantId, actorId).set("name", "tag1_prime").build());
@@ -45,6 +46,7 @@ public class Refs2Test extends BaseTest {
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag2}, "name", "tag2");
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag3}, "name", "tag3");
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag4}, "name", null);
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         t.write(EventBuilder.update(contentId, tenantId, actorId).set("refs_tags", Arrays.asList(tag1, tag2)).build());
@@ -52,6 +54,7 @@ public class Refs2Test extends BaseTest {
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag2}, "name", "tag2");
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag3}, "name", null);
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag4}, "name", null);
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         t.write(EventBuilder.update(contentId, tenantId, actorId).set("refs_tags", Arrays.asList(tag4)).build());
@@ -59,6 +62,7 @@ public class Refs2Test extends BaseTest {
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag2}, "name", null);
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag3}, "name", null);
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag4}, "name", "tag4");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         t.write(EventBuilder.update(contentId, tenantId, actorId).set("refs_tags", Collections.<ObjectId>emptyList()).build());
@@ -66,6 +70,7 @@ public class Refs2Test extends BaseTest {
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag2}, "name", null);
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag3}, "name", null);
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{contentId, tag4}, "name", null);
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
     }

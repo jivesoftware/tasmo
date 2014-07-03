@@ -45,6 +45,8 @@ public class MultiFieldMultiViewTest extends BaseTest {
         t.addExpectation(contentId, contentView2, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, "tom");
         t.addExpectation(contentId, contentView2, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, "sawyer");
         t.addExpectation(contentId, contentView2, originalAuthor, new ObjectId[]{contentId, authorId}, userName, "tsawyer");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView1, contentId.getId()));
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView2, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         ObjectNode view1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView1, contentId.getId()));

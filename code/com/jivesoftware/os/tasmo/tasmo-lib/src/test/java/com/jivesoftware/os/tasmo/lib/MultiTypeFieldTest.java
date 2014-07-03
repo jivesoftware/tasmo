@@ -36,6 +36,7 @@ public class MultiTypeFieldTest extends BaseTest {
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, "tom");
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, "sawyer");
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, userName, "tsawyer");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
@@ -49,6 +50,7 @@ public class MultiTypeFieldTest extends BaseTest {
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, "tom");
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, "sawyer");
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, userName, "tsawyer");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));

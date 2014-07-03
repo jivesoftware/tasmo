@@ -34,6 +34,7 @@ public class MultiTypedFieldTest extends BaseTest {
         ObjectId commentId = t.write(EventBuilder.create(t.idProvider(), "Comment", tenantId, actorId).set("modDate", "eventLater").build());
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
@@ -44,6 +45,7 @@ public class MultiTypedFieldTest extends BaseTest {
         System.out.println(mapper.writeValueAsString(view));
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", "later");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -56,6 +58,7 @@ public class MultiTypedFieldTest extends BaseTest {
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", null);
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", null);
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, commentId }, "modDate", null);
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -78,6 +81,7 @@ public class MultiTypedFieldTest extends BaseTest {
         ObjectId commentId = t.write(EventBuilder.create(t.idProvider(), "Comment", tenantId, actorId).set("modDate", "eventLater").build());
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
@@ -88,6 +92,7 @@ public class MultiTypedFieldTest extends BaseTest {
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", "later");
         //we don't actually clean up the latest backref anymore
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
@@ -101,6 +106,7 @@ public class MultiTypedFieldTest extends BaseTest {
         //we don't actually clean up the latest backref anymore
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, commentId }, "modDate", null);
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -123,6 +129,7 @@ public class MultiTypedFieldTest extends BaseTest {
         ObjectId commentId = t.write(EventBuilder.create(t.idProvider(), "Comment", tenantId, actorId).set("modDate", "eventLater").build());
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
@@ -132,6 +139,7 @@ public class MultiTypedFieldTest extends BaseTest {
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", "later");
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
@@ -142,6 +150,7 @@ public class MultiTypedFieldTest extends BaseTest {
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", "later");
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, commentId }, "modDate", null);
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -176,6 +185,7 @@ public class MultiTypedFieldTest extends BaseTest {
         t.addExpectation(commentId, viewClassName, "pathId2", new ObjectId[]{ commentId, commentVersionId, userId }, "firstName", "ted");
         t.addExpectation(commentId, viewClassName, "pathId2", new ObjectId[]{ commentId, commentVersionId, userId }, "lastName", "tedson");
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 

@@ -90,6 +90,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.addExpectation(version1, viewClassName, viewFieldName, new ObjectId[]{version1, content1, user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -125,6 +126,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.addExpectation(version1, viewClassName, viewFieldName, new ObjectId[]{version1, content1, user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -159,6 +161,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.addExpectation(version1, viewClassName, viewFieldName, new ObjectId[]{version1, content1, user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -299,6 +302,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.addExpectation(version1, viewClassName, viewFieldName, new ObjectId[]{version1, content1, user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -335,6 +339,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.addExpectation(version1, viewClassName, viewFieldName, new ObjectId[]{version1, content1, user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -370,6 +375,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.addExpectation(version1, viewClassName, viewFieldName, new ObjectId[]{version1, content1, user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -406,6 +412,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.addExpectation(version1, viewClassName, viewFieldName, new ObjectId[]{version1, content1, user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -442,6 +449,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.addExpectation(version1, viewClassName, viewFieldName, new ObjectId[]{version1, content1, user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -478,6 +486,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.addExpectation(version1, viewClassName, viewFieldName, new ObjectId[]{version1, content1, user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -516,6 +525,8 @@ public class DeletesTest extends BaseTest {
         t.addExpectation(docId, viewClass, "path4", new ObjectId[]{docId, tagId}, "name", "foo");
         t.addExpectation(docId, viewClass2, "path5", new ObjectId[]{docId, tagId}, "name", "foo");
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass2, docId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -529,6 +540,8 @@ public class DeletesTest extends BaseTest {
         t.addExpectation(docId, viewClass, "path4", new ObjectId[]{docId, tagId}, "name", null);
         t.addExpectation(docId, viewClass2, "path5", new ObjectId[]{docId, tagId}, "name", null);
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass2, docId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -568,6 +581,7 @@ public class DeletesTest extends BaseTest {
         t.addExpectation(docId, viewClass, "pathID2", new ObjectId[]{docId, tagId}, "tagValue", "blah");
         t.addExpectation(docId, viewClass, "pathID3", new ObjectId[]{docId}, "title", "booya");
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -582,6 +596,7 @@ public class DeletesTest extends BaseTest {
         t.addExpectation(docId, viewClass, "pathID2", new ObjectId[]{docId, tagId}, "tagValue", null);
         t.addExpectation(docId, viewClass, "pathID3", new ObjectId[]{docId}, "title", null);
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -616,6 +631,7 @@ public class DeletesTest extends BaseTest {
         t.addExpectation(docId, viewClass, "pathID2", new ObjectId[]{docId, tagId}, "tagValue", "blah");
         t.addExpectation(docId, viewClass, "pathID3", new ObjectId[]{docId}, "title", "booya");
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -627,6 +643,7 @@ public class DeletesTest extends BaseTest {
         t.addExpectation(docId, viewClass, "pathID2", new ObjectId[]{docId, tagId}, "tagValue", null);
         t.addExpectation(docId, viewClass, "pathID3", new ObjectId[]{docId}, "title", "booya");
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -656,6 +673,7 @@ public class DeletesTest extends BaseTest {
         t.addExpectation(docId, viewClass, "pathID2", new ObjectId[]{docId, tagId}, "tagValue", "blah");
         t.addExpectation(docId, viewClass, "pathID3", new ObjectId[]{docId}, "title", "booya");
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -669,6 +687,7 @@ public class DeletesTest extends BaseTest {
         t.addExpectation(docId, viewClass, "pathID2", new ObjectId[]{docId, tagId}, "tagValue", "blah");
         t.addExpectation(docId, viewClass, "pathID3", new ObjectId[]{docId}, "title", "booya");
 
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClass, docId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -756,6 +775,7 @@ public class DeletesTest extends BaseTest {
         // commentVersion -(parent)-> comment -(author)-> author.firstName
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.addExpectation(commentVersion, viewClassName, pathId, new ObjectId[]{commentVersion, comment, author}, "firstName", "John");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         System.out.println("view:" + view);
@@ -809,6 +829,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.addExpectation(commentVersion, viewClassName, pathId, new ObjectId[]{commentVersion, comment, author}, "firstName", "John");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -859,6 +880,7 @@ public class DeletesTest extends BaseTest {
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.addExpectation(commentVersion, viewClassName, pathId, new ObjectId[]{commentVersion, comment, author}, "firstName", "John");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 

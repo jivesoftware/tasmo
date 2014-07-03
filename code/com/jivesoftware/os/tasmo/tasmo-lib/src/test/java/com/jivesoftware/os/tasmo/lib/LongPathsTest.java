@@ -21,12 +21,12 @@ import org.testng.annotations.Test;
  */
 public class LongPathsTest extends BaseTest {
 
-    String ContentView = "ContentView";
+    String contentView = "ContentView";
     String moderatorNames = "moderatorNames";
 
     @Test (dataProvider = "tasmoMaterializer", invocationCount = 1, singleThreaded = true)
     public void testLongPath(TasmoMaterializerHarness t) throws Exception {
-        Views views = TasmoModelFactory.modelToViews(ContentView + "::" + moderatorNames
+        Views views = TasmoModelFactory.modelToViews(contentView + "::" + moderatorNames
                 + "::Content.ref_parent.ref.Container|Container.refs_moderators.refs.User|User.userName");
         t.initModel(views);
 
@@ -34,33 +34,40 @@ public class LongPathsTest extends BaseTest {
         ObjectId containerId = t.write(EventBuilder.create(t.idProvider(), "Container", tenantId, actorId).set("name", "moderated container").build());
         t.write(EventBuilder.update(containerId, tenantId, actorId).set("refs_moderators", Arrays.asList(userId)).build());
         ObjectId contentId = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_parent", containerId).build());
-        t.addExpectation(contentId, ContentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", "moderator");
+        t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", "moderator");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         t.write(EventBuilder.update(containerId, tenantId, actorId).set("refs_moderators", Collections.<ObjectId>emptyList()).build());
-        t.addExpectation(contentId, ContentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", null);
+        t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", null);
+
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         ObjectId userId2 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "moderator2").build());
         t.write(EventBuilder.update(containerId, tenantId, actorId).set("refs_moderators", Arrays.asList(userId, userId2)).build());
-        t.addExpectation(contentId, ContentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", "moderator");
-        t.addExpectation(contentId, ContentView, moderatorNames, new ObjectId[]{contentId, containerId, userId2}, "userName", "moderator2");
+        t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", "moderator");
+        t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId2}, "userName", "moderator2");
+
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
         System.out.println("Pre-event:" + mapper.writeValueAsString(view));
 
         t.write(EventBuilder.update(containerId, tenantId, actorId).set("refs_moderators", Arrays.asList(userId2)).build());
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
         System.out.println("Post-event:" + mapper.writeValueAsString(view));
-        t.addExpectation(contentId, ContentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", null);
-        t.addExpectation(contentId, ContentView, moderatorNames, new ObjectId[]{contentId, containerId, userId2}, "userName", "moderator2");
+        t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", null);
+        t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId2}, "userName", "moderator2");
+
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
         System.out.println(mapper.writeValueAsString(view));
     }
 }

@@ -33,6 +33,7 @@ public class NilFieldTest extends BaseTest {
         t.initModel(views);
         ObjectId content1 = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).build());
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1 }, NIL, 0);
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));

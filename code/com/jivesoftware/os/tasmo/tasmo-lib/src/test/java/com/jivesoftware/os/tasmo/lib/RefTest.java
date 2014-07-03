@@ -28,6 +28,7 @@ public class RefTest extends BaseTest {
         ObjectId user1 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "ted").build());
         ObjectId content1 = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_user", user1).build());
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
@@ -43,6 +44,7 @@ public class RefTest extends BaseTest {
         ObjectId user1 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "ted").build());
         ObjectId content1 = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_user", user1).build());
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
@@ -52,6 +54,7 @@ public class RefTest extends BaseTest {
         t.write(EventBuilder.update(content1, tenantId, actorId).set("ref_user", user2).build());
 
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "jane");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));

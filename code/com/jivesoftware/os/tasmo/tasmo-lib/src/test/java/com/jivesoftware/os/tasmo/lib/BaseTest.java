@@ -39,18 +39,18 @@ public class BaseTest {
     public Iterator<Object[]> tasmoMaterializer() throws Exception {
 
         List<Object[]> paramList = new ArrayList<>();
-        paramList.add(new Object[]{
-                TasmoMaterializerHarnessFactory.createWriteTimeMaterializer(
-            TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
-            TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
-            TasmoMaterializerHarnessFactory.createNoOpViewChangeNotificationProcessor(),
-            TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker())});
-
-//        paramList.add(new Object[]{TasmoMaterializerHarnessFactory.createSyncWriteSyncReadsMaterializer(
+//        paramList.add(new Object[]{
+//                TasmoMaterializerHarnessFactory.createWriteTimeMaterializer(
 //            TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
 //            TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
 //            TasmoMaterializerHarnessFactory.createNoOpViewChangeNotificationProcessor(),
 //            TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker())});
+
+        paramList.add(new Object[]{TasmoMaterializerHarnessFactory.createSyncWriteSyncReadsMaterializer(
+            TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
+            TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
+            TasmoMaterializerHarnessFactory.createNoOpViewChangeNotificationProcessor(),
+            TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker())});
 
         return paramList.iterator();
     }

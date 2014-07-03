@@ -47,21 +47,25 @@ public class MultiBackRefTest extends BaseTest {
             "userName", "ted");
         t.addExpectation(tagId1, TaggedContentOtherAuthorsView, taggedContentOtherAuthors, new ObjectId[]{tagId1, contentId1, otherAuthorId2},
             "userName", "john");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(TaggedContentOtherAuthorsView, tagId1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.addExpectation(tagId1, TaggedContentOtherAuthorsView, taggedContentOtherAuthors, new ObjectId[]{tagId1, contentId2, otherAuthorId1},
             "userName", "ted");
         t.addExpectation(tagId1, TaggedContentOtherAuthorsView, taggedContentOtherAuthors, new ObjectId[]{tagId1, contentId2, otherAuthorId2},
             "userName", "john");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(TaggedContentOtherAuthorsView, tagId1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.addExpectation(tagId2, TaggedContentOtherAuthorsView, taggedContentOtherAuthors, new ObjectId[]{tagId2, contentId1, otherAuthorId1},
             "userName", "ted");
         t.addExpectation(tagId2, TaggedContentOtherAuthorsView, taggedContentOtherAuthors, new ObjectId[]{tagId2, contentId1, otherAuthorId2},
             "userName", "john");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(TaggedContentOtherAuthorsView, tagId2.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.addExpectation(tagId2, TaggedContentOtherAuthorsView, taggedContentOtherAuthors, new ObjectId[]{tagId2, contentId2, otherAuthorId1},
             "userName", "ted");
         t.addExpectation(tagId2, TaggedContentOtherAuthorsView, taggedContentOtherAuthors, new ObjectId[]{tagId2, contentId2, otherAuthorId2},
             "userName", "john");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(TaggedContentOtherAuthorsView, tagId2.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         System.out.println(mapper.writeValueAsString(view1));

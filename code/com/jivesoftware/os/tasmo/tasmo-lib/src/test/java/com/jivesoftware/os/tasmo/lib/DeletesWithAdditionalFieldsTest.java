@@ -27,10 +27,11 @@ public class DeletesWithAdditionalFieldsTest extends BaseTest {
         String viewFieldName = "userInfo";
         Views views = TasmoModelFactory.modelToViews(viewClassName + "::" + viewFieldName + "::User.userName,age");
         t.initModel(views);
-        
+
         ObjectId user1 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "ted").build());
 
         t.addExpectation(user1, viewClassName, viewFieldName, new ObjectId[]{user1}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
