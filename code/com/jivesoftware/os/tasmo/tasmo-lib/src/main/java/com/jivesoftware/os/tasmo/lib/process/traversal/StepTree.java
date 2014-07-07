@@ -25,7 +25,7 @@ public class StepTree {
             depth = got;
         }
     }
-
+  
     @Override
     public String toString() {
         return "StepTree{" + "map=" + map + '}';

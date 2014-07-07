@@ -15,7 +15,7 @@ import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.NoOpConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.SerialReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReadMaterializer;
@@ -58,7 +58,7 @@ public class TasmoReadMaterializationInitializer {
         Optional<CommitChange> commitChangeVistor) throws Exception {
 
 
-        ConcurrencyStore concurrencyStore = new NoOpConcurrencyStore();
+        ConcurrencyStore concurrencyStore = new HBaseBackedConcurrencyStore(tasmoStorageProvider.concurrencyStorage());
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore,
             tasmoStorageProvider.multiLinksStorage(),
             tasmoStorageProvider.multiBackLinksStorage());

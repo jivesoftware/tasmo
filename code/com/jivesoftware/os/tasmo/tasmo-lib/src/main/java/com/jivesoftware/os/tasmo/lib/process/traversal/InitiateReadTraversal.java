@@ -1,10 +1,10 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import com.google.common.collect.Lists;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
+import com.jivesoftware.os.tasmo.lib.TasmoViewModel.ReadTraversalKey;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
@@ -17,23 +17,19 @@ import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 public class InitiateReadTraversal {
 
     private final Set<String> rootingEventClassNames;
-    private final List<PathAtATimeStepStreamerFactory> pathTraversers;
-    private final int pathLength;
-    private final boolean idCentric;
+    private final Map<ReadTraversalKey, StepStreamerFactory> pathTraversers;
 
     public InitiateReadTraversal(Set<String> rootingEventClassNames,
-        List<PathAtATimeStepStreamerFactory> pathTraversers,
-        int pathLength,
-        boolean idCentric) {
+        Map<ReadTraversalKey, StepStreamerFactory> pathTraversers) {
         this.rootingEventClassNames = rootingEventClassNames;
         this.pathTraversers = pathTraversers;
-        this.pathLength = pathLength;
-        this.idCentric = idCentric;
     }
 
     public void read(ReferenceTraverser referenceTraverser,
@@ -69,14 +65,16 @@ public class InitiateReadTraversal {
             processingStats);
 
         PathTraversalContext context = new PathTraversalContext(1, false);
-        PathContext pathContext = new PathContext(pathLength);
-        LeafContext leafContext = new ReadLeafContext();
-        for (PathAtATimeStepStreamerFactory pathTraverser : pathTraversers) {
-            StepStreamer stepStreamer = pathTraverser.create();
+        for(Entry<ReadTraversalKey, StepStreamerFactory> e:pathTraversers.entrySet()) {
+            ReadTraversalKey readTraversalKey = e.getKey();
+            StepStreamerFactory stepStreamerFactory = e.getValue();
+            StepStream stepStream = stepStreamerFactory.create();
 
             for (String rootEventClassName : rootingEventClassNames) {
                 PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
-                stepStreamer.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
+                PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());
+                LeafContext leafContext = new ReadLeafContext();
+                stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
             }
         }
         List<ViewFieldChange> took = context.takeChanges();

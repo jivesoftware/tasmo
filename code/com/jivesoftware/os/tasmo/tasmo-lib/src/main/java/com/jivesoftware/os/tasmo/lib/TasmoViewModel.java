@@ -21,6 +21,7 @@ import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraverser;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraverserKey;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PathTraversersFactory;
 import com.jivesoftware.os.tasmo.lib.process.traversal.PrefixCollapsedStepStreamerFactory;
+import com.jivesoftware.os.tasmo.lib.process.traversal.StepStreamerFactory;
 import com.jivesoftware.os.tasmo.lib.process.traversal.StepTraverser;
 import com.jivesoftware.os.tasmo.lib.process.traversal.StepTree;
 import com.jivesoftware.os.tasmo.lib.process.traversal.TraversablePath;
@@ -235,7 +236,7 @@ public class TasmoViewModel {
             boolean idCentric = viewBinding.isIdCentric();
 
             Set<String> rootingEventClassNames = new HashSet<>();
-            List<PathAtATimeStepStreamerFactory> streamers = new ArrayList<>();
+            Map<ReadTraversalKey, StepStreamerFactory> streamers = new HashMap<>();
             List<ModelPath> modelPaths = viewBinding.getModelPaths();
             for (ModelPath modelPath : modelPaths) {
                 assertNoInstanceIdBindings(viewBinding, modelPath);
@@ -252,13 +253,32 @@ public class TasmoViewModel {
                 allFieldProcessorFactories.put(factoryKey, fieldProcessorFactory);
 
                 List<StepTraverser> steps = fieldProcessorFactory.buildReadSteps(viewIdFieldName);
-                streamers.add(new PathAtATimeStepStreamerFactory(steps));
+                streamers.put(new ReadTraversalKey(modelPath, idCentric), new PathAtATimeStepStreamerFactory(steps));
             }
 
-            readTraversers.put(viewClassName, new InitiateReadTraversal(rootingEventClassNames, streamers, modelPaths.size() + 1, idCentric));
+            readTraversers.put(viewClassName, new InitiateReadTraversal(rootingEventClassNames, streamers));
 
         }
         return readTraversers;
+    }
+
+    public static class ReadTraversalKey {
+        private final ModelPath modelPath;
+        private final boolean idCentric;
+
+        public ReadTraversalKey(ModelPath modelPath, boolean idCentric) {
+            this.modelPath = modelPath;
+            this.idCentric = idCentric;
+        }
+
+        public ModelPath getModelPath() {
+            return modelPath;
+        }
+
+        public boolean isIdCentric() {
+            return idCentric;
+        }
+
     }
 
     List<PathTraverser> transformToPrefixCollapsedTree(List<TraversablePath> traversablePaths) {

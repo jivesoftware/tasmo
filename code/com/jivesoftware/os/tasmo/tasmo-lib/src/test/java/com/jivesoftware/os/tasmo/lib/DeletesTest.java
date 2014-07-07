@@ -239,9 +239,12 @@ public class DeletesTest extends BaseTest {
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
+        System.out.println("DELETE");
         t.write(EventBuilder.update(version1, tenantId, actorId).set(ReservedFields.DELETED, true).build());
 
+        System.out.println("READ");
         view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, version1.getId()));
+        System.out.println("VIEW="+view);
         Assert.assertNull(view);
 
         t.write(EventBuilder.update(content1, tenantId, actorId).set("ref_version", version1).build());
@@ -878,31 +881,30 @@ public class DeletesTest extends BaseTest {
                 .set("parent", comment)
                 .build());
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.addExpectation(commentVersion, viewClassName, pathId, new ObjectId[]{commentVersion, comment, author}, "firstName", "John");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
+        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
         Assert.assertNotNull(view);
 
         t.write(EventBuilder.update(commentVersion, tenantId, actorId).set(ReservedFields.DELETED, true).build());
-
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.addExpectation(commentVersion, viewClassName, pathId, new ObjectId[]{commentVersion, comment, author}, "firstName", null);
+        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-
         Assert.assertNull(view);
 
-        t.write(EventBuilder.update(commentVersion, tenantId, actorId)
-                .build());
-
-        //ref between comment version and comment is still gone
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
+        System.out.println("1.");
+        t.write(EventBuilder.update(commentVersion, tenantId, actorId).build());
         t.addExpectation(commentVersion, viewClassName, pathId, new ObjectId[]{commentVersion, comment, author}, "firstName", null);
+        System.out.println("2.");
+        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersion.getId()));
+        System.out.println("view="+mapper.writeValueAsString(view));
+        System.out.println("3.");
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
+        System.out.println("4.");
 
         Assert.assertNull(view);
 

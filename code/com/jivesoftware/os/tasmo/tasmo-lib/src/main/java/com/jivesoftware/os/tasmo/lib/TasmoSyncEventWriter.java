@@ -47,9 +47,9 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
         this.tasmoBlacklist = tasmoBlacklist;
     }
 
+    @Override
     public List<WrittenEvent> callback(List<WrittenEvent> writtenEvents) throws Exception {
 
-        final List<WrittenEvent> processed = new ArrayList<>(writtenEvents.size());
         final List<WrittenEvent> failedToProcess = new ArrayList<>(writtenEvents.size());
         try {
 
@@ -58,7 +58,6 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
                 if (writtenEvent != null) {
                     if (tasmoBlacklist.blacklisted(writtenEvent)) {
                         LOG.info("BACKLISTED event" + writtenEvent);
-                        processed.add(writtenEvent);
                     } else {
 
                         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
@@ -104,8 +103,8 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
 
                                     synchronized (lock) {
                                         if (event.getWrittenInstance().isDeletion()) {
-                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp);
-                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp);
+                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp-1);
+                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp-1);
                                         } else {
                                             tasmoEventPersistor.updateValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp,
                                                 writtenInstance);
@@ -113,7 +112,6 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
                                                 updateValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp, writtenInstance);
                                         }
                                     }
-                                    processed.add(event);
                                 } catch (Exception x) {
                                     failedToProcess.add(event);
                                     LOG.warn("Failed to persist eventId:{} instanceId:{} tenantId:{} exception: {}", new Object[]{

@@ -13,7 +13,7 @@ import java.util.List;
 
 public interface TasmoMaterializerHarness {
 
-    void initModel(Views views);
+    void initModel(Views views) throws Exception;
 
     IdProvider idProvider();
 
@@ -25,7 +25,7 @@ public interface TasmoMaterializerHarness {
 
     void assertExpectation(TenantIdAndCentricId tenantIdAndCentricId) throws IOException;
 
-    void clearExpectations();
+    void clearExpectations() throws Exception;
 
     ObjectNode readView(TenantIdAndCentricId tenantIdAndCentricId, Id actorId, ObjectId viewId) throws Exception;
 }

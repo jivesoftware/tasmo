@@ -151,6 +151,8 @@ public class LatestBackRefsTest extends BaseTest {
 
         t.addExpectation(space2, viewClassName, viewFieldName, new ObjectId[]{space2, contentId1, otherAuthorId2}, "userName", "ted");
         t.addExpectation(space1, viewClassName, viewFieldName, new ObjectId[]{space1, contentId2, otherAuthorId2}, "userName", "ted");
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, space2.getId()));
+        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, space1.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 

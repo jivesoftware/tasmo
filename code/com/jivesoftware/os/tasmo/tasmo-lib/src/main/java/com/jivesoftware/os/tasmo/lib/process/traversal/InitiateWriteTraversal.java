@@ -53,12 +53,6 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
         this.backRefTraversers = backRefTraversers;
     }
 
-    public void readTraversal(TenantIdAndCentricId tenantIdAndCentricId) {
-        System.out.println("valueTraversers:" + valueTraversers);
-        System.out.println("forwardRefTraversers:" + forwardRefTraversers);
-        System.out.println("backRefTraversers:" + backRefTraversers);
-    }
-
     @Override
     public void process(WrittenEventContext batchContext,
         TenantIdAndCentricId tenantIdAndCentricId,

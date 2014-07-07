@@ -29,7 +29,6 @@ import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
 import com.jivesoftware.os.tasmo.lib.TasmoReadMaterializationInitializer.TasmoReadMaterializationConfig;
 import com.jivesoftware.os.tasmo.lib.TasmoServiceInitializer.TasmoServiceConfig;
 import com.jivesoftware.os.tasmo.lib.TasmoSyncWriteInitializer.TasmoSyncWriteConfig;
-import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
@@ -48,8 +47,6 @@ import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReadMaterializer;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -298,7 +295,7 @@ public class TasmoMaterializerHarnessFactory {
         final ChainedVersion currentVersion = new ChainedVersion("0", "1");
         final ViewPathKeyProvider pathKeyProvider = new MurmurHashViewPathKeyProvider();
         final AtomicReference<Views> views = new AtomicReference<>();
-        ViewsProvider viewsProvider = new ViewsProvider() {
+        final ViewsProvider viewsProvider = new ViewsProvider() {
             @Override
             public Views getViews(ViewsProcessorId viewsProcessorId) {
                 return views.get();
@@ -325,19 +322,29 @@ public class TasmoMaterializerHarnessFactory {
         JsonEventWriter jsonEventWriter = jsonEventWriter(idProvider, writtenEventProvider, syncEventWriter);
         final EventWriter eventWriter = new EventWriter(jsonEventWriter);
 
-        TasmoReadMaterializationConfig readMaterializationConfig = BindInterfaceToConfiguration.bindDefault(TasmoReadMaterializationConfig.class);
-
-        RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = tasmoStorageProvider.
-            viewValueStorage();
-
-        CommitChange commitChangeVistor = createCommitToViewValueStore(viewValueStorage, pathKeyProvider);
-        final ViewReadMaterializer<ViewResponse> viewReadMaterializer = TasmoReadMaterializationInitializer.initialize(readMaterializationConfig,
-            viewsProvider, pathKeyProvider, writtenEventProvider, tasmoStorageProvider, viewPermissionChecker, Optional.of(commitChangeVistor));
-
-        ViewValueStore viewValueStore = new ViewValueStore(viewValueStorage, pathKeyProvider);
-        final ViewExpectations expectations = new ViewExpectations(viewValueStore, pathKeyProvider);
+        final TasmoReadMaterializationConfig readMaterializationConfig = BindInterfaceToConfiguration.bindDefault(TasmoReadMaterializationConfig.class);
 
         return new TasmoMaterializerHarness() {
+
+            ViewReadMaterializer<ViewResponse> viewReadMaterializer;
+            ViewExpectations expectations;
+            Views lastViews;
+
+            public void reset() throws Exception {
+                RowColumnValueStore<TenantIdAndCentricId,
+                    ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
+
+                CommitChange commitChangeVistor = createCommitToViewValueStore(viewValueStorage, pathKeyProvider);
+
+                viewReadMaterializer = TasmoReadMaterializationInitializer.initialize(readMaterializationConfig,
+                    viewsProvider, pathKeyProvider, writtenEventProvider, tasmoStorageProvider, viewPermissionChecker, Optional.of(commitChangeVistor));
+
+                ViewValueStore viewValueStore = new ViewValueStore(viewValueStorage, pathKeyProvider);
+                expectations = new ViewExpectations(viewValueStore, pathKeyProvider);
+                if (lastViews != null) {
+                    expectations.init(lastViews);
+                }
+            }
 
             @Override
             public ObjectId write(Event event) throws EventWriteException {
@@ -360,8 +367,8 @@ public class TasmoMaterializerHarnessFactory {
             }
 
             @Override
-            public void clearExpectations() {
-                expectations.clear();
+            public void clearExpectations() throws Exception {
+                reset();
             }
 
             @Override
@@ -385,9 +392,10 @@ public class TasmoMaterializerHarnessFactory {
             }
 
             @Override
-            public void initModel(Views _views) {
+            public void initModel(Views _views) throws Exception {
+                lastViews = _views;
+                reset();
                 views.set(_views);
-                expectations.init(_views);
             }
 
             @Override
@@ -430,7 +438,6 @@ public class TasmoMaterializerHarnessFactory {
                             new ViewValue(change.getModelPathTimestamps(), change.getValue()),
                             change.getTimestamp());
                         write.add(viewWriteFieldChange);
-                        System.out.println("viewWriteFieldChange:" + viewWriteFieldChange);
                     } catch (Exception ex) {
                         throw new CommitChangeException("Failed to add change for the following reason.", ex);
                     }

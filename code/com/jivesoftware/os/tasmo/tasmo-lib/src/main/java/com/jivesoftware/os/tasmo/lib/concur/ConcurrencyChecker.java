@@ -4,7 +4,6 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.FieldVersion;
-import com.jivesoftware.os.tasmo.reference.lib.concur.FieldVersion;
 import com.jivesoftware.os.tasmo.reference.lib.concur.PathConsistencyException;
 import java.util.List;
 import java.util.Set;

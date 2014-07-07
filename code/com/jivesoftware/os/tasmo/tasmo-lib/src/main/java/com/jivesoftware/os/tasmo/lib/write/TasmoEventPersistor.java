@@ -11,7 +11,7 @@ public interface TasmoEventPersistor {
         String className,
         TenantIdAndCentricId tenantIdAndCentricId,
         ObjectId instanceId,
-        long timestamp);
+        long timestamp) throws Exception;
 
     void updateValueFields(VersionedTasmoViewModel model,
         String className,

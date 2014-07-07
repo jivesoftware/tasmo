@@ -196,16 +196,19 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
         @Override
         public void commitChange(WrittenEventContext batchContext,
             TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
+
+
             try {
-                System.out.println("changes:" + changes);
                 for (ViewFieldChange change : changes) {
-                    ModelPath modelPath = change.getModelPath();
-                    Id[] modelPathIds = ids(change.getModelPathInstanceIds());
-                    permisionCheckTheseIds.addAll(Arrays.asList(modelPathIds));
-                    String[] viewPathClasses = classes(change.getModelPathInstanceIds());
-                    ViewValue viewValue = new ViewValue(change.getModelPathTimestamps(), change.getValue());
-                    Long timestamp = change.getTimestamp();
-                    viewFieldsCollector.add(viewDescriptor, modelPath, modelPathIds, viewPathClasses, viewValue, timestamp);
+                    if (change.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+                        ModelPath modelPath = change.getModelPath();
+                        Id[] modelPathIds = ids(change.getModelPathInstanceIds());
+                        permisionCheckTheseIds.addAll(Arrays.asList(modelPathIds));
+                        String[] viewPathClasses = classes(change.getModelPathInstanceIds());
+                        ViewValue viewValue = new ViewValue(change.getModelPathTimestamps(), change.getValue());
+                        Long timestamp = change.getTimestamp();
+                        viewFieldsCollector.add(viewDescriptor, modelPath, modelPathIds, viewPathClasses, viewValue, timestamp);
+                    }
                 }
             } catch (IOException x) {
                 throw new CommitChangeException("Failed to collect fields for " + tenantIdAndCentricId, x);
@@ -246,11 +249,13 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
             InitiateReadTraversal initiateTraversal = model.getReadTraversers().get(viewDescriptor.getViewId().getClassName());
             while(true) {
                 try {
+
+                    CommitChange commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, this);
                     initiateTraversal.read(referenceTraverser,
                         fieldValueReader,
                         new TenantIdAndCentricId(viewDescriptor.getTenantId(), viewDescriptor.getUserId()), // TODO resolve ?? userId or actorId?
                         viewDescriptor.getViewId(),
-                        new ConcurrencyAndExistenceCommitChange(concurrencyStore, this));
+                        commitChange);
                     return;
                 } catch(Exception x) {
                     Throwable t = x;

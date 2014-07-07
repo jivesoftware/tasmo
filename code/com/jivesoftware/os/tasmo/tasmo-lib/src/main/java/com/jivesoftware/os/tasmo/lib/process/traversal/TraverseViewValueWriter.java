@@ -45,8 +45,7 @@ public class TraverseViewValueWriter implements StepTraverser {
         LeafContext leafContext,
         PathId from,
         StepStream streamTo) throws Exception {
-        //System.out.println("FROM:" + from);
-
+        
         Id viewId = buildAlternateViewId(writtenEventContext.getEvent());
         if (viewId == null && from != null) {
             ObjectId objectId = from.getObjectId();

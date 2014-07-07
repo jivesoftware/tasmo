@@ -51,7 +51,8 @@ public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
         String className,
         TenantIdAndCentricId tenantIdAndCentricId,
         ObjectId instanceId,
-        long timestamp) {
+        long timestamp) throws Exception {
+
         concurrencyStore.removeObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
 
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
@@ -62,7 +63,23 @@ public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
                 fieldNames.add(fieldName);
             }
         }
-        eventValueStore.removeObjectId(tenantIdAndCentricId, timestamp, instanceId, fieldNames.toArray(new String[fieldNames.size()]));
+        String[] fieldNamesArray = fieldNames.toArray(new String[fieldNames.size()]);
+        eventValueStore.removeObjectId(tenantIdAndCentricId, timestamp, instanceId, fieldNamesArray);
+
+        for (TasmoViewModel.FieldNameAndType fieldNameAndType : eventModel.get(className)) {
+            if (fieldNameAndType.getFieldType() != ModelPathStepType.value) {
+                String fieldName = fieldNameAndType.getFieldName();
+                referenceStore.unlink(tenantIdAndCentricId, timestamp, instanceId, fieldName, -1, new CallbackStream<ReferenceWithTimestamp>() {
+
+                    @Override
+                    public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
+                        if (v != null) {
+                        }
+                        return v;
+                    }
+                });
+            }
+        }
     }
 
     @Override
@@ -86,15 +103,15 @@ public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
         for (TasmoViewModel.FieldNameAndType fieldNameAndType : eventModel.get(className)) {
             String fieldName = fieldNameAndType.getFieldName();
             if (writtenInstance.hasField(fieldName)) {
-                if (fieldNameAndType.getFieldType() == ModelPathStepType.ref) {
-                    refFieldNames.add(fieldName);
-                } else {
+                if (fieldNameAndType.getFieldType() == ModelPathStepType.value) {
                     OpaqueFieldValue got = writtenInstance.getFieldValue(fieldName);
                     if (got == null || got.isNull()) {
                         transaction.remove(fieldName);
                     } else {
                         transaction.set(fieldName, got);
                     }
+                } else {
+                    refFieldNames.add(fieldName);
                 }
             }
         }
@@ -111,7 +128,7 @@ public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
             if (highests == null || highests.get(i) == null || timestamp >= highests.get(i)) {
                 // 4 multi puts
                 OpaqueFieldValue fieldValue = writtenInstance.getFieldValue(fieldName);
-                if (fieldValue.isNull()) {
+                if (fieldValue == null || fieldValue.isNull()) {
                     batchLinkTos.add(new ReferenceStore.LinkTo(fieldName, Collections.<Reference>emptyList()));
                 } else {
                     Collection<Reference> tos = writtenInstanceHelper.getReferencesFromInstanceField(writtenInstance, fieldName);
@@ -129,6 +146,8 @@ public class TasmoSyncWriteEventPersistor implements TasmoEventPersistor {
 
                 @Override
                 public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
+                    if (v != null) {
+                    }
                     return v;
                 }
             });
