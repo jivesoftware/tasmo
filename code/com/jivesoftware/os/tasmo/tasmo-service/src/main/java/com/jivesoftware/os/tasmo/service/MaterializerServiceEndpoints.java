@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.service;
 
+import com.jivesoftware.os.tasmo.lib.EventConvertingCallbackStream;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Singleton;
 import com.jivesoftware.os.jive.utils.jaxrs.util.ResponseHelper;

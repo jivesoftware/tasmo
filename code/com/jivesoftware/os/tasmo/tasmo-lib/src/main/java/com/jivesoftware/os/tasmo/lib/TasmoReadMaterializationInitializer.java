@@ -1,13 +1,13 @@
-package com.jivesoftware.os.tasmo.service;
+package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.read.ReadMaterializedViewProvider;
+import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
@@ -15,7 +15,7 @@ import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.concur.NoOpConcurrencyStore;
+import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.SerialReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReadMaterializer;
@@ -41,9 +41,11 @@ public class TasmoReadMaterializationInitializer {
 
         @StringDefault ("master")
         public String getModelMasterTenantId();
+        public void setModelMasterTenantId(String tenantId);
 
         @IntDefault (10)
         public Integer getPollForModelChangesEveryNSeconds();
+        public void setPollForModelChangesEveryNSeconds(Integer seconds);
 
     }
 
@@ -52,10 +54,11 @@ public class TasmoReadMaterializationInitializer {
         ViewPathKeyProvider viewPathKeyProvider,
         WrittenEventProvider writtenEventProvider,
         TasmoStorageProvider tasmoStorageProvider,
-        ViewPermissionChecker viewPermissionChecker) throws Exception {
+        ViewPermissionChecker viewPermissionChecker,
+        Optional<CommitChange> commitChangeVistor) throws Exception {
 
 
-        ConcurrencyStore concurrencyStore = new NoOpConcurrencyStore();
+        ConcurrencyStore concurrencyStore = new HBaseBackedConcurrencyStore(tasmoStorageProvider.concurrencyStorage());
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore,
             tasmoStorageProvider.multiLinksStorage(),
             tasmoStorageProvider.multiBackLinksStorage());
@@ -89,9 +92,11 @@ public class TasmoReadMaterializationInitializer {
         ViewReadMaterializer<ViewResponse> viewReadMaterializer = new ReadMaterializedViewProvider<>(viewPermissionChecker,
             referenceTraverser,
             fieldValueReader,
+            concurrencyStore,
             tasmoViewModel,
             viewAsObjectNode,
             new JsonViewMerger(new ObjectMapper()),
+            commitChangeVistor,
             1024 * 1024 * 10); // TODO expose to config
 
         return viewReadMaterializer;

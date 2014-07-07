@@ -50,7 +50,6 @@ public class ReadLeafContext implements LeafContext {
                 pathContext.setLastTimestamp(timestamp); // ??
                 fieldsToPopulate.addField(fieldName, fieldValue);
                 versions.add(new ReferenceWithTimestamp(objectInstanceId, fieldName, timestamp));
-                System.out.println("Field:" + fieldName + " " + fieldValue);
             }
         }
         this.leafNodeFields = fieldsToPopulate;

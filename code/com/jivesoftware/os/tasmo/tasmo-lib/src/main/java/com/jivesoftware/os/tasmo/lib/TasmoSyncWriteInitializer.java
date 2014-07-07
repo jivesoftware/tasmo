@@ -1,14 +1,10 @@
-package com.jivesoftware.os.tasmo.service;
+package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
-import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
-import com.jivesoftware.os.tasmo.lib.TasmoSyncEventWriter;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
@@ -39,15 +35,18 @@ public class TasmoSyncWriteInitializer {
 
         @StringDefault ("master")
         public String getModelMasterTenantId();
+        public void setModelMasterTenantId(String tenantId);
 
         @IntDefault (10)
         public Integer getPollForModelChangesEveryNSeconds();
+        public void setPollForModelChangesEveryNSeconds(Integer seconds);
 
         @IntDefault (1)
         public Integer getNumberOfSyncEventWritorThreads();
+        public void setNumberOfSyncEventWritorThreads(Integer threads);
     }
 
-    public static TasmoSyncEventWriter initializeEventIngressCallbackStream(
+    public static TasmoSyncEventWriter initialize(
         ViewsProvider viewsProvider,
         ViewPathKeyProvider viewPathKeyProvider,
         WrittenEventProvider writtenEventProvider,

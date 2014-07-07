@@ -3,6 +3,7 @@ package com.jivesoftware.os.tasmo.lib;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
@@ -25,7 +26,7 @@ import java.util.concurrent.Future;
  *
  * @author jonathan.colt
  */
-public class TasmoSyncEventWriter {
+public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
@@ -46,9 +47,9 @@ public class TasmoSyncEventWriter {
         this.tasmoBlacklist = tasmoBlacklist;
     }
 
-    public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
+    @Override
+    public List<WrittenEvent> callback(List<WrittenEvent> writtenEvents) throws Exception {
 
-        final List<WrittenEvent> processed = new ArrayList<>(writtenEvents.size());
         final List<WrittenEvent> failedToProcess = new ArrayList<>(writtenEvents.size());
         try {
 
@@ -57,7 +58,6 @@ public class TasmoSyncEventWriter {
                 if (writtenEvent != null) {
                     if (tasmoBlacklist.blacklisted(writtenEvent)) {
                         LOG.info("BACKLISTED event" + writtenEvent);
-                        processed.add(writtenEvent);
                     } else {
 
                         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
@@ -103,8 +103,8 @@ public class TasmoSyncEventWriter {
 
                                     synchronized (lock) {
                                         if (event.getWrittenInstance().isDeletion()) {
-                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp);
-                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp);
+                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp-1);
+                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp-1);
                                         } else {
                                             tasmoEventPersistor.updateValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp,
                                                 writtenInstance);
@@ -112,7 +112,6 @@ public class TasmoSyncEventWriter {
                                                 updateValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp, writtenInstance);
                                         }
                                     }
-                                    processed.add(event);
                                 } catch (Exception x) {
                                     failedToProcess.add(event);
                                     LOG.warn("Failed to persist eventId:{} instanceId:{} tenantId:{} exception: {}", new Object[]{

@@ -9,6 +9,7 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
+import com.jivesoftware.os.tasmo.model.Views;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.util.HashSet;
@@ -21,18 +22,20 @@ import static org.testng.Assert.fail;
 /**
  *
  */
-public class DebugHarnessTest extends BaseTasmoTest {
+public class DebugHarnessTest extends BaseTest {
 
     @Test(invocationCount = 1000, singleThreaded = false, skipFailedInvocations = true, enabled = false)
-    public void hackTest() throws Exception {
+    public void hackTest(TasmoMaterializerHarness t) throws Exception {
 //        LogManager.getLogger("com.jivesoftware.os.tasmo").setLevel(Level.TRACE);
 //        LogManager.getLogger("com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistanceCommitChange").setLevel(Level.TRACE);
 //        LogManager.getLogger("com.jivesoftware.os.tasmo.reference.lib.ReferenceStore").setLevel(Level.TRACE);
 //        LogManager.getLogger("com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStore").setLevel(Level.TRACE);
 
-        ArrayNode views = mapper.readValue(new File("/home/jonathan/jive/os/all_views.json"), ArrayNode.class);
+        ArrayNode rawViews = mapper.readValue(new File("/home/jonathan/jive/os/all_views.json"), ArrayNode.class);
         final JsonEventConventions eventConventions = new JsonEventConventions();
-        Expectations expectations = initModelPaths(views);
+        Views views = TasmoModelFactory.modelToViews(rawViews);
+        t.initModel(views);
+
         List<String> stringEvents = Files.readLines(new File("/home/jonathan/jive/os/events.txt"), Charset.defaultCharset());
         final Set<Id> instanceIds = new HashSet<>();
 //        ExecutorService executorService = Executors.newFixedThreadPool(20);
@@ -43,7 +46,7 @@ public class DebugHarnessTest extends BaseTasmoTest {
                 ObjectNode eventObjectNode = mapper.readValue(stringEvent, ObjectNode.class);
                 //System.out.println("eventObjectNode:"+eventObjectNode);
                 ObjectId instanceId = eventConventions.getInstanceObjectId(eventObjectNode);
-                write(new Event(eventObjectNode, instanceId));
+                t.write(new Event(eventObjectNode, instanceId));
                 if (instanceId.isClassName("UserFollowActivity")) {
                     instanceIds.add(instanceId.getId());
                 }
@@ -59,7 +62,7 @@ public class DebugHarnessTest extends BaseTasmoTest {
         boolean failed = false;
         for (Id commentInstanceId : instanceIds) {
             ObjectId viewObjectId = new ObjectId("UserFollowActivityView", commentInstanceId);
-            ObjectNode view = readView(
+            ObjectNode view = t.readView(
                     new TenantIdAndCentricId(tenantId, Id.NULL),
                     actorId, viewObjectId);
             System.err.println("View: " + commentInstanceId.toStringForm());

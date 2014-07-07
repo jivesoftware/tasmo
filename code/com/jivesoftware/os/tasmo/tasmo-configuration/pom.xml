@@ -4,12 +4,12 @@
     <parent>
         <groupId>com.jivesoftware.os.tasmo.inheritance.poms</groupId>
         <artifactId>shared-lib-build-management</artifactId>
-        <version>0.39</version>
+        <version>0.40</version>
         <relativePath>../inheritance-poms/shared-lib-build-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.tasmo</groupId>
     <artifactId>tasmo-configuration</artifactId>
-    <version>0.39</version>
+    <version>0.40</version>
     <properties>
         <module.type>shared_lib</module.type>
     </properties>

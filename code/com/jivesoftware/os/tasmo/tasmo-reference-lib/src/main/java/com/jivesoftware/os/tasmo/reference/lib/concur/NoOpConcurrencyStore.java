@@ -22,6 +22,7 @@ public class NoOpConcurrencyStore implements ConcurrencyStore {
 
     @Override
     public Set<ObjectId> getExistence(TenantIdAndCentricId tenantId, Set<ObjectId> objectIds) {
+        //System.out.println("NoOpConcurrencyStore.getExistence()");
         return objectIds;
     }
 

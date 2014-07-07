@@ -6,21 +6,20 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-package com.jivesoftware.os.tasmo.service;
+package com.jivesoftware.os.tasmo.lib;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
-import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import java.util.List;
 
 /**
  *
  */
-public class EventIngressCallbackStream implements CallbackStream<List<WrittenEvent>> {
+public class TasmoEventIngress implements CallbackStream<List<WrittenEvent>> {
 
     final TasmoViewMaterializer materializer;
 
-    public EventIngressCallbackStream(TasmoViewMaterializer materializer) {
+    public TasmoEventIngress(TasmoViewMaterializer materializer) {
         this.materializer = materializer;
     }
 

@@ -32,7 +32,7 @@ import org.testng.Assert;
 /**
  *
  */
-class Expectations {
+class ViewExpectations {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private final ViewValueStore viewValueStore;
@@ -40,17 +40,18 @@ class Expectations {
     private final List<Expectation> expectations = Lists.newArrayList();
     private final ViewPathKeyProvider viewPathKeyProvider;
 
-    public Expectations(ViewValueStore viewValueStore, Views views, ViewPathKeyProvider viewPathKeyProvider) {
+    public ViewExpectations(ViewValueStore viewValueStore, ViewPathKeyProvider viewPathKeyProvider) {
         this.viewValueStore = viewValueStore;
+        this.viewPathKeyProvider = viewPathKeyProvider;
+    }
 
+    public void init(Views views) {
         List<ViewBinding> bindings = views.getViewBindings();
         for (ViewBinding viewBinding : bindings) {
             for (ModelPath modelPath : viewBinding.getModelPaths()) {
                 viewModelPaths.put(new ViewKey(viewBinding.getViewClassName(), modelPath.getId()), modelPath);
             }
         }
-
-        this.viewPathKeyProvider = viewPathKeyProvider;
     }
 
     void addExpectation(ObjectId rootId, String viewClassName, String viewFieldName, ObjectId[] pathIds, String fieldName, Object value) {
@@ -61,11 +62,12 @@ class Expectations {
     }
 
     void assertExpectation(TenantIdAndCentricId tenantIdAndCentricId) throws IOException {
+
         for (Expectation expectation : expectations) {
             ViewValue got = viewValueStore.get(tenantIdAndCentricId,
-                    expectation.viewId,
-                    expectation.modelPathHashcode,
-                    expectation.modelPathInstanceIds);
+                expectation.viewId,
+                expectation.modelPathHashcode,
+                expectation.modelPathInstanceIds);
             JsonNode node = null;
             if (got != null) {
                 node = MAPPER.readValue(new ByteArrayInputStream(got.getValue()), JsonNode.class);
@@ -75,7 +77,9 @@ class Expectations {
                     if (node != null) {
                         JsonNode value = node.get(expectation.fieldName);
                         if (value != null) {
-                            Assert.assertTrue(value instanceof NullNode, expectation.toString());
+                            Assert.assertTrue(value instanceof NullNode, "Wanted field:"+expectation.fieldName+" with value:" + value
+                                + " to be an instance of NullNode but it wasn't. " + node + " "
+                                + expectation.toString());
                         }
                     }
                 } else {
@@ -87,7 +91,7 @@ class Expectations {
                     }
                     JsonNode convertValue = MAPPER.convertValue(expectation.value, JsonNode.class);
                     Assert.assertEquals(toTest, convertValue,
-                            expectation.toString() + " WAS:" + toTest + " WANTED:" + convertValue);
+                        expectation.toString() + " WAS:" + toTest + " WANTED:" + convertValue);
                 }
             } catch (IllegalArgumentException x) {
                 System.out.println("Failed while asserting " + expectation);
@@ -148,12 +152,12 @@ class Expectations {
         Object value;
 
         public Expectation(ObjectId viewId,
-                String viewClassName,
-                long modelPathHashcode,
-                ModelPath path,
-                ObjectId[] modelPathInstanceIds,
-                String fieldName,
-                Object value) {
+            String viewClassName,
+            long modelPathHashcode,
+            ModelPath path,
+            ObjectId[] modelPathInstanceIds,
+            String fieldName,
+            Object value) {
             this.viewId = viewId;
             this.viewClassName = viewClassName;
             this.modelPathHashcode = modelPathHashcode;
@@ -166,7 +170,7 @@ class Expectations {
         @Override
         public String toString() {
             return "Expectation{" + "viewId=" + viewId + ", viewClassName=" + viewClassName + ", modelPathId=" + modelPathHashcode + ", path=" + path
-                    + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds) + ", fieldName=" + fieldName + ", value=" + value + '}';
+                + ", modelPathInstanceIds=" + Arrays.deepToString(modelPathInstanceIds) + ", fieldName=" + fieldName + ", value=" + value + '}';
         }
 
         @Override

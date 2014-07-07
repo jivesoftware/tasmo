@@ -56,7 +56,7 @@ public class TasmoViewModelTest {
     /**
      * Test of loadModel method, of class TasmoViewModel.
      */
-    @Test
+    @Test (invocationCount = 1, singleThreaded = true)
     public void testLoadModel() throws Exception {
         System.out.println("loadModel");
 
