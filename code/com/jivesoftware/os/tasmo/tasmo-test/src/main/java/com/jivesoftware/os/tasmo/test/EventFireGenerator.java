@@ -78,14 +78,14 @@ public class EventFireGenerator {
         List<Event> events = eventsAndViewId.getEvents();
         ObjectId viewId = new ObjectId(viewClass, eventsAndViewId.getViewId());
 
-        for (int i = 0; i < events.size(); i++) {
+        for (Event event : events) {
             Collections.rotate(events, 1);
             eventFires.add(new EventFire(viewId, events, path.getPathMembers().get(path.getPathMemberSize() - 1), eventsAndViewId.getIdTree()));
         }
 
         Collections.reverse(events);
 
-        for (int i = 0; i < events.size(); i++) {
+        for (Event event : events) {
             Collections.rotate(events, 1);
             eventFires.add(new EventFire(viewId, events, path.getPathMembers().get(path.getPathMemberSize() - 1), eventsAndViewId.getIdTree()));
         }

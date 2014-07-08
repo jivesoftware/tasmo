@@ -35,7 +35,7 @@ class LatestTreeNode implements MultiTreeNode {
 
     private final ArrayTreeNode arrayTreeNode;
 
-    public LatestTreeNode(ArrayTreeNode arrayTreeNode) {
+    LatestTreeNode(ArrayTreeNode arrayTreeNode) {
         this.arrayTreeNode = arrayTreeNode;
     }
 

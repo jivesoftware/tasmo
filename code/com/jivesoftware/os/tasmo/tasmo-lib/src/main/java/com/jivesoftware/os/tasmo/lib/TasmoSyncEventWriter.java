@@ -64,7 +64,7 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
                         TenantId tenantId = writtenEvent.getTenantId();
                         StripingLocksProvider<ObjectId> tenantLocks = instanceIdLocks.get(tenantId);
                         if (tenantLocks == null) {
-                            tenantLocks = new StripingLocksProvider<>(1024); // Expose to config?
+                            tenantLocks = new StripingLocksProvider<>(1_024); // Expose to config?
                             StripingLocksProvider<ObjectId> had = instanceIdLocks.putIfAbsent(tenantId, tenantLocks);
                             if (had != null) {
                                 tenantLocks = had;

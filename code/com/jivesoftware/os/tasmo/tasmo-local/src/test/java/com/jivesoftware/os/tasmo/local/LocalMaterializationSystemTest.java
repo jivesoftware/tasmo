@@ -64,7 +64,7 @@ public class LocalMaterializationSystemTest {
             IdProvider idProvider = localMaterializationSystem.getIdProvider();
 
             TenantId tenantId = new TenantId("booya");
-            Id actor = new Id(6457);
+            Id actor = new Id(6_457);
 
             EventWriter writer = localMaterializationSystem.getWriter();
             ViewReader<ViewResponse> reader = localMaterializationSystem.getReader();

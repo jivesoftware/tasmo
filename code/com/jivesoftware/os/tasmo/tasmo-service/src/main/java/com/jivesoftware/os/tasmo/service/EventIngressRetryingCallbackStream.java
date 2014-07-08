@@ -71,7 +71,7 @@ public class EventIngressRetryingCallbackStream implements CallbackStream<List<W
         };
 
         while (Boolean.FALSE.equals(callable.call())) {
-            Thread.sleep((int) Math.random() * 1000);
+            Thread.sleep((int) Math.random() * 1_000);
         }
         return events;
     }

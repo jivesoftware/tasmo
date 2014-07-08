@@ -9,7 +9,7 @@ import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import java.util.Objects;
 
-public final class ViewDescriptor {
+public class ViewDescriptor {
 
     private final TenantId tenantId;
     private final Id actorId;

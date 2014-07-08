@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.configuration;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Set;
 
 public class TypedField {
@@ -24,7 +25,7 @@ public class TypedField {
     }
 
     public Set<String> getFieldClasses() {
-        return fieldClass;
+        return Collections.unmodifiableSet(fieldClass);
     }
 
     public String[] getFieldNames() {

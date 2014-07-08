@@ -40,7 +40,7 @@ public class ViewPathDictionary implements ViewPathKeyProvider {
     }
 
     @Override
-    public final long pathKeyHashcode(String[] classes) {
+    public long pathKeyHashcode(String[] classes) {
         return viewPathKeyProvider.pathKeyHashcode(classes);
     }
 

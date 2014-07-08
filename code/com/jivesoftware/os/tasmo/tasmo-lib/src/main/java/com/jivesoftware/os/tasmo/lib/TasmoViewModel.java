@@ -49,7 +49,7 @@ public class TasmoViewModel {
     private final ViewsProvider viewsProvider;
     private final ViewPathKeyProvider viewPathKeyProvider;
     private final ConcurrentHashMap<TenantId, VersionedTasmoViewModel> versionedViewModels;
-    private final StripingLocksProvider<TenantId> loadModelLocks = new StripingLocksProvider<>(1024);
+    private final StripingLocksProvider<TenantId> loadModelLocks = new StripingLocksProvider<>(1_024);
 
     public TasmoViewModel(
         TenantId masterTenantId,
@@ -158,71 +158,6 @@ public class TasmoViewModel {
         return eventModel;
     }
 
-    public static class FieldNameAndType {
-
-        private final String fieldName;
-        private final ModelPathStepType fieldType;
-        private final boolean idCentric;
-
-        public FieldNameAndType(String fieldName, ModelPathStepType fieldType, boolean idCentric) {
-            this.fieldName = fieldName;
-            this.fieldType = fieldType;
-            this.idCentric = idCentric;
-        }
-
-        public String getFieldName() {
-            return fieldName;
-        }
-
-        public ModelPathStepType getFieldType() {
-            return fieldType;
-        }
-
-        public boolean isIdCentric() {
-            return idCentric;
-        }
-
-        @Override
-        public String toString() {
-            return Objects.toStringHelper(this)
-                .add("fieldName", fieldName)
-                .add("fieldType", fieldType)
-                .add("idCentric", idCentric)
-                .toString();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-
-            FieldNameAndType that = (FieldNameAndType) o;
-
-            if (idCentric != that.idCentric) {
-                return false;
-            }
-            if (fieldName != null ? !fieldName.equals(that.fieldName) : that.fieldName != null) {
-                return false;
-            }
-            if (fieldType != that.fieldType) {
-                return false;
-            }
-
-            return true;
-        }
-
-        @Override
-        public int hashCode() {
-            int result = fieldName != null ? fieldName.hashCode() : 0;
-            result = 31 * result + (fieldType != null ? fieldType.hashCode() : 0);
-            result = 31 * result + (idCentric ? 1 : 0);
-            return result;
-        }
-    }
 
     private Map<String, InitiateReadTraversal> buildViewReaderTraveral(Views views) throws IllegalArgumentException {
 
@@ -262,24 +197,6 @@ public class TasmoViewModel {
         return readTraversers;
     }
 
-    public static class ReadTraversalKey {
-        private final ModelPath modelPath;
-        private final boolean idCentric;
-
-        public ReadTraversalKey(ModelPath modelPath, boolean idCentric) {
-            this.modelPath = modelPath;
-            this.idCentric = idCentric;
-        }
-
-        public ModelPath getModelPath() {
-            return modelPath;
-        }
-
-        public boolean isIdCentric() {
-            return idCentric;
-        }
-
-    }
 
     List<PathTraverser> transformToPrefixCollapsedTree(List<TraversablePath> traversablePaths) {
         if (traversablePaths == null) {
@@ -490,6 +407,91 @@ public class TasmoViewModel {
                     steps.put(new InitiateTraverserKey(fieldName, refFieldName), traversablePath);
                 }
             }
+        }
+    }
+
+    public static class FieldNameAndType {
+
+        private final String fieldName;
+        private final ModelPathStepType fieldType;
+        private final boolean idCentric;
+
+        public FieldNameAndType(String fieldName, ModelPathStepType fieldType, boolean idCentric) {
+            this.fieldName = fieldName;
+            this.fieldType = fieldType;
+            this.idCentric = idCentric;
+        }
+
+        public String getFieldName() {
+            return fieldName;
+        }
+
+        public ModelPathStepType getFieldType() {
+            return fieldType;
+        }
+
+        public boolean isIdCentric() {
+            return idCentric;
+        }
+
+        @Override
+        public String toString() {
+            return Objects.toStringHelper(this)
+                .add("fieldName", fieldName)
+                .add("fieldType", fieldType)
+                .add("idCentric", idCentric)
+                .toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            FieldNameAndType that = (FieldNameAndType) o;
+
+            if (idCentric != that.idCentric) {
+                return false;
+            }
+            if (fieldName != null ? !fieldName.equals(that.fieldName) : that.fieldName != null) {
+                return false;
+            }
+            if (fieldType != that.fieldType) {
+                return false;
+            }
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = fieldName != null ? fieldName.hashCode() : 0;
+            result = 31 * result + (fieldType != null ? fieldType.hashCode() : 0);
+            result = 31 * result + (idCentric ? 1 : 0);
+            return result;
+        }
+    }
+
+    public static class ReadTraversalKey {
+
+        private final ModelPath modelPath;
+        private final boolean idCentric;
+
+        public ReadTraversalKey(ModelPath modelPath, boolean idCentric) {
+            this.modelPath = modelPath;
+            this.idCentric = idCentric;
+        }
+
+        public ModelPath getModelPath() {
+            return modelPath;
+        }
+
+        public boolean isIdCentric() {
+            return idCentric;
         }
     }
 }

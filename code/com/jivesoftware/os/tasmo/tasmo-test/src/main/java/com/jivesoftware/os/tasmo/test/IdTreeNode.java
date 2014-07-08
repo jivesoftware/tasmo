@@ -2,6 +2,7 @@ package com.jivesoftware.os.tasmo.test;
 
 import com.jivesoftware.os.jive.utils.id.Id;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -19,7 +20,7 @@ public class IdTreeNode {
     }
 
     public List<IdTreeNode> children() {
-        return children;
+        return Collections.unmodifiableList(children);
     }
 
     public Id value() {

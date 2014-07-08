@@ -15,6 +15,7 @@ import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -103,7 +104,7 @@ public class ViewBinding {
     }
 
     public List<ModelPath> getModelPaths() {
-        return modelPaths;
+        return Collections.unmodifiableList(modelPaths);
     }
 
     /**

@@ -39,7 +39,6 @@ import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
 import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
 import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
-import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
@@ -48,11 +47,11 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
-import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
+import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
 import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
@@ -328,13 +327,6 @@ public class Materialization {
 
         commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, commitChange);
 
-        TasmoEventBookkeeper tasmoEventBookkeeper = new TasmoEventBookkeeper(
-            new CallbackStream<List<BookkeepingEvent>>() {
-                @Override
-                public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
-                    return value;
-                }
-            });
 
         viewsProvider = new ViewsProvider() {
             @Override
@@ -364,7 +356,7 @@ public class Materialization {
 
         traverserThreads = newThreadPool(numberOfEventProcessorThreads, "travers-path-");
         ListeningExecutorService traverserExecutor = MoreExecutors.listeningDecorator(traverserThreads);
-        batchingReferenceTraverser = new BatchingReferenceTraverser(referenceStore, traverserExecutor, 100, 10000); // TODO expose to config
+        batchingReferenceTraverser = new BatchingReferenceTraverser(referenceStore, traverserExecutor, 100, 10_000); // TODO expose to config
         batchTraverserThread = newThreadPool(1, "batch-traverser");
         batchTraverserThread.submit(new Runnable() {
 
@@ -407,7 +399,12 @@ public class Materialization {
             processingStats);
 
         eventProcessorThreads = newThreadPool(numberOfEventProcessorThreads, "process-event-");
-        tasmoMaterializer = new TasmoViewMaterializer(tasmoEventBookkeeper,
+        tasmoMaterializer = new TasmoViewMaterializer(new CallbackStream<List<BookkeepingEvent>>() {
+                @Override
+                public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
+                    return value;
+                }
+            },
             tasmoEventProcessor,
             MoreExecutors.listeningDecorator(eventProcessorThreads),
             new TasmoBlacklist());
@@ -466,7 +463,7 @@ public class Materialization {
             viewAsObjectNode,
             merger,
             staleViewFieldStream,
-            1024 * 1024 * 10);
+            1_024 * 1_024 * 10);
         return new Expectations(viewValueStore, newViews, viewPathKeyProvider);
 
     }

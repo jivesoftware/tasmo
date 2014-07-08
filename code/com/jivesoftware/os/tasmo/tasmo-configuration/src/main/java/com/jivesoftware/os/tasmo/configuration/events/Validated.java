@@ -33,7 +33,7 @@ public class Validated {
     }
 
     public Collection<String> getUnexpectedFields() {
-        return unexpectedFields;
+        return Collections.unmodifiableCollection(unexpectedFields);
     }
 
     @Override

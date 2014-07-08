@@ -55,7 +55,7 @@ public class CombinatorialMaterializerTest {
     private final OrderIdProviderGenerator orderIdProviderGenerator = new OrderIdProviderGenerator();
     private final TenantId tenantId = new TenantId("test");
     private final TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
-    private final Id actorId = new Id(100000000);
+    private final Id actorId = new Id(100_000_000);
     private final ModelPathGenerator pathGenerator = new ModelPathGenerator();
     private final EventFireGenerator eventFireGenerator = new EventFireGenerator(tenantId, actorId);
 

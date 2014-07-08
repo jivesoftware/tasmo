@@ -1,6 +1,5 @@
 package com.jivesoftware.os.tasmo.lib.write;
 
-import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
 import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;

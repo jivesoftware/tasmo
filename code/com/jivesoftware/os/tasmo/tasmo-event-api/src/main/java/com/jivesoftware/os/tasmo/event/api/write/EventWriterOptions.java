@@ -12,7 +12,7 @@ public class EventWriterOptions {
     /**
      * The default period of time to wait for a synchronous write to complete.
      */
-    public static final int DEFAULT_WAIT_TIMEOUT_MILLIS = 15 * 1000;
+    public static final int DEFAULT_WAIT_TIMEOUT_MILLIS = 15 * 1_000;
 
     private final boolean inFlightTracking;
     private final boolean synchronous;
@@ -29,7 +29,7 @@ public class EventWriterOptions {
      *
      * @return default options
      */
-    public static final EventWriterOptions defaultOptions() {
+    public static EventWriterOptions defaultOptions() {
         return DEFAULT;
     }
 

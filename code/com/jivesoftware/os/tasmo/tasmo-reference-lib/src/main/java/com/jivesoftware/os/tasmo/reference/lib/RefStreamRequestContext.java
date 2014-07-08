@@ -55,7 +55,7 @@ public class RefStreamRequestContext implements CallbackStream<ColumnValueAndTim
     }
 
     public Set<String> getReferringClassNames() {
-        return referringClassNames;
+        return Collections.unmodifiableSet(referringClassNames);
     }
 
     public String getReferringFieldName() {

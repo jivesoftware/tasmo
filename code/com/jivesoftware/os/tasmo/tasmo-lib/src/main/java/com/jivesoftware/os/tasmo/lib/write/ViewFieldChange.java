@@ -14,6 +14,7 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -23,10 +24,6 @@ import java.util.Objects;
  */
 public class ViewFieldChange {
 
-    static public enum ViewFieldChangeType {
-
-        add, remove
-    }
     private final long eventId;
     private final Id actorId;
     private final ViewFieldChangeType type;
@@ -83,7 +80,7 @@ public class ViewFieldChange {
     public ModelPath getModelPath() {
         return modelPath;
     }
-    
+
     public long getModelPathIdHashcode() {
         return modelPathIdHashcode;
     }
@@ -93,7 +90,7 @@ public class ViewFieldChange {
     }
 
     public List<ReferenceWithTimestamp> getModelPathVersions() {
-        return modelPathVersions;
+        return Collections.unmodifiableList(modelPathVersions);
     }
 
     public long[] getModelPathTimestamps() {
@@ -178,6 +175,11 @@ public class ViewFieldChange {
             return false;
         }
         return true;
+    }
+
+    public static enum ViewFieldChangeType {
+
+        add, remove
     }
 
 }

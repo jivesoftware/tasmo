@@ -35,7 +35,7 @@ class CountTreeNode implements MultiTreeNode {
     public static final String JSON_FIELD = "count";
     private final Set<Id> idsSeen = new HashSet<>();
 
-    public CountTreeNode() {
+    CountTreeNode() {
     }
 
     @Override

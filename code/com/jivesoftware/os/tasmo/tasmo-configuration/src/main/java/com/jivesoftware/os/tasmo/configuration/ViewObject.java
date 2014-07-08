@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,7 +33,7 @@ public class ViewObject {
         Map<String, ViewArray> countFields,
         Map<String, ViewObject> latestBackRefFields) {
 
-        this.classNames = new HashSet<String>(ids.size());
+        this.classNames = new HashSet<>(ids.size());
         for (ObjectId objectId : ids) {
             classNames.add(objectId.getClassName());
         }
@@ -200,11 +201,11 @@ public class ViewObject {
     }
 
     Map<String, ViewObject> getRefFields() {
-        return refFields;
+        return Collections.unmodifiableMap(refFields);
     }
 
     Map<String, ViewArray> getBackRefFields() {
-        return backRefFields;
+        return Collections.unmodifiableMap(backRefFields);
     }
 
     @Override

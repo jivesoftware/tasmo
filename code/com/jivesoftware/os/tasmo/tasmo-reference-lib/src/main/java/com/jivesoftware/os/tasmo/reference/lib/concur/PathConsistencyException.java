@@ -1,7 +1,6 @@
 package com.jivesoftware.os.tasmo.reference.lib.concur;
 
 import com.google.common.collect.Sets;
-import com.jivesoftware.os.tasmo.reference.lib.concur.FieldVersion;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,7 +40,7 @@ public class PathConsistencyException extends RuntimeException {
         });
         sb.append("Missing:");
         for (FieldVersion fieldVersion : missing) {
-            sb.append(fieldVersion + ",");
+            sb.append(fieldVersion).append(",");
         }
 
         Collections.sort(present, new Comparator<FieldVersion>() {
@@ -62,7 +61,7 @@ public class PathConsistencyException extends RuntimeException {
 
         sb.append("Present:");
         for (FieldVersion fieldVersion : present) {
-            sb.append(fieldVersion + ",");
+            sb.append(fieldVersion).append(",");
         }
 
 //        for (int i = 0; i < Math.min(wanted.size(), got.size()); i++) {

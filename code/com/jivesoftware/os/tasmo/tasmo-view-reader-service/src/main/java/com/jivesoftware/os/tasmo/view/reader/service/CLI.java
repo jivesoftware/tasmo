@@ -34,12 +34,12 @@ public class CLI {
         Collection<HttpClientConfiguration> configurations = Lists.newArrayList();
         HttpClientFactory createHttpClientFactory = new HttpClientFactoryProvider().createHttpClientFactory(configurations);
 
-        HttpClient client = createHttpClientFactory.createClient("10.5.100.136", 50000);
+        HttpClient client = createHttpClientFactory.createClient("10.5.100.136", 50_000);
 
         GetTheseIds request = new GetTheseIds();
         request.tenantId = "event-generator";
         request.ids = Lists.newArrayList();
-        for (int i = 0; i < 3000; i++) {
+        for (int i = 0; i < 3_000; i++) {
             request.ids.add(new ObjectId("SearchUserView_", new Id(i)));
         }
 

@@ -7,7 +7,7 @@ import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 /**
  * An order id provider which generates ids using a combination of system time, a logical writer id, and an incrementing sequence number.
  */
-public final /* hi mark */ class IdProviderImpl implements IdProvider {
+public /* hi mark */ class IdProviderImpl implements IdProvider {
 
     private final OrderIdProvider orderIdProvider;
 

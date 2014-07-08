@@ -265,7 +265,7 @@ public class Expectations {
         JsonNode want;
         JsonNode was;
 
-        public AssertNode(Expectation expectation, JsonNode want, JsonNode was) {
+        AssertNode(Expectation expectation, JsonNode want, JsonNode was) {
             this.expectation = expectation;
             this.want = want;
             this.was = was;
@@ -286,7 +286,7 @@ public class Expectations {
         String viewClassName;
         String viewFieldName;
 
-        public ViewKey(String viewClassName, String viewFieldName) {
+        ViewKey(String viewClassName, String viewFieldName) {
             this.viewClassName = viewClassName;
             this.viewFieldName = viewFieldName;
         }
@@ -329,7 +329,7 @@ public class Expectations {
         String fieldName;
         Object value;
 
-        public Expectation(long testCase,
+        Expectation(long testCase,
                 ObjectId viewId,
                 String viewClassName,
                 long modelPathIdHashcode,

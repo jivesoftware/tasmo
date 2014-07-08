@@ -16,7 +16,7 @@ import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
  */
 public class TasmoProcessingStats {
 
-    private static final int STATS_WINDOW = 1000;
+    private static final int STATS_WINDOW = 1_000;
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final Map<String, Map<String, DescriptiveStatistics>> latencyCatagories = new ConcurrentHashMap<>();

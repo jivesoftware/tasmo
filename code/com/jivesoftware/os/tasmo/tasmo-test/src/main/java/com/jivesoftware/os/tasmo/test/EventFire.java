@@ -16,6 +16,7 @@ import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,7 +37,7 @@ public class EventFire {
     }
 
     public List<Event> getFiredEvents() {
-        return events;
+        return Collections.unmodifiableList(events);
     }
 
     public IdTreeNode getIdTree() {

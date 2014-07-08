@@ -56,7 +56,7 @@ public class AssertInputCase {
 
     public void assertCombination(final AssertableCase ic, Long onlyRunTestId, boolean multiThreadWrites) throws Throwable {
         try {
-            if (ic.testId % 1000 == 0) {
+            if (ic.testId % 1_000 == 0) {
                 if (ic.testId == 0) {
                     System.out.println("***** Begin test category:" + ic.category + " multi-threaded:" + multiThreadWrites + " ********");
                 } else {
@@ -124,7 +124,7 @@ public class AssertInputCase {
                     public TenantIdAndRow<TenantIdAndCentricId, ImmutableByteArray> callback(
                             final TenantIdAndRow<TenantIdAndCentricId, ImmutableByteArray> row) throws Exception {
                         if (row != null) {
-                            ic.materialization.rawViewValueStore.getEntrys(row.getTenantId(), row.getRow(), null, Long.MAX_VALUE, 1000, false, null, null,
+                            ic.materialization.rawViewValueStore.getEntrys(row.getTenantId(), row.getRow(), null, Long.MAX_VALUE, 1_000, false, null, null,
                                     new CallbackStream<ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long>>() {
 
                                         @Override

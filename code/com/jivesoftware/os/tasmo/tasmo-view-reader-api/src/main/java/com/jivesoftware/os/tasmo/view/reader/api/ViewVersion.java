@@ -5,6 +5,7 @@
 package com.jivesoftware.os.tasmo.view.reader.api;
 
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import java.util.Collections;
 import java.util.List;
 
 public class ViewVersion {
@@ -28,7 +29,7 @@ public class ViewVersion {
     }
 
     public List<ViewFieldVersion> getFieldVersions() {
-        return fieldVersions;
+        return Collections.unmodifiableList(fieldVersions);
     }
 
     @Override
