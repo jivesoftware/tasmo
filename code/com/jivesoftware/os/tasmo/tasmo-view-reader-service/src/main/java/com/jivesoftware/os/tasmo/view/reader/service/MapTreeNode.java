@@ -127,7 +127,7 @@ public class MapTreeNode implements TreeNode {
         return modelPathTimestamps;
     }
 
-    private static final class StepTypeAndFieldName {
+    private static class StepTypeAndFieldName {
 
         private final ModelPathStepType stepType;
         private final String fieldName;

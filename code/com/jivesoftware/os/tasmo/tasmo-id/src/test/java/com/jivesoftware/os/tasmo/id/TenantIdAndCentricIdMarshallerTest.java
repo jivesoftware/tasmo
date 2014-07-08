@@ -10,7 +10,7 @@ public class TenantIdAndCentricIdMarshallerTest {
 
     @Test
     public void testMarshaller() throws Exception {
-        TenantIdAndCentricId id1 = new TenantIdAndCentricId(new TenantId("booya"), new Id(1000));
+        TenantIdAndCentricId id1 = new TenantIdAndCentricId(new TenantId("booya"), new Id(1_000));
 
         TenantIdAndCentricIdMarshaller marshaller = new TenantIdAndCentricIdMarshaller();
         byte[] bytes = marshaller.toBytes(id1);

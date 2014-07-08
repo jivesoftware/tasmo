@@ -27,7 +27,7 @@ public class ClassAndField_IdKeyTest {
             Assert.assertTrue(key1.compareTo(key2) == 0, "are compare ==0 ?");
         }
 
-        Assert.assertEquals(key1.equals(null), false, "null object is not equal to any object");
+        Assert.assertEquals(key1 == null, false, "null object is not equal to any object");
         Assert.assertEquals(key1.equals(key1), true, "object is equal to self object");
         Assert.assertEquals(key1.equals(new ObjectId("myclass", new Id(2))), false, "other type of object is not equal to this kind of object");
 

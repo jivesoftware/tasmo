@@ -37,17 +37,6 @@ public class TasmoReadMaterializationInitializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
-    static public interface TasmoReadMaterializationConfig extends Config {
-
-        @StringDefault ("master")
-        public String getModelMasterTenantId();
-        public void setModelMasterTenantId(String tenantId);
-
-        @IntDefault (10)
-        public Integer getPollForModelChangesEveryNSeconds();
-        public void setPollForModelChangesEveryNSeconds(Integer seconds);
-
-    }
 
     public static ViewReadMaterializer<ViewResponse> initialize(TasmoReadMaterializationConfig config,
         ViewsProvider viewsProvider,
@@ -97,9 +86,22 @@ public class TasmoReadMaterializationInitializer {
             viewAsObjectNode,
             new JsonViewMerger(new ObjectMapper()),
             commitChangeVistor,
-            1024 * 1024 * 10); // TODO expose to config
+            1_024 * 1_024 * 10); // TODO expose to config
 
         return viewReadMaterializer;
+    }
+
+    public static interface TasmoReadMaterializationConfig extends Config {
+
+        @StringDefault ("master")
+        public String getModelMasterTenantId();
+
+        public void setModelMasterTenantId(String tenantId);
+
+        @IntDefault (10)
+        public Integer getPollForModelChangesEveryNSeconds();
+
+        public void setPollForModelChangesEveryNSeconds(Integer seconds);
     }
 
 }

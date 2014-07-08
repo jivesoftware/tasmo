@@ -11,22 +11,22 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class TasmoBlacklist {
 
-    private final Set<Long> backlistedEventIds = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
+    private final Set<Long> blacklistedEventIds = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
 
     public void blacklistEventId(long eventId) {
-        backlistedEventIds.add(eventId);
+        blacklistedEventIds.add(eventId);
     }
 
     public void whitelistEventId(long eventId) {
-        backlistedEventIds.remove(eventId);
+        blacklistedEventIds.remove(eventId);
     }
 
     public void clear() {
-        backlistedEventIds.clear();
+        blacklistedEventIds.clear();
     }
 
     public boolean blacklisted(WrittenEvent event) {
-        if (backlistedEventIds.contains(event.getEventId())) {
+        if (blacklistedEventIds.contains(event.getEventId())) {
             return true;
         }
         return false;

@@ -20,7 +20,7 @@ public class MarshallerTestDataProvider {
     public static Object[][] createBytes() throws Exception {
 
         String className1 = "amazon";
-        long id1 = 300000;
+        long id1 = 300_000;
 
         String className2 = "雅虎邮箱";
         String fieldName2 = "mail";

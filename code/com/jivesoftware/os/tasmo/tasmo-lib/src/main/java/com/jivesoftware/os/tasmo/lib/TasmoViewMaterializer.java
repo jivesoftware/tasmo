@@ -3,12 +3,13 @@ package com.jivesoftware.os.tasmo.lib;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
+import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class TasmoViewMaterializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
-    private final TasmoEventBookkeeper tasmoEventBookkeeper;
+    private final CallbackStream<List<BookkeepingEvent>> bookkeepingStream;
     private final TasmoEventProcessor eventProcessor;
     private final ListeningExecutorService processEvents;
     private final TasmoBlacklist tasmoBlacklist;
@@ -32,12 +33,12 @@ public class TasmoViewMaterializer {
 
     private double lastEventsPerSecond = 0;
 
-    public TasmoViewMaterializer(TasmoEventBookkeeper tasmoEventBookkeeper,
+    public TasmoViewMaterializer(CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
         TasmoEventProcessor eventProcessor,
         ListeningExecutorService processEvents,
         TasmoBlacklist tasmoBlacklist
     ) {
-        this.tasmoEventBookkeeper = tasmoEventBookkeeper;
+        this.bookkeepingStream = bookkeepingStream;
         this.eventProcessor = eventProcessor;
         this.processEvents = processEvents;
         this.tasmoBlacklist = tasmoBlacklist;
@@ -54,7 +55,7 @@ public class TasmoViewMaterializer {
             for (WrittenEvent writtenEvent : writtenEvents) {
                 if (writtenEvent != null) {
                     if (tasmoBlacklist.blacklisted(writtenEvent)) {
-                        LOG.info("BACKLISTED event" + writtenEvent);
+                        LOG.info("BLACKLISTED event" + writtenEvent);
                         processed.add(writtenEvent);
                     } else {
 
@@ -62,7 +63,7 @@ public class TasmoViewMaterializer {
                         TenantId tenantId = writtenEvent.getTenantId();
                         StripingLocksProvider<ObjectId> tenantLocks = instanceIdLocks.get(tenantId);
                         if (tenantLocks == null) {
-                            tenantLocks = new StripingLocksProvider<>(1024); // Expose to config?
+                            tenantLocks = new StripingLocksProvider<>(1_024); // Expose to config?
                             StripingLocksProvider<ObjectId> had = instanceIdLocks.putIfAbsent(tenantId, tenantLocks);
                             if (had != null) {
                                 tenantLocks = had;
@@ -113,13 +114,25 @@ public class TasmoViewMaterializer {
 //            for (Future future : futures) {
 //                future.get(); // progagate exceptions to caller.
 //            }
-            tasmoEventBookkeeper.begin(processed);
-            tasmoEventBookkeeper.succeeded();
+
+            List<BookkeepingEvent> bookkeepingEvents = new ArrayList<>();
+            for (WrittenEvent p : processed) {
+                if (p.isBookKeepingEnabled()) {
+                    bookkeepingEvents.add(new BookkeepingEvent(p.getTenantId(), p.getActorId(), p.getEventId(), true));
+                }
+            }
+            bookkeepingStream.callback(bookkeepingEvents);
 
         } catch (Exception ex) {
 
             try {
-                tasmoEventBookkeeper.failed();
+                List<BookkeepingEvent> bookkeepingEvents = new ArrayList<>();
+                for (WrittenEvent p : processed) {
+                    if (p.isBookKeepingEnabled()) {
+                        bookkeepingEvents.add(new BookkeepingEvent(p.getTenantId(), p.getActorId(), p.getEventId(), false));
+                    }
+                }
+                bookkeepingStream.callback(bookkeepingEvents);
             } catch (Exception notificationException) {
                 LOG.error("Failed to notify event bookKeeper of exception: " + ex + " due to exception: " + notificationException);
             }
@@ -131,7 +144,7 @@ public class TasmoViewMaterializer {
                 elapse = 1;
             }
             totalProcessed.addAndGet(writtenEvents.size());
-            double eventsPerSecond = 1000d / ((double) elapse / (double) writtenEvents.size());
+            double eventsPerSecond = 1000d / (elapse / writtenEvents.size());
             double eps = eventsPerSecond * 0.5d + lastEventsPerSecond * 0.5d;
             lastEventsPerSecond = eventsPerSecond;
             LOG.info("BATCH PROCESSED: events:{} in {} millis  totalEvents:{} currentEventPerSecond:{}",

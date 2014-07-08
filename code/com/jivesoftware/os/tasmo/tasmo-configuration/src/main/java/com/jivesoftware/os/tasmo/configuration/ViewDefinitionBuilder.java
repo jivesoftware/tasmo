@@ -173,9 +173,9 @@ public class ViewDefinitionBuilder {
             this.fields = eventAndField[1].split(",");
 
             String qual = null;
-            int qualStart = fields[0].indexOf("(");
+            int qualStart = fields[0].indexOf('(');
             if (fields.length == 1 && qualStart > 0) {
-                int qualEnd = fields[0].indexOf(")", qualStart);
+                int qualEnd = fields[0].indexOf(')', qualStart);
                 if (qualEnd > 0) {
                     qual = fields[0].substring(qualStart + 1, qualEnd);
                 }

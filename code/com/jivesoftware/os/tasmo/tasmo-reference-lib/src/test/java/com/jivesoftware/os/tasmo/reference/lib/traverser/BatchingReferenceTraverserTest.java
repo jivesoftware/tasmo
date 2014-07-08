@@ -67,7 +67,7 @@ public class BatchingReferenceTraverserTest {
         referenceStore.link(tenantIdAndCentricId, aId.getObjectId(), eventId, Arrays.asList(new ReferenceStore.LinkTo(aFieldName, bIds)));
 
         ListeningExecutorService traverserExecutors = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(8));
-        final BatchingReferenceTraverser instance = new BatchingReferenceTraverser(referenceStore, traverserExecutors, 10, 10000);
+        final BatchingReferenceTraverser instance = new BatchingReferenceTraverser(referenceStore, traverserExecutors, 10, 10_000);
         final AtomicBoolean running = new AtomicBoolean(true);
         Executors.newSingleThreadExecutor().submit(new Runnable() {
 

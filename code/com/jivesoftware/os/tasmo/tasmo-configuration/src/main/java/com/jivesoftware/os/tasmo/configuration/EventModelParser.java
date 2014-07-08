@@ -38,12 +38,12 @@ public class EventModelParser {
             Map<String, ValueType> fields = new HashMap<>();
 
             for (String fieldDef : nameAndFields[1].split(",")) {
-                int idx = fieldDef.indexOf("(");
+                int idx = fieldDef.indexOf('(');
                 if (idx < 0 || !fieldDef.endsWith(")")) {
                     throw new IllegalArgumentException("Field definitions require the form name(type)");
                 }
                 String fieldName = fieldDef.substring(0, idx);
-                String fieldType = fieldDef.substring(idx + 1, fieldDef.indexOf(")"));
+                String fieldType = fieldDef.substring(idx + 1, fieldDef.indexOf(')'));
 
                 fields.put(fieldName, ValueType.valueOf(fieldType));
             }

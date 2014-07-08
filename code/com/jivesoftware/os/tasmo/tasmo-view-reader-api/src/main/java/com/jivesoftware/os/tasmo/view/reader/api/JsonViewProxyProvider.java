@@ -54,7 +54,7 @@ public class JsonViewProxyProvider {
         private final ObjectNode objectNode;
         private final Class<?> topLevelInterface;
 
-        public ViewProxyInvocationHandler(ObjectNode root, ObjectNode objectNode, Class<?> topLevelInterface) {
+        ViewProxyInvocationHandler(ObjectNode root, ObjectNode objectNode, Class<?> topLevelInterface) {
             this.root = (root == null) ? objectNode : root;
             this.objectNode = objectNode;
             this.topLevelInterface = topLevelInterface;

@@ -12,6 +12,7 @@ import com.google.common.collect.Sets;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -67,7 +68,7 @@ public class InitiateTraversalContext {
     }
 
     public Set<String> getInitialFieldNames() {
-        return allInitialFieldNames;
+        return Collections.unmodifiableSet(allInitialFieldNames);
     }
 
     public int getMembersSize() {

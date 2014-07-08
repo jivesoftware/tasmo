@@ -12,7 +12,7 @@ public class Debug {
         for (int i = Math.min(stackTrace.length - 3, depth - 1); i > -1; i--) {
             StackTraceElement e = stackTrace[3 + i];
             String className = e.getClassName();
-            className = className.substring(className.lastIndexOf("."));
+            className = className.substring(className.lastIndexOf('.'));
             sb.append(className).append(".").append(e.getMethodName()).append(":").append(e.getLineNumber()).append("->");
         }
         return sb.toString();

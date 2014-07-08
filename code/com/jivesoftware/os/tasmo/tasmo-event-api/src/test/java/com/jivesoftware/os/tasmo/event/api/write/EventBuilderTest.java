@@ -62,14 +62,14 @@ public class EventBuilderTest {
     @Test
     public void testJsonEventCommit() throws Exception {
         //create new jsonEvent
-        ObjectId objectId = new ObjectId("userClass", new Id(1000));
+        ObjectId objectId = new ObjectId("userClass", new Id(1_000));
         Event event = EventBuilder.update(objectId, tenantId, actorId).build();
 
         //you can either commit one event for this event
         ObjectId writeObjectId = event.getObjectId();
 
         Assert.assertEquals(writeObjectId.getClassName(), "userClass");
-        Assert.assertEquals(writeObjectId.getId(), new Id(1000));
+        Assert.assertEquals(writeObjectId.getId(), new Id(1_000));
 
     }
 }

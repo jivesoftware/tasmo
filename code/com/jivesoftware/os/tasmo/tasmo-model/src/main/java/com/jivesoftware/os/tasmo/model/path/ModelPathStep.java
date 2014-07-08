@@ -87,7 +87,7 @@ public class ModelPathStep {
     }
 
     public Set<String> getOriginClassNames() {
-        return originClassName;
+        return Collections.unmodifiableSet(originClassName);
     }
 
     public String getRefFieldName() {
@@ -99,14 +99,14 @@ public class ModelPathStep {
     }
 
     public Set<String> getDestinationClassNames() {
-        return destinationClassName;
+        return Collections.unmodifiableSet(destinationClassName);
     }
 
     public List<String> getFieldNames() {
         if (fieldNames == null) {
             return Collections.emptyList();
         } else {
-            return fieldNames;
+            return Collections.unmodifiableList(fieldNames);
         }
     }
 

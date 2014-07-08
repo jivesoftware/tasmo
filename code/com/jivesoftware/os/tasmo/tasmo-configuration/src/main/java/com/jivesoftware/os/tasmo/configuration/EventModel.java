@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -24,7 +25,7 @@ public class EventModel {
     }
 
     public Map<String, ValueType> getEventFields() {
-        return eventFields;
+        return Collections.unmodifiableMap(eventFields);
     }
 
     private boolean fieldIsStable(String fieldName) {

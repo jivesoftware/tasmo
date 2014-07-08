@@ -11,6 +11,7 @@ package com.jivesoftware.os.tasmo.test;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -73,7 +74,7 @@ public class OrderIdProviderGenerator {
         Object[] toArray = head.toArray();
         List<Long> join = new ArrayList<>();
         for (Object a : toArray) {
-            join.addAll((List<Long>) a);
+            join.addAll((Collection<? extends Long>) a);
         }
         //System.out.println("r:" + join + " " + idBatchConfigs.length);
         permutations.add(join);
@@ -81,7 +82,7 @@ public class OrderIdProviderGenerator {
             toArray = head.toArray();
             join = new ArrayList<>();
             for (Object a : toArray) {
-                join.addAll((List<Long>) a);
+                join.addAll((Collection<? extends Long>) a);
             }
             //System.out.println("r:" + join + " " + idBatchConfigs.length);
             permutations.add(join);

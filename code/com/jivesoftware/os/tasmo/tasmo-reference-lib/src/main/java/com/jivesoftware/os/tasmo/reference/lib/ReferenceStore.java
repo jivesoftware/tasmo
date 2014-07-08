@@ -89,26 +89,6 @@ public class ReferenceStore {
         }
     }
 
-    /**
-     * prevents delegate from getting 'null' aka end of stream marker
-     */
-    static class NullSwallowingCallbackStream implements CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>> {
-
-        private final CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>> delagate;
-
-        public NullSwallowingCallbackStream(CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>> delagate) {
-            this.delagate = delagate;
-        }
-
-        @Override
-        public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> v) throws Exception {
-            if (v != null) {
-                return delagate.callback(v);
-            }
-            return v;
-        }
-
-    }
 
     public void streamForwardRefs(final TenantIdAndCentricId tenantIdAndCentricId,
             Set<String> classNames,
@@ -127,7 +107,7 @@ public class ReferenceStore {
                 LOG.trace(System.currentTimeMillis() + " |--> Get bIds Tenant={} A={}", tenantIdAndCentricId, aClassAndField_aId);
             }
 
-            multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
+            multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1_000, false, null, null,
                     new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
                         @Override
                         public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> bId) throws Exception {
@@ -237,16 +217,6 @@ public class ReferenceStore {
         concurrencyStore.updated(tenantIdAndCentricId, from, fields, timestamp);
     }
 
-    static public class LinkTo {
-
-        private final String fieldName;
-        private final Collection<Reference> tos;
-
-        public LinkTo(String fieldName, Collection<Reference> tos) {
-            this.fieldName = fieldName;
-            this.tos = tos;
-        }
-    }
 
     public void unlink(final TenantIdAndCentricId tenantIdAndCentricId,
             final long timestamp,
@@ -269,7 +239,7 @@ public class ReferenceStore {
         final List<RowColumnTimestampRemove<ClassAndField_IdKey, ObjectId>> removeBackLinks = new ArrayList<>();
         final List<RowColumnTimestampRemove<ClassAndField_IdKey, ObjectId>> removeLinks = new ArrayList<>();
 
-        multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1000, false, null, null,
+        multiLinks.getEntrys(tenantIdAndCentricId, aClassAndField_aId, null, Long.MAX_VALUE, 1_000, false, null, null,
                 new CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>>() {
                     @Override
                     public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> to)
@@ -305,5 +275,37 @@ public class ReferenceStore {
 
         removedTos.callback(null); // EOS
 
+    }
+
+    /**
+     * prevents delegate from getting 'null' aka end of stream marker
+     */
+    static class NullSwallowingCallbackStream implements CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>> {
+
+        private final CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>> delagate;
+
+        NullSwallowingCallbackStream(
+            CallbackStream<ColumnValueAndTimestamp<ObjectId, byte[], Long>> delagate) {
+            this.delagate = delagate;
+        }
+
+        @Override
+        public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> v) throws Exception {
+            if (v != null) {
+                return delagate.callback(v);
+            }
+            return v;
+        }
+    }
+
+    public static class LinkTo {
+
+        private final String fieldName;
+        private final Collection<Reference> tos;
+
+        public LinkTo(String fieldName, Collection<Reference> tos) {
+            this.fieldName = fieldName;
+            this.tos = tos;
+        }
     }
 }

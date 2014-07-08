@@ -66,7 +66,7 @@ public class ViewValueWriter {
     /**
      * These cannot be shared across multiple threads.
      */
-    final public static class Transaction {
+    public static class Transaction {
 
         private final TenantIdAndCentricId tenantIdAndCentricId;
         private final Thread constructingThread;

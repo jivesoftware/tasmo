@@ -105,7 +105,7 @@ public class ViewProviderTest {
                 viewFormatter,
                 merger,
                 staleViewFieldStream,
-                1024L * 1024L * 10);
+                1_024L * 1_024L * 10);
 
     }
 

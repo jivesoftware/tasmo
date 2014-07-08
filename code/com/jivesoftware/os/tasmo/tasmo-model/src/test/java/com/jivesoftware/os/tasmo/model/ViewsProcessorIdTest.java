@@ -26,7 +26,7 @@ public class ViewsProcessorIdTest {
 
         int hashCode = processorId.hashCode();
         System.out.println("hashCode:" + hashCode);
-        Assert.assertEquals(hashCode, 7324176);
+        Assert.assertEquals(hashCode, 7_324_176);
 
         String toString = processorId.toString();
         System.out.println("toString:" + toString);

@@ -1,6 +1,7 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -40,7 +41,7 @@ public class TraversablePath {
     }
 
     public List<StepTraverser> getStepTraversers() {
-        return stepTraversers;
+        return Collections.unmodifiableList(stepTraversers);
     }
 
     @Override

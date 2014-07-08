@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import com.jivesoftware.os.jive.utils.id.TenantId;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -42,7 +43,7 @@ public class Views {
     }
 
     public List<ViewBinding> getViewBindings() {
-        return viewBindings;
+        return Collections.unmodifiableList(viewBindings);
     }
 
     @Override

@@ -13,7 +13,7 @@ public class StringHashcodeViewPathKeyProvider implements ViewPathKeyProvider {
     static char[] dot = new char[]{'.'};
 
     @Override
-    public final long pathKeyHashcode(String[] classes) {
+    public long pathKeyHashcode(String[] classes) {
         int hash = 0;
         for (int i = 0; i < classes.length; i++) {
             if (i != 0) {

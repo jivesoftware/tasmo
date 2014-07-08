@@ -43,7 +43,7 @@ public class ViewFieldsCollectorTest {
     @BeforeMethod
     public void setUpMethod() throws Exception {
         JsonViewMerger jsonViewMerger = new JsonViewMerger(mapper);
-        viewFieldsCollector = new ViewFieldsCollector(jsonViewMerger, 1024 * 1024 * 10);
+        viewFieldsCollector = new ViewFieldsCollector(jsonViewMerger, 1_024 * 1_024 * 10);
     }
 
     @AfterMethod

@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.configuration.views;
 
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -30,7 +31,7 @@ class VersionedViewsModel {
     }
 
     public Map<String, Map<Long, PathAndDictionary>> getViewsModel() {
-        return viewValueBindings;
+        return Collections.unmodifiableMap(viewValueBindings);
     }
 
     @Override

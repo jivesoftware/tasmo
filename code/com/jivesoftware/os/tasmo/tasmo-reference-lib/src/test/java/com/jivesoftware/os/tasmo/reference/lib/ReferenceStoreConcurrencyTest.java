@@ -54,7 +54,7 @@ public class ReferenceStoreConcurrencyTest {
         Id userId = Id.NULL;
         final TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
 
-        ObjectId from = new ObjectId("A", new Id(rand.nextInt(1000)));
+        ObjectId from = new ObjectId("A", new Id(rand.nextInt(1_000)));
         String fromRefFieldName = "fromRefFieldName";
 
         final RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values = new RowColumnValueStoreImpl<>();
@@ -110,7 +110,7 @@ public class ReferenceStoreConcurrencyTest {
             public TenantIdAndRow<TenantIdAndCentricId, ObjectId> callback(
                 final TenantIdAndRow<TenantIdAndCentricId, ObjectId> row) throws Exception {
                 if (row != null) {
-                    values.getEntrys(row.getTenantId(), row.getRow(), null, Long.MAX_VALUE, 1000, false, null, null,
+                    values.getEntrys(row.getTenantId(), row.getRow(), null, Long.MAX_VALUE, 1_000, false, null, null,
                         new CallbackStream<ColumnValueAndTimestamp<String, Long, Long>>() {
 
                             @Override
@@ -163,7 +163,7 @@ public class ReferenceStoreConcurrencyTest {
         Reference[] tos;
         long value;
 
-        public Event(ConcurrencyStore concurrencyStore,
+        Event(ConcurrencyStore concurrencyStore,
             ReferenceStore referenceStore,
             RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values,
             TenantIdAndCentricId tenantIdAndCentricId,
@@ -208,7 +208,7 @@ public class ReferenceStoreConcurrencyTest {
 
         void process() {
             int attempts = 0;
-            int maxAttempts = 1000;
+            int maxAttempts = 1_000;
             while (attempts < maxAttempts) {
                 attempts++;
                 if (attempts > 1) {
@@ -343,7 +343,7 @@ public class ReferenceStoreConcurrencyTest {
         Long columnValue;
         long timestamp;
 
-        public Add(TenantIdAndCentricId tenantId, ObjectId rowKey, String columnKey, Long columnValue, long timestamp) {
+        Add(TenantIdAndCentricId tenantId, ObjectId rowKey, String columnKey, Long columnValue, long timestamp) {
             this.tenantId = tenantId;
             this.rowKey = rowKey;
             this.columnKey = columnKey;

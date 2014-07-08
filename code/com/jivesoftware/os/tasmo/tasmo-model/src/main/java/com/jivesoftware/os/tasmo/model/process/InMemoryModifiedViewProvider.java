@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.model.process;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -9,7 +10,7 @@ public class InMemoryModifiedViewProvider implements ModifiedViewProvider {
 
     @Override
     public Set<ModifiedViewInfo> getModifiedViews() {
-        return modifiedViews;
+        return Collections.unmodifiableSet(modifiedViews);
     }
 
     @Override

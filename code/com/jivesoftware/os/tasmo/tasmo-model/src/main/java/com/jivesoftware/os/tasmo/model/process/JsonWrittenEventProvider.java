@@ -89,7 +89,7 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
         private final JsonEventPayload payload;
         private final boolean isBookKeepingEnabled;
 
-        public JsonWrittenEvent(ObjectNode eventNode, JsonEventConventions eventConventions) {
+        JsonWrittenEvent(ObjectNode eventNode, JsonEventConventions eventConventions) {
             this.eventNode = eventNode;
             this.eventConventions = eventConventions;
             this.isBookKeepingEnabled = eventConventions.isTrackEventProcessedLifecycle(eventNode);
@@ -156,7 +156,7 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
         final ObjectId instanceId;
         final JsonEventConventions eventConventions;
 
-        public JsonEventPayload(ObjectNode instanceNode, ObjectId instanceId, JsonEventConventions eventConventions) {
+        JsonEventPayload(ObjectNode instanceNode, ObjectId instanceId, JsonEventConventions eventConventions) {
             this.instanceNode = instanceNode;
             this.eventConventions = eventConventions;
             this.instanceId = instanceId;
@@ -202,7 +202,7 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
         public boolean isDeletion() {
             JsonNode deletion = instanceNode.get(ReservedFields.DELETED);
             if (deletion != null && deletion.isBoolean()) {
-                return ((BooleanNode) deletion).booleanValue();
+                return deletion.booleanValue();
             }
 
             return false;
@@ -225,7 +225,7 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
 
         final JsonNode fieldVal;
 
-        public JsonLiteralFieldValue(JsonNode fieldVal) {
+        JsonLiteralFieldValue(JsonNode fieldVal) {
             this.fieldVal = fieldVal;
         }
 
@@ -268,7 +268,7 @@ public class JsonWrittenEventProvider implements WrittenEventProvider<ObjectNode
         private final ObjectNode fieldsNode;
         private volatile byte[] bytes;
 
-        public JsonLeafNodeFields(ObjectMapper mapper) {
+        JsonLeafNodeFields(ObjectMapper mapper) {
             this.mapper = mapper;
             this.fieldsNode = mapper.createObjectNode();
         }

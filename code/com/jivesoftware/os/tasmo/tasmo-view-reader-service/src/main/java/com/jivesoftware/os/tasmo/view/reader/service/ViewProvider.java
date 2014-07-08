@@ -179,7 +179,7 @@ public class ViewProvider<V> implements ViewReader<V> {
         private final Set<Id> permissionCheckTheseIds;
         private final ViewFormatter<VV> viewFormatter;
 
-        public ViewCollectorImpl(
+        ViewCollectorImpl(
             ViewDescriptor viewDescriptor,
             Map<Long, PathAndDictionary> viewClassFieldBindings,
             ViewFieldsCollector viewFieldsCollector,

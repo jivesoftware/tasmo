@@ -19,7 +19,7 @@ public class JsonEventConventionsTest {
     public void testValidateEvent() throws Exception {
         ObjectNode event = createValidEvent();
         jsonEventConventions.validate(event);
-        jsonEventConventions.setCausedBy(event, 4353);
+        jsonEventConventions.setCausedBy(event, 4_353);
         jsonEventConventions.validate(event);
     }
 
@@ -114,7 +114,7 @@ public class JsonEventConventionsTest {
     public void testValidateExpectedFieldCountWithCausedBy() throws Exception {
         ObjectNode event = createValidEvent();
         event.put("foobar", "bar");
-        jsonEventConventions.setCausedBy(event, 4235);
+        jsonEventConventions.setCausedBy(event, 4_235);
         jsonEventConventions.validate(event);
     }
 
@@ -143,10 +143,10 @@ public class JsonEventConventionsTest {
     private ObjectNode createValidEvent() {
         ObjectNode event = objectMapper.createObjectNode();
         jsonEventConventions.setTenantId(event, new TenantId("foobar"));
-        jsonEventConventions.setActorId(event, new Id(123456));
-        jsonEventConventions.setUserId(event, new Id(123456));
+        jsonEventConventions.setActorId(event, new Id(123_456));
+        jsonEventConventions.setUserId(event, new Id(123_456));
         jsonEventConventions.setInstanceClassName(event, "TestEvent");
-        jsonEventConventions.setInstanceId(event, new Id(7868763), "TestEvent");
+        jsonEventConventions.setInstanceId(event, new Id(7_868_763), "TestEvent");
         return event;
     }
 }

@@ -17,7 +17,6 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
-import com.jivesoftware.os.tasmo.lib.process.bookkeeping.TasmoEventBookkeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
@@ -74,7 +73,7 @@ public class TasmoServiceInitializer {
             TasmoStorageProvider tasmoStorageProvider,
             CommitChange commitChange,
             ViewChangeNotificationProcessor viewChangeNotificationProcessor,
-            CallbackStream<List<BookkeepingEvent>> bookKeepingStream,
+            CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
             final Optional<WrittenEventProcessorDecorator> writtenEventProcessorDecorator,
             TasmoBlacklist tasmoBlacklist,
             TasmoServiceConfig config) throws Exception {
@@ -85,7 +84,6 @@ public class TasmoServiceInitializer {
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, tasmoStorageProvider.multiLinksStorage(),
             tasmoStorageProvider.multiBackLinksStorage());
 
-        TasmoEventBookkeeper bookkeeper = new TasmoEventBookkeeper(bookKeepingStream);
         TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
 
         final TasmoViewModel tasmoViewModel = new TasmoViewModel(
@@ -160,7 +158,7 @@ public class TasmoServiceInitializer {
                 .build();
 
         ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
-        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeeper,
+        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeepingStream,
                 tasmoEventProcessor,
                 MoreExecutors.listeningDecorator(eventProcessorThreads), tasmoBlacklist);
 

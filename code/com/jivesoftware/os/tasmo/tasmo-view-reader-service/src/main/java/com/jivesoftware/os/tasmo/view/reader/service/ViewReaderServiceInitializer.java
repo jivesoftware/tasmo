@@ -53,7 +53,7 @@ public class ViewReaderServiceInitializer {
         @LongDefault(1000L * 60 * 60 * 24 * 30) // 30 days
         public Long getRemoveUndeclaredFieldsAfterNMillis();
 
-        @LongDefault(1024L * 1024L * 50) // 50 mb
+        @LongDefault(1024L * 1_024L * 50) // 50 mb
         public Long getViewMaxSizeInBytes();
     }
 

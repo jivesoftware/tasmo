@@ -54,7 +54,7 @@ public class JsonEventTestDataProvider {
         String key2 = "ObjectIdsKey";
         LinkedList<Object> value2 = new LinkedList<>();
 
-        value2.add(new ObjectId("something", new Id(2343)));
+        value2.add(new ObjectId("something", new Id(2_343)));
         value2.add("my string");
 
         Object[][] dataObj = new Object[][] {

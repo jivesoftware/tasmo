@@ -13,7 +13,7 @@ public class MarshallerTestDataProvider {
     public static Object[][] createBytes() throws Exception {
 
         String className1 = "amazon";
-        long id1 = 300000;
+        long id1 = 300_000;
 
         ObjectId objectId = new ObjectId(className1, new Id(id1));
         ObjectIdMarshaller marshaller1 = new ObjectIdMarshaller();
