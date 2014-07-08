@@ -57,7 +57,7 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
             for (WrittenEvent writtenEvent : writtenEvents) {
                 if (writtenEvent != null) {
                     if (tasmoBlacklist.blacklisted(writtenEvent)) {
-                        LOG.info("BACKLISTED event" + writtenEvent);
+                        LOG.info("BLACKLISTED event" + writtenEvent);
                     } else {
 
                         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
