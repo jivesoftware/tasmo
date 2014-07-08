@@ -40,6 +40,7 @@ public class EventWriter {
                 }
             }), options);
         } catch (JsonEventWriteException e) {
+            e.printStackTrace();
             throw new EventWriteException(e);
         }
     }

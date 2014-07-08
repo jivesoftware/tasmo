@@ -30,8 +30,8 @@ public class ConcurrencyTest extends BaseTest {
 
     public static final Random rand = new Random();
 
-    @Test (dataProvider = "tasmoMaterializer", enabled = false, invocationCount = 1000, singleThreaded = true, skipFailedInvocations = true)
-    public void concurrencyTest(TasmoMaterializerHarness t) throws Exception {
+    @Test (dataProvider = "tasmoAsyncMaterializer", enabled = true, invocationCount = 10, singleThreaded = true, skipFailedInvocations = true)
+    public void concurrencyTest(TasmoMaterializerHarness async, TasmoMaterializerHarness sync) throws Exception {
 
         // Folder->Doc->User
         String[] binding = new String[]{
@@ -50,26 +50,27 @@ public class ConcurrencyTest extends BaseTest {
         };
 
         Views views = TasmoModelFactory.modelToViews(binding);
-        t.initModel(views);
+        async.initModel(views);
+        sync.initModel(views);
 
-        FireableValue a1 = new FireableValue(t, 1_000_000, "A", new String[]{ "x", "y", "z" }, new String[]{ "1", "2", "3" });
-        FireableValue b1 = new FireableValue(t, 1_001_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
-        FireableValue b2 = new FireableValue(t, 1_002_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
-        FireableValue b3 = new FireableValue(t, 1_003_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
-        FireableValue c1 = new FireableValue(t, 1_001_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
-        FireableValue c2 = new FireableValue(t, 1_002_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
-        FireableValue c3 = new FireableValue(t, 1_003_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
-        FireableValue d1 = new FireableValue(t, 1_001_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
-        FireableValue d2 = new FireableValue(t, 1_002_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
-        FireableValue d3 = new FireableValue(t, 1_003_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
+        FireableValue a1 = new FireableValue(async, 1_000_000, "A", new String[]{ "x", "y", "z" }, new String[]{ "1", "2", "3" });
+        FireableValue b1 = new FireableValue(async, 1_001_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
+        FireableValue b2 = new FireableValue(async, 1_002_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
+        FireableValue b3 = new FireableValue(async, 1_003_002, "B", new String[]{ "h", "i", "j" }, new String[]{ "1", "2", "3" });
+        FireableValue c1 = new FireableValue(async, 1_001_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
+        FireableValue c2 = new FireableValue(async, 1_002_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
+        FireableValue c3 = new FireableValue(async, 1_003_004, "C", new String[]{ "a", "b", "c" }, new String[]{ "1", "2", "3" });
+        FireableValue d1 = new FireableValue(async, 1_001_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
+        FireableValue d2 = new FireableValue(async, 1_002_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
+        FireableValue d3 = new FireableValue(async, 1_003_006, "D", new String[]{ "k", "l", "m" }, new String[]{ "1", "2", "3" });
 
-        FireableRef refA = new FireableRef(t, a1, "toB", Arrays.asList(b1, b2, b3), b1);
-        FireableRef refB1 = new FireableRef(t, b1, "toC", Arrays.asList(c1, c2, c3), c1);
-        FireableRef refB2 = new FireableRef(t, b2, "toC", Arrays.asList(c1, c2, c3), c2);
-        FireableRef refB3 = new FireableRef(t, b3, "toC", Arrays.asList(c1, c2, c3), c3);
-        FireableRef refC1 = new FireableRef(t, c1, "toD", Arrays.asList(d1, d2, d3), d1);
-        FireableRef refC2 = new FireableRef(t, c2, "toD", Arrays.asList(d1, d2, d3), d2);
-        FireableRef refC3 = new FireableRef(t, c3, "toD", Arrays.asList(d1, d2, d3), d3);
+        FireableRef refA = new FireableRef(async, a1, "toB", Arrays.asList(b1, b2, b3), b1);
+        FireableRef refB1 = new FireableRef(async, b1, "toC", Arrays.asList(c1, c2, c3), c1);
+        FireableRef refB2 = new FireableRef(async, b2, "toC", Arrays.asList(c1, c2, c3), c2);
+        FireableRef refB3 = new FireableRef(async, b3, "toC", Arrays.asList(c1, c2, c3), c3);
+        FireableRef refC1 = new FireableRef(async, c1, "toD", Arrays.asList(d1, d2, d3), d1);
+        FireableRef refC2 = new FireableRef(async, c2, "toD", Arrays.asList(d1, d2, d3), d2);
+        FireableRef refC3 = new FireableRef(async, c3, "toD", Arrays.asList(d1, d2, d3), d3);
 
 
         //ExecutorService threads = MoreExecutors.sameThreadExecutor();
@@ -119,10 +120,33 @@ public class ConcurrencyTest extends BaseTest {
             future.get();
         }
 
+
+        // Yes this sucks!
+        a1.t  = sync; a1.finalEvent();
+        b1.t  = sync; b1.finalEvent();
+        b2.t  = sync; b2.finalEvent();
+        b3.t  = sync; b3.finalEvent();
+        c1.t  = sync; c1.finalEvent();
+        c2.t  = sync; c2.finalEvent();
+        c3.t  = sync; c3.finalEvent();
+        d1.t  = sync; d1.finalEvent();
+        d2.t  = sync; d2.finalEvent();
+        d3.t  = sync; d3.finalEvent();
+
+
+        refA.t  = sync; refA.finalEvent();
+        refB1.t  = sync; refB1.finalEvent();
+        refB2.t  = sync; refB2.finalEvent();
+        refB3.t  = sync; refB3.finalEvent();
+        refC1.t  = sync; refC1.finalEvent();
+        refC2.t  = sync; refC2.finalEvent();
+        refC3.t  = sync; refC3.finalEvent();
+
+
         System.out.println("- Write AView ------------------------");
-        ObjectNode aTestView = t.readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
+        ObjectNode aTestView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
         System.out.println(mapper.writeValueAsString(aTestView));
-        ObjectNode aTestView1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
+        ObjectNode aTestView1 = sync.readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
         System.out.println("- vs - ");
         System.out.println(mapper.writeValueAsString(aTestView1));
         Assert.assertEquals(aTestView, aTestView1);
@@ -130,9 +154,9 @@ public class ConcurrencyTest extends BaseTest {
 
 
         System.out.println("- Write AViewDup-");
-        ObjectNode aTestDupView = t.readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
+        ObjectNode aTestDupView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
         System.out.println(mapper.writeValueAsString(aTestDupView));
-        ObjectNode aTestDupView1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
+        ObjectNode aTestDupView1 = sync.readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
         System.out.println("- vs Read - ");
         System.out.println(mapper.writeValueAsString(aTestDupView1));
         Assert.assertEquals(aTestDupView, aTestDupView1);
@@ -142,17 +166,17 @@ public class ConcurrencyTest extends BaseTest {
 
 
         System.out.println("- Write CView -");
-        ObjectNode cTestView = t.readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
+        ObjectNode cTestView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
         System.out.println(mapper.writeValueAsString(cTestView));
-        ObjectNode cTestView1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
+        ObjectNode cTestView1 = sync.readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
         System.out.println("- vs Read - ");
         System.out.println(mapper.writeValueAsString(cTestView1));
         Assert.assertEquals(cTestView, cTestView1);
 
         System.out.println("- Write CViewDup -");
-        ObjectNode cTestDupView = t.readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
+        ObjectNode cTestDupView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
         System.out.println(mapper.writeValueAsString(cTestDupView));
-        ObjectNode cTestDupView1 = t.readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
+        ObjectNode cTestDupView1 = sync.readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
         System.out.println("- vs Read - ");
         System.out.println(mapper.writeValueAsString(cTestDupView1));
         Assert.assertEquals(cTestDupView, cTestDupView1);
@@ -162,8 +186,13 @@ public class ConcurrencyTest extends BaseTest {
 
     }
 
+
+    void run() {
+
+    }
+
     class FireableValue implements Fireable<String> {
-        private final TasmoMaterializerHarness t;
+        TasmoMaterializerHarness t;
         private final long instanceId;
         private final String eventClassName;
         private final String[] fieldNames;
@@ -277,7 +306,7 @@ public class ConcurrencyTest extends BaseTest {
     }
 
     class FireableRef implements Fireable<FireableValue> {
-        private final TasmoMaterializerHarness t;
+        TasmoMaterializerHarness t;
         private final FireableValue id;
         private final String fieldName;
         private final List<FireableValue> possibleRefs;
