@@ -30,7 +30,7 @@ public class ConcurrencyTest extends BaseTest {
 
     public static final Random rand = new Random();
 
-    @Test (dataProvider = "tasmoAsyncMaterializer", enabled = true, invocationCount = 10, singleThreaded = true, skipFailedInvocations = true)
+    @Test (dataProvider = "tasmoAsyncMaterializer", enabled = false, invocationCount = 10, singleThreaded = true, skipFailedInvocations = true)
     public void concurrencyTest(TasmoMaterializerHarness async, TasmoMaterializerHarness sync) throws Exception {
 
         // Folder->Doc->User
