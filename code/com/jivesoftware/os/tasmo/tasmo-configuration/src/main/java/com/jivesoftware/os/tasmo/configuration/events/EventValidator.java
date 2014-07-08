@@ -54,7 +54,7 @@ public class EventValidator {
                         if (modelFieldType == null) {
                             LOG.inc("unexpected_field>" + ingressFieldName);
                             LOG.inc("unexpected_field");
-                            builder.addMessage(failInvalidEvents, "unexpected: " + ingressFieldType);
+                            builder.addMessage(failInvalidEvents, "unexpected field: '" + ingressFieldName + "'");
                         }
                         if (modelFieldType != ingressField.getValue()) {
                             LOG.inc("unexpected_type>" + ingressFieldName + ">" + ingressFieldType);
