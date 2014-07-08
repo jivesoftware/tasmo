@@ -62,7 +62,7 @@ public class MaterializerServiceEndpoints {
     }
 
     @GET
-    @Path ("/backlisted/events/clear")
+    @Path ("/blacklisted/events/clear")
     public Response clearBlacklistedEventIds() {
         tasmoBlacklist.clear();
         return Response.ok("done", MediaType.TEXT_PLAIN).build();

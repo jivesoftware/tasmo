@@ -1,9 +1,12 @@
 package com.jivesoftware.os.tasmo.configuration.events;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
+import java.util.List;
 
 /**
  *
@@ -11,17 +14,14 @@ import java.util.Objects;
 public class Validated {
 
     private final ChainedVersion version;
-    private final boolean valid;
-    private final Collection<String> unexpectedFields;
+    private final Collection<String> infos;
+    private final Collection<String> errors;
 
-    private Validated(ChainedVersion version, boolean valid, Collection<String> unexpectedFields) {
+    private Validated(ChainedVersion version, List<String> infos, List<String> errors) {
         this.version = version;
-        this.valid = valid;
 
-        if (unexpectedFields == null) {
-            unexpectedFields = Collections.emptyList();
-        }
-        this.unexpectedFields = unexpectedFields;
+        this.infos = Collections.unmodifiableCollection(infos);
+        this.errors = Collections.unmodifiableCollection(errors);
     }
 
     public ChainedVersion getVersion() {
@@ -29,50 +29,25 @@ public class Validated {
     }
 
     public boolean isValid() {
-        return valid;
+        return errors.isEmpty();
     }
 
-    public Collection<String> getUnexpectedFields() {
-        return Collections.unmodifiableCollection(unexpectedFields);
+    public Collection<String> getInfoMessages() {
+        return infos;
+    }
+
+    public Collection<String> getErrorMessages() {
+        return errors;
     }
 
     @Override
     public String toString() {
         return "Validated{"
             + "version=" + version
-            + ", valid=" + valid
-            + ", unexpectedFields=" + unexpectedFields
-            + '}';
-    }
-
-    @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 53 * hash + Objects.hashCode(this.version);
-        hash = 53 * hash + (this.valid ? 1 : 0);
-        hash = 53 * hash + Objects.hashCode(this.unexpectedFields);
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final Validated other = (Validated) obj;
-        if (!Objects.equals(this.version, other.version)) {
-            return false;
-        }
-        if (this.valid != other.valid) {
-            return false;
-        }
-        if (!Objects.equals(this.unexpectedFields, other.unexpectedFields)) {
-            return false;
-        }
-        return true;
+            + ", valid=" + isValid()
+            + ", infos=[" + Joiner.on(',').join(infos)
+            + "], errors=[" + Joiner.on(',').join(errors)
+            + "]}";
     }
 
     public static ValidatedBuilder build() {
@@ -80,26 +55,48 @@ public class Validated {
     }
 
     public static class ValidatedBuilder {
-
-        private ChainedVersion version = null;
-        private Collection<String> unexpectedFields = Collections.emptyList();
+        private ChainedVersion version;
+        private ArrayList<String> infos;
+        private ArrayList<String> errors;
 
         public ValidatedBuilder setVersion(ChainedVersion version) {
             this.version = version;
             return this;
         }
 
-        public ValidatedBuilder setUnexpectedFields(Collection<String> unexpectedFields) {
-            this.unexpectedFields = unexpectedFields;
+        public ValidatedBuilder addMessage(boolean error, String message) {
+            Preconditions.checkNotNull(message);
+            if (error) {
+                addError(message);
+            } else {
+                addInfo(message);
+            }
             return this;
         }
 
-        public Validated invalid() {
-            return new Validated(version, false, unexpectedFields);
+        public ValidatedBuilder addInfo(String message) {
+            Preconditions.checkNotNull(message);
+            if (infos == null) {
+                infos = new ArrayList<>();
+            }
+            infos.add(message);
+            return this;
         }
 
-        public Validated valid() {
-            return new Validated(version, true, unexpectedFields);
+        public ValidatedBuilder addError(String message) {
+            Preconditions.checkNotNull(message);
+            if (errors == null) {
+                errors = new ArrayList<>();
+            }
+            errors.add(message);
+            return this;
         }
+
+        public Validated build() {
+            List<String> infoList = (this.infos == null) ? Collections.<String>emptyList() : this.infos;
+            List<String> errorList = (this.errors == null) ? Collections.<String>emptyList() : this.errors;
+            return new Validated(version, infoList, errorList);
+        }
+
     }
 }

@@ -50,8 +50,32 @@ public class EventValidatorTest {
     }
 
     @Test
-    public void testValidateEvent() {
+    public void validateUnknownEvent_initial() {
+        Validated validateEvent = validateUnknownEvent(false);
+        Assert.assertFalse(validateEvent.isValid());
+    }
 
+    @Test
+    public void validateUnknownEvent_initial_noFail() {
+        eventValidator = new EventValidator(false);
+        Validated validateEvent = validateUnknownEvent(false);
+        Assert.assertTrue(validateEvent.isValid());
+    }
+
+    @Test
+    public void validateUnknownEvent_subsequent() {
+        Validated validateEvent = validateUnknownEvent(true);
+        Assert.assertTrue(validateEvent.isValid());
+    }
+
+    @Test
+    public void validateUnknownEvent_subsequent_noFail() {
+        eventValidator = new EventValidator(false);
+        Validated validateEvent = validateUnknownEvent(true);
+        Assert.assertTrue(validateEvent.isValid());
+    }
+
+    private Validated validateUnknownEvent(boolean subsequent) {
         ObjectNode instance = mapper.createObjectNode();
         instance.put("value", "value");
         instance.put("ref_field", mapper.convertValue(new ObjectId("Bar", new Id(2)).toStringForm(), JsonNode.class));
@@ -64,38 +88,35 @@ public class EventValidatorTest {
 
         ChainedVersion version2 = new ChainedVersion("1", "2");
         Mockito.when(eventsProvider.getCurrentEventsVersion(tenantId))
-            .thenReturn(version, version2);
+                .thenReturn(version, version2);
         Mockito.when(eventsProvider.getEvents(Mockito.any(EventsProcessorId.class)))
-            .thenReturn(Arrays.asList(event), Arrays.asList(event2));
+                .thenReturn(Arrays.asList(event), Arrays.asList(event2));
 
         VersionedEventsModel versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);
-        Validated validateEvent = eventValidator.validateEvent(versionedEventsModel, event2);
-        Assert.assertFalse(validateEvent.isValid());
-
-        tenantEventsProvider.loadModel(tenantId);
-        versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);
-        validateEvent = eventValidator.validateEvent(versionedEventsModel, event2);
-        Assert.assertTrue(validateEvent.isValid());
-
+        if (subsequent) {
+            tenantEventsProvider.loadModel(tenantId);
+            versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);
+        }
+        return eventValidator.validateEvent(versionedEventsModel, event2);
     }
 
     @Test
-    public void testValidateMulitRefsEvent() {
+    public void testValidateMultiRefsEvent() {
 
         Mockito.when(eventsProvider.getCurrentEventsVersion(tenantId))
-            .thenReturn(version, version);
+                .thenReturn(version, version);
         Mockito.when(eventsProvider.getEvents(Mockito.any(EventsProcessorId.class)))
-            .thenReturn(Arrays.asList(event));
+                .thenReturn(Arrays.asList(event));
 
         ObjectNode instance = mapper.createObjectNode();
         instance.put("value", "value");
         instance.put("ref_field", mapper.convertValue(new ObjectId("Bar", new Id(2)).toStringForm(), JsonNode.class));
         instance.put("refs_field", mapper.convertValue(
-            Arrays.asList(new ObjectId("Baz", new Id(3)).toStringForm(),
-                new ObjectId("Gaga", new Id(7)).toStringForm()), JsonNode.class));
+                Arrays.asList(new ObjectId("Baz", new Id(3)).toStringForm(),
+                        new ObjectId("Gaga", new Id(7)).toStringForm()), JsonNode.class));
         instance.put("all_field", mapper.convertValue(
-            Arrays.asList(new ObjectId("Goo", new Id(4)).toStringForm(),
-                new ObjectId("Gaga", new Id(7)).toStringForm()), JsonNode.class));
+                Arrays.asList(new ObjectId("Goo", new Id(4)).toStringForm(),
+                        new ObjectId("Gaga", new Id(7)).toStringForm()), JsonNode.class));
 
         ObjectNode event2 = mapper.createObjectNode();
         jec.setEventId(event2, 1);
@@ -109,12 +130,23 @@ public class EventValidatorTest {
     }
 
     @Test
-    public void testInvalidEventClassEvent() {
+    public void invalidEventClass() {
+        Validated validateEvent = doInvalidEventClass();
+        Assert.assertFalse(validateEvent.isValid());
+    }
 
+    @Test
+    public void invalidEventClass_noFail() {
+        eventValidator = new EventValidator(false);
+        Validated validateEvent = doInvalidEventClass();
+        Assert.assertTrue(validateEvent.isValid());
+    }
+
+    private Validated doInvalidEventClass() {
         Mockito.when(eventsProvider.getCurrentEventsVersion(tenantId))
-            .thenReturn(version, version);
+                .thenReturn(version, version);
         Mockito.when(eventsProvider.getEvents(Mockito.any(EventsProcessorId.class)))
-            .thenReturn(Arrays.asList(event));
+                .thenReturn(Arrays.asList(event));
 
         ObjectNode instance = mapper.createObjectNode();
         instance.put("value", "value");
@@ -125,17 +157,27 @@ public class EventValidatorTest {
 
         tenantEventsProvider.loadModel(tenantId);
         VersionedEventsModel versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);
-        Validated validateEvent = eventValidator.validateEvent(versionedEventsModel, event2);
-        Assert.assertFalse(validateEvent.isValid());
-
+        return eventValidator.validateEvent(versionedEventsModel, event2);
     }
 
     @Test
-    public void testInvalidFieldEvent() {
+    public void invalidEventField() {
+        Validated validateEvent = doInvalidEventField();
+        Assert.assertFalse(validateEvent.isValid());
+    }
+
+    @Test
+    public void invalidEventField_noFail() {
+        eventValidator = new EventValidator(false);
+        Validated validateEvent = doInvalidEventField();
+        Assert.assertTrue(validateEvent.isValid());
+    }
+
+    public Validated doInvalidEventField() {
         Mockito.when(eventsProvider.getCurrentEventsVersion(tenantId))
-            .thenReturn(version);
+                .thenReturn(version);
         Mockito.when(eventsProvider.getEvents(Mockito.any(EventsProcessorId.class)))
-            .thenReturn(Arrays.asList(event));
+                .thenReturn(Arrays.asList(event));
 
         ObjectNode instance = mapper.createObjectNode();
         instance.put("value", "value");
@@ -151,18 +193,16 @@ public class EventValidatorTest {
 
         instance.put("wrong", "value");
         versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);
-        validateEvent = eventValidator.validateEvent(versionedEventsModel, event2);
-        Assert.assertFalse(validateEvent.isValid());
-
+        return eventValidator.validateEvent(versionedEventsModel, event2);
     }
 
     @Test
     public void testInvalidFieldTypeEvent() {
 
         Mockito.when(eventsProvider.getCurrentEventsVersion(tenantId))
-            .thenReturn(version, version);
+                .thenReturn(version, version);
         Mockito.when(eventsProvider.getEvents(Mockito.any(EventsProcessorId.class)))
-            .thenReturn(Arrays.asList(event));
+                .thenReturn(Arrays.asList(event));
 
         ObjectNode instance = mapper.createObjectNode();
         instance.put("value", "value");
@@ -209,9 +249,9 @@ public class EventValidatorTest {
 
         ChainedVersion version2 = new ChainedVersion("1", "2");
         Mockito.when(eventsProvider.getCurrentEventsVersion(tenantId))
-            .thenReturn(version, version2);
+                .thenReturn(version, version2);
         Mockito.when(eventsProvider.getEvents(Mockito.any(EventsProcessorId.class)))
-            .thenReturn(Arrays.asList(event), Arrays.asList(event2));
+                .thenReturn(Arrays.asList(event), Arrays.asList(event2));
 
         tenantEventsProvider.loadModel(tenantId);
         VersionedEventsModel versionedEventsModel = tenantEventsProvider.getVersionedEventsModel(tenantId);

@@ -55,7 +55,7 @@ public class TasmoViewMaterializer {
             for (WrittenEvent writtenEvent : writtenEvents) {
                 if (writtenEvent != null) {
                     if (tasmoBlacklist.blacklisted(writtenEvent)) {
-                        LOG.info("BACKLISTED event" + writtenEvent);
+                        LOG.info("BLACKLISTED event" + writtenEvent);
                         processed.add(writtenEvent);
                     } else {
 
