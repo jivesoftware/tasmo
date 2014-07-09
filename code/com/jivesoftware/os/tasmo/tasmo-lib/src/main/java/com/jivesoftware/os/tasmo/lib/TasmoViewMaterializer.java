@@ -14,6 +14,7 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,6 +46,9 @@ public class TasmoViewMaterializer {
     }
 
     public List<WrittenEvent> process(List<WrittenEvent> writtenEvents) throws Exception {
+        if (writtenEvents.isEmpty()) {
+            return Collections.emptyList();
+        }
 
         final List<WrittenEvent> processed = new ArrayList<>(writtenEvents.size());
         final List<WrittenEvent> failedToProcess = new ArrayList<>(writtenEvents.size());
