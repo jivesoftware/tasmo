@@ -51,7 +51,7 @@ public class TenantViewsProvider {
     public void loadModel(TenantId tenantId) {
         ChainedVersion currentVersion = viewsProvider.getCurrentViewsVersion(tenantId);
         if (currentVersion == ChainedVersion.NULL) {
-            versionedViewModel.put(tenantId, new VersionedViewsModel(currentVersion, null));
+            versionedViewModel.put(tenantId, new VersionedViewsModel(currentVersion));
         } else {
             VersionedViewsModel currentVersionedViewsModel = versionedViewModel.get(tenantId);
             if (currentVersionedViewsModel == null
@@ -86,7 +86,7 @@ public class TenantViewsProvider {
             loadModel(tenantId);
         }
         VersionedViewsModel versionedViewsModel = versionedViewModel.get(tenantId);
-        if (versionedViewsModel == null || versionedViewsModel.getViewsModel() == null) {
+        if (versionedViewsModel == null || versionedViewsModel.getViewsModel().isEmpty()) {
             if (!tenantId.equals(masterTenantId)) {
                 versionedViewsModel = versionedViewModel.get(masterTenantId);
             }

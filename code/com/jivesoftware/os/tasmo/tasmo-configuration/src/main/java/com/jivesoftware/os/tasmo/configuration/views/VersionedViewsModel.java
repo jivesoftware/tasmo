@@ -8,6 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.configuration.views;
 
+import com.google.common.base.Preconditions;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import java.util.Collections;
 import java.util.Map;
@@ -21,9 +22,13 @@ class VersionedViewsModel {
     private final ChainedVersion version;
     private final Map<String, Map<Long, PathAndDictionary>> viewValueBindings;
 
+    VersionedViewsModel(ChainedVersion version) {
+        this(version, Collections.<String, Map<Long, PathAndDictionary>>emptyMap());
+    }
+
     VersionedViewsModel(ChainedVersion version, Map<String, Map<Long, PathAndDictionary>> viewValueBindings) {
-        this.version = version;
-        this.viewValueBindings = viewValueBindings;
+        this.version = Preconditions.checkNotNull(version);
+        this.viewValueBindings = Preconditions.checkNotNull(viewValueBindings);
     }
 
     public ChainedVersion getVersion() {
