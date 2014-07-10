@@ -31,20 +31,21 @@ public class MultiFieldMultiViewTest extends BaseTest {
     public void testMultiFieldMultiView(TasmoMaterializerHarness t) throws Exception {
         String contentView1 = ContentView + "1";
         String contentView2 = ContentView + "2";
-        Views views = TasmoModelFactory.modelToViews(contentView1 + "::" + originalAuthor + "::Content.ref_originalAuthor.ref.User|User.firstName,lastName,userName", contentView2 + "::"
+        Views views = TasmoModelFactory.modelToViews(
+            contentView1 + "::" + originalAuthor + "::Content.ref_originalAuthor.ref.User|User.firstName,lastName,userName", contentView2 + "::"
             + originalAuthor + "::Content.ref_originalAuthor.ref.User|User.firstName,lastName,userName");
         t.initModel(views);
 
         ObjectId authorId =
             t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("firstName", "tom").set("lastName", "sawyer")
-            .set("userName", "tsawyer").build());
+                .set("userName", "tsawyer").build());
         ObjectId contentId = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_originalAuthor", authorId).build());
-        t.addExpectation(contentId, contentView1, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, "tom");
-        t.addExpectation(contentId, contentView1, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, "sawyer");
-        t.addExpectation(contentId, contentView1, originalAuthor, new ObjectId[]{contentId, authorId}, userName, "tsawyer");
-        t.addExpectation(contentId, contentView2, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, "tom");
-        t.addExpectation(contentId, contentView2, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, "sawyer");
-        t.addExpectation(contentId, contentView2, originalAuthor, new ObjectId[]{contentId, authorId}, userName, "tsawyer");
+        t.addExpectation(contentId, contentView1, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
+        t.addExpectation(contentId, contentView1, originalAuthor, new ObjectId[]{ contentId, authorId }, lastName, "sawyer");
+        t.addExpectation(contentId, contentView1, originalAuthor, new ObjectId[]{ contentId, authorId }, userName, "tsawyer");
+        t.addExpectation(contentId, contentView2, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
+        t.addExpectation(contentId, contentView2, originalAuthor, new ObjectId[]{ contentId, authorId }, lastName, "sawyer");
+        t.addExpectation(contentId, contentView2, originalAuthor, new ObjectId[]{ contentId, authorId }, userName, "tsawyer");
         t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView1, contentId.getId()));
         t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView2, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);

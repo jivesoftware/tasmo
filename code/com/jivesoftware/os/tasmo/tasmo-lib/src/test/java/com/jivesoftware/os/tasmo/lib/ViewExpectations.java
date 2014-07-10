@@ -40,7 +40,7 @@ class ViewExpectations {
     private final List<Expectation> expectations = Lists.newArrayList();
     private final ViewPathKeyProvider viewPathKeyProvider;
 
-    public ViewExpectations(ViewValueStore viewValueStore, ViewPathKeyProvider viewPathKeyProvider) {
+    ViewExpectations(ViewValueStore viewValueStore, ViewPathKeyProvider viewPathKeyProvider) {
         this.viewValueStore = viewValueStore;
         this.viewPathKeyProvider = viewPathKeyProvider;
     }
@@ -77,7 +77,7 @@ class ViewExpectations {
                     if (node != null) {
                         JsonNode value = node.get(expectation.fieldName);
                         if (value != null) {
-                            Assert.assertTrue(value instanceof NullNode, "Wanted field:"+expectation.fieldName+" with value:" + value
+                            Assert.assertTrue(value instanceof NullNode, "Wanted field:" + expectation.fieldName + " with value:" + value
                                 + " to be an instance of NullNode but it wasn't. " + node + " "
                                 + expectation.toString());
                         }
@@ -109,7 +109,7 @@ class ViewExpectations {
         String viewClassName;
         String viewFieldName;
 
-        public ViewKey(String viewClassName, String viewFieldName) {
+        ViewKey(String viewClassName, String viewFieldName) {
             this.viewClassName = viewClassName;
             this.viewFieldName = viewFieldName;
         }
@@ -151,7 +151,7 @@ class ViewExpectations {
         String fieldName;
         Object value;
 
-        public Expectation(ObjectId viewId,
+        Expectation(ObjectId viewId,
             String viewClassName,
             long modelPathHashcode,
             ModelPath path,

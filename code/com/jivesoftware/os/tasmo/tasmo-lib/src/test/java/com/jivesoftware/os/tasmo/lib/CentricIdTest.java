@@ -10,7 +10,6 @@ import com.jivesoftware.os.tasmo.model.Views;
 import java.util.List;
 import org.testng.annotations.Test;
 
-
 /**
  *
  */
@@ -28,18 +27,16 @@ public class CentricIdTest extends BaseTest {
         viewBindings.addAll(TasmoModelFactory
             .parseModelPathStrings(false, nonIdCentricViewClassName + "::" + nonIdCentricViewFieldName + "::User.userName,age"));
 
-
-
         tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, actorId);
         Views views = TasmoModelFactory.bindsAsViews(viewBindings);
         t.initModel(views);
-        
+
         ObjectId user1 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "ted").build());
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(idCentricViewClassName, user1.getId()));
         System.out.println("Centric View:" + mapper.writeValueAsString(view));
         // assert id centric
-        t.addExpectation(user1, idCentricViewClassName, idCentricViewFieldName, new ObjectId[]{user1}, "userName", "ted");
+        t.addExpectation(user1, idCentricViewClassName, idCentricViewFieldName, new ObjectId[]{ user1 }, "userName", "ted");
         //t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -48,7 +45,7 @@ public class CentricIdTest extends BaseTest {
         view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(nonIdCentricViewClassName, user1.getId()));
         System.out.println("System View:" + mapper.writeValueAsString(view));
 
-        t.addExpectation(user1, nonIdCentricViewClassName, nonIdCentricViewFieldName, new ObjectId[]{user1}, "userName", "ted");
+        t.addExpectation(user1, nonIdCentricViewClassName, nonIdCentricViewFieldName, new ObjectId[]{ user1 }, "userName", "ted");
         //t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 

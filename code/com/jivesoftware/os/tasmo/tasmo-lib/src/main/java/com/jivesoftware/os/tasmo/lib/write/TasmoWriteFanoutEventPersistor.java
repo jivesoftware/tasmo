@@ -4,9 +4,9 @@ import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
-import com.jivesoftware.os.tasmo.lib.VersionedTasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
+import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.model.VersionedTasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
@@ -32,7 +32,8 @@ public class TasmoWriteFanoutEventPersistor implements TasmoEventPersistor {
     private final EventValueStore eventValueStore;
     private final ReferenceStore referenceStore;
 
-    public TasmoWriteFanoutEventPersistor(WrittenEventProvider writtenEventProvider, WrittenInstanceHelper writtenInstanceHelper, ConcurrencyStore concurrencyStore,
+    public TasmoWriteFanoutEventPersistor(WrittenEventProvider writtenEventProvider, WrittenInstanceHelper writtenInstanceHelper,
+        ConcurrencyStore concurrencyStore,
         EventValueStore eventValueStore, ReferenceStore referenceStore) {
         this.writtenEventProvider = writtenEventProvider;
         this.writtenInstanceHelper = writtenInstanceHelper;
@@ -42,7 +43,8 @@ public class TasmoWriteFanoutEventPersistor implements TasmoEventPersistor {
     }
 
     @Override
-    public void removeValueFields(VersionedTasmoViewModel model, String className, TenantIdAndCentricId tenantIdAndCentricId, ObjectId instanceId, long timestamp) {
+    public void removeValueFields(VersionedTasmoViewModel model, String className, TenantIdAndCentricId tenantIdAndCentricId, ObjectId instanceId,
+        long timestamp) {
         concurrencyStore.removeObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
 
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
@@ -57,7 +59,8 @@ public class TasmoWriteFanoutEventPersistor implements TasmoEventPersistor {
     }
 
     @Override
-    public void updateValueFields(VersionedTasmoViewModel model, String className, TenantIdAndCentricId tenantIdAndCentricId, ObjectId instanceId, long timestamp, WrittenInstance writtenInstance) throws Exception {
+    public void updateValueFields(VersionedTasmoViewModel model, String className, TenantIdAndCentricId tenantIdAndCentricId, ObjectId instanceId,
+        long timestamp, WrittenInstance writtenInstance) throws Exception {
 
         concurrencyStore.addObjectId(Arrays.asList(new ExistenceUpdate(tenantIdAndCentricId, timestamp, instanceId)));
 

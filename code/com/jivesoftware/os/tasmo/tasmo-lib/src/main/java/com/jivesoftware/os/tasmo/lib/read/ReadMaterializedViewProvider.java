@@ -8,19 +8,11 @@ import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
-import com.jivesoftware.os.tasmo.lib.VersionedTasmoViewModel;
-import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
-import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
-import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateReadTraversal;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
-import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
-import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
-import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReadMaterializer;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -55,29 +47,20 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final ViewPermissionChecker viewPermissionChecker;
-    private final ReferenceTraverser referenceTraverser;
-    private final FieldValueReader fieldValueReader;
-    private final ConcurrencyStore concurrencyStore;
-    private final TasmoViewModel tasmoViewModel;
+    private final ReadMaterializer readMaterializer;
     private final ViewFormatter<V> viewFormatter;
     private final JsonViewMerger merger;
     private final Optional<CommitChange> commitChangeVistor;
 
     public ReadMaterializedViewProvider(ViewPermissionChecker viewPermissionChecker,
-        ReferenceTraverser referenceTraverser,
-        FieldValueReader fieldValueReader,
-        ConcurrencyStore concurrencyStore,
-        TasmoViewModel tasmoViewModel,
+        ReadMaterializer readMaterializer,
         ViewFormatter<V> viewFormatter,
         JsonViewMerger merger,
         Optional<CommitChange> commitChangeVistor,
         long viewMaxSizeInBytes) {
 
         this.viewPermissionChecker = viewPermissionChecker;
-        this.referenceTraverser = referenceTraverser;
-        this.fieldValueReader = fieldValueReader;
-        this.concurrencyStore = concurrencyStore;
-        this.tasmoViewModel = tasmoViewModel;
+        this.readMaterializer = readMaterializer;
         this.viewFormatter = viewFormatter;
         this.merger = merger;
         this.commitChangeVistor = commitChangeVistor;
@@ -90,19 +73,56 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
     }
 
     @Override
-    public List<V> readMaterializeViews(List<ViewDescriptor> request) throws IOException {
+    public List<V> readMaterializeViews(List<ViewDescriptor> viewDescriptors) throws IOException {
         LOG.inc(VIEW_READ_CALL_COUNT);
-        Preconditions.checkArgument(request != null);
+        Preconditions.checkArgument(viewDescriptors != null);
         ConcurrentMap<TenantAndActor, Set<Id>> permisionCheckTheseIds = new ConcurrentHashMap<>();
-        List<CommitChangeCollector<V>> viewCollectors = buildViewCollectors(request, permisionCheckTheseIds);
+        Map<ViewDescriptor, ViewFieldsCollector> collectors = new HashMap<>();
 
         LOG.startTimer(VIEW_READ_LATENCY);
         try {
-            for (CommitChangeCollector viewCollector : viewCollectors) {
-                viewCollector.readMaterializeView();
+
+            Map<ViewDescriptor, List<ViewFieldChange>> readMaterialized = readMaterializer.readMaterialize(viewDescriptors);
+            for (ViewDescriptor viewDescriptor : viewDescriptors) {
+                TenantAndActor tenantAndActor = new TenantAndActor(viewDescriptor.getTenantId(), viewDescriptor.getActorId());
+                Set<Id> checkTheseIds = permisionCheckTheseIds.get(tenantAndActor);
+                if (checkTheseIds == null) {
+                    checkTheseIds = new HashSet<>();
+                    Set<Id> had = permisionCheckTheseIds.putIfAbsent(tenantAndActor, checkTheseIds);
+                    if (had != null) {
+                        checkTheseIds = had;
+                    }
+                }
+
+                List<ViewFieldChange> changes = readMaterialized.get(viewDescriptor);
+                try {
+                    ViewFieldsCollector viewFieldsCollector = new ViewFieldsCollector(merger, 1_024 * 1_024 * 10);
+                    for (ViewFieldChange change : changes) {
+                        if (change.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+                            ModelPath modelPath = change.getModelPath();
+                            Id[] modelPathIds = ids(change.getModelPathInstanceIds());
+                            checkTheseIds.addAll(Arrays.asList(modelPathIds));
+                            String[] viewPathClasses = classes(change.getModelPathInstanceIds());
+                            ViewValue viewValue = new ViewValue(change.getModelPathTimestamps(), change.getValue());
+                            Long timestamp = change.getTimestamp();
+                            viewFieldsCollector.add(viewDescriptor, modelPath, modelPathIds, viewPathClasses, viewValue, timestamp);
+                        }
+                    }
+                    collectors.put(viewDescriptor, viewFieldsCollector);
+
+                    if (commitChangeVistor.isPresent()) {
+                        try {
+                            commitChangeVistor.get().commitChange(null, viewDescriptor.getTenantIdAndCentricId(), changes);
+                        } catch (Exception x) {
+                            LOG.warn("Commit Change Collector's vistor encouter the following issue.", x);
+                        }
+                    }
+                } catch (IOException x) {
+                    throw new CommitChangeException("Failed to collect fields for " + viewDescriptor, x);
+                }
             }
         } catch (Exception ex) {
-            throw new IOException("Failed while read materializing view:" + request, ex);
+            throw new IOException("Failed while read materializing view:" + viewDescriptors, ex);
         } finally {
             LOG.stopTimer(VIEW_READ_LATENCY);
         }
@@ -118,15 +138,18 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
         LOG.startTimer(VIEW_MERGE_LATENCY);
         try {
             List<V> views = new ArrayList<>();
-            for (CommitChangeCollector<V> viewCollector : viewCollectors) {
-                ViewDescriptor viewDescriptor = viewCollector.getViewDescriptor();
+            for (ViewDescriptor viewDescriptor : viewDescriptors) {
+                ViewFieldsCollector viewFieldsCollector = collectors.get(viewDescriptor);
                 Set<Id> viewableIds = canViewTheseIds.get(new TenantAndActor(viewDescriptor.getTenantId(), viewDescriptor.getActorId()));
-                views.add(viewCollector.getView(viewableIds));
+                ViewResponse viewResponse = viewFieldsCollector.getView(viewableIds);
+                TenantIdAndCentricId tenantIdAndCentricId = viewDescriptor.getTenantIdAndCentricId();
+                V view = viewFormatter.getView(tenantIdAndCentricId, viewDescriptor.getViewId(), viewResponse);
+                views.add(view);
             }
             LOG.inc(VIEW_READ_VIEW_COUNT, views.size());
             return views;
         } catch (Exception ex) {
-            LOG.error("Failed while loading {}", request);
+            LOG.error("Failed while loading {}", viewDescriptors);
             throw new IOException("Failed to load for the following reason.", ex);
         } finally {
             LOG.stopTimer(VIEW_MERGE_LATENCY);
@@ -144,134 +167,20 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
         return canViewTheseIds;
     }
 
-    private List<CommitChangeCollector<V>> buildViewCollectors(List<ViewDescriptor> viewDescriptors,
-        ConcurrentMap<TenantAndActor, Set<Id>> permisionCheckTheseIds) {
-
-        List<CommitChangeCollector<V>> collectors = new ArrayList<>();
-        for (ViewDescriptor viewDescriptor : viewDescriptors) {
-            TenantAndActor tenantAndActor = new TenantAndActor(viewDescriptor.getTenantId(), viewDescriptor.getActorId());
-            Set<Id> checkTheseIds = permisionCheckTheseIds.get(tenantAndActor);
-            if (checkTheseIds == null) {
-                checkTheseIds = new HashSet<>();
-                Set<Id> had = permisionCheckTheseIds.putIfAbsent(tenantAndActor, checkTheseIds);
-                if (had != null) {
-                    checkTheseIds = had;
-                }
-            }
-
-            ViewFieldsCollector viewFieldsCollector = new ViewFieldsCollector(merger, 1024 * 1024 * 10);
-            CommitChangeCollector<V> commitChangeCollector = new CommitChangeCollector<>(viewDescriptor,
-                viewFieldsCollector, viewFormatter, checkTheseIds, commitChangeVistor);
-            collectors.add(commitChangeCollector);
-
+    private Id[] ids(PathId[] pathIds) {
+        Id[] ids = new Id[pathIds.length];
+        for (int i = 0; i < ids.length; i++) {
+            ids[i] = pathIds[i].getObjectId().getId();
         }
-
-        return collectors;
+        return ids;
     }
 
-    class CommitChangeCollector<VV> implements CommitChange {
-
-        private final ViewDescriptor viewDescriptor;
-        private final ViewFieldsCollector viewFieldsCollector;
-        private final ViewFormatter<VV> viewFormatter;
-        private final Set<Id> permisionCheckTheseIds;
-        private final Optional<CommitChange> commitChangeVistor;
-
-        public CommitChangeCollector(ViewDescriptor viewDescriptor,
-            ViewFieldsCollector viewFieldsCollector,
-            ViewFormatter<VV> viewFormatter,
-            Set<Id> permisionCheckTheseIds,
-            Optional<CommitChange> commitChangeVistor) {
-            this.viewDescriptor = viewDescriptor;
-            this.viewFieldsCollector = viewFieldsCollector;
-            this.viewFormatter = viewFormatter;
-            this.permisionCheckTheseIds = permisionCheckTheseIds;
-            this.commitChangeVistor = commitChangeVistor;
+    private String[] classes(PathId[] pathIds) {
+        String[] classes = new String[pathIds.length];
+        for (int i = 0; i < classes.length; i++) {
+            classes[i] = pathIds[i].getObjectId().getClassName();
         }
-
-        public ViewDescriptor getViewDescriptor() {
-            return viewDescriptor;
-        }
-
-        @Override
-        public void commitChange(WrittenEventContext batchContext,
-            TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
-
-
-            try {
-                for (ViewFieldChange change : changes) {
-                    if (change.getType() == ViewFieldChange.ViewFieldChangeType.add) {
-                        ModelPath modelPath = change.getModelPath();
-                        Id[] modelPathIds = ids(change.getModelPathInstanceIds());
-                        permisionCheckTheseIds.addAll(Arrays.asList(modelPathIds));
-                        String[] viewPathClasses = classes(change.getModelPathInstanceIds());
-                        ViewValue viewValue = new ViewValue(change.getModelPathTimestamps(), change.getValue());
-                        Long timestamp = change.getTimestamp();
-                        viewFieldsCollector.add(viewDescriptor, modelPath, modelPathIds, viewPathClasses, viewValue, timestamp);
-                    }
-                }
-            } catch (IOException x) {
-                throw new CommitChangeException("Failed to collect fields for " + tenantIdAndCentricId, x);
-            }
-            if (commitChangeVistor.isPresent()) {
-                try {
-                    commitChangeVistor.get().commitChange(batchContext, tenantIdAndCentricId, changes);
-                } catch (Exception x) {
-                    LOG.warn("Commit Change Collector's vistor encouter the following issue.", x);
-                }
-            }
-        }
-
-        public VV getView(Set<Id> canViewTheseIds) throws Exception {
-            ViewResponse view = viewFieldsCollector.getView(canViewTheseIds);
-            TenantIdAndCentricId tenantIdAndCentricId = viewDescriptor.getTenantIdAndCentricId();
-            return viewFormatter.getView(tenantIdAndCentricId, viewDescriptor.getViewId(), view);
-        }
-
-        private Id[] ids(PathId[] pathIds) {
-            Id[] ids = new Id[pathIds.length];
-            for (int i = 0; i < ids.length; i++) {
-                ids[i] = pathIds[i].getObjectId().getId();
-            }
-            return ids;
-        }
-
-        private String[] classes(PathId[] pathIds) {
-            String[] classes = new String[pathIds.length];
-            for (int i = 0; i < classes.length; i++) {
-                classes[i] = pathIds[i].getObjectId().getClassName();
-            }
-            return classes;
-        }
-
-        private void readMaterializeView() throws Exception {
-            VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(viewDescriptor.getTenantId());
-            InitiateReadTraversal initiateTraversal = model.getReadTraversers().get(viewDescriptor.getViewId().getClassName());
-            while(true) {
-                try {
-
-                    CommitChange commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, this);
-                    initiateTraversal.read(referenceTraverser,
-                        fieldValueReader,
-                        new TenantIdAndCentricId(viewDescriptor.getTenantId(), viewDescriptor.getUserId()), // TODO resolve ?? userId or actorId?
-                        viewDescriptor.getViewId(),
-                        commitChange);
-                    return;
-                } catch(Exception x) {
-                    Throwable t = x;
-                    while(t != null) {
-                        if (t instanceof CommitChangeException) {
-                            break;
-                        }
-                        t = t.getCause();
-                    }
-                    if (t instanceof CommitChangeException) {
-                        // TODO add retry count and retry timeout!!
-                        LOG.warn("Read reading viewDescriptor:"+viewDescriptor+" because it was modified while being read.");
-                    }
-                    throw x;
-                }
-            }
-        }
+        return classes;
     }
+
 }

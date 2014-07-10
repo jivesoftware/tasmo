@@ -7,7 +7,7 @@ import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.lib.EventConvertingCallbackStream;
 import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
-import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import java.util.List;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;

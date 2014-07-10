@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.tasmo.lib.write.TasmoWriteMaterializer;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import java.util.List;
 
@@ -17,9 +18,9 @@ import java.util.List;
  */
 public class TasmoEventIngress implements CallbackStream<List<WrittenEvent>> {
 
-    final TasmoViewMaterializer materializer;
+    final TasmoWriteMaterializer materializer;
 
-    public TasmoEventIngress(TasmoViewMaterializer materializer) {
+    public TasmoEventIngress(TasmoWriteMaterializer materializer) {
         this.materializer = materializer;
     }
 

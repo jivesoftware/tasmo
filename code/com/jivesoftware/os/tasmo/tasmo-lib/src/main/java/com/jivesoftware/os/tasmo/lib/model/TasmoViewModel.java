@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.model;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
@@ -33,7 +33,6 @@ import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,8 +53,7 @@ public class TasmoViewModel {
     public TasmoViewModel(
         TenantId masterTenantId,
         ViewsProvider viewsProvider,
-        ViewPathKeyProvider viewPathKeyProvider,
-        ReferenceStore referenceStore) {
+        ViewPathKeyProvider viewPathKeyProvider) {
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.viewPathKeyProvider = viewPathKeyProvider;

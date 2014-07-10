@@ -27,18 +27,19 @@ public class MultiFieldDeletesMultiEventTest extends BaseTest {
 
     @Test (dataProvider = "tasmoMaterializer", invocationCount = 1, singleThreaded = true)
     public void testMultiFieldDeletesMultiEvent(TasmoMaterializerHarness t) throws Exception {
-        Views views = TasmoModelFactory.modelToViews(ContentView + "::" + originalAuthor + "::Content.ref_originalAuthor.ref.User|User.firstName,lastName,userName");
+        Views views = TasmoModelFactory.modelToViews(
+            ContentView + "::" + originalAuthor + "::Content.ref_originalAuthor.ref.User|User.firstName,lastName,userName");
         t.initModel(views);
 
         ObjectId authorId = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("firstName", "tom").set("lastName", "sawyer")
-                .set("userName", "tsawyer")
-                .build());
+            .set("userName", "tsawyer")
+            .build());
         ObjectId contentId = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_originalAuthor", authorId).build());
         System.out.println("--------------------------------------------------------------------------");
 
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, "tom");
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, "sawyer");
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, userName, "tsawyer");
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, lastName, "sawyer");
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, userName, "tsawyer");
         t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
@@ -46,9 +47,9 @@ public class MultiFieldDeletesMultiEventTest extends BaseTest {
         authorId = t.write(EventBuilder.update(authorId, tenantId, actorId).clear("userName").build());
         System.out.println("--------------------------------------------------------------------------");
 
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, "tom");
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, "sawyer");
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, userName, null);
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, lastName, "sawyer");
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, userName, null);
         t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
@@ -56,9 +57,9 @@ public class MultiFieldDeletesMultiEventTest extends BaseTest {
         authorId = t.write(EventBuilder.update(authorId, tenantId, actorId).clear("lastName").build());
         System.out.println("--------------------------------------------------------------------------");
 
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, "tom");
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, null);
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, userName, null);
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, lastName, null);
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, userName, null);
         t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
@@ -69,13 +70,12 @@ public class MultiFieldDeletesMultiEventTest extends BaseTest {
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         System.out.println("View:" + view);
 
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, null);
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, null);
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, userName, null);
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, null);
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, lastName, null);
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, userName, null);
         t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-
 
     }
 }

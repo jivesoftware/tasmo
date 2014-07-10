@@ -2,26 +2,26 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.jivesoftware.os.jive.utils.id.TenantId;
+import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
+import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
+import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
+import com.jivesoftware.os.tasmo.lib.write.TasmoSyncEventWriter;
 import com.jivesoftware.os.tasmo.lib.write.TasmoSyncWriteEventPersistor;
-import com.jivesoftware.os.tasmo.model.ViewsProvider;
-import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import org.merlin.config.Config;
 import org.merlin.config.defaults.IntDefault;
-import org.merlin.config.defaults.StringDefault;
 
 /**
  *
@@ -33,24 +33,15 @@ public class TasmoSyncWriteInitializer {
 
     static public interface TasmoSyncWriteConfig extends Config {
 
-        @StringDefault ("master")
-        public String getModelMasterTenantId();
-        public void setModelMasterTenantId(String tenantId);
-
-        @IntDefault (10)
-        public Integer getPollForModelChangesEveryNSeconds();
-        public void setPollForModelChangesEveryNSeconds(Integer seconds);
-
         @IntDefault (1)
         public Integer getNumberOfSyncEventWritorThreads();
         public void setNumberOfSyncEventWritorThreads(Integer threads);
     }
 
-    public static TasmoSyncEventWriter initialize(
-        ViewsProvider viewsProvider,
-        ViewPathKeyProvider viewPathKeyProvider,
+    public static TasmoSyncEventWriter initialize(TasmoViewModel tasmoViewModel,
         WrittenEventProvider writtenEventProvider,
         TasmoStorageProvider tasmoStorageProvider,
+        CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
         TasmoBlacklist tasmoBlacklist,
         TasmoSyncWriteConfig config) throws Exception {
 
@@ -58,27 +49,6 @@ public class TasmoSyncWriteInitializer {
         EventValueStore eventValueStore = new EventValueStore(concurrencyStore, tasmoStorageProvider.eventStorage());
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, tasmoStorageProvider.multiLinksStorage(),
             tasmoStorageProvider.multiBackLinksStorage());
-
-        TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
-
-        final TasmoViewModel tasmoViewModel = new TasmoViewModel(
-            masterTenantId,
-            viewsProvider,
-            viewPathKeyProvider,
-            referenceStore);
-
-        tasmoViewModel.loadModel(masterTenantId);
-
-        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    tasmoViewModel.reloadModels();
-                } catch (Exception x) {
-                    LOG.error("Scheduled reloading of tasmo view model failed. ", x);
-                }
-            }
-        }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);
 
         TasmoEventPersistor eventPersistor = new TasmoSyncWriteEventPersistor(writtenEventProvider,
             new WrittenInstanceHelper(),
@@ -98,6 +68,7 @@ public class TasmoSyncWriteInitializer {
 
         ExecutorService syncEventWritorThreads = Executors.newFixedThreadPool(config.getNumberOfSyncEventWritorThreads(), syncEventWritorThreadFactory);
 
-        return new TasmoSyncEventWriter(MoreExecutors.listeningDecorator(syncEventWritorThreads), tasmoViewModel, eventPersistor, tasmoBlacklist);
+        return new TasmoSyncEventWriter(MoreExecutors.listeningDecorator(syncEventWritorThreads), tasmoViewModel, eventPersistor, bookkeepingStream,
+            tasmoBlacklist);
     }
 }

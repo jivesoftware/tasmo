@@ -12,7 +12,7 @@ public class ProveFundamentalAssumptionsTest {
 
     public static final Random rand = new Random();
 
-    @Test (enabled = false, invocationCount = 1000, singleThreaded = true, skipFailedInvocations = true)
+    @Test (enabled = false, invocationCount = 1_000, singleThreaded = true, skipFailedInvocations = true)
     public void proofTest(TasmoMaterializerHarness t) throws Exception {
 
         // The problem
@@ -42,7 +42,7 @@ public class ProveFundamentalAssumptionsTest {
         private final Nodes nodes;
         private final Edges edges;
 
-        public Materializer(Nodes nodes, Edges edges) {
+        Materializer(Nodes nodes, Edges edges) {
             this.nodes = nodes;
             this.edges = edges;
         }
@@ -67,7 +67,7 @@ public class ProveFundamentalAssumptionsTest {
         private final List<String> possibleValues;
         String finalValue;
 
-        public NodeWriter(Materializer materializer, Nodes nodes, String id, String fieldName, List<String> possibleValues) {
+        NodeWriter(Materializer materializer, Nodes nodes, String id, String fieldName, List<String> possibleValues) {
             this.materializer = materializer;
             this.nodes = nodes;
             this.id = id;
@@ -97,7 +97,7 @@ public class ProveFundamentalAssumptionsTest {
         private final String fieldName;
         private final List<String> possibleBs;
 
-        public EdgeWriter(Materializer materializer, Edges edges, String a, String fieldName, List<String> possibleBs) {
+        EdgeWriter(Materializer materializer, Edges edges, String a, String fieldName, List<String> possibleBs) {
             this.materializer = materializer;
             this.edges = edges;
             this.a = a;
@@ -129,7 +129,7 @@ public class ProveFundamentalAssumptionsTest {
 
     static class Nodes {
 
-        private final StripingLocksProvider<String> locks = new StripingLocksProvider<>(1024);
+        private final StripingLocksProvider<String> locks = new StripingLocksProvider<>(1_024);
         private final ConcurrentHashMap<String, TimestampedValue<String>> values = new ConcurrentHashMap<>();
 
         void add(String a, String fieldName, String value, long timestamp) {
@@ -158,7 +158,7 @@ public class ProveFundamentalAssumptionsTest {
 
     static class Edges {
 
-        private final StripingLocksProvider<String> locks = new StripingLocksProvider<>(1024);
+        private final StripingLocksProvider<String> locks = new StripingLocksProvider<>(1_024);
         private final ConcurrentHashMap<String, TimestampedValue<String[]>> forward = new ConcurrentHashMap<>();
         private final Multimap<String, String> backward = HashMultimap.create();
 
@@ -212,7 +212,7 @@ public class ProveFundamentalAssumptionsTest {
         final V value;
         final boolean tombstone;
 
-        public TimestampedValue(long timestamp, V value, boolean tombstone) {
+        TimestampedValue(long timestamp, V value, boolean tombstone) {
             this.timestamp = timestamp;
             this.value = value;
             this.tombstone = tombstone;

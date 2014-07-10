@@ -72,7 +72,6 @@ public class ConcurrencyTest extends BaseTest {
         FireableRef refC2 = new FireableRef(async, c2, "toD", Arrays.asList(d1, d2, d3), d2);
         FireableRef refC3 = new FireableRef(async, c3, "toD", Arrays.asList(d1, d2, d3), d3);
 
-
         //ExecutorService threads = MoreExecutors.sameThreadExecutor();
         ExecutorService threads = Executors.newCachedThreadPool();
         List<RandomFireable<?>> fireables = new ArrayList<>();
@@ -98,17 +97,17 @@ public class ConcurrencyTest extends BaseTest {
         fireables.add(new RandomFireable<>(d1, 1, 250, latch));
         fireables.add(new RandomFireable<>(d2, 1, 250, latch));
         fireables.add(new RandomFireable<>(d3, 1, 250, latch));
-        fireables.add(new RandomFireable<>(refA, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refA, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refB1, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refB2, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refB3, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refB1, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refB2, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refB3, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refC1, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refC2, 10, 2000, latch));
-        fireables.add(new RandomFireable<>(refC3, 10, 2000, latch));
+        fireables.add(new RandomFireable<>(refA, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refA, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refB1, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refB2, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refB3, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refB1, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refB2, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refB3, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refC1, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refC2, 10, 2_000, latch));
+        fireables.add(new RandomFireable<>(refC3, 10, 2_000, latch));
 
         List<Future<Void>> futures = threads.invokeAll(fireables);
         latch.await();
@@ -120,28 +119,42 @@ public class ConcurrencyTest extends BaseTest {
             future.get();
         }
 
-
         // Yes this sucks!
-        a1.t  = sync; a1.finalEvent();
-        b1.t  = sync; b1.finalEvent();
-        b2.t  = sync; b2.finalEvent();
-        b3.t  = sync; b3.finalEvent();
-        c1.t  = sync; c1.finalEvent();
-        c2.t  = sync; c2.finalEvent();
-        c3.t  = sync; c3.finalEvent();
-        d1.t  = sync; d1.finalEvent();
-        d2.t  = sync; d2.finalEvent();
-        d3.t  = sync; d3.finalEvent();
+        a1.t = sync;
+        a1.finalEvent();
+        b1.t = sync;
+        b1.finalEvent();
+        b2.t = sync;
+        b2.finalEvent();
+        b3.t = sync;
+        b3.finalEvent();
+        c1.t = sync;
+        c1.finalEvent();
+        c2.t = sync;
+        c2.finalEvent();
+        c3.t = sync;
+        c3.finalEvent();
+        d1.t = sync;
+        d1.finalEvent();
+        d2.t = sync;
+        d2.finalEvent();
+        d3.t = sync;
+        d3.finalEvent();
 
-
-        refA.t  = sync; refA.finalEvent();
-        refB1.t  = sync; refB1.finalEvent();
-        refB2.t  = sync; refB2.finalEvent();
-        refB3.t  = sync; refB3.finalEvent();
-        refC1.t  = sync; refC1.finalEvent();
-        refC2.t  = sync; refC2.finalEvent();
-        refC3.t  = sync; refC3.finalEvent();
-
+        refA.t = sync;
+        refA.finalEvent();
+        refB1.t = sync;
+        refB1.finalEvent();
+        refB2.t = sync;
+        refB2.finalEvent();
+        refB3.t = sync;
+        refB3.finalEvent();
+        refC1.t = sync;
+        refC1.finalEvent();
+        refC2.t = sync;
+        refC2.finalEvent();
+        refC3.t = sync;
+        refC3.finalEvent();
 
         System.out.println("- Write AView ------------------------");
         ObjectNode aTestView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
@@ -150,8 +163,6 @@ public class ConcurrencyTest extends BaseTest {
         System.out.println("- vs - ");
         System.out.println(mapper.writeValueAsString(aTestView1));
         Assert.assertEquals(aTestView, aTestView1);
-
-
 
         System.out.println("- Write AViewDup-");
         ObjectNode aTestDupView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
@@ -163,7 +174,6 @@ public class ConcurrencyTest extends BaseTest {
 
         Assert.assertNotNull(aTestView);
         Assert.assertNotNull(aTestDupView);
-
 
         System.out.println("- Write CView -");
         ObjectNode cTestView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
@@ -186,12 +196,12 @@ public class ConcurrencyTest extends BaseTest {
 
     }
 
-
     void run() {
 
     }
 
     class FireableValue implements Fireable<String> {
+
         TasmoMaterializerHarness t;
         private final long instanceId;
         private final String eventClassName;
@@ -202,8 +212,8 @@ public class ConcurrencyTest extends BaseTest {
         ObjectId id;
         Event lastEvent;
 
-        public FireableValue(TasmoMaterializerHarness t, long instanceId, String eventClassName, String[] fieldNames, String[] finalFieldValues) {
-            this.t =t;
+        FireableValue(TasmoMaterializerHarness t, long instanceId, String eventClassName, String[] fieldNames, String[] finalFieldValues) {
+            this.t = t;
             this.instanceId = instanceId;
             this.eventClassName = eventClassName;
             this.fieldNames = fieldNames;
@@ -306,6 +316,7 @@ public class ConcurrencyTest extends BaseTest {
     }
 
     class FireableRef implements Fireable<FireableValue> {
+
         TasmoMaterializerHarness t;
         private final FireableValue id;
         private final String fieldName;
@@ -315,7 +326,7 @@ public class ConcurrencyTest extends BaseTest {
         private ObjectId lastEdge;
         private Event lastEvent;
 
-        public FireableRef(TasmoMaterializerHarness t, FireableValue id, String fieldName, List<FireableValue> possibleRefs, FireableValue finalValue) {
+        FireableRef(TasmoMaterializerHarness t, FireableValue id, String fieldName, List<FireableValue> possibleRefs, FireableValue finalValue) {
             this.t = t;
             this.id = id;
             this.fieldName = fieldName;
@@ -418,7 +429,7 @@ public class ConcurrencyTest extends BaseTest {
         private ObjectId lastEdge;
         private Event lastEvent;
 
-        public FireableRefs(TasmoMaterializerHarness t, FireableValue id, String fieldName, List<FireableValue> possibleRefs) {
+        FireableRefs(TasmoMaterializerHarness t, FireableValue id, String fieldName, List<FireableValue> possibleRefs) {
             this.t = t;
             this.id = id;
             this.fieldName = fieldName;
@@ -535,7 +546,7 @@ public class ConcurrencyTest extends BaseTest {
         private final CountDownLatch latch;
         long lifespan;
 
-        public RandomFireable(Fireable<V> fireable,
+        RandomFireable(Fireable<V> fireable,
             long delay,
             long duration,
             CountDownLatch latch) {
@@ -577,7 +588,7 @@ public class ConcurrencyTest extends BaseTest {
 
         private final Id id;
 
-        public ConstantIdProvider(long id) {
+        ConstantIdProvider(long id) {
             this.id = new Id(id);
         }
 

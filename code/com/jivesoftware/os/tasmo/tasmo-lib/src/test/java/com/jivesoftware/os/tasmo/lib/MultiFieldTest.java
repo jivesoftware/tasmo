@@ -29,17 +29,18 @@ public class MultiFieldTest extends BaseTest {
 
     @Test (dataProvider = "tasmoMaterializer", invocationCount = 1, singleThreaded = true)
     public void testMultiField(TasmoMaterializerHarness t) throws Exception {
-        Views views = TasmoModelFactory.modelToViews(ContentView + "::" + originalAuthor + "::Content.ref_originalAuthor.ref.User|User.firstName,lastName,userName");
+        Views views = TasmoModelFactory.modelToViews(
+            ContentView + "::" + originalAuthor + "::Content.ref_originalAuthor.ref.User|User.firstName,lastName,userName");
         t.initModel(views);
 
         ObjectId authorId =
             t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("firstName", "tom").set("lastName", "sawyer")
-            .set("userName", "tsawyer").build());
+                .set("userName", "tsawyer").build());
         ObjectId contentId = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_originalAuthor", authorId).build());
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, firstName, "tom");
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, lastName, "sawyer");
-        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{contentId, authorId}, userName, "tsawyer");
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, lastName, "sawyer");
+        t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, userName, "tsawyer");
         t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
