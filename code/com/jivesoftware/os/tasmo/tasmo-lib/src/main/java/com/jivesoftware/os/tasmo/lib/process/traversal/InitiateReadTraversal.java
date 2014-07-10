@@ -3,13 +3,13 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel.ReadTraversalKey;
+import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel.ReadTraversalKey;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
+import com.jivesoftware.os.tasmo.lib.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
-import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
@@ -65,7 +65,7 @@ public class InitiateReadTraversal {
             processingStats);
 
         PathTraversalContext context = new PathTraversalContext(1, false);
-        for(Entry<ReadTraversalKey, StepStreamerFactory> e:pathTraversers.entrySet()) {
+        for (Entry<ReadTraversalKey, StepStreamerFactory> e : pathTraversers.entrySet()) {
             ReadTraversalKey readTraversalKey = e.getKey();
             StepStreamerFactory stepStreamerFactory = e.getValue();
             StepStream stepStream = stepStreamerFactory.create();

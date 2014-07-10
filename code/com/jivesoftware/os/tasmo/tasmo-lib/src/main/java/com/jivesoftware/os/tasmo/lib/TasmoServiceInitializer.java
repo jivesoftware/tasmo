@@ -4,7 +4,6 @@ import com.google.common.base.Optional;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
-import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
@@ -12,17 +11,22 @@ import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
+import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraverser;
+import com.jivesoftware.os.tasmo.lib.read.EventValueStoreFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.read.StatCollectingFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
-import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
-import com.jivesoftware.os.tasmo.model.ViewsProvider;
-import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
+import com.jivesoftware.os.tasmo.lib.write.TasmoWriteMaterializer;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
@@ -36,7 +40,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import org.merlin.config.Config;
 import org.merlin.config.defaults.IntDefault;
-import org.merlin.config.defaults.StringDefault;
 
 /**
  *
@@ -52,23 +55,14 @@ public class TasmoServiceInitializer {
         public Integer getSessionIdCreatorId();
         public void setSessionIdCreatorId(int idCreator);
 
-        @StringDefault("master")
-        public String getModelMasterTenantId();
-        public void setModelMasterTenantId(String tenantId);
-
-        @IntDefault(10)
-        public Integer getPollForModelChangesEveryNSeconds();
-        public void setPollForModelChangesEveryNSeconds(Integer seconds);
-
         @IntDefault(1)
         public Integer getNumberOfEventProcessorThreads();
         public void setNumberOfEventProcessorThreads(int numberOfThreads);
     }
 
-    public static TasmoEventIngress initializeEventIngressCallbackStream(
+    public static TasmoEventIngress initialize(
             OrderIdProvider threadTimestamp,
-            ViewsProvider viewsProvider,
-            ViewPathKeyProvider viewPathKeyProvider,
+            TasmoViewModel tasmoViewModel,
             WrittenEventProvider writtenEventProvider,
             TasmoStorageProvider tasmoStorageProvider,
             CommitChange commitChange,
@@ -83,27 +77,6 @@ public class TasmoServiceInitializer {
         EventValueStore eventValueStore = new EventValueStore(concurrencyStore, tasmoStorageProvider.eventStorage());
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, tasmoStorageProvider.multiLinksStorage(),
             tasmoStorageProvider.multiBackLinksStorage());
-
-        TenantId masterTenantId = new TenantId(config.getModelMasterTenantId());
-
-        final TasmoViewModel tasmoViewModel = new TasmoViewModel(
-                masterTenantId,
-                viewsProvider,
-                viewPathKeyProvider,
-                referenceStore);
-
-        tasmoViewModel.loadModel(masterTenantId);
-
-        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    tasmoViewModel.reloadModels();
-                } catch (Exception x) {
-                    LOG.error("Scheduled reloading of tasmo view model failed. ", x);
-                }
-            }
-        }, config.getPollForModelChangesEveryNSeconds(), config.getPollForModelChangesEveryNSeconds(), TimeUnit.SECONDS);
 
         WrittenEventProcessorDecorator bookKeepingEventProcessor = new WrittenEventProcessorDecorator() {
             @Override
@@ -158,7 +131,7 @@ public class TasmoServiceInitializer {
                 .build();
 
         ExecutorService eventProcessorThreads = Executors.newFixedThreadPool(config.getNumberOfEventProcessorThreads(), eventProcessorThreadFactory);
-        TasmoViewMaterializer materializer = new TasmoViewMaterializer(bookkeepingStream,
+        TasmoWriteMaterializer materializer = new TasmoWriteMaterializer(bookkeepingStream,
                 tasmoEventProcessor,
                 MoreExecutors.listeningDecorator(eventProcessorThreads), tasmoBlacklist);
 

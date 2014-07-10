@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
@@ -34,8 +34,8 @@ public class TasmoEventTraverser implements TasmoEventTraversal {
         String instanceClassName = writtenEvent.getWrittenInstance().getInstanceId().getClassName();
 
         long start = System.currentTimeMillis();
-        WrittenEventProcessor decoratedWrittenEventProcessor
-            = writtenEventProcessorDecorator.decorateWrittenEventProcessor(writtenEventProcessor);
+        WrittenEventProcessor decoratedWrittenEventProcessor =
+             writtenEventProcessorDecorator.decorateWrittenEventProcessor(writtenEventProcessor);
         decoratedWrittenEventProcessor.process(writtenEventContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
         writtenEventContext.getProcessingStats().latency("EVENT TRAVERSAL", instanceClassName, System.currentTimeMillis() - start);
 

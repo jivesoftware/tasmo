@@ -1,11 +1,3 @@
-/*
- * $Revision$
- * $Date$
- *
- * Copyright (C) 1999-$year$ Jive Software. All rights reserved.
- *
- * This software is the proprietary information of Jive Software. Use is subject to license terms.
- */
 package com.jivesoftware.os.tasmo.view.reader.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,10 +20,6 @@ public class JsonViewMerger {
         if (jsonBytes == null) {
             return mapper.createObjectNode();
         }
-//        if (!jsonBytes.startsWith(JsonToken.START_OBJECT.asString())) {
-//            jsonBytes = mapper.readValue(jsonBytes, String.class);
-//        }
-
         return mapper.readValue(jsonBytes, ObjectNode.class);
     }
 

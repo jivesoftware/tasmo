@@ -16,6 +16,12 @@
         <dependencies>
             <dependency>
                 <groupId>com.jivesoftware.os.tasmo</groupId>
+                <artifactId>tasmo-view-notification-api</artifactId>
+                <version>0.43-SNAPSHOT</version>
+
+            </dependency>
+            <dependency>
+                <groupId>com.jivesoftware.os.tasmo</groupId>
                 <artifactId>tasmo-reference-lib</artifactId>
                 <version>0.43-SNAPSHOT</version>
             </dependency>

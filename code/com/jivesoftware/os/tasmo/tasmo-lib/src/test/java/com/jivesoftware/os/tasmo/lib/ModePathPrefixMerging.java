@@ -48,20 +48,20 @@ public class ModePathPrefixMerging extends BaseTest {
         String lastAuthor = "lastAuthor";
         String contentName = "contentName";
         Views views = TasmoModelFactory.modelToViews(
-                viewClassName1 + "::" + originalAuthor + "::Version.ref_parent.ref.Content|Content.ref_originalAuthor.ref.User|User.userName",
-                viewClassName1 + "::" + lastAuthor + "::Version.ref_parent.ref.Content|Content.ref_lastAuthor.ref.User|User.userName",
-                viewClassName2 + "::" + originalAuthor + "::Version.ref_parent.ref.Content|Content.ref_originalAuthor.ref.User|User.userName",
-                viewClassName2 + "::" + lastAuthor + "::Version.ref_parent.ref.Content|Content.ref_lastAuthor.ref.User|User.userName",
-                viewClassName3 + "::" + contentName + "::Version.ref_parent.ref.Content|Content.name"
+            viewClassName1 + "::" + originalAuthor + "::Version.ref_parent.ref.Content|Content.ref_originalAuthor.ref.User|User.userName",
+            viewClassName1 + "::" + lastAuthor + "::Version.ref_parent.ref.Content|Content.ref_lastAuthor.ref.User|User.userName",
+            viewClassName2 + "::" + originalAuthor + "::Version.ref_parent.ref.Content|Content.ref_originalAuthor.ref.User|User.userName",
+            viewClassName2 + "::" + lastAuthor + "::Version.ref_parent.ref.Content|Content.ref_lastAuthor.ref.User|User.userName",
+            viewClassName3 + "::" + contentName + "::Version.ref_parent.ref.Content|Content.name"
         );
         t.initModel(views);
-        
+
         ObjectId originalAuthorId = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "ted").build());
         ObjectId lastAuthorId = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "wendy").build());
         ObjectId content1 = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId)
-                .set("contentName", "booya")
-                .set("ref_originalAuthor", originalAuthorId)
-                .set("ref_lastAuthor", lastAuthorId).build());
+            .set("contentName", "booya")
+            .set("ref_originalAuthor", originalAuthorId)
+            .set("ref_lastAuthor", lastAuthorId).build());
         ObjectId version1 = t.write(EventBuilder.create(t.idProvider(), "Version", tenantId, actorId).set("ref_parent", content1).build());
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName1, version1.getId()));
@@ -70,10 +70,10 @@ public class ModePathPrefixMerging extends BaseTest {
         view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName2, version1.getId()));
         System.out.println("view2:" + mapper.writeValueAsString(view));
 
-        t.addExpectation(version1, viewClassName1, originalAuthor, new ObjectId[]{version1, content1, originalAuthorId}, "userName", "ted");
-        t.addExpectation(version1, viewClassName1, lastAuthor, new ObjectId[]{version1, content1, lastAuthorId}, "userName", "wendy");
-        t.addExpectation(version1, viewClassName2, originalAuthor, new ObjectId[]{version1, content1, originalAuthorId}, "userName", "ted");
-        t.addExpectation(version1, viewClassName2, lastAuthor, new ObjectId[]{version1, content1, lastAuthorId}, "userName", "wendy");
+        t.addExpectation(version1, viewClassName1, originalAuthor, new ObjectId[]{ version1, content1, originalAuthorId }, "userName", "ted");
+        t.addExpectation(version1, viewClassName1, lastAuthor, new ObjectId[]{ version1, content1, lastAuthorId }, "userName", "wendy");
+        t.addExpectation(version1, viewClassName2, originalAuthor, new ObjectId[]{ version1, content1, originalAuthorId }, "userName", "ted");
+        t.addExpectation(version1, viewClassName2, lastAuthor, new ObjectId[]{ version1, content1, lastAuthorId }, "userName", "wendy");
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 

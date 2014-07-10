@@ -1,11 +1,3 @@
-/*
- * $Revision$
- * $Date$
- *
- * Copyright (C) 1999-$year$ Jive Software. All rights reserved.
- *
- * This software is the proprietary information of Jive Software. Use is subject to license terms.
- */
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.id.Id;
@@ -30,7 +22,7 @@ public class TraverseViewValueWriter implements StepTraverser {
     private final ModelPath modelPath;
     private final long modelPathIdHashcode;
 
-    public TraverseViewValueWriter(String viewIdFieldName, String viewClassName,ModelPath modelPath, long modelPathIdHashcode) {
+    public TraverseViewValueWriter(String viewIdFieldName, String viewClassName, ModelPath modelPath, long modelPathIdHashcode) {
         this.viewIdFieldName = viewIdFieldName;
         this.viewClassName = viewClassName;
         this.modelPath = modelPath;
@@ -45,7 +37,7 @@ public class TraverseViewValueWriter implements StepTraverser {
         LeafContext leafContext,
         PathId from,
         StepStream streamTo) throws Exception {
-        
+
         Id viewId = buildAlternateViewId(writtenEventContext.getEvent());
         if (viewId == null && from != null) {
             ObjectId objectId = from.getObjectId();

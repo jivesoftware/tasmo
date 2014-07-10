@@ -28,14 +28,14 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
-import com.jivesoftware.os.tasmo.lib.StatCollectingFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.read.StatCollectingFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
-import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
-import com.jivesoftware.os.tasmo.lib.TasmoEventTraversal;
-import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
-import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
-import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraverser;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
+import com.jivesoftware.os.tasmo.lib.write.TasmoWriteMaterializer;
+import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
@@ -50,7 +50,7 @@ import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
-import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -124,7 +124,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
         ViewValueStore viewValueStore = buildViewValueStore(rowColumnValueStoreProvider, viewPathKeyProvider);
         CommitChange commitChange = buildCommitChange(viewValueStore);
-        TasmoViewMaterializer viewMaterializer = buildViewMaterializer(viewsProvider, rowColumnValueStoreProvider,
+        TasmoWriteMaterializer viewMaterializer = buildViewMaterializer(viewsProvider, rowColumnValueStoreProvider,
             writtenEventProvider, commitChange, masterTenantId);
 
         EventWriter eventWriter = buildEventWriter(viewMaterializer, writtenEventProvider);
@@ -150,7 +150,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         return new ViewValueStore(rowColumnValueStoreProvider.viewValueStore(), viewPathKeyProvider);
     }
 
-    private TasmoViewMaterializer buildViewMaterializer(ViewsProvider viewsProvider,
+    private TasmoWriteMaterializer buildViewMaterializer(ViewsProvider viewsProvider,
         RowColumnValueStoreProvider rowColumnValueStoreProvider,
         WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider,
         CommitChange commitChange, TenantId masterTenantId) throws Exception {
@@ -171,8 +171,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
 
         TasmoViewModel viewMaterializerModel = new TasmoViewModel(masterTenantId,
             viewsProvider,
-            viewPathKeyProvider,
-            referenceStore);
+            viewPathKeyProvider);
 
         viewMaterializerModel.loadModel(masterTenantId);
 
@@ -224,7 +223,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             commitChange,
             processingStats);
 
-        return new TasmoViewMaterializer(new CallbackStream<List<BookkeepingEvent>>() {
+        return new TasmoWriteMaterializer(new CallbackStream<List<BookkeepingEvent>>() {
             @Override
             public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
                 return value;
@@ -235,7 +234,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
             new TasmoBlacklist());
     }
 
-    private EventWriter buildEventWriter(final TasmoViewMaterializer viewMaterializer,
+    private EventWriter buildEventWriter(final TasmoWriteMaterializer viewMaterializer,
         final WrittenEventProvider<ObjectNode, JsonNode> writtenEventProvider) {
 
         if (orderIdProvider == null) {

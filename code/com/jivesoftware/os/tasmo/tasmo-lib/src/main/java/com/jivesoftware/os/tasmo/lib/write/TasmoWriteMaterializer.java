@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.write;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -9,6 +9,8 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
+import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
@@ -21,7 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class TasmoViewMaterializer {
+public class TasmoWriteMaterializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final CallbackStream<List<BookkeepingEvent>> bookkeepingStream;
@@ -33,7 +35,7 @@ public class TasmoViewMaterializer {
 
     private double lastEventsPerSecond = 0;
 
-    public TasmoViewMaterializer(CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
+    public TasmoWriteMaterializer(CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
         TasmoEventProcessor eventProcessor,
         ListeningExecutorService processEvents,
         TasmoBlacklist tasmoBlacklist

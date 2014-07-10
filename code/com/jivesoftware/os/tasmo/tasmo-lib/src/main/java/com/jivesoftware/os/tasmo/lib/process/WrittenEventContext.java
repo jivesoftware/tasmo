@@ -1,10 +1,9 @@
 package com.jivesoftware.os.tasmo.lib.process;
 
 import com.jivesoftware.os.jive.utils.id.Id;
-import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
+import com.jivesoftware.os.tasmo.lib.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
-import com.jivesoftware.os.tasmo.lib.write.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
@@ -34,16 +33,16 @@ public class WrittenEventContext {
     public int changes;
 
     public WrittenEventContext(long eventId,
-            Id actorId,
-            WrittenEvent event,
-            WrittenEventProvider writtenEventProvider,
-            ConcurrencyChecker concurrencyChecker,
-            ReferenceStore referenceStore,
-            FieldValueReader fieldValueReader,
-            ReferenceTraverser referenceTraverser,
-            ModifiedViewProvider modifiedViewProvider,
-            CommitChange commitChange,
-            TasmoProcessingStats processingStats) {
+        Id actorId,
+        WrittenEvent event,
+        WrittenEventProvider writtenEventProvider,
+        ConcurrencyChecker concurrencyChecker,
+        ReferenceStore referenceStore,
+        FieldValueReader fieldValueReader,
+        ReferenceTraverser referenceTraverser,
+        ModifiedViewProvider modifiedViewProvider,
+        CommitChange commitChange,
+        TasmoProcessingStats processingStats) {
         this.eventId = eventId;
         this.actorId = actorId;
         this.event = event;
@@ -84,7 +83,7 @@ public class WrittenEventContext {
     public ReferenceStore getReferenceStore() {
         return referenceStore;
     }
-    
+
     public FieldValueReader getFieldValueReader() {
         return fieldValueReader;
     }

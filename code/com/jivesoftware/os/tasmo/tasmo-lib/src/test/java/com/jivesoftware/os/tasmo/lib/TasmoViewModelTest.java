@@ -7,6 +7,8 @@ import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
+import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.model.VersionedTasmoViewModel;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -15,7 +17,6 @@ import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.path.StringHashcodeViewPathKeyProvider;
-import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -35,18 +36,15 @@ public class TasmoViewModelTest {
     private final TenantId tenantId = new TenantId("master");
     private ViewsProvider viewsProvider;
     private TasmoViewModel tasmoViewModel;
-    private ReferenceStore referenceStore;
 
     @BeforeMethod
     public void setUpMethod() throws Exception {
 
         viewsProvider = Mockito.mock(ViewsProvider.class);
-        referenceStore = Mockito.mock(ReferenceStore.class);
         tasmoViewModel = new TasmoViewModel(
                 tenantId,
                 viewsProvider,
-                new StringHashcodeViewPathKeyProvider(),
-                referenceStore);
+                new StringHashcodeViewPathKeyProvider());
     }
 
     @AfterMethod

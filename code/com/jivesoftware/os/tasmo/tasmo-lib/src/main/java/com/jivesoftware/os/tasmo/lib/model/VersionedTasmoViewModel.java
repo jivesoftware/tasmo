@@ -1,9 +1,10 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.model;
 
 import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateReadTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateWriteTraversal;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -39,14 +40,14 @@ public class VersionedTasmoViewModel {
     }
 
     public Map<String, InitiateWriteTraversal> getWriteTraversers() {
-        return writeTraversers;
+        return Collections.unmodifiableMap(writeTraversers);
     }
     public Map<String, InitiateWriteTraversal> getCentricWriteTraversers() {
-        return centricWriteTraversers;
+        return Collections.unmodifiableMap(centricWriteTraversers);
     }
 
     public Map<String, InitiateReadTraversal> getReadTraversers() {
-        return readTraversers;
+        return Collections.unmodifiableMap(readTraversers);
     }
 
     public SetMultimap<String, TasmoViewModel.FieldNameAndType> getEventModel() {
@@ -54,7 +55,7 @@ public class VersionedTasmoViewModel {
     }
 
     public Set<String> getNotifiableViews() {
-        return notifiableViews;
+        return Collections.unmodifiableSet(notifiableViews);
     }
 
     @Override

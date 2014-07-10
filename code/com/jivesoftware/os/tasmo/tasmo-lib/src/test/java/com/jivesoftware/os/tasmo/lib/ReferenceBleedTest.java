@@ -27,7 +27,8 @@ public class ReferenceBleedTest extends BaseTest {
 
     @Test (dataProvider = "tasmoMaterializer", invocationCount = 1, singleThreaded = true)
     public void testEnsureThereIsNoRefBleed(TasmoMaterializerHarness t) throws Exception {
-        Views views = TasmoModelFactory.modelToViews(ContentView + "::" + "contentSubject" + "::Content.refs_versionedContent.refs.VersionedContent|VersionedContent.subject", ContentView
+        Views views = TasmoModelFactory.modelToViews(
+            ContentView + "::" + "contentSubject" + "::Content.refs_versionedContent.refs.VersionedContent|VersionedContent.subject", ContentView
             + "::" + containerName + "::Content.ref_parent.ref.Container|Container.name");
         t.initModel(views);
 
@@ -52,7 +53,7 @@ public class ReferenceBleedTest extends BaseTest {
             .set("refs_versionedContent", Arrays.asList(dversionedContentId)).build());
         ObjectId acontentId =
             t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_parent", acontainerId)
-            .set("refs_versionedContent", Arrays.asList(eversionedContentId)).build());
+                .set("refs_versionedContent", Arrays.asList(eversionedContentId)).build());
         ObjectId bcontainerId = t.write(EventBuilder.create(t.idProvider(), "Container", tenantId, actorId).set("name", "b-container").build());
         t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_parent", bcontainerId)
             .set("refs_versionedContent", Arrays.asList(bversionedContentId)).build());
@@ -60,7 +61,7 @@ public class ReferenceBleedTest extends BaseTest {
             .set("refs_versionedContent", Arrays.asList(bversionedContentId)).build());
         ObjectId bcontentId =
             t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_parent", bcontainerId)
-            .set("refs_versionedContent", Arrays.asList(aversionedContentId)).build());
+                .set("refs_versionedContent", Arrays.asList(aversionedContentId)).build());
         //t.addExpectation(acontentId, ContentView, status, new ObjectId[]{acontentId}, "draft");
         //t.assertExpectation(tenantId);
         //t.clearExpectations();

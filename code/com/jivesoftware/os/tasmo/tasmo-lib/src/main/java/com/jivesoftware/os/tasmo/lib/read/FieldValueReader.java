@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib.write.read;
+package com.jivesoftware.os.tasmo.lib.read;
 
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;

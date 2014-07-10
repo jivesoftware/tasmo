@@ -31,14 +31,14 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
-import com.jivesoftware.os.tasmo.lib.StatCollectingFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.read.StatCollectingFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
-import com.jivesoftware.os.tasmo.lib.TasmoEventProcessor;
-import com.jivesoftware.os.tasmo.lib.TasmoEventTraversal;
-import com.jivesoftware.os.tasmo.lib.TasmoEventTraverser;
-import com.jivesoftware.os.tasmo.lib.TasmoProcessingStats;
-import com.jivesoftware.os.tasmo.lib.TasmoViewMaterializer;
-import com.jivesoftware.os.tasmo.lib.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraverser;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
+import com.jivesoftware.os.tasmo.lib.write.TasmoWriteMaterializer;
+import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
@@ -53,7 +53,7 @@ import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
-import com.jivesoftware.os.tasmo.lib.write.read.EventValueStoreFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -115,7 +115,7 @@ public class Materialization {
     ViewValueReader viewValueReader;
     ViewProvider<ViewResponse> viewProvider;
     TasmoViewModel tasmoViewModel;
-    TasmoViewMaterializer tasmoMaterializer;
+    TasmoWriteMaterializer tasmoMaterializer;
     final ChainedVersion currentVersion = new ChainedVersion("0", "1");
     final AtomicReference<Views> views = new AtomicReference<>();
     final ViewPathKeyProvider viewPathKeyProvider = new MurmurHashViewPathKeyProvider();
@@ -344,8 +344,7 @@ public class Materialization {
         tasmoViewModel = new TasmoViewModel(
             MASTER_TENANT_ID,
             viewsProvider,
-            viewPathKeyProvider,
-            referenceStore);
+            viewPathKeyProvider);
 
         WrittenEventProcessorDecorator writtenEventProcessorDecorator = new WrittenEventProcessorDecorator() {
             @Override
@@ -399,7 +398,7 @@ public class Materialization {
             processingStats);
 
         eventProcessorThreads = newThreadPool(numberOfEventProcessorThreads, "process-event-");
-        tasmoMaterializer = new TasmoViewMaterializer(new CallbackStream<List<BookkeepingEvent>>() {
+        tasmoMaterializer = new TasmoWriteMaterializer(new CallbackStream<List<BookkeepingEvent>>() {
                 @Override
                 public List<BookkeepingEvent> callback(List<BookkeepingEvent> value) throws Exception {
                     return value;

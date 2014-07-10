@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.write;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
@@ -11,7 +11,10 @@ import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
+import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
+import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.model.VersionedTasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;
@@ -33,17 +36,20 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
     private final ListeningExecutorService processEvents;
     private final TasmoViewModel tasmoViewModel;
     private final TasmoEventPersistor tasmoEventPersistor;
+    private final CallbackStream<List<BookkeepingEvent>> bookkeepingStream;
     private final TasmoBlacklist tasmoBlacklist;
     private final ConcurrentHashMap<TenantId, StripingLocksProvider<ObjectId>> instanceIdLocks = new ConcurrentHashMap<>();
 
     public TasmoSyncEventWriter(ListeningExecutorService processEvents,
         TasmoViewModel tasmoViewModel,
         TasmoEventPersistor tasmoEventPersistor,
+        CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
         TasmoBlacklist tasmoBlacklist) {
 
         this.processEvents = processEvents;
         this.tasmoViewModel = tasmoViewModel;
         this.tasmoEventPersistor = tasmoEventPersistor;
+        this.bookkeepingStream = bookkeepingStream;
         this.tasmoBlacklist = tasmoBlacklist;
     }
 
@@ -51,6 +57,7 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
     public List<WrittenEvent> callback(List<WrittenEvent> writtenEvents) throws Exception {
 
         final List<WrittenEvent> failedToProcess = new ArrayList<>(writtenEvents.size());
+        final List<WrittenEvent> processed = new ArrayList<>(writtenEvents.size());
         try {
 
             Multimap<Object, WrittenEvent> writtenEventLockGroups = ArrayListMultimap.create();
@@ -103,8 +110,8 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
 
                                     synchronized (lock) {
                                         if (event.getWrittenInstance().isDeletion()) {
-                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp-1);
-                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp-1);
+                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp - 1);
+                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp - 1);
                                         } else {
                                             tasmoEventPersistor.updateValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp,
                                                 writtenInstance);
@@ -112,6 +119,7 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
                                                 updateValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp, writtenInstance);
                                         }
                                     }
+                                    processed.add(event);
                                 } catch (Exception x) {
                                     failedToProcess.add(event);
                                     LOG.warn("Failed to persist eventId:{} instanceId:{} tenantId:{} exception: {}", new Object[]{
@@ -137,6 +145,15 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
         } catch (Exception ex) {
             throw ex;
         }
+
+        List<BookkeepingEvent> bookkeepingEvents = new ArrayList<>();
+        for (WrittenEvent p : processed) {
+            if (p.isBookKeepingEnabled()) {
+                bookkeepingEvents.add(new BookkeepingEvent(p.getTenantId(), p.getActorId(), p.getEventId(), true));
+            }
+        }
+        bookkeepingStream.callback(bookkeepingEvents);
+
         return failedToProcess;
     }
 

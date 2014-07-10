@@ -98,7 +98,7 @@ public class EventValueStore {
         }
     }
 
-    final public static class Transaction {
+    public static class Transaction {
 
         private final TenantIdAndCentricId tenantIdAndCentricId;
         private final long addAtTimestamp;

@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.process;
 
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -119,7 +119,7 @@ public class TasmoProcessingStats {
         private final double value;
         private final String name;
 
-        public SortableStat(double value, String name) {
+        SortableStat(double value, String name) {
             this.value = value;
             this.name = name;
         }
