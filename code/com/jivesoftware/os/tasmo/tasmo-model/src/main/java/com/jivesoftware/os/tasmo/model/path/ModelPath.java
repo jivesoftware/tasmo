@@ -31,7 +31,7 @@ public class ModelPath {
         @JsonProperty("id") String id,
         @JsonProperty("pathMembers") List<ModelPathStep> pathMembers) {
         this.id = id;
-        this.pathMembers = Collections.unmodifiableList(pathMembers);
+        this.pathMembers = pathMembers;
 
         boolean assignedRootId = false;
         for (int i = 0; i < this.pathMembers.size(); i++) {

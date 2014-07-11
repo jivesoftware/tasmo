@@ -190,7 +190,7 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
                 }
             }
         }
-        return Collections.unmodifiableSet(ids);
+        return ids;
     }
 
 }

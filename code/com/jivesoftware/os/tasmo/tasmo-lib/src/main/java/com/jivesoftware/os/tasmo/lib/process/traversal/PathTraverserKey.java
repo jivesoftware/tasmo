@@ -21,7 +21,7 @@ public class PathTraverserKey {
     }
 
     public Set<String> getInitialFieldNames() {
-        return Collections.unmodifiableSet(initialFieldNames);
+        return initialFieldNames;
     }
 
     public int getPathIndex() {

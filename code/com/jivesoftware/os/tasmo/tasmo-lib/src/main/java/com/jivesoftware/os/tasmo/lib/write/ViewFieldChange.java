@@ -90,7 +90,7 @@ public class ViewFieldChange {
     }
 
     public List<ReferenceWithTimestamp> getModelPathVersions() {
-        return Collections.unmodifiableList(modelPathVersions);
+        return modelPathVersions;
     }
 
     public long[] getModelPathTimestamps() {
