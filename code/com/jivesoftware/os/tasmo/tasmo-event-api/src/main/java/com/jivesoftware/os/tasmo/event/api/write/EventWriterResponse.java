@@ -10,7 +10,6 @@
 package com.jivesoftware.os.tasmo.event.api.write;
 
 import com.jivesoftware.os.jive.utils.id.ObjectId;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,11 +30,11 @@ public class EventWriterResponse {
     }
 
     public List<Long> getEventIds() {
-        return Collections.unmodifiableList(eventIds);
+        return eventIds;
     }
 
     public List<ObjectId> getObjectIds() {
-        return Collections.unmodifiableList(objectIds);
+        return objectIds;
     }
 
 

@@ -25,7 +25,7 @@ public class EventModel {
     }
 
     public Map<String, ValueType> getEventFields() {
-        return Collections.unmodifiableMap(eventFields);
+        return eventFields;
     }
 
     private boolean fieldIsStable(String fieldName) {

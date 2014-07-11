@@ -201,11 +201,11 @@ public class ViewObject {
     }
 
     Map<String, ViewObject> getRefFields() {
-        return Collections.unmodifiableMap(refFields);
+        return refFields;
     }
 
     Map<String, ViewArray> getBackRefFields() {
-        return Collections.unmodifiableMap(backRefFields);
+        return backRefFields;
     }
 
     @Override
