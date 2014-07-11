@@ -2,6 +2,7 @@ package com.jivesoftware.os.tasmo.lib.write;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.SetMultimap;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.base.util.locks.StripingLocksProvider;
@@ -14,11 +15,15 @@ import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.model.VersionedTasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.modifier.ModifierStore;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,6 +41,7 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
     private final ListeningExecutorService processEvents;
     private final TasmoViewModel tasmoViewModel;
     private final TasmoEventPersistor tasmoEventPersistor;
+    private final ModifierStore modifierStore;
     private final CallbackStream<List<BookkeepingEvent>> bookkeepingStream;
     private final TasmoBlacklist tasmoBlacklist;
     private final ConcurrentHashMap<TenantId, StripingLocksProvider<ObjectId>> instanceIdLocks = new ConcurrentHashMap<>();
@@ -43,12 +49,14 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
     public TasmoSyncEventWriter(ListeningExecutorService processEvents,
         TasmoViewModel tasmoViewModel,
         TasmoEventPersistor tasmoEventPersistor,
+        ModifierStore modifierStore,
         CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
         TasmoBlacklist tasmoBlacklist) {
 
         this.processEvents = processEvents;
         this.tasmoViewModel = tasmoViewModel;
         this.tasmoEventPersistor = tasmoEventPersistor;
+        this.modifierStore = modifierStore;
         this.bookkeepingStream = bookkeepingStream;
         this.tasmoBlacklist = tasmoBlacklist;
     }
@@ -118,6 +126,8 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
                                             tasmoEventPersistor.
                                                 updateValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp, writtenInstance);
                                         }
+                                        Set<Id> ids = eventToRefId(model, className, instanceId, writtenInstance);
+                                        modifierStore.add(tenantId, event.getActorId(), ids, timestamp);
                                     }
                                     processed.add(event);
                                 } catch (Exception x) {
@@ -127,7 +137,7 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
                                         event.getWrittenInstance().getInstanceId(),
                                         event.getTenantId(),
                                         x
-                                    });
+                                    }, x);
                                     if (LOG.isTraceEnabled()) {
                                         LOG.trace("Failed to persist writtenEvent:" + event, x);
                                     }
@@ -155,6 +165,32 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
         bookkeepingStream.callback(bookkeepingEvents);
 
         return failedToProcess;
+    }
+
+    private Set<Id> eventToRefId(VersionedTasmoViewModel model, String className, ObjectId instanceId, WrittenInstance writtenInstance) {
+        HashSet<Id> ids = new HashSet<>();
+        ids.add(instanceId.getId());
+        SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
+        for (TasmoViewModel.FieldNameAndType fieldNameAndType : eventModel.get(className)) {
+            String fieldName = fieldNameAndType.getFieldName();
+            ModelPathStepType fieldType = fieldNameAndType.getFieldType();
+            if (fieldType != ModelPathStepType.value && !fieldType.isBackReferenceType() && writtenInstance.hasField(fieldName)) {
+                if (fieldType == ModelPathStepType.ref) {
+                    ObjectId referenceFieldValue = writtenInstance.getReferenceFieldValue(fieldName);
+                    if (referenceFieldValue != null) {
+                        ids.add(referenceFieldValue.getId());
+                    }
+                } else if (fieldType == ModelPathStepType.refs) {
+                    ObjectId[] multiReferenceFieldValue = writtenInstance.getMultiReferenceFieldValue(fieldName);
+                    if (multiReferenceFieldValue != null) {
+                        for (ObjectId objectId : multiReferenceFieldValue) {
+                            ids.add(objectId.getId());
+                        }
+                    }
+                }
+            }
+        }
+        return Collections.unmodifiableSet(ids);
     }
 
 }

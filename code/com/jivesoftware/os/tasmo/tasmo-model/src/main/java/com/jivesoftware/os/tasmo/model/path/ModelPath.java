@@ -55,7 +55,7 @@ public class ModelPath {
     }
 
     public List<ModelPathStep> getPathMembers() {
-        return Collections.unmodifiableList(pathMembers);
+        return pathMembers;
     }
 
     @JsonIgnore

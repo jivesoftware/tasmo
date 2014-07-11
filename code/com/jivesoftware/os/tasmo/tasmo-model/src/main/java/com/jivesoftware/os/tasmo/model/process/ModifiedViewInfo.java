@@ -22,6 +22,11 @@ public class ModifiedViewInfo {
     }
 
     @Override
+    public String toString() {
+        return "ModifiedViewInfo{" + "tenantIdAndCentricId=" + tenantIdAndCentricId + ", viewId=" + viewId + '}';
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;

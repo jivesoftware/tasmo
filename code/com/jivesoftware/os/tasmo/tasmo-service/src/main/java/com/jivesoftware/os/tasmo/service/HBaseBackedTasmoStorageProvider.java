@@ -1,7 +1,9 @@
 package com.jivesoftware.os.tasmo.service;
 
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.DefaultRowColumnValueStoreMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.NeverAcceptsFailureSetOfSortedMaps;
@@ -12,9 +14,11 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMa
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.ByteArrayTypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.LongTypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
+import com.jivesoftware.os.tasmo.id.IdMarshaller;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
 import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
+import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
 import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
@@ -85,5 +89,13 @@ public class HBaseBackedTasmoStorageProvider implements TasmoStorageProvider {
         return new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(tableNameSpace, "tasmo.back.links", "v",
             new DefaultRowColumnValueStoreMarshaller<>(new TenantIdAndCentricIdMarshaller(), new ClassAndField_IdKeyMarshaller(),
                 new ObjectIdMarshaller(), new ByteArrayTypeMarshaller()), new CurrentTimestamper()));
+    }
+
+    @Override
+    public RowColumnValueStore<TenantId, Id, Id, String, RuntimeException> modifierStorage() throws Exception {
+        return new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(tableNameSpace, "tasmo.modifier", "v",
+            new DefaultRowColumnValueStoreMarshaller<>(new TenantIdMarshaller(),
+                new IdMarshaller(), new IdMarshaller(),
+                new StringTypeMarshaller()), new CurrentTimestamper()));
     }
 }

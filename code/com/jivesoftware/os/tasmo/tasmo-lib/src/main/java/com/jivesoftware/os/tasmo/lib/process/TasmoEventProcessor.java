@@ -88,7 +88,6 @@ public class TasmoEventProcessor {
             public void commitChange(WrittenEventContext context,
                 TenantIdAndCentricId tenantIdAndCentricId,
                 List<ViewFieldChange> changes) throws CommitChangeException {
-
                 commitChange.commitChange(context, tenantIdAndCentricId, changes);
                 for (ViewFieldChange viewFieldChange : changes) {
                     if (model.getNotifiableViews().contains(viewFieldChange.getViewObjectId().getClassName())) {

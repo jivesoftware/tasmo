@@ -7,6 +7,7 @@ import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.modifier.ModifierStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
@@ -68,7 +69,12 @@ public class TasmoSyncWriteInitializer {
 
         ExecutorService syncEventWritorThreads = Executors.newFixedThreadPool(config.getNumberOfSyncEventWritorThreads(), syncEventWritorThreadFactory);
 
-        return new TasmoSyncEventWriter(MoreExecutors.listeningDecorator(syncEventWritorThreads), tasmoViewModel, eventPersistor, bookkeepingStream,
+        ModifierStore modifierStore = new ModifierStore(tasmoStorageProvider.modifierStorage());
+        return new TasmoSyncEventWriter(MoreExecutors.listeningDecorator(syncEventWritorThreads),
+            tasmoViewModel,
+            eventPersistor,
+            modifierStore,
+            bookkeepingStream,
             tasmoBlacklist);
     }
 }
