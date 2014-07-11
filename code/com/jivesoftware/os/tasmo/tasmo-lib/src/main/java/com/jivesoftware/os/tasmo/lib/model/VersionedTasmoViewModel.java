@@ -40,14 +40,14 @@ public class VersionedTasmoViewModel {
     }
 
     public Map<String, InitiateWriteTraversal> getWriteTraversers() {
-        return Collections.unmodifiableMap(writeTraversers);
+        return writeTraversers;
     }
     public Map<String, InitiateWriteTraversal> getCentricWriteTraversers() {
-        return Collections.unmodifiableMap(centricWriteTraversers);
+        return centricWriteTraversers;
     }
 
     public Map<String, InitiateReadTraversal> getReadTraversers() {
-        return Collections.unmodifiableMap(readTraversers);
+        return readTraversers;
     }
 
     public SetMultimap<String, TasmoViewModel.FieldNameAndType> getEventModel() {
@@ -55,7 +55,7 @@ public class VersionedTasmoViewModel {
     }
 
     public Set<String> getNotifiableViews() {
-        return Collections.unmodifiableSet(notifiableViews);
+        return notifiableViews;
     }
 
     @Override

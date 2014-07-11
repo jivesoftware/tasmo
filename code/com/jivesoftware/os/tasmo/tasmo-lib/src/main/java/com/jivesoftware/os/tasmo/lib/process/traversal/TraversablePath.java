@@ -41,7 +41,7 @@ public class TraversablePath {
     }
 
     public List<StepTraverser> getStepTraversers() {
-        return Collections.unmodifiableList(stepTraversers);
+        return stepTraversers;
     }
 
     @Override

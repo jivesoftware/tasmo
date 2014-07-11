@@ -59,7 +59,7 @@ public class ReadMaterializer {
         for (CommitChangeCollector viewCollector : viewCollectors) {
             changes.put(viewCollector.getViewDescriptor(), viewCollector.getChanges());
         }
-        return Collections.unmodifiableMap(changes);
+        return changes;
     }
 
     private List<CommitChangeCollector> buildViewCollectors(List<ViewDescriptor> viewDescriptors) {
@@ -86,7 +86,7 @@ public class ReadMaterializer {
         }
 
         public List<ViewFieldChange> getChanges() {
-            return Collections.unmodifiableList(changes);
+            return changes;
         }
 
         @Override

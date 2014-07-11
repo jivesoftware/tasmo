@@ -36,7 +36,7 @@ class VersionedViewsModel {
     }
 
     public Map<String, Map<Long, PathAndDictionary>> getViewsModel() {
-        return Collections.unmodifiableMap(viewValueBindings);
+        return viewValueBindings;
     }
 
     @Override

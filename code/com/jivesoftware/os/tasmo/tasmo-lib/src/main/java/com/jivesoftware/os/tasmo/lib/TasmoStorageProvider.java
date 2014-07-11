@@ -1,7 +1,9 @@
 package com.jivesoftware.os.tasmo.lib;
 
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
@@ -13,6 +15,8 @@ import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
  * @author jonathan.colt
  */
 public interface TasmoStorageProvider {
+
+    RowColumnValueStore<TenantId, Id, Id, String, RuntimeException> modifierStorage() throws Exception;
 
     RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage() throws Exception;
 

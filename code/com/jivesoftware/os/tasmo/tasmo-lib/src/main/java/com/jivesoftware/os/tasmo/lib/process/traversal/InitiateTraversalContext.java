@@ -68,7 +68,7 @@ public class InitiateTraversalContext {
     }
 
     public Set<String> getInitialFieldNames() {
-        return Collections.unmodifiableSet(allInitialFieldNames);
+        return allInitialFieldNames;
     }
 
     public int getMembersSize() {

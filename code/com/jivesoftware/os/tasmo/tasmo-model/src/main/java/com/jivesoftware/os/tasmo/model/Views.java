@@ -43,7 +43,7 @@ public class Views {
     }
 
     public List<ViewBinding> getViewBindings() {
-        return Collections.unmodifiableList(viewBindings);
+        return viewBindings;
     }
 
     @Override

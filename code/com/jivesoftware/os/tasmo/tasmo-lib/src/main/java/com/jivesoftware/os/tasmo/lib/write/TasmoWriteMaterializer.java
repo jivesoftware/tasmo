@@ -102,7 +102,7 @@ public class TasmoWriteMaterializer {
                                         event.getWrittenInstance().getInstanceId(),
                                         event.getTenantId(),
                                         x
-                                    });
+                                    }, x);
                                     if (LOG.isTraceEnabled()) {
                                         LOG.trace("Failed to process writtenEvent:" + event, x);
                                     }

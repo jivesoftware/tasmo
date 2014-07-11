@@ -104,7 +104,7 @@ public class ViewBinding {
     }
 
     public List<ModelPath> getModelPaths() {
-        return Collections.unmodifiableList(modelPaths);
+        return modelPaths;
     }
 
     /**

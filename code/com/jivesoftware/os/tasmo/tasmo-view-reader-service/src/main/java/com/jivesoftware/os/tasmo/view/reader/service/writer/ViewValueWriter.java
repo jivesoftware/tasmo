@@ -29,6 +29,10 @@ public class ViewValueWriter {
         this.viewValueStore = viewValueStore;
     }
 
+    public void clear(TenantIdAndCentricId tenantIdAndCentricId, ObjectId viewId, long timestamp) throws IOException {
+        viewValueStore.clear(tenantIdAndCentricId, viewId, timestamp);
+    }
+
     public Transaction begin(TenantIdAndCentricId tenantIdAndCentricId) {
         return new Transaction(tenantIdAndCentricId);
     }

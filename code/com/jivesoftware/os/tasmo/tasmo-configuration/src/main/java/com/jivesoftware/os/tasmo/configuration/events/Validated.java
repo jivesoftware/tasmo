@@ -20,8 +20,8 @@ public class Validated {
     private Validated(ChainedVersion version, List<String> infos, List<String> errors) {
         this.version = version;
 
-        this.infos = Collections.unmodifiableCollection(infos);
-        this.errors = Collections.unmodifiableCollection(errors);
+        this.infos = infos;
+        this.errors = errors;
     }
 
     public ChainedVersion getVersion() {

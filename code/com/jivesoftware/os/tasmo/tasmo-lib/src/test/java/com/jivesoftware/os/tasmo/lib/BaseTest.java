@@ -41,7 +41,7 @@ public class BaseTest {
         List<Object[]> paramList = new ArrayList<>();
         paramList.add(new Object[]{ asyncHarness() });
         paramList.add(new Object[]{ syncHarness() });
-
+        //paramList.add(new Object[]{ syncWithAsyncReadMaterializerHarness() });
         return paramList.iterator();
     }
 
@@ -54,8 +54,20 @@ public class BaseTest {
         return paramList.iterator();
     }
 
+
+
+    private TasmoMaterializerHarness syncWithAsyncReadMaterializerHarness() throws Exception {
+        return TasmoMaterializerHarnessFactory.createSynWriteNotificationReadMaterializer(
+            TasmoMaterializerHarnessFactory.createOrderIdProvider(),
+            TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
+            TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
+            TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
+            TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker());
+    }
+
     private TasmoMaterializerHarness asyncHarness() throws Exception {
         return TasmoMaterializerHarnessFactory.createWriteTimeMaterializer(
+            TasmoMaterializerHarnessFactory.createOrderIdProvider(),
             TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
             TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
             TasmoMaterializerHarnessFactory.createNoOpViewChangeNotificationProcessor(),
@@ -64,6 +76,7 @@ public class BaseTest {
 
     private TasmoMaterializerHarness syncHarness() throws Exception {
         return TasmoMaterializerHarnessFactory.createSyncWriteSyncReadsMaterializer(
+            TasmoMaterializerHarnessFactory.createOrderIdProvider(),
             TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
             TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
             TasmoMaterializerHarnessFactory.createNoOpViewChangeNotificationProcessor(),
