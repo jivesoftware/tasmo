@@ -4,12 +4,12 @@ import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel.ReadTraversalKey;
-import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
+import com.jivesoftware.os.tasmo.lib.process.ProcessingStats;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
@@ -50,7 +50,7 @@ public class InitiateReadTraversal {
             }
         };
 
-        TasmoProcessingStats processingStats = new TasmoProcessingStats();
+        ProcessingStats processingStats = new ProcessingStats();
 
         WrittenEventContext writtenEventContext = new WrittenEventContext(0,
             Id.NULL,
@@ -77,10 +77,10 @@ public class InitiateReadTraversal {
                 stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
             }
         }
-        List<ViewFieldChange> took = context.takeChanges();
-        List<ViewFieldChange> changes = new ArrayList<>();
-        for (ViewFieldChange t : took) {
-            changes.add(new ViewFieldChange(t.getEventId(),
+        List<ViewField> took = context.takeChanges();
+        List<ViewField> changes = new ArrayList<>();
+        for (ViewField t : took) {
+            changes.add(new ViewField(t.getEventId(),
                 t.getActorId(),
                 t.getType(),
                 id,

@@ -41,6 +41,7 @@ import java.util.Set;
 
 /**
  *
+ * @param <V>
  */
 public class ViewProvider<V> implements ViewReader<V> {
 

@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.ingress;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
@@ -6,9 +6,9 @@ import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
-import com.jivesoftware.os.tasmo.lib.read.ReadMaterializer;
+import com.jivesoftware.os.tasmo.lib.read.ReadMaterializerViewFields;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.view.notification.api.ViewNotification;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
@@ -27,11 +27,11 @@ public class TasmoNotificationsIngress implements CallbackStream<List<ViewNotifi
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final OrderIdProvider threadTimestamp;
-    private final ReadMaterializer readMaterializer;
+    private final ReadMaterializerViewFields readMaterializer;
     private final ViewValueWriter viewValueWriter;
 
     public TasmoNotificationsIngress(OrderIdProvider threadTimestamp,
-        ReadMaterializer readMaterializer,
+        ReadMaterializerViewFields readMaterializer,
         ViewValueWriter viewValueWriter) {
         this.threadTimestamp = threadTimestamp;
         this.readMaterializer = readMaterializer;
@@ -51,18 +51,17 @@ public class TasmoNotificationsIngress implements CallbackStream<List<ViewNotifi
                 viewNotification.getActorId(),
                 viewNotification.getViewId()));
         }
+        
         long threadTime = threadTimestamp.nextId();
-        Map<ViewDescriptor, List<ViewFieldChange>> readMaterialized = readMaterializer.readMaterialize(viewDescriptors);
-        for (Entry<ViewDescriptor, List<ViewFieldChange>> changeSets : readMaterialized.entrySet()) {
+        Map<ViewDescriptor, List<ViewField>> readMaterialized = readMaterializer.readMaterialize(viewDescriptors);
+        for (Entry<ViewDescriptor, List<ViewField>> changeSets : readMaterialized.entrySet()) {
             ViewDescriptor viewDescriptor = changeSets.getKey();
-            List<ViewFieldChange> changes = changeSets.getValue();
+            List<ViewField> changes = changeSets.getValue();
             TenantIdAndCentricId tenantIdAndCentricId = viewDescriptor.getTenantIdAndCentricId();
-            LOG.inc("commitChanges", changes.size());
-            LOG.startTimer("commitChanges");
 
             ViewValueWriter.Transaction transaction = viewValueWriter.begin(tenantIdAndCentricId);
-            for (ViewFieldChange change : changes) {
-                if (change.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+            for (ViewField change : changes) {
+                if (change.getType() == ViewField.ViewFieldChangeType.add) {
                     PathId[] modelPathInstanceIds = change.getModelPathInstanceIds();
                     ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];
                     for (int i = 0; i < modelPathInstanceIds.length; i++) {
@@ -74,13 +73,9 @@ public class TasmoNotificationsIngress implements CallbackStream<List<ViewNotifi
                         new ViewValue(change.getModelPathTimestamps(), change.getValue()),
                         threadTime);
                 }
-
             }
             viewValueWriter.commit(transaction);
-            // TODO remove every thing from viewValueStore that is less than threadTime
-
-            LOG.inc("commitedChanges", changes.size());
-            LOG.trace("Committed changes to hbase: {}", changes);
+            viewValueWriter.clear(tenantIdAndCentricId, viewDescriptor.getViewId(), threadTime - 1);
         }
 
         LOG.warn("TODO Failed to process isn't implemented.");

@@ -3,7 +3,8 @@ package com.jivesoftware.os.tasmo.lib;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
-import com.jivesoftware.os.tasmo.lib.read.ReadMaterializer;
+import com.jivesoftware.os.tasmo.lib.ingress.TasmoNotificationsIngress;
+import com.jivesoftware.os.tasmo.lib.read.ReadMaterializerViewFields;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import org.merlin.config.Config;
 
@@ -20,7 +21,7 @@ public class TasmoNotificationReadMaterializerInitializer {
 
     public static TasmoServiceHandle<TasmoNotificationsIngress> initialize(TasmoNotificationReadMaterializerConfig config,
         OrderIdProvider threadTimestamp,
-        ReadMaterializer readMaterializer,
+        ReadMaterializerViewFields readMaterializer,
         ViewValueWriter viewValueWriter) throws Exception {
 
         final TasmoNotificationsIngress notificationsIngress = new TasmoNotificationsIngress(threadTimestamp,

@@ -11,9 +11,11 @@ import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
+import com.jivesoftware.os.tasmo.lib.ingress.TasmoEventIngress;
+import com.jivesoftware.os.tasmo.lib.ingress.TasmoWriteMaterializer;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.process.ProcessingStats;
 import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
-import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
@@ -25,14 +27,14 @@ import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraverser;
 import com.jivesoftware.os.tasmo.lib.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.read.StatCollectingFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
-import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
-import com.jivesoftware.os.tasmo.lib.write.TasmoWriteMaterializer;
+import com.jivesoftware.os.tasmo.lib.write.WriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.SerialReferenceTraverser;
+import com.jivesoftware.os.tasmo.view.notification.api.ViewNotificationListener;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -67,6 +69,7 @@ public class TasmoServiceInitializer {
             TasmoStorageProvider tasmoStorageProvider,
             CommitChange commitChange,
             ViewChangeNotificationProcessor viewChangeNotificationProcessor,
+            ViewNotificationListener allViewNotificationsListener,
             CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
             final Optional<WrittenEventProcessorDecorator> writtenEventProcessorDecorator,
             TasmoBlacklist tasmoBlacklist,
@@ -98,10 +101,10 @@ public class TasmoServiceInitializer {
 
         WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
 
-        TasmoWriteFanoutEventPersistor eventPersistor = new TasmoWriteFanoutEventPersistor(writtenEventProvider,
+        WriteFanoutEventPersistor eventPersistor = new WriteFanoutEventPersistor(writtenEventProvider,
             writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
 
-        final TasmoProcessingStats processingStats = new TasmoProcessingStats();
+        final ProcessingStats processingStats = new ProcessingStats();
         StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
             new EventValueStoreFieldValueReader(eventValueStore));
 
@@ -112,6 +115,7 @@ public class TasmoServiceInitializer {
             writtenEventProvider,
             eventTraverser,
             viewChangeNotificationProcessor,
+            allViewNotificationsListener,
             concurrencyStore,
             referenceStore,
             fieldValueReader,

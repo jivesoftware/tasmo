@@ -4,7 +4,6 @@ import com.google.common.collect.SetMultimap;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateReadTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateWriteTraversal;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 

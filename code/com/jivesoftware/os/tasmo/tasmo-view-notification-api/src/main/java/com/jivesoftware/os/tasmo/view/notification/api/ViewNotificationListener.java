@@ -5,4 +5,6 @@ import java.util.List;
 public interface ViewNotificationListener {
 
     void handleNotifications(List<ViewNotification> viewNotifications) throws Exception;
+
+    void flush();
 }

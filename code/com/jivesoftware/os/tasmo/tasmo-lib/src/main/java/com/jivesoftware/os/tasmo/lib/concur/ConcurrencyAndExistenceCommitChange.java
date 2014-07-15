@@ -8,8 +8,8 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange.ViewFieldChangeType;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
+import com.jivesoftware.os.tasmo.lib.write.ViewField.ViewFieldChangeType;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,29 +36,29 @@ public class ConcurrencyAndExistenceCommitChange implements CommitChange {
     @Override
     public void commitChange(WrittenEventContext batchContext,
             TenantIdAndCentricId tenantIdAndCentricId,
-            List<ViewFieldChange> changes) throws CommitChangeException {
+            List<ViewField> changes) throws CommitChangeException {
 
         Set<ObjectId> check = new HashSet<>();
-        for (ViewFieldChange change : changes) {
+        for (ViewField change : changes) {
             for (PathId ref : change.getModelPathInstanceIds()) {
                 check.add(ref.getObjectId());
             }
         }
 
         Set<ObjectId> existence = concurrencyStore.getExistence(tenantIdAndCentricId, check);
-        List<ViewFieldChange> acceptableChanges = new ArrayList<>();
-        for (ViewFieldChange c : changes) {
+        List<ViewField> acceptableChanges = new ArrayList<>();
+        for (ViewField c : changes) {
             Set<ObjectId> ids = new HashSet<>();
             for (PathId ref : c.getModelPathInstanceIds()) {
                 ids.add(ref.getObjectId());
             }
-            if (c.getType() == ViewFieldChange.ViewFieldChangeType.remove) {
+            if (c.getType() == ViewField.ViewFieldChangeType.remove) {
                 acceptableChanges.add(c);
             } else if (existence.containsAll(ids)) {
                 acceptableChanges.add(c);
             } else {
                 traceLogging(ids, existence, c);
-                acceptableChanges.add(new ViewFieldChange(c.getEventId(),
+                acceptableChanges.add(new ViewField(c.getEventId(),
                         c.getActorId(),
                         ViewFieldChangeType.remove,
                         c.getViewObjectId(),
@@ -74,8 +74,8 @@ public class ConcurrencyAndExistenceCommitChange implements CommitChange {
 
 //        // TODO eval if this block is really necessary.
 //        Set<FieldVersion> fieldVersions = new HashSet<>();
-//        for (ViewFieldChange fieldChange : acceptableChanges) {
-//            if (fieldChange.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+//        for (ViewField fieldChange : acceptableChanges) {
+//            if (fieldChange.getType() == ViewField.ViewFieldChangeType.add) {
 //                List<ReferenceWithTimestamp> versions = fieldChange.getModelPathVersions();
 //                for (ReferenceWithTimestamp version : versions) {
 //                    if (version != null) {
@@ -102,7 +102,7 @@ public class ConcurrencyAndExistenceCommitChange implements CommitChange {
 
     }
 
-    private void traceLogging(Set<ObjectId> ids, Set<ObjectId> existence, ViewFieldChange fieldChange) {
+    private void traceLogging(Set<ObjectId> ids, Set<ObjectId> existence, ViewField fieldChange) {
         if (LOG.isTraceEnabled()) {
             StringBuilder msg = new StringBuilder().append(" existence:");
 

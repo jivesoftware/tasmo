@@ -5,13 +5,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.write.CommitChange;
+import com.jivesoftware.os.tasmo.lib.modifier.ModifierStore;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReadMaterializer;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -36,34 +38,31 @@ import java.util.concurrent.ConcurrentMap;
 
 /**
  *
+ * @author jonathan.colt
  */
-public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> {
-
-    private static final String VIEW_READ_LATENCY = "view>materialize>read>latency";
-    private static final String VIEW_PERMISSIONS_LATENCY = "view>materialize>permissions>latency";
-    private static final String VIEW_MERGE_LATENCY = "view>materialize>merge>latency";
-    private static final String VIEW_READ_VIEW_COUNT = "view>materialize>read>view>count";
-    private static final String VIEW_READ_CALL_COUNT = "view>materialize>read>call>count";
+public class CachingJITReadMaterializeViewProvider<V> implements ViewReadMaterializer<V> {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+    private final ReadCachedViewFields readCachedViewFields;
+    private final ReadMaterializerViewFields readMaterializerViewFields;
+    private final Optional<ModifierStore> modifierStore;
     private final ViewPermissionChecker viewPermissionChecker;
-    private final ReadMaterializer readMaterializer;
     private final ViewFormatter<V> viewFormatter;
     private final JsonViewMerger merger;
-    private final Optional<CommitChange> commitChangeVistor;
 
-    public ReadMaterializedViewProvider(ViewPermissionChecker viewPermissionChecker,
-        ReadMaterializer readMaterializer,
+    public CachingJITReadMaterializeViewProvider(ReadCachedViewFields readCachedViewFields,
+        ReadMaterializerViewFields readMaterializerViewFields,
+        Optional<ModifierStore> modifierStore,
+        ViewPermissionChecker viewPermissionChecker,
         ViewFormatter<V> viewFormatter,
-        JsonViewMerger merger,
-        Optional<CommitChange> commitChangeVistor,
-        long viewMaxSizeInBytes) {
+        JsonViewMerger merger) {
 
+        this.readCachedViewFields = readCachedViewFields;
+        this.readMaterializerViewFields = readMaterializerViewFields;
+        this.modifierStore = modifierStore;
         this.viewPermissionChecker = viewPermissionChecker;
-        this.readMaterializer = readMaterializer;
         this.viewFormatter = viewFormatter;
         this.merger = merger;
-        this.commitChangeVistor = commitChangeVistor;
     }
 
     @Override
@@ -74,15 +73,46 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
 
     @Override
     public List<V> readMaterializeViews(List<ViewDescriptor> viewDescriptors) throws IOException {
-        LOG.inc(VIEW_READ_CALL_COUNT);
         Preconditions.checkArgument(viewDescriptors != null);
+
+
+        Map<ViewDescriptor, List<ViewField>> cachedViews = readCachedViewFields.readViews(viewDescriptors);
+        List<ViewDescriptor> needToReadMaterializeTheseViews = new ArrayList<>();
+        for (ViewDescriptor viewDescriptor : viewDescriptors) {
+            List<ViewField> viewFields = cachedViews.get(viewDescriptor);
+            if (viewFields.isEmpty()) {
+                needToReadMaterializeTheseViews.add(viewDescriptor);
+            } else {
+                if (modifierStore.isPresent()) {
+                    Map<ObjectId,Long> implicated = new HashMap<>();
+                    for(ViewField viewField:viewFields) {
+                        PathId[] modelPathInstanceIds = viewField.getModelPathInstanceIds();
+                        for (PathId pathId : modelPathInstanceIds) {
+                            implicated.put(pathId.getObjectId(), pathId.getTimestamp());
+                        }
+                    }
+                    List<PathId> modified = modifierStore.get().get(viewDescriptor.getTenantId(), viewDescriptor.getUserId(), implicated.keySet());
+                    for (PathId pathId : modified) {
+                        if (implicated.get(pathId.getObjectId()) > pathId.getTimestamp()) {
+                            needToReadMaterializeTheseViews.add(viewDescriptor);
+                        }
+                    }
+                }
+            }
+        }
+        Map<ViewDescriptor, List<ViewField>> readMateralizeViewField;
+        if (!needToReadMaterializeTheseViews.isEmpty()) {
+            readMateralizeViewField = readMaterializerViewFields.readMaterialize(needToReadMaterializeTheseViews);
+        } else {
+            readMateralizeViewField = Collections.emptyMap();
+        }
+
+
+
         ConcurrentMap<TenantAndActor, Set<Id>> permisionCheckTheseIds = new ConcurrentHashMap<>();
         Map<ViewDescriptor, ViewFieldsCollector> collectors = new HashMap<>();
-
-        LOG.startTimer(VIEW_READ_LATENCY);
         try {
 
-            Map<ViewDescriptor, List<ViewFieldChange>> readMaterialized = readMaterializer.readMaterialize(viewDescriptors);
             for (ViewDescriptor viewDescriptor : viewDescriptors) {
                 TenantAndActor tenantAndActor = new TenantAndActor(viewDescriptor.getTenantId(), viewDescriptor.getActorId());
                 Set<Id> checkTheseIds = permisionCheckTheseIds.get(tenantAndActor);
@@ -94,11 +124,14 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
                     }
                 }
 
-                List<ViewFieldChange> changes = readMaterialized.get(viewDescriptor);
+                List<ViewField> viewFields = readMateralizeViewField.get(viewDescriptor);
+                if (viewFields == null) {
+                    viewFields = cachedViews.get(viewDescriptor);
+                }
                 try {
                     ViewFieldsCollector viewFieldsCollector = new ViewFieldsCollector(merger, 1_024 * 1_024 * 10);
-                    for (ViewFieldChange change : changes) {
-                        if (change.getType() == ViewFieldChange.ViewFieldChangeType.add) {
+                    for (ViewField change : viewFields) {
+                        if (change.getType() == ViewField.ViewFieldChangeType.add) {
                             ModelPath modelPath = change.getModelPath();
                             Id[] modelPathIds = ids(change.getModelPathInstanceIds());
                             checkTheseIds.addAll(Arrays.asList(modelPathIds));
@@ -109,33 +142,16 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
                         }
                     }
                     collectors.put(viewDescriptor, viewFieldsCollector);
-
-                    if (commitChangeVistor.isPresent()) {
-                        try {
-                            commitChangeVistor.get().commitChange(null, viewDescriptor.getTenantIdAndCentricId(), changes);
-                        } catch (Exception x) {
-                            LOG.warn("Commit Change Collector's vistor encouter the following issue.", x);
-                        }
-                    }
                 } catch (IOException x) {
                     throw new CommitChangeException("Failed to collect fields for " + viewDescriptor, x);
                 }
             }
         } catch (Exception ex) {
             throw new IOException("Failed while read materializing view:" + viewDescriptors, ex);
-        } finally {
-            LOG.stopTimer(VIEW_READ_LATENCY);
         }
 
         Map<TenantAndActor, Set<Id>> canViewTheseIds;
-        LOG.startTimer(VIEW_PERMISSIONS_LATENCY);
-        try {
-            canViewTheseIds = checkPermissions(permisionCheckTheseIds);
-        } finally {
-            LOG.stopTimer(VIEW_PERMISSIONS_LATENCY);
-        }
-
-        LOG.startTimer(VIEW_MERGE_LATENCY);
+        canViewTheseIds = checkPermissions(permisionCheckTheseIds);
         try {
             List<V> views = new ArrayList<>();
             for (ViewDescriptor viewDescriptor : viewDescriptors) {
@@ -146,13 +162,10 @@ public class ReadMaterializedViewProvider<V> implements ViewReadMaterializer<V> 
                 V view = viewFormatter.getView(tenantIdAndCentricId, viewDescriptor.getViewId(), viewResponse);
                 views.add(view);
             }
-            LOG.inc(VIEW_READ_VIEW_COUNT, views.size());
             return views;
         } catch (Exception ex) {
             LOG.error("Failed while loading {}", viewDescriptors);
             throw new IOException("Failed to load for the following reason.", ex);
-        } finally {
-            LOG.stopTimer(VIEW_MERGE_LATENCY);
         }
     }
 

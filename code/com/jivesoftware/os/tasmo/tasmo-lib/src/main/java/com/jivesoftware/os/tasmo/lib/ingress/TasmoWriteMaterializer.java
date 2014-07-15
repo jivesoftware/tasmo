@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib.write;
+package com.jivesoftware.os.tasmo.lib.ingress;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;

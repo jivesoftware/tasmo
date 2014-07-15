@@ -15,8 +15,8 @@ import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraversal;
 import com.jivesoftware.os.tasmo.lib.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
-import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.EventPersistor;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.model.process.InMemoryModifiedViewProvider;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
@@ -26,6 +26,8 @@ import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
+import com.jivesoftware.os.tasmo.view.notification.api.ViewNotification;
+import com.jivesoftware.os.tasmo.view.notification.api.ViewNotificationListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -38,34 +40,37 @@ public class TasmoEventProcessor {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final TasmoViewModel tasmoViewModel;
-    private final TasmoEventPersistor eventPersistor;
+    private final EventPersistor eventPersistor;
     private final WrittenEventProvider writtenEventProvider;
     private final TasmoEventTraversal eventTraverser;
     private final ViewChangeNotificationProcessor viewChangeNotificationProcessor;
+    private final ViewNotificationListener allViewNotificationsListener;
     private final ConcurrencyStore concurrencyStore;
     private final ReferenceStore referenceStore;
     private final FieldValueReader fieldValueReader;
     private final ReferenceTraverser referenceTraverser;
     private final CommitChange commitChange;
-    private final TasmoProcessingStats processingStats;
+    private final ProcessingStats processingStats;
 
     public TasmoEventProcessor(TasmoViewModel tasmoViewModel,
-        TasmoEventPersistor eventPersistor,
+        EventPersistor eventPersistor,
         WrittenEventProvider writtenEventProvider,
         TasmoEventTraversal eventTraverser,
-        ViewChangeNotificationProcessor viewChangeNotificationProcessor,
+        ViewChangeNotificationProcessor viewChangeNotificationProcessor, //Deprecate
+        ViewNotificationListener allViewNotificationsListener,
         ConcurrencyStore concurrencyStore,
         ReferenceStore referenceStore,
         FieldValueReader fieldValueReader,
         ReferenceTraverser referenceTraverser,
         CommitChange commitChange,
-        TasmoProcessingStats processingStats) {
+        ProcessingStats processingStats) {
 
         this.tasmoViewModel = tasmoViewModel;
         this.eventPersistor = eventPersistor;
         this.writtenEventProvider = writtenEventProvider;
         this.eventTraverser = eventTraverser;
         this.viewChangeNotificationProcessor = viewChangeNotificationProcessor;
+        this.allViewNotificationsListener = allViewNotificationsListener;
         this.concurrencyStore = concurrencyStore;
         this.referenceStore = referenceStore;
         this.fieldValueReader = fieldValueReader;
@@ -87,13 +92,26 @@ public class TasmoEventProcessor {
             @Override
             public void commitChange(WrittenEventContext context,
                 TenantIdAndCentricId tenantIdAndCentricId,
-                List<ViewFieldChange> changes) throws CommitChangeException {
+                List<ViewField> changes) throws CommitChangeException {
                 commitChange.commitChange(context, tenantIdAndCentricId, changes);
-                for (ViewFieldChange viewFieldChange : changes) {
+
+                List<ViewNotification> notifications = new ArrayList<>();
+                for (ViewField viewFieldChange : changes) {
+                    notifications.add(new ViewNotification(tenantIdAndCentricId,
+                        viewFieldChange.getEventId(),
+                        viewFieldChange.getActorId(),
+                        viewFieldChange.getViewObjectId()));
+
+                    // Old way factor out
                     if (model.getNotifiableViews().contains(viewFieldChange.getViewObjectId().getClassName())) {
                         ModifiedViewInfo modifiedViewInfo = new ModifiedViewInfo(tenantIdAndCentricId, viewFieldChange.getViewObjectId());
                         modifiedViewProvider.add(modifiedViewInfo);
                     }
+                }
+                try {
+                    allViewNotificationsListener.handleNotifications(notifications);
+                } catch (Exception ex) {
+                    throw new CommitChangeException("Failed to send allView notifications.", ex);
                 }
             }
         };
@@ -117,6 +135,7 @@ public class TasmoEventProcessor {
 
         long start = System.currentTimeMillis();
         viewChangeNotificationProcessor.process(batchContext, writtenEvent);
+        allViewNotificationsListener.flush();
         processingStats.latency("NOTIFICATION", className, System.currentTimeMillis() - start);
 
 

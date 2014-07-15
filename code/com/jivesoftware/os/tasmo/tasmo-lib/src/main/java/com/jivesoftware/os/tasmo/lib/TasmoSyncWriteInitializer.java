@@ -10,9 +10,9 @@ import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.modifier.ModifierStore;
 import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
-import com.jivesoftware.os.tasmo.lib.write.TasmoEventPersistor;
-import com.jivesoftware.os.tasmo.lib.write.TasmoSyncEventWriter;
-import com.jivesoftware.os.tasmo.lib.write.TasmoSyncWriteEventPersistor;
+import com.jivesoftware.os.tasmo.lib.write.EventPersistor;
+import com.jivesoftware.os.tasmo.lib.write.SyncEventWriter;
+import com.jivesoftware.os.tasmo.lib.write.SyncWriteEventPersistor;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
@@ -39,7 +39,7 @@ public class TasmoSyncWriteInitializer {
         public void setNumberOfSyncEventWritorThreads(Integer threads);
     }
 
-    public static TasmoSyncEventWriter initialize(TasmoViewModel tasmoViewModel,
+    public static SyncEventWriter initialize(TasmoViewModel tasmoViewModel,
         WrittenEventProvider writtenEventProvider,
         TasmoStorageProvider tasmoStorageProvider,
         CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
@@ -51,7 +51,7 @@ public class TasmoSyncWriteInitializer {
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, tasmoStorageProvider.multiLinksStorage(),
             tasmoStorageProvider.multiBackLinksStorage());
 
-        TasmoEventPersistor eventPersistor = new TasmoSyncWriteEventPersistor(writtenEventProvider,
+        EventPersistor eventPersistor = new SyncWriteEventPersistor(writtenEventProvider,
             new WrittenInstanceHelper(),
             concurrencyStore,
             eventValueStore,
@@ -70,7 +70,7 @@ public class TasmoSyncWriteInitializer {
         ExecutorService syncEventWritorThreads = Executors.newFixedThreadPool(config.getNumberOfSyncEventWritorThreads(), syncEventWritorThreadFactory);
 
         ModifierStore modifierStore = new ModifierStore(tasmoStorageProvider.modifierStorage());
-        return new TasmoSyncEventWriter(MoreExecutors.listeningDecorator(syncEventWritorThreads),
+        return new SyncEventWriter(MoreExecutors.listeningDecorator(syncEventWritorThreads),
             tasmoViewModel,
             eventPersistor,
             modifierStore,

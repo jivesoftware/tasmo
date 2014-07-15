@@ -7,7 +7,7 @@ import java.util.List;
 public class NoOpCommitChange implements CommitChange {
 
     @Override
-    public void commitChange(WrittenEventContext batchContext, TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws
+    public void commitChange(WrittenEventContext batchContext, TenantIdAndCentricId tenantIdAndCentricId, List<ViewField> changes) throws
         CommitChangeException {
     }
 
