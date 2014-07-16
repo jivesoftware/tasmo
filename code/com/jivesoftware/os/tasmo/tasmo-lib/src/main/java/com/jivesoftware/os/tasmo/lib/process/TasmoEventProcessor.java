@@ -129,9 +129,11 @@ public class TasmoEventProcessor {
         TenantIdAndCentricId tenantIdAndGloballyCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
         process(lock, model, model.getWriteTraversers(), className, writtenInstance, tenantIdAndGloballyCentricId, batchContext, writtenEvent);
 
-        // Process event centrically
-        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, writtenEvent.getCentricId());
-        process(lock, model, model.getCentricWriteTraversers(), className, writtenInstance, tenantIdAndCentricId, batchContext, writtenEvent);
+        // Process event centrically if centric is set.
+        if (!Id.NULL.equals(writtenEvent.getCentricId())) {
+            TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, writtenEvent.getCentricId());
+            process(lock, model, model.getCentricWriteTraversers(), className, writtenInstance, tenantIdAndCentricId, batchContext, writtenEvent);
+        }
 
         long start = System.currentTimeMillis();
         viewChangeNotificationProcessor.process(batchContext, writtenEvent);

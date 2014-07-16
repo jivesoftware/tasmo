@@ -44,7 +44,7 @@ public class MultiFieldDeletesMultiEventTest extends BaseTest {
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
-        authorId = t.write(EventBuilder.update(authorId, tenantId, actorId).clear("userName").build());
+        authorId = t.write(EventBuilder.update(authorId, tenantId, actorId).delete("userName").build());
         System.out.println("--------------------------------------------------------------------------");
 
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
@@ -54,7 +54,7 @@ public class MultiFieldDeletesMultiEventTest extends BaseTest {
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
-        authorId = t.write(EventBuilder.update(authorId, tenantId, actorId).clear("lastName").build());
+        authorId = t.write(EventBuilder.update(authorId, tenantId, actorId).delete("lastName").build());
         System.out.println("--------------------------------------------------------------------------");
 
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
@@ -64,7 +64,7 @@ public class MultiFieldDeletesMultiEventTest extends BaseTest {
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
-        authorId = t.write(EventBuilder.update(authorId, tenantId, actorId).clear("firstName").build());
+        authorId = t.write(EventBuilder.update(authorId, tenantId, actorId).delete("firstName").build());
         System.out.println("--------------------------------------------------------------------------");
 
         ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
