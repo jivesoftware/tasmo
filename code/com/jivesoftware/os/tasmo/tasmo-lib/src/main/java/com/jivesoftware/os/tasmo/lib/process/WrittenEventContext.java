@@ -22,7 +22,7 @@ public class WrittenEventContext {
     private final ReferenceTraverser referenceTraverser;
     private final ModifiedViewProvider modifiedViewProvider;
     private final CommitChange commitChange;
-    private final ProcessingStats processingStats;
+    private final TasmoProcessingStats processingStats;
 
     public int valuePaths; // hack
     public int refPaths; // hack
@@ -42,7 +42,7 @@ public class WrittenEventContext {
         ReferenceTraverser referenceTraverser,
         ModifiedViewProvider modifiedViewProvider,
         CommitChange commitChange,
-        ProcessingStats processingStats) {
+        TasmoProcessingStats processingStats) {
         this.eventId = eventId;
         this.actorId = actorId;
         this.event = event;
@@ -64,7 +64,7 @@ public class WrittenEventContext {
         return actorId;
     }
 
-    public ProcessingStats getProcessingStats() {
+    public TasmoProcessingStats getProcessingStats() {
         return processingStats;
     }
 

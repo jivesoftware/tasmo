@@ -36,7 +36,7 @@ import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
 import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraverser;
-import com.jivesoftware.os.tasmo.lib.process.ProcessingStats;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.ingress.TasmoWriteMaterializer;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
@@ -250,7 +250,7 @@ public class Materialization {
     private ExecutorService traverserThreads;
     private BatchingReferenceTraverser batchingReferenceTraverser;
     TasmoEventProcessor tasmoEventProcessor;
-    ProcessingStats processingStats;
+    TasmoProcessingStats processingStats;
 
     private ExecutorService newThreadPool(int maxThread, String name) {
         ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
@@ -382,7 +382,7 @@ public class Materialization {
         WriteFanoutEventPersistor eventPersistor = new WriteFanoutEventPersistor(writtenEventProvider,
             writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
 
-        processingStats = new ProcessingStats();
+        processingStats = new TasmoProcessingStats();
         StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
             new EventValueStoreFieldValueReader(eventValueStore));
 

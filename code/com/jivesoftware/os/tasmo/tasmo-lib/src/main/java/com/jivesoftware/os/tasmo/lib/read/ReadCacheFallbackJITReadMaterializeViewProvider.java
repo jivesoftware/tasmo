@@ -40,9 +40,10 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author jonathan.colt
  */
-public class CachingJITReadMaterializeViewProvider<V> implements ViewReadMaterializer<V> {
+public class ReadCacheFallbackJITReadMaterializeViewProvider<V> implements ViewReadMaterializer<V> {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
+
     private final ReadCachedViewFields readCachedViewFields;
     private final ReadMaterializerViewFields readMaterializerViewFields;
     private final Optional<ModifierStore> modifierStore;
@@ -50,7 +51,7 @@ public class CachingJITReadMaterializeViewProvider<V> implements ViewReadMateria
     private final ViewFormatter<V> viewFormatter;
     private final JsonViewMerger merger;
 
-    public CachingJITReadMaterializeViewProvider(ReadCachedViewFields readCachedViewFields,
+    public ReadCacheFallbackJITReadMaterializeViewProvider(ReadCachedViewFields readCachedViewFields,
         ReadMaterializerViewFields readMaterializerViewFields,
         Optional<ModifierStore> modifierStore,
         ViewPermissionChecker viewPermissionChecker,
@@ -75,17 +76,16 @@ public class CachingJITReadMaterializeViewProvider<V> implements ViewReadMateria
     public List<V> readMaterializeViews(List<ViewDescriptor> viewDescriptors) throws IOException {
         Preconditions.checkArgument(viewDescriptors != null);
 
-
-        Map<ViewDescriptor, List<ViewField>> cachedViews = readCachedViewFields.readViews(viewDescriptors);
+        Map<ViewDescriptor, ViewFieldsResponse> cachedViews = readCachedViewFields.readViews(viewDescriptors);
         List<ViewDescriptor> needToReadMaterializeTheseViews = new ArrayList<>();
         for (ViewDescriptor viewDescriptor : viewDescriptors) {
-            List<ViewField> viewFields = cachedViews.get(viewDescriptor);
-            if (viewFields.isEmpty()) {
+            ViewFieldsResponse viewFieldsResponse = cachedViews.get(viewDescriptor);
+            if (!viewFieldsResponse.isOk() || viewFieldsResponse.getViewFields().isEmpty()) {
                 needToReadMaterializeTheseViews.add(viewDescriptor);
             } else {
                 if (modifierStore.isPresent()) {
-                    Map<ObjectId,Long> implicated = new HashMap<>();
-                    for(ViewField viewField:viewFields) {
+                    Map<ObjectId, Long> implicated = new HashMap<>();
+                    for (ViewField viewField : viewFieldsResponse.getViewFields()) {
                         PathId[] modelPathInstanceIds = viewField.getModelPathInstanceIds();
                         for (PathId pathId : modelPathInstanceIds) {
                             implicated.put(pathId.getObjectId(), pathId.getTimestamp());
@@ -100,14 +100,13 @@ public class CachingJITReadMaterializeViewProvider<V> implements ViewReadMateria
                 }
             }
         }
-        Map<ViewDescriptor, List<ViewField>> readMateralizeViewField;
+        Map<ViewDescriptor, ViewFieldsResponse> jitReadMateralizeViewField;
         if (!needToReadMaterializeTheseViews.isEmpty()) {
-            readMateralizeViewField = readMaterializerViewFields.readMaterialize(needToReadMaterializeTheseViews);
+            jitReadMateralizeViewField = readMaterializerViewFields.readMaterialize(needToReadMaterializeTheseViews);
+            // TODO? could add a hook that updates the cache. This creates a single writter problem.
         } else {
-            readMateralizeViewField = Collections.emptyMap();
+            jitReadMateralizeViewField = Collections.emptyMap();
         }
-
-
 
         ConcurrentMap<TenantAndActor, Set<Id>> permisionCheckTheseIds = new ConcurrentHashMap<>();
         Map<ViewDescriptor, ViewFieldsCollector> collectors = new HashMap<>();
@@ -124,13 +123,18 @@ public class CachingJITReadMaterializeViewProvider<V> implements ViewReadMateria
                     }
                 }
 
-                List<ViewField> viewFields = readMateralizeViewField.get(viewDescriptor);
-                if (viewFields == null) {
-                    viewFields = cachedViews.get(viewDescriptor);
+                ViewFieldsResponse viewFieldsResponse = jitReadMateralizeViewField.get(viewDescriptor);
+                if (viewFieldsResponse == null) {
+                    viewFieldsResponse = cachedViews.get(viewDescriptor);
+                    if (viewFieldsResponse.isOk() && !viewFieldsResponse.getViewFields().isEmpty()) {
+                        LOG.inc("viewCache>hits");
+                    }
+                } else {
+                    LOG.inc("jitm>hits");
                 }
                 try {
                     ViewFieldsCollector viewFieldsCollector = new ViewFieldsCollector(merger, 1_024 * 1_024 * 10);
-                    for (ViewField change : viewFields) {
+                    for (ViewField change : viewFieldsResponse.getViewFields()) {
                         if (change.getType() == ViewField.ViewFieldChangeType.add) {
                             ModelPath modelPath = change.getModelPath();
                             Id[] modelPathIds = ids(change.getModelPathInstanceIds());

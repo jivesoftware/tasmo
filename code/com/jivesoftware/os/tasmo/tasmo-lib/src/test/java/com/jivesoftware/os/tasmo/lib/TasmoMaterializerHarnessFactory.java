@@ -89,11 +89,16 @@ public class TasmoMaterializerHarnessFactory {
     static TasmoStorageProvider createInmemoryTasmoStorageProvider() {
         return new TasmoStorageProvider() {
             private final RowColumnValueStore<TenantId, Id, ObjectId, String, RuntimeException> modifierStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinksStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinksStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ObjectId, String, Long, RuntimeException> concurrencyStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinksStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinksStorage = new RowColumnValueStoreImpl<>();
 
             @Override
             public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage() throws Exception {
@@ -354,7 +359,8 @@ public class TasmoMaterializerHarnessFactory {
             Views lastViews;
 
             public void reset() throws Exception {
-                RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
+                RowColumnValueStore<TenantIdAndCentricId,
+                    ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
 
                 CommitChange commitChangeVistor = createCommitToViewValueStore(viewValueStorage, pathKeyProvider);
 
@@ -483,8 +489,8 @@ public class TasmoMaterializerHarnessFactory {
             tasmoBlacklist,
             syncWriteConfig);
 
-        RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = syncTasmoStorageProvider.
-            viewValueStorage();
+        RowColumnValueStore<TenantIdAndCentricId,
+            ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = syncTasmoStorageProvider.viewValueStorage();
         ViewValueStore viewValueStore = new ViewValueStore(viewValueStorage, pathKeyProvider);
 
         final TasmoReadMaterializerInitializer.TasmoReadMaterializerConfig readMaterializationConfig = BindInterfaceToConfiguration

@@ -4,7 +4,7 @@ import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel.ReadTraversalKey;
-import com.jivesoftware.os.tasmo.lib.process.ProcessingStats;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.read.FieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
@@ -50,7 +50,7 @@ public class InitiateReadTraversal {
             }
         };
 
-        ProcessingStats processingStats = new ProcessingStats();
+        TasmoProcessingStats processingStats = new TasmoProcessingStats();
 
         WrittenEventContext writtenEventContext = new WrittenEventContext(0,
             Id.NULL,

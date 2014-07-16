@@ -46,7 +46,7 @@ public class ReadCachedViewFields {
         this.viewMaxSizeInBytes = viewMaxSizeInBytes;
     }
 
-    public Map<ViewDescriptor, List<ViewField>> readViews(List<ViewDescriptor> request) throws IOException {
+    public Map<ViewDescriptor, ViewFieldsResponse> readViews(List<ViewDescriptor> request) throws IOException {
         Preconditions.checkArgument(request != null);
 
         List<ViewCollectorImpl> viewCollectors = Lists.newArrayList();
@@ -64,9 +64,9 @@ public class ReadCachedViewFields {
         try {
             viewValueReader.readViewValues(viewCollectors);
 
-            Map<ViewDescriptor, List<ViewField>> views = new HashMap<>();
+            Map<ViewDescriptor, ViewFieldsResponse> views = new HashMap<>();
             for (ViewCollectorImpl viewCollector : viewCollectors) {
-                views.put(viewCollector.getViewDescriptor(), viewCollector.getViewValueFields());
+                views.put(viewCollector.getViewDescriptor(), new ViewFieldsResponse(viewCollector.getViewValueFields()));
             }
             return Collections.unmodifiableMap(views);
         } catch (Exception ex) {

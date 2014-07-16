@@ -50,7 +50,7 @@ public class TasmoEventProcessor {
     private final FieldValueReader fieldValueReader;
     private final ReferenceTraverser referenceTraverser;
     private final CommitChange commitChange;
-    private final ProcessingStats processingStats;
+    private final TasmoProcessingStats processingStats;
 
     public TasmoEventProcessor(TasmoViewModel tasmoViewModel,
         EventPersistor eventPersistor,
@@ -63,7 +63,7 @@ public class TasmoEventProcessor {
         FieldValueReader fieldValueReader,
         ReferenceTraverser referenceTraverser,
         CommitChange commitChange,
-        ProcessingStats processingStats) {
+        TasmoProcessingStats processingStats) {
 
         this.tasmoViewModel = tasmoViewModel;
         this.eventPersistor = eventPersistor;

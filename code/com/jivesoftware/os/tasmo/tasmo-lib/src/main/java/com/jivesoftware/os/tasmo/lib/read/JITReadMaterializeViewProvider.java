@@ -82,7 +82,7 @@ public class JITReadMaterializeViewProvider<V> implements ViewReadMaterializer<V
         LOG.startTimer(VIEW_READ_LATENCY);
         try {
 
-            Map<ViewDescriptor, List<ViewField>> readMaterialized = readMaterializer.readMaterialize(viewDescriptors);
+            Map<ViewDescriptor, ViewFieldsResponse> readMaterialized = readMaterializer.readMaterialize(viewDescriptors);
             for (ViewDescriptor viewDescriptor : viewDescriptors) {
                 TenantAndActor tenantAndActor = new TenantAndActor(viewDescriptor.getTenantId(), viewDescriptor.getActorId());
                 Set<Id> checkTheseIds = permisionCheckTheseIds.get(tenantAndActor);
@@ -94,31 +94,35 @@ public class JITReadMaterializeViewProvider<V> implements ViewReadMaterializer<V
                     }
                 }
 
-                List<ViewField> changes = readMaterialized.get(viewDescriptor);
-                try {
-                    ViewFieldsCollector viewFieldsCollector = new ViewFieldsCollector(merger, 1_024 * 1_024 * 10);
-                    for (ViewField change : changes) {
-                        if (change.getType() == ViewField.ViewFieldChangeType.add) {
-                            ModelPath modelPath = change.getModelPath();
-                            Id[] modelPathIds = ids(change.getModelPathInstanceIds());
-                            checkTheseIds.addAll(Arrays.asList(modelPathIds));
-                            String[] viewPathClasses = classes(change.getModelPathInstanceIds());
-                            ViewValue viewValue = new ViewValue(change.getModelPathTimestamps(), change.getValue());
-                            Long timestamp = change.getTimestamp();
-                            viewFieldsCollector.add(viewDescriptor, modelPath, modelPathIds, viewPathClasses, viewValue, timestamp);
+                ViewFieldsResponse viewFieldsResponse = readMaterialized.get(viewDescriptor);
+                if (viewFieldsResponse.isOk()) {
+                    try {
+                        ViewFieldsCollector viewFieldsCollector = new ViewFieldsCollector(merger, 1_024 * 1_024 * 10);
+                        for (ViewField viewField : viewFieldsResponse.getViewFields()) {
+                            if (viewField.getType() == ViewField.ViewFieldChangeType.add) {
+                                ModelPath modelPath = viewField.getModelPath();
+                                Id[] modelPathIds = ids(viewField.getModelPathInstanceIds());
+                                checkTheseIds.addAll(Arrays.asList(modelPathIds));
+                                String[] viewPathClasses = classes(viewField.getModelPathInstanceIds());
+                                ViewValue viewValue = new ViewValue(viewField.getModelPathTimestamps(), viewField.getValue());
+                                Long timestamp = viewField.getTimestamp();
+                                viewFieldsCollector.add(viewDescriptor, modelPath, modelPathIds, viewPathClasses, viewValue, timestamp);
+                            }
                         }
+                        collectors.put(viewDescriptor, viewFieldsCollector);
+                    } catch (IOException x) {
+                        throw new CommitChangeException("Failed to collect fields for " + viewDescriptor, x);
                     }
-                    collectors.put(viewDescriptor, viewFieldsCollector);
 
                     if (commitChangeVistor.isPresent()) {
                         try {
-                            commitChangeVistor.get().commitChange(null, viewDescriptor.getTenantIdAndCentricId(), changes);
+                            commitChangeVistor.get().commitChange(null, viewDescriptor.getTenantIdAndCentricId(), viewFieldsResponse.getViewFields());
                         } catch (Exception x) {
                             LOG.warn("Commit Change Collector's vistor encouter the following issue.", x);
                         }
                     }
-                } catch (IOException x) {
-                    throw new CommitChangeException("Failed to collect fields for " + viewDescriptor, x);
+                } else {
+                    LOG.error("Not returning view for " + viewDescriptor + " because of ", viewFieldsResponse.getException());
                 }
             }
         } catch (Exception ex) {

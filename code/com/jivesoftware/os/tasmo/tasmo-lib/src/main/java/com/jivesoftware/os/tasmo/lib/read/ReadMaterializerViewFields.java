@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 
 /**
  *
@@ -49,42 +48,34 @@ public class ReadMaterializerViewFields {
         this.processViewRequests = processViewRequests;
     }
 
-    public Map<ViewDescriptor, List<ViewField>> readMaterialize(List<ViewDescriptor> requests) throws IOException {
+    public Map<ViewDescriptor, ViewFieldsResponse> readMaterialize(List<ViewDescriptor> requests) throws IOException {
 
         try {
-            final Map<ViewDescriptor, List<ViewField>> changes = new HashMap<>();
+            final Map<ViewDescriptor, ViewFieldsResponse> changes = new HashMap<>();
             final CountDownLatch latch = new CountDownLatch(requests.size());
-            List<Future> futures = new ArrayList<>();
             for (final ViewDescriptor viewDescriptor : requests) {
-                Future<?> future = processViewRequests.submit(new Runnable() {
+                processViewRequests.submit(new Runnable() {
 
                     @Override
                     public void run() {
                         try {
                             CommitChangeCollector commitChangeCollector = new CommitChangeCollector(viewDescriptor);
                             commitChangeCollector.readMaterializeView();
-                            changes.put(commitChangeCollector.getViewDescriptor(), commitChangeCollector.getChanges());
+                            changes.put(commitChangeCollector.getViewDescriptor(), new ViewFieldsResponse(commitChangeCollector.getChanges()));
                         } catch (Exception ex) {
                             LOG.warn("Failed while read materializing:" + viewDescriptor, ex);
+                            changes.put(viewDescriptor, new ViewFieldsResponse(ex));
                         } finally {
                             latch.countDown();
                         }
                     }
                 });
-                futures.add(future);
             }
             latch.await();
             return changes;
         } catch (Exception x) {
             throw new IOException("Failed while read materializing:" + requests, x);
         }
-    }
-
-    private List<CommitChangeCollector> buildViewCollectors(List<ViewDescriptor> viewDescriptors) {
-
-        List<CommitChangeCollector> collectors = new ArrayList<>();
-
-        return collectors;
     }
 
     class CommitChangeCollector implements CommitChange {
