@@ -16,7 +16,7 @@ import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
  */
 public interface TasmoStorageProvider {
 
-    RowColumnValueStore<TenantId, Id, Id, String, RuntimeException> modifierStorage() throws Exception;
+    RowColumnValueStore<TenantId, Id, ObjectId, String, RuntimeException> modifierStorage() throws Exception;
 
     RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage() throws Exception;
 

@@ -10,5 +10,5 @@ import java.util.List;
  */
 public interface CommitChange {
 
-    void commitChange(WrittenEventContext batchContext, TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException;
+    void commitChange(WrittenEventContext batchContext, TenantIdAndCentricId tenantIdAndCentricId, List<ViewField> changes) throws CommitChangeException;
 }

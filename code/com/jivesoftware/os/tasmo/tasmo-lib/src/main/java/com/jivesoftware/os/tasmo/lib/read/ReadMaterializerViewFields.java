@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.lib.read;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
@@ -10,72 +11,77 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.traversal.InitiateReadTraversal;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 /**
  *
  * @author jonathan.colt
  */
-public class ReadMaterializer {
+public class ReadMaterializerViewFields {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private final ReferenceTraverser referenceTraverser;
     private final FieldValueReader fieldValueReader;
     private final ConcurrencyStore concurrencyStore;
     private final TasmoViewModel tasmoViewModel;
+    private final ListeningExecutorService processViewRequests;
 
-    public ReadMaterializer(ReferenceTraverser referenceTraverser,
+    public ReadMaterializerViewFields(ReferenceTraverser referenceTraverser,
         FieldValueReader fieldValueReader,
         ConcurrencyStore concurrencyStore,
-        TasmoViewModel tasmoViewModel) {
+        TasmoViewModel tasmoViewModel,
+        ListeningExecutorService processViewRequests) {
 
         this.referenceTraverser = referenceTraverser;
         this.fieldValueReader = fieldValueReader;
         this.concurrencyStore = concurrencyStore;
         this.tasmoViewModel = tasmoViewModel;
+        this.processViewRequests = processViewRequests;
     }
 
-    public Map<ViewDescriptor, List<ViewFieldChange>> readMaterialize(List<ViewDescriptor> requests) throws IOException {
+    public Map<ViewDescriptor, ViewFieldsResponse> readMaterialize(List<ViewDescriptor> requests) throws IOException {
 
-        List<CommitChangeCollector> viewCollectors = buildViewCollectors(requests);
         try {
-            for (CommitChangeCollector viewCollector : viewCollectors) {
-                viewCollector.readMaterializeView();
+            final Map<ViewDescriptor, ViewFieldsResponse> changes = new HashMap<>();
+            final CountDownLatch latch = new CountDownLatch(requests.size());
+            for (final ViewDescriptor viewDescriptor : requests) {
+                processViewRequests.submit(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        try {
+                            CommitChangeCollector commitChangeCollector = new CommitChangeCollector(viewDescriptor);
+                            commitChangeCollector.readMaterializeView();
+                            changes.put(commitChangeCollector.getViewDescriptor(), new ViewFieldsResponse(commitChangeCollector.getChanges()));
+                        } catch (Exception ex) {
+                            LOG.warn("Failed while read materializing:" + viewDescriptor, ex);
+                            changes.put(viewDescriptor, new ViewFieldsResponse(ex));
+                        } finally {
+                            latch.countDown();
+                        }
+                    }
+                });
             }
-        } catch (Exception ex) {
-            throw new IOException("Failed while read materializing view:" + requests, ex);
+            latch.await();
+            return changes;
+        } catch (Exception x) {
+            throw new IOException("Failed while read materializing:" + requests, x);
         }
-
-        Map<ViewDescriptor, List<ViewFieldChange>> changes = new HashMap<>();
-        for (CommitChangeCollector viewCollector : viewCollectors) {
-            changes.put(viewCollector.getViewDescriptor(), viewCollector.getChanges());
-        }
-        return changes;
-    }
-
-    private List<CommitChangeCollector> buildViewCollectors(List<ViewDescriptor> viewDescriptors) {
-
-        List<CommitChangeCollector> collectors = new ArrayList<>();
-        for (ViewDescriptor viewDescriptor : viewDescriptors) {
-            CommitChangeCollector commitChangeCollector = new CommitChangeCollector(viewDescriptor);
-            collectors.add(commitChangeCollector);
-        }
-        return collectors;
     }
 
     class CommitChangeCollector implements CommitChange {
 
         private final ViewDescriptor viewDescriptor;
-        private final List<ViewFieldChange> changes = new ArrayList<>();
+        private final List<ViewField> changes = new ArrayList<>();
 
         CommitChangeCollector(ViewDescriptor viewDescriptor) {
             this.viewDescriptor = viewDescriptor;
@@ -85,13 +91,13 @@ public class ReadMaterializer {
             return viewDescriptor;
         }
 
-        public List<ViewFieldChange> getChanges() {
+        public List<ViewField> getChanges() {
             return changes;
         }
 
         @Override
         public void commitChange(WrittenEventContext batchContext,
-            TenantIdAndCentricId tenantIdAndCentricId, List<ViewFieldChange> changes) throws CommitChangeException {
+            TenantIdAndCentricId tenantIdAndCentricId, List<ViewField> changes) throws CommitChangeException {
             this.changes.addAll(changes);
         }
 

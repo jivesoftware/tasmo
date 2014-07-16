@@ -1,6 +1,5 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
 

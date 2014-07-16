@@ -1,11 +1,3 @@
-/*
- * $Revision$
- * $Date$
- *
- * Copyright (C) 1999-$year$ Jive Software. All rights reserved.
- *
- * This software is the proprietary information of Jive Software. Use is subject to license terms.
- */
 package com.jivesoftware.os.tasmo.lib.write;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -14,7 +6,6 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -22,7 +13,7 @@ import java.util.Objects;
  * This is the write side of com.jivesoftware.soa.modules.view.writer.ViewWriteFieldChange. If you changes this you will likely need to change
  * ViewWriteFieldChange.
  */
-public class ViewFieldChange {
+public class ViewField {
 
     private final long eventId;
     private final Id actorId;
@@ -37,7 +28,7 @@ public class ViewFieldChange {
     private final long timestamp;
 
     @JsonCreator
-    public ViewFieldChange(long eventId,
+    public ViewField(long eventId,
             Id actorId,
             ViewFieldChangeType type,
             ObjectId viewObjectId,
@@ -143,7 +134,7 @@ public class ViewFieldChange {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final ViewFieldChange other = (ViewFieldChange) obj;
+        final ViewField other = (ViewField) obj;
         if (this.eventId != other.eventId) {
             return false;
         }

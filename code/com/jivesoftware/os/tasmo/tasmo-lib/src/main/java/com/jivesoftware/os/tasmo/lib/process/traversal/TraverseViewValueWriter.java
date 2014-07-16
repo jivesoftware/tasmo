@@ -5,7 +5,7 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
@@ -57,16 +57,16 @@ public class TraverseViewValueWriter implements StepTraverser {
 
         byte[] leafAsBytes = leafContext.toBytes();
         if (leafAsBytes != null) {
-            ViewFieldChange.ViewFieldChangeType type = ViewFieldChange.ViewFieldChangeType.add;
+            ViewField.ViewFieldChangeType type = ViewField.ViewFieldChangeType.add;
             if (pathTraversalContext.isRemovalContext()) {
-                type = ViewFieldChange.ViewFieldChangeType.remove;
+                type = ViewField.ViewFieldChangeType.remove;
             }
 
             if (viewId == null) {
                 viewId = Id.NULL; // HACK
             }
 
-            ViewFieldChange update = new ViewFieldChange(writtenEventContext.getEventId(),
+            ViewField update = new ViewField(writtenEventContext.getEventId(),
                 writtenEventContext.getActorId(),
                 type,
                 new ObjectId(viewClassName, viewId),

@@ -92,10 +92,10 @@ public class HBaseBackedTasmoStorageProvider implements TasmoStorageProvider {
     }
 
     @Override
-    public RowColumnValueStore<TenantId, Id, Id, String, RuntimeException> modifierStorage() throws Exception {
+    public RowColumnValueStore<TenantId, Id, ObjectId, String, RuntimeException> modifierStorage() throws Exception {
         return new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(tableNameSpace, "tasmo.modifier", "v",
             new DefaultRowColumnValueStoreMarshaller<>(new TenantIdMarshaller(),
-                new IdMarshaller(), new IdMarshaller(),
+                new IdMarshaller(), new ObjectIdMarshaller(),
                 new StringTypeMarshaller()), new CurrentTimestamper()));
     }
 }

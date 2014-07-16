@@ -19,7 +19,7 @@ import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyChecker;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
@@ -89,14 +89,14 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
         if (writtenInstance.isDeletion()) {
             long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId, instanceId, "*exists*", timestamp);
             if (highest <= timestamp) {
-                List<Callable<List<ViewFieldChange>>> callables = new ArrayList<>();
+                List<Callable<List<ViewField>>> callables = new ArrayList<>();
                 for (InitiateTraverserKey key : valueTraversers.keySet()) {
                     if (writtenInstance.hasField(key.getTriggerFieldName()) || key.getRefFieldName() == null) { // TODO fix == null HACK!
                         for (final PathTraverser pathTraverser : valueTraversers.get(key)) {
-                            callables.add(new Callable<List<ViewFieldChange>>() {
+                            callables.add(new Callable<List<ViewField>>() {
 
                                 @Override
-                                public List<ViewFieldChange> call() throws Exception {
+                                public List<ViewField> call() throws Exception {
                                     PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, true);
                                     PathContext pathContext = pathTraverser.createPathContext();
                                     LeafContext leafContext = new WriteLeafContext();
@@ -108,7 +108,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
                                     pathTraverser.traverse(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext,
                                         new PathId(instanceId, timestamp));
                                     writtenEventContext.valuePaths++;
-                                    List<ViewFieldChange> takeChanges = context.takeChanges(); // TODO add auto flush if writeableChanges is to large.
+                                    List<ViewField> takeChanges = context.takeChanges(); // TODO add auto flush if writeableChanges is to large.
                                     writtenEventContext.changes += takeChanges.size();
                                     return takeChanges;
                                 }
@@ -140,14 +140,14 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
             }
 
             final Set<FieldVersion> want = new HashSet<>();
-            List<Callable<List<ViewFieldChange>>> callables = new ArrayList<>();
+            List<Callable<List<ViewField>>> callables = new ArrayList<>();
             for (InitiateTraverserKey key : valueTraversers.keySet()) {
                 if (writtenInstance.hasField(key.getTriggerFieldName()) || key.getRefFieldName() == null) { // TODO fix == null HACK!
                     for (final PathTraverser pathTraverser : valueTraversers.get(key)) {
-                        callables.add(new Callable<List<ViewFieldChange>>() {
+                        callables.add(new Callable<List<ViewField>>() {
 
                             @Override
-                            public List<ViewFieldChange> call() throws Exception {
+                            public List<ViewField> call() throws Exception {
                                 PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, false);
                                 PathContext pathContext = pathTraverser.createPathContext();
                                 LeafContext leafContext = new WriteLeafContext();
@@ -168,7 +168,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
                                 for (ReferenceWithTimestamp valueVersion : valueVersions) {
                                     want.add(new FieldVersion(instanceId, valueVersion.getFieldName(), valueVersion.getTimestamp()));
                                 }
-                                List<ViewFieldChange> takeChanges = context.takeChanges(); // TODO add auto flush if writeableChanges is to large.
+                                List<ViewField> takeChanges = context.takeChanges(); // TODO add auto flush if writeableChanges is to large.
                                 writtenEventContext.changes += takeChanges.size();
                                 return takeChanges;
                             }
@@ -207,16 +207,16 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
         String[] refFieldNames = accumulateRefFieldNames.toArray(new String[accumulateRefFieldNames.size()]);
         List<Long> highestVersions = concurrencyChecker.highestVersions(tenantIdAndCentricId, instanceId, refFieldNames);
 
-        List<Callable<List<ViewFieldChange>>> callables = new ArrayList<>();
+        List<Callable<List<ViewField>>> callables = new ArrayList<>();
         for (int i = 0; i < refFieldNames.length; i++) {
             final InitiateTraverserKey key = keys.get(i);
             final String refFieldName = refFieldNames[i];
             final long highest = highestVersions.get(i) == null ? timestamp : highestVersions.get(i);
-            callables.add(new Callable<List<ViewFieldChange>>() {
+            callables.add(new Callable<List<ViewField>>() {
 
                 @Override
-                public List<ViewFieldChange> call() throws Exception {
-                    final List<ViewFieldChange> writeableChanges = new ArrayList<>();
+                public List<ViewField> call() throws Exception {
+                    final List<ViewField> writeableChanges = new ArrayList<>();
                     referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), instanceId, refFieldName, threadTimestamp,
                         new CallbackStream<ReferenceWithTimestamp>() {
                             @Override
@@ -248,11 +248,11 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
             for (int i = 0; i < refFieldNames.length; i++) {
                 final InitiateTraverserKey key = keys.get(i);
                 final String refFieldName = refFieldNames[i];
-                callables.add(new Callable<List<ViewFieldChange>>() {
+                callables.add(new Callable<List<ViewField>>() {
 
                     @Override
-                    public List<ViewFieldChange> call() throws Exception {
-                        final List<ViewFieldChange> writeableChanges = new ArrayList<>();
+                    public List<ViewField> call() throws Exception {
+                        final List<ViewField> writeableChanges = new ArrayList<>();
                         referenceStore.streamForwardRefs(tenantIdAndCentricId,
                             Collections.singleton(instanceId.getClassName()),
                             refFieldName,
@@ -289,7 +289,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
         final ReferenceWithTimestamp to,
         final long threadTimestamp,
         final boolean removal,
-        List<ViewFieldChange> writeableChanges) throws Exception {
+        List<ViewField> writeableChanges) throws Exception {
 
         final ReferenceWithTimestamp from = new ReferenceWithTimestamp(instanceId,
             refFieldName, to.getTimestamp());
@@ -304,7 +304,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
             pathTraverser.traverse(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext,
                 new PathId(to.getObjectId(), to.getTimestamp()));
             writtenEventContext.refPaths++;
-            List<ViewFieldChange> takeChanges = context.takeChanges();
+            List<ViewField> takeChanges = context.takeChanges();
             writtenEventContext.changes += takeChanges.size();
             writeableChanges.addAll(takeChanges); // TODO add auto flush if writeableChanges is getting to be to large.
         }
@@ -319,7 +319,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
             pathTraverser.traverse(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext,
                 new PathId(instanceId, to.getTimestamp()));
             writtenEventContext.backRefPaths++;
-            List<ViewFieldChange> takeChanges = context.takeChanges();
+            List<ViewField> takeChanges = context.takeChanges();
             writtenEventContext.changes += takeChanges.size();
             writeableChanges.addAll(takeChanges); // TODO add auto flush if writeableChanges is getting to be to large.
         }
@@ -328,10 +328,10 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
 
     private void commit(WrittenEventContext writtenEventContext,
         TenantIdAndCentricId tenantIdAndCentricId,
-        List<Callable<List<ViewFieldChange>>> callables) throws Exception {
+        List<Callable<List<ViewField>>> callables) throws Exception {
 
-        List<ViewFieldChange> writeableChanges = new ArrayList<>();
-        for (Callable<List<ViewFieldChange>> changes : callables) {
+        List<ViewField> writeableChanges = new ArrayList<>();
+        for (Callable<List<ViewField>> changes : callables) {
             writeableChanges.addAll(changes.call());
         }
         writtenEventContext.getCommitChange().commitChange(writtenEventContext, tenantIdAndCentricId, writeableChanges);

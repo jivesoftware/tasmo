@@ -8,7 +8,7 @@
  */
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +20,7 @@ public class PathTraversalContext {
 
     private final long threadTimestamp;
     private final boolean removalContext;
-    private final List<ViewFieldChange> changes = new ArrayList<>();
+    private final List<ViewField> changes = new ArrayList<>();
 
     public PathTraversalContext(long threadTimestamp,
             boolean removalContext) {
@@ -36,13 +36,13 @@ public class PathTraversalContext {
         return threadTimestamp;
     }
 
-    public List<ViewFieldChange> takeChanges() {
-        List<ViewFieldChange> take = new ArrayList<>(changes);
+    public List<ViewField> takeChanges() {
+        List<ViewField> take = new ArrayList<>(changes);
         changes.clear();
         return take;
     }
 
-    void addChange(ViewFieldChange update) {
+    void addChange(ViewField update) {
         changes.add(update);
     }
 

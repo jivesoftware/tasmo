@@ -1,10 +1,12 @@
 package com.jivesoftware.os.tasmo.event.api.write;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
+import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.id.IdProviderImpl;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -32,6 +34,23 @@ public class EventBuilderTest {
         Event event3 = EventBuilder.update(objectId3, tenantId, actorId).build();
         Assert.assertEquals(event3.getObjectId().getClassName(), "myClass", "compare class name");
 
+    }
+
+    @Test
+    public void testClear() throws Exception {
+        JsonEventConventions jec = new JsonEventConventions();
+        IdProviderImpl idProvider = new IdProviderImpl(new OrderIdProviderImpl(new ConstantWriterIdProvider(100)));
+        EventBuilder eventBuilder = EventBuilder.create(idProvider, EventBuilderTest.class.getSimpleName(), tenantId, actorId);
+
+        eventBuilder.set("key", "value");
+        Event has = eventBuilder.build();
+        ObjectNode hasNode = jec.getInstanceNode(has.toJson(), EventBuilderTest.class.getSimpleName());
+        Assert.assertTrue(hasNode.has("key"));
+
+        eventBuilder.clear("key");
+        Event hasNot = eventBuilder.build();
+        ObjectNode hasNotNode = jec.getInstanceNode(hasNot.toJson(), EventBuilderTest.class.getSimpleName());
+        Assert.assertFalse(hasNotNode.has("key"));
     }
 
     @Test (dataProviderClass = JsonEventTestDataProvider.class, dataProvider = "createJsonData")

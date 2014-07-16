@@ -37,7 +37,7 @@ import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraverser;
 import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
-import com.jivesoftware.os.tasmo.lib.write.TasmoWriteMaterializer;
+import com.jivesoftware.os.tasmo.lib.ingress.TasmoWriteMaterializer;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
@@ -51,8 +51,8 @@ import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotification
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.TasmoWriteFanoutEventPersistor;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.WriteFanoutEventPersistor;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.lib.read.EventValueStoreFieldValueReader;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -73,6 +73,7 @@ import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.BatchingReferenceTraverser;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
+import com.jivesoftware.os.tasmo.view.notification.api.NoOpViewNotificationListener;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
 import com.jivesoftware.os.tasmo.view.reader.service.JsonViewMerger;
@@ -291,10 +292,10 @@ public class Materialization {
             @Override
             public void commitChange(WrittenEventContext batchContext,
                 TenantIdAndCentricId tenantIdAndCentricId,
-                List<ViewFieldChange> changes) throws CommitChangeException {
+                List<ViewField> changes) throws CommitChangeException {
 
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
-                for (ViewFieldChange change : changes) {
+                for (ViewField change : changes) {
                     try {
                         PathId[] modelPathInstanceIds = change.getModelPathInstanceIds();
                         ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];
@@ -378,7 +379,7 @@ public class Materialization {
 
         WrittenInstanceHelper writtenInstanceHelper = new WrittenInstanceHelper();
 
-        TasmoWriteFanoutEventPersistor eventPersistor = new TasmoWriteFanoutEventPersistor(writtenEventProvider,
+        WriteFanoutEventPersistor eventPersistor = new WriteFanoutEventPersistor(writtenEventProvider,
             writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
 
         processingStats = new TasmoProcessingStats();
@@ -390,6 +391,7 @@ public class Materialization {
             writtenEventProvider,
             eventTraverser,
             getViewChangeNotificationProcessor(),
+            new NoOpViewNotificationListener(),
             concurrencyStore,
             referenceStore,
             fieldValueReader,

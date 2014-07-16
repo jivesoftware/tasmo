@@ -26,34 +26,37 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
+import com.jivesoftware.os.tasmo.lib.TasmoJITViewReadMaterializationInitializer.TasmoViewReadMaterializationConfig;
 import com.jivesoftware.os.tasmo.lib.TasmoNotificationReadMaterializerInitializer.TasmoNotificationReadMaterializerConfig;
 import com.jivesoftware.os.tasmo.lib.TasmoServiceInitializer.TasmoServiceConfig;
 import com.jivesoftware.os.tasmo.lib.TasmoSyncWriteInitializer.TasmoSyncWriteConfig;
-import com.jivesoftware.os.tasmo.lib.TasmoViewReadMaterializationInitializer.TasmoViewReadMaterializationConfig;
+import com.jivesoftware.os.tasmo.lib.ingress.TasmoEventIngress;
+import com.jivesoftware.os.tasmo.lib.ingress.TasmoNotificationsIngress;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
-import com.jivesoftware.os.tasmo.lib.read.ReadMaterializer;
+import com.jivesoftware.os.tasmo.lib.read.ReadMaterializerViewFields;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.NoOpCommitChange;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.TasmoSyncEventWriter;
-import com.jivesoftware.os.tasmo.lib.write.ViewFieldChange;
+import com.jivesoftware.os.tasmo.lib.write.SyncEventWriter;
+import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.MurmurHashViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
-import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
+import com.jivesoftware.os.tasmo.view.notification.api.NoOpViewNotificationListener;
 import com.jivesoftware.os.tasmo.view.notification.api.ViewNotification;
+import com.jivesoftware.os.tasmo.view.notification.api.ViewNotificationListener;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReadMaterializer;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -73,7 +76,6 @@ import com.jivesoftware.os.tasmo.view.reader.service.writer.WriteToViewValueStor
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.merlin.config.BindInterfaceToConfiguration;
@@ -86,12 +88,17 @@ public class TasmoMaterializerHarnessFactory {
 
     static TasmoStorageProvider createInmemoryTasmoStorageProvider() {
         return new TasmoStorageProvider() {
-            private final RowColumnValueStore<TenantId, Id, Id, String, RuntimeException> modifierStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinksStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinksStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantId, Id, ObjectId, String, RuntimeException> modifierStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ObjectId, String, Long, RuntimeException> concurrencyStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinksStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId,
+                ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinksStorage = new RowColumnValueStoreImpl<>();
 
             @Override
             public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage() throws Exception {
@@ -120,7 +127,7 @@ public class TasmoMaterializerHarnessFactory {
             }
 
             @Override
-            public RowColumnValueStore<TenantId, Id, Id, String, RuntimeException> modifierStorage() throws
+            public RowColumnValueStore<TenantId, Id, ObjectId, String, RuntimeException> modifierStorage() throws
                 Exception {
                 return modifierStorage;
             }
@@ -211,6 +218,7 @@ public class TasmoMaterializerHarnessFactory {
             tasmoStorageProvider,
             commitChange,
             changeNotificationProcessor,
+            new NoOpViewNotificationListener(),
             bookkeepingStream,
             Optional.<WrittenEventProcessorDecorator>absent(),
             tasmoBlacklist,
@@ -331,7 +339,7 @@ public class TasmoMaterializerHarnessFactory {
 
         TasmoSyncWriteConfig syncWriteConfig = BindInterfaceToConfiguration.bindDefault(TasmoSyncWriteConfig.class);
 
-        final TasmoSyncEventWriter syncEventWriter = TasmoSyncWriteInitializer.initialize(tasmoViewModel.getService(),
+        final SyncEventWriter syncEventWriter = TasmoSyncWriteInitializer.initialize(tasmoViewModel.getService(),
             writtenEventProvider,
             tasmoStorageProvider,
             bookkeepingStream,
@@ -351,7 +359,8 @@ public class TasmoMaterializerHarnessFactory {
             Views lastViews;
 
             public void reset() throws Exception {
-                RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
+                RowColumnValueStore<TenantIdAndCentricId,
+                    ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
 
                 CommitChange commitChangeVistor = createCommitToViewValueStore(viewValueStorage, pathKeyProvider);
 
@@ -360,13 +369,13 @@ public class TasmoMaterializerHarnessFactory {
                 TasmoServiceHandle<TasmoViewModel> tasmoViewModel = TasmoViewModelInitializer.initialize(viewsProvider, pathKeyProvider, tasmoViewModelConfig);
                 tasmoViewModel.start();
 
-                final TasmoReadMaterializationInitializer.TasmoReadMaterializationConfig readMaterializationConfig = BindInterfaceToConfiguration
-                    .bindDefault(TasmoReadMaterializationInitializer.TasmoReadMaterializationConfig.class);
-                TasmoServiceHandle<ReadMaterializer> readMateriaizer = TasmoReadMaterializationInitializer.initialize(readMaterializationConfig,
+                final TasmoReadMaterializerInitializer.TasmoReadMaterializerConfig readMaterializationConfig = BindInterfaceToConfiguration
+                    .bindDefault(TasmoReadMaterializerInitializer.TasmoReadMaterializerConfig.class);
+                TasmoServiceHandle<ReadMaterializerViewFields> readMateriaizer = TasmoReadMaterializerInitializer.initialize(readMaterializationConfig,
                     tasmoViewModel.getService(), writtenEventProvider, tasmoStorageProvider);
                 readMateriaizer.start();
 
-                TasmoServiceHandle<ViewReadMaterializer<ViewResponse>> readMaterialization = TasmoViewReadMaterializationInitializer
+                TasmoServiceHandle<ViewReadMaterializer<ViewResponse>> readMaterialization = TasmoJITViewReadMaterializationInitializer
                     .initialize(viewReadMaterializationConfig, tasmoViewModel.getService(), readMateriaizer.getService(),
                         viewPermissionChecker, Optional.of(commitChangeVistor));
 
@@ -473,20 +482,20 @@ public class TasmoMaterializerHarnessFactory {
 
         TasmoSyncWriteConfig syncWriteConfig = BindInterfaceToConfiguration.bindDefault(TasmoSyncWriteConfig.class);
 
-        final TasmoSyncEventWriter syncEventWriter = TasmoSyncWriteInitializer.initialize(tasmoViewModel.getService(),
+        final SyncEventWriter syncEventWriter = TasmoSyncWriteInitializer.initialize(tasmoViewModel.getService(),
             writtenEventProvider,
             syncTasmoStorageProvider,
             bookkeepingStream,
             tasmoBlacklist,
             syncWriteConfig);
 
-        RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = syncTasmoStorageProvider.
-            viewValueStorage();
+        RowColumnValueStore<TenantIdAndCentricId,
+            ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = syncTasmoStorageProvider.viewValueStorage();
         ViewValueStore viewValueStore = new ViewValueStore(viewValueStorage, pathKeyProvider);
 
-        final TasmoReadMaterializationInitializer.TasmoReadMaterializationConfig readMaterializationConfig = BindInterfaceToConfiguration
-            .bindDefault(TasmoReadMaterializationInitializer.TasmoReadMaterializationConfig.class);
-        TasmoServiceHandle<ReadMaterializer> readMateriaizer = TasmoReadMaterializationInitializer.initialize(readMaterializationConfig,
+        final TasmoReadMaterializerInitializer.TasmoReadMaterializerConfig readMaterializationConfig = BindInterfaceToConfiguration
+            .bindDefault(TasmoReadMaterializerInitializer.TasmoReadMaterializerConfig.class);
+        TasmoServiceHandle<ReadMaterializerViewFields> readMateriaizer = TasmoReadMaterializerInitializer.initialize(readMaterializationConfig,
             tasmoViewModel.getService(), writtenEventProvider, syncTasmoStorageProvider);
         readMateriaizer.start();
 
@@ -505,20 +514,23 @@ public class TasmoMaterializerHarnessFactory {
 
             @Override
             public void process(WrittenEventContext batchContext, WrittenEvent writtenEvent) throws Exception {
-                Set<ModifiedViewInfo> modifiedViewInfos = batchContext.getModifiedViewProvider().getModifiedViews();
-                if (!modifiedViewInfos.isEmpty()) {
-                    List<ViewNotification> notifications = new ArrayList<>();
-                    for (ModifiedViewInfo modifiedViewInfo : modifiedViewInfos) {
-                        notifications.add(new ViewNotification(modifiedViewInfo.getTenantIdAndCentricId(),
-                            writtenEvent.getEventId(), writtenEvent.getActorId(), modifiedViewInfo.getViewId()));
-                    }
-                    System.out.println("notifications:"+notifications);
-                    List<ViewNotification> failedToProcess = notificationIngress.callback(notifications);
-                    while (!failedToProcess.isEmpty()) {
-                        System.out.println("FAILED to process notifications " + failedToProcess.size() + " events likely due to consistency issues.");
-                        failedToProcess = notificationIngress.callback(failedToProcess);
-                    }
+            }
+        };
+
+        ViewNotificationListener allViewNotificationListener = new ViewNotificationListener() {
+
+            @Override
+            public void handleNotifications(List<ViewNotification> viewNotifications) throws Exception {
+                System.out.println("notifications:" + viewNotifications);
+                List<ViewNotification> failedToProcess = notificationIngress.callback(viewNotifications);
+                while (!failedToProcess.isEmpty()) {
+                    System.out.println("FAILED to process notifications " + failedToProcess.size() + " events likely due to consistency issues.");
+                    failedToProcess = notificationIngress.callback(failedToProcess);
                 }
+            }
+
+            @Override
+            public void flush() {
             }
         };
 
@@ -531,6 +543,7 @@ public class TasmoMaterializerHarnessFactory {
             asyncTasmoStorageProvider,
             commitChange,
             notificationProcessor,
+            allViewNotificationListener,
             bookkeepingStream,
             Optional.<WrittenEventProcessorDecorator>absent(),
             tasmoBlacklist,
@@ -627,9 +640,9 @@ public class TasmoMaterializerHarnessFactory {
             @Override
             public void commitChange(WrittenEventContext batchContext,
                 TenantIdAndCentricId tenantIdAndCentricId,
-                List<ViewFieldChange> changes) throws CommitChangeException {
+                List<ViewField> changes) throws CommitChangeException {
                 List<ViewWriteFieldChange> write = new ArrayList<>(changes.size());
-                for (ViewFieldChange change : changes) {
+                for (ViewField change : changes) {
                     try {
                         PathId[] modelPathInstanceIds = change.getModelPathInstanceIds();
                         ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];

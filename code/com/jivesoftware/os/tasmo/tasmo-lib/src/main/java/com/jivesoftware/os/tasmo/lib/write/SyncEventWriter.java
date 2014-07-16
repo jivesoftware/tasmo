@@ -22,7 +22,6 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenInstance;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -34,21 +33,21 @@ import java.util.concurrent.Future;
  *
  * @author jonathan.colt
  */
-public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> {
+public class SyncEventWriter implements CallbackStream<List<WrittenEvent>> {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
     private final ListeningExecutorService processEvents;
     private final TasmoViewModel tasmoViewModel;
-    private final TasmoEventPersistor tasmoEventPersistor;
+    private final EventPersistor tasmoEventPersistor;
     private final ModifierStore modifierStore;
     private final CallbackStream<List<BookkeepingEvent>> bookkeepingStream;
     private final TasmoBlacklist tasmoBlacklist;
     private final ConcurrentHashMap<TenantId, StripingLocksProvider<ObjectId>> instanceIdLocks = new ConcurrentHashMap<>();
 
-    public TasmoSyncEventWriter(ListeningExecutorService processEvents,
+    public SyncEventWriter(ListeningExecutorService processEvents,
         TasmoViewModel tasmoViewModel,
-        TasmoEventPersistor tasmoEventPersistor,
+        EventPersistor tasmoEventPersistor,
         ModifierStore modifierStore,
         CallbackStream<List<BookkeepingEvent>> bookkeepingStream,
         TasmoBlacklist tasmoBlacklist) {
@@ -126,7 +125,7 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
                                             tasmoEventPersistor.
                                                 updateValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp, writtenInstance);
                                         }
-                                        Set<Id> ids = eventToRefId(model, className, instanceId, writtenInstance);
+                                        Set<ObjectId> ids = eventToRefId(model, className, instanceId, writtenInstance);
                                         modifierStore.add(tenantId, event.getActorId(), ids, timestamp);
                                     }
                                     processed.add(event);
@@ -167,9 +166,9 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
         return failedToProcess;
     }
 
-    private Set<Id> eventToRefId(VersionedTasmoViewModel model, String className, ObjectId instanceId, WrittenInstance writtenInstance) {
-        HashSet<Id> ids = new HashSet<>();
-        ids.add(instanceId.getId());
+    private Set<ObjectId> eventToRefId(VersionedTasmoViewModel model, String className, ObjectId instanceId, WrittenInstance writtenInstance) {
+        HashSet<ObjectId> ids = new HashSet<>();
+        ids.add(instanceId);
         SetMultimap<String, TasmoViewModel.FieldNameAndType> eventModel = model.getEventModel();
         for (TasmoViewModel.FieldNameAndType fieldNameAndType : eventModel.get(className)) {
             String fieldName = fieldNameAndType.getFieldName();
@@ -178,13 +177,13 @@ public class TasmoSyncEventWriter implements CallbackStream<List<WrittenEvent>> 
                 if (fieldType == ModelPathStepType.ref) {
                     ObjectId referenceFieldValue = writtenInstance.getReferenceFieldValue(fieldName);
                     if (referenceFieldValue != null) {
-                        ids.add(referenceFieldValue.getId());
+                        ids.add(referenceFieldValue);
                     }
                 } else if (fieldType == ModelPathStepType.refs) {
                     ObjectId[] multiReferenceFieldValue = writtenInstance.getMultiReferenceFieldValue(fieldName);
                     if (multiReferenceFieldValue != null) {
                         for (ObjectId objectId : multiReferenceFieldValue) {
-                            ids.add(objectId.getId());
+                            ids.add(objectId);
                         }
                     }
                 }

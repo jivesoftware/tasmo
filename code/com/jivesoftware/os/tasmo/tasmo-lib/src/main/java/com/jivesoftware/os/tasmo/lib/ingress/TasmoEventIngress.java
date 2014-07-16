@@ -1,15 +1,6 @@
-/*
- * $Revision$
- * $Date$
- *
- * Copyright (C) 1999-$year$ Jive Software. All rights reserved.
- *
- * This software is the proprietary information of Jive Software. Use is subject to license terms.
- */
-package com.jivesoftware.os.tasmo.lib;
+package com.jivesoftware.os.tasmo.lib.ingress;
 
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
-import com.jivesoftware.os.tasmo.lib.write.TasmoWriteMaterializer;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import java.util.List;
 

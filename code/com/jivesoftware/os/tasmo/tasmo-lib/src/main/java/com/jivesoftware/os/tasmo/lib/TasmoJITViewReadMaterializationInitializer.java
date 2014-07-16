@@ -5,8 +5,8 @@ import com.google.common.base.Optional;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
-import com.jivesoftware.os.tasmo.lib.read.ReadMaterializedViewProvider;
-import com.jivesoftware.os.tasmo.lib.read.ReadMaterializer;
+import com.jivesoftware.os.tasmo.lib.read.JITReadMaterializeViewProvider;
+import com.jivesoftware.os.tasmo.lib.read.ReadMaterializerViewFields;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReadMaterializer;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
@@ -19,7 +19,7 @@ import org.merlin.config.Config;
  *
  *
  */
-public class TasmoViewReadMaterializationInitializer {
+public class TasmoJITViewReadMaterializationInitializer {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
 
@@ -28,7 +28,7 @@ public class TasmoViewReadMaterializationInitializer {
 
     public static TasmoServiceHandle<ViewReadMaterializer<ViewResponse>> initialize(TasmoViewReadMaterializationConfig config,
         TasmoViewModel tasmoViewModel,
-        ReadMaterializer readMaterializer,
+        ReadMaterializerViewFields readMaterializer,
         ViewPermissionChecker viewPermissionChecker,
         Optional<CommitChange> commitChangeVistor) throws Exception {
 
@@ -36,7 +36,7 @@ public class TasmoViewReadMaterializationInitializer {
         // TODO add config option to switch between batching and serial.
         ViewAsObjectNode viewAsObjectNode = new ViewAsObjectNode();
 
-        final ViewReadMaterializer<ViewResponse> viewReadMaterializer = new ReadMaterializedViewProvider<>(viewPermissionChecker,
+        final ViewReadMaterializer<ViewResponse> viewReadMaterializer = new JITReadMaterializeViewProvider<>(viewPermissionChecker,
             readMaterializer,
             viewAsObjectNode,
             new JsonViewMerger(new ObjectMapper()),

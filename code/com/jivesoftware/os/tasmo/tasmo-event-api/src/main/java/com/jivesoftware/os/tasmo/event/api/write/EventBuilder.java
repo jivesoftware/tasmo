@@ -91,7 +91,7 @@ public class EventBuilder {
     }
 
     public EventBuilder clear(String key) {
-        instanceNode.put(key, (String) null);
+        instanceNode.remove(key);
         return this;
     }
 

@@ -31,7 +31,6 @@ public class DeletesTest extends BaseTest {
 
         Assert.assertNotNull(view);
 
-        // - 3
         t.write(EventBuilder.update(user1, tenantId, actorId).set(ReservedFields.DELETED, true).build());
 
         view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
