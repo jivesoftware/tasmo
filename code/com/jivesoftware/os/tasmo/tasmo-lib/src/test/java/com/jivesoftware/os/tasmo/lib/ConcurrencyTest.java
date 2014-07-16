@@ -238,7 +238,7 @@ public class ConcurrencyTest extends BaseTest {
                     i++;
                     fieldValue++;
                     if (value == null) {
-                        create.clear(fieldName);
+                        create.delete(fieldName);
                     } else {
                         create.set(fieldName, value);
                     }
@@ -393,7 +393,7 @@ public class ConcurrencyTest extends BaseTest {
             if (lastEdge != null) {
                 fieldValue = null;
                 EventBuilder update = EventBuilder.update(lastEdge, tenantId, actorId);
-                update.clear("ref_" + fieldName);
+                update.delete("ref_" + fieldName);
                 lastEvent = update.build();
                 t.write(lastEvent);
                 //System.out.println("REMOVED EDGE:" + lastEdge);
@@ -498,7 +498,7 @@ public class ConcurrencyTest extends BaseTest {
             if (lastEdge != null) {
                 fieldValues = null;
                 EventBuilder update = EventBuilder.update(lastEdge, tenantId, actorId);
-                update.clear("refs_" + fieldName);
+                update.delete("refs_" + fieldName);
                 lastEvent = update.build();
                 t.write(lastEvent);
                 //System.out.println("REMOVED EDGE:" + lastEdge);
