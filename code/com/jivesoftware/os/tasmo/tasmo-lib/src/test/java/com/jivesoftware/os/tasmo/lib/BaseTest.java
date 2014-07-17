@@ -40,8 +40,8 @@ public class BaseTest {
 
         List<Object[]> paramList = new ArrayList<>();
         paramList.add(new Object[]{ asyncHarness() });
-        //paramList.add(new Object[]{ syncHarness() });
-        //paramList.add(new Object[]{ syncWithAsyncReadMaterializerHarness() });
+        paramList.add(new Object[]{ syncHarness() });
+        paramList.add(new Object[]{ syncWithAsyncReadMaterializerHarness() });
         return paramList.iterator();
     }
 

@@ -26,7 +26,7 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
-import com.jivesoftware.os.tasmo.lib.TasmoJITViewReadMaterializationInitializer.TasmoViewReadMaterializationConfig;
+import com.jivesoftware.os.tasmo.lib.TasmoJITViewReadMaterializationInitializer.TasmoJITViewReadMaterializationConfig;
 import com.jivesoftware.os.tasmo.lib.TasmoNotificationReadMaterializerInitializer.TasmoNotificationReadMaterializerConfig;
 import com.jivesoftware.os.tasmo.lib.TasmoServiceInitializer.TasmoServiceConfig;
 import com.jivesoftware.os.tasmo.lib.TasmoSyncWriteInitializer.TasmoSyncWriteConfig;
@@ -349,8 +349,8 @@ public class TasmoMaterializerHarnessFactory {
         JsonEventWriter jsonEventWriter = jsonEventWriter(idProvider, writtenEventProvider, syncEventWriter);
         final EventWriter eventWriter = new EventWriter(jsonEventWriter);
 
-        final TasmoViewReadMaterializationConfig viewReadMaterializationConfig = BindInterfaceToConfiguration.bindDefault(
-            TasmoViewReadMaterializationConfig.class);
+        final TasmoJITViewReadMaterializationConfig viewReadMaterializationConfig = BindInterfaceToConfiguration.bindDefault(
+            TasmoJITViewReadMaterializationConfig.class);
 
         return new TasmoMaterializerHarness() {
 
@@ -628,7 +628,7 @@ public class TasmoMaterializerHarnessFactory {
             }
         };
     }
-
+   
     public static CommitChange createCommitToViewValueStore(
         RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage,
         final ViewPathKeyProvider pathKeyProvider) {
