@@ -1,6 +1,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -64,10 +65,10 @@ public class ModePathPrefixMerging extends BaseTest {
             .set("ref_lastAuthor", lastAuthorId).build());
         ObjectId version1 = t.write(EventBuilder.create(t.idProvider(), "Version", tenantId, actorId).set("ref_parent", content1).build());
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName1, version1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName1, version1.getId()), Id.NULL);
         System.out.println("view1:" + mapper.writeValueAsString(view));
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName2, version1.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(viewClassName2, version1.getId()), Id.NULL);
         System.out.println("view2:" + mapper.writeValueAsString(view));
 
         t.addExpectation(version1, viewClassName1, originalAuthor, new ObjectId[]{ version1, content1, originalAuthorId }, "userName", "ted");

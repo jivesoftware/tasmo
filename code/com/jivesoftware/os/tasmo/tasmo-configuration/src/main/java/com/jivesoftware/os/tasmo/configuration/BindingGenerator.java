@@ -39,26 +39,26 @@ public class BindingGenerator {
 
                     if (p.getValueType() == ValueType.value) {
                         builder.addPathMember(new ModelPathStep(isRoot,
-                            p.getFieldClasses(), null, ModelPathStepType.value, null, Arrays.asList(p.getFieldNames())));
+                            p.getFieldClasses(), null, ModelPathStepType.value, null, Arrays.asList(p.getFieldNames()), false));
                         ModelPath modelPath = builder.build();
                         LOG.info("Created:" + modelPath);
                         modelPaths.add(modelPath);
                     } else if (nextTypedField != null) {
                         if (p.getValueType() == ValueType.ref) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.ref, nextTypedField.getFieldClasses(), null));
+                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.ref, nextTypedField.getFieldClasses(), null, false));
                         } else if (p.getValueType() == ValueType.refs) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.refs, nextTypedField.getFieldClasses(), null));
+                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.refs, nextTypedField.getFieldClasses(), null, false));
                         } else if (p.getValueType() == ValueType.backrefs) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.backRefs, p.getFieldClasses(), null));
+                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.backRefs, p.getFieldClasses(), null, false));
                         } else if (p.getValueType() == ValueType.count) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.count, p.getFieldClasses(), null));
+                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.count, p.getFieldClasses(), null, false));
                         } else if (p.getValueType() == ValueType.latest_backref) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.latest_backRef, p.getFieldClasses(), null));
+                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.latest_backRef, p.getFieldClasses(), null, false));
                         }
                     }
                     isRoot = false;

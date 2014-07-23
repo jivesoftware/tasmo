@@ -1,6 +1,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
@@ -30,7 +31,7 @@ public class CrossTenancyTest extends BaseTest {
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, user1.getId()), Id.NULL);
         Assert.assertNull(view);
 
     }

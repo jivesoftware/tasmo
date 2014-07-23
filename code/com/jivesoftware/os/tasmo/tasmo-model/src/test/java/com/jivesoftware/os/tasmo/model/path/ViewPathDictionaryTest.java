@@ -20,13 +20,13 @@ public class ViewPathDictionaryTest {
     @Test
     public void testDictionaryRoundTrip() {
         ModelPath.Builder builder = ModelPath.builder("Test");
-        ModelPathStep root = new ModelPathStep(true, Sets.newHashSet("A", "B"), "firstRef", ModelPathStepType.ref, Sets.newHashSet("C", "D"), null);
+        ModelPathStep root = new ModelPathStep(true, Sets.newHashSet("A", "B"), "firstRef", ModelPathStepType.ref, Sets.newHashSet("C", "D"), null, false);
         builder.addPathMember(root);
 
-        ModelPathStep middle = new ModelPathStep(false, Sets.newHashSet("C", "D"), "secondRef", ModelPathStepType.refs, Sets.newHashSet("E", "F"), null);
+        ModelPathStep middle = new ModelPathStep(false, Sets.newHashSet("C", "D"), "secondRef", ModelPathStepType.refs, Sets.newHashSet("E", "F"), null, false);
         builder.addPathMember(middle);
 
-        ModelPathStep leaf = new ModelPathStep(false, Sets.newHashSet("E", "F"), null, ModelPathStepType.value, null, Arrays.asList("value1", "value2"));
+        ModelPathStep leaf = new ModelPathStep(false, Sets.newHashSet("E", "F"), null, ModelPathStepType.value, null, Arrays.asList("value1", "value2"), false);
         builder.addPathMember(leaf);
 
         ModelPath path = builder.build();
@@ -61,14 +61,15 @@ public class ViewPathDictionaryTest {
     @Test
     public void testWithBackRef() {
         ModelPath.Builder builder = ModelPath.builder("Test");
-        ModelPathStep root = new ModelPathStep(true, Sets.newHashSet("A", "B"), "rootPointsToMiddle", ModelPathStepType.ref, Sets.newHashSet("C", "D"), null);
+        ModelPathStep root = new ModelPathStep(true,
+            Sets.newHashSet("A", "B"), "rootPointsToMiddle", ModelPathStepType.ref, Sets.newHashSet("C", "D"), null, false);
         builder.addPathMember(root);
 
         ModelPathStep middle = new ModelPathStep(false, Sets.newHashSet("E", "F"), "tailPointsToMiddle",
-            ModelPathStepType.backRefs, Sets.newHashSet("C", "D"), null);
+            ModelPathStepType.backRefs, Sets.newHashSet("C", "D"), null, false);
         builder.addPathMember(middle);
 
-        ModelPathStep leaf = new ModelPathStep(false, Sets.newHashSet("E", "F"), null, ModelPathStepType.value, null, Arrays.asList("value1", "value2"));
+        ModelPathStep leaf = new ModelPathStep(false, Sets.newHashSet("E", "F"), null, ModelPathStepType.value, null, Arrays.asList("value1", "value2"), false);
         builder.addPathMember(leaf);
 
         ModelPath path = builder.build();

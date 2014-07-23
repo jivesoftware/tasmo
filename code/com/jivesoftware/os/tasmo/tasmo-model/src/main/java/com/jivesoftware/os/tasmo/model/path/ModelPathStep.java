@@ -30,15 +30,24 @@ public class ModelPathStep {
     private final Set<String> destinationClassName;
     //leafFieldNames
     private final List<String> fieldNames;
+    private final boolean centric;
 
     // only public for jackson
     @JsonCreator
-    public ModelPathStep(@JsonProperty("isRootId") boolean isRootId,
-        @JsonProperty("originClassName") Set<String> originClassName,
-        @JsonProperty("refFieldName") String refFieldName,
-        @JsonProperty("stepType") ModelPathStepType stepType,
-        @JsonProperty("destinationClassName") Set<String> destinationClassName,
-        @JsonProperty("fieldNames") List<String> fieldNames) {
+    public ModelPathStep(@JsonProperty (value = "isRootId")
+        boolean isRootId,
+        @JsonProperty (value = "originClassName")
+        Set<String> originClassName,
+        @JsonProperty (value = "refFieldName")
+        String refFieldName,
+        @JsonProperty (value = "stepType")
+        ModelPathStepType stepType,
+        @JsonProperty (value = "destinationClassName")
+        Set<String> destinationClassName,
+        @JsonProperty (value = "fieldNames")
+        List<String> fieldNames,
+        @JsonProperty (value = "centric")
+        boolean centric) {
 
         this.isRootId = isRootId;
         this.originClassName = originClassName;
@@ -71,15 +80,16 @@ public class ModelPathStep {
             }
             this.destinationClassName = destinationClassName;
         }
-
+        this.centric = centric;
     }
 
-    public ModelPathStep(boolean isRootId, String originClassName, String refFieldName, ModelPathStepType stepType, String destinationClassName) {
-        this(isRootId, Sets.newHashSet(originClassName), refFieldName, stepType, Sets.newHashSet(destinationClassName), null);
+    public ModelPathStep(boolean isRootId,
+        String originClassName, String refFieldName, ModelPathStepType stepType, String destinationClassName, boolean centric) {
+        this(isRootId, Sets.newHashSet(originClassName), refFieldName, stepType, Sets.newHashSet(destinationClassName), null, centric);
     }
 
-    public ModelPathStep(boolean isRootId, String originClassName, List<String> valueFields) {
-        this(isRootId, Sets.newHashSet(originClassName), null, ModelPathStepType.value, null, valueFields);
+    public ModelPathStep(boolean isRootId, String originClassName, List<String> valueFields, boolean centric) {
+        this(isRootId, Sets.newHashSet(originClassName), null, ModelPathStepType.value, null, valueFields, centric);
     }
 
     public boolean getIsRootId() {
@@ -109,6 +119,11 @@ public class ModelPathStep {
             return fieldNames;
         }
     }
+
+    public boolean getCentric() {
+        return centric;
+    }
+
 
     @Override
     public String toString() {
@@ -151,6 +166,7 @@ public class ModelPathStep {
         hash = 11 * hash + (this.stepType != null ? this.stepType.hashCode() : 0);
         hash = 11 * hash + (this.destinationClassName != null ? this.destinationClassName.hashCode() : 0);
         hash = 11 * hash + (this.fieldNames != null ? this.fieldNames.hashCode() : 0);
+        hash = 11 * hash + (this.centric ? 1 : 0);
         return hash;
     }
 
@@ -180,6 +196,9 @@ public class ModelPathStep {
             return false;
         }
         if (this.fieldNames != other.fieldNames && (this.fieldNames == null || !this.fieldNames.equals(other.fieldNames))) {
+            return false;
+        }
+        if (this.centric != other.centric) {
             return false;
         }
         return true;

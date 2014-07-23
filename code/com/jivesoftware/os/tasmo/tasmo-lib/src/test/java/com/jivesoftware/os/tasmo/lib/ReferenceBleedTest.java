@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -65,9 +66,9 @@ public class ReferenceBleedTest extends BaseTest {
         //t.addExpectation(acontentId, ContentView, status, new ObjectId[]{acontentId}, "draft");
         //t.assertExpectation(tenantId);
         //t.clearExpectations();
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, acontentId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(ContentView, acontentId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, bcontentId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(ContentView, bcontentId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
     }
 }

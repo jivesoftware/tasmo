@@ -52,10 +52,10 @@ public class EventFireGenerator {
         EventFireGenerator eventFireGenerator = new EventFireGenerator(new TenantId("test"), new Id("actor"));
 
         List<ModelPathStep> steps = new ArrayList<>();
-        steps.add(new ModelPathStep(true, Sets.newHashSet("A"), "ref_B", ModelPathStepType.ref, Sets.newHashSet("B"), null));
-        steps.add(new ModelPathStep(false, Sets.newHashSet("C"), "backrefs_B", ModelPathStepType.backRefs, Sets.newHashSet("B"), null));
-        steps.add(new ModelPathStep(false, Sets.newHashSet("C"), "refs_D", ModelPathStepType.refs, Sets.newHashSet("D"), null));
-        steps.add(new ModelPathStep(false, Sets.newHashSet("D"), null, ModelPathStepType.value, null, Arrays.asList("Value1", "Value2", "Value3")));
+        steps.add(new ModelPathStep(true, Sets.newHashSet("A"), "ref_B", ModelPathStepType.ref, Sets.newHashSet("B"), null, false));
+        steps.add(new ModelPathStep(false, Sets.newHashSet("C"), "backrefs_B", ModelPathStepType.backRefs, Sets.newHashSet("B"), null, false));
+        steps.add(new ModelPathStep(false, Sets.newHashSet("C"), "refs_D", ModelPathStepType.refs, Sets.newHashSet("D"), null, false));
+        steps.add(new ModelPathStep(false, Sets.newHashSet("D"), null, ModelPathStepType.value, null, Arrays.asList("Value1", "Value2", "Value3"), false));
 
         ModelPath path = new ModelPath("testpath", steps);
 

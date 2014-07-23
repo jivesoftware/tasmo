@@ -38,10 +38,10 @@ public class RefsAsLeafValueTest extends BaseTest {
         followedAsStrings.add(new ObjectId("Place", new Id(3)).toStringForm());
         followedAsStrings.add(new ObjectId("Place", new Id(4)).toStringForm());
         t.addExpectation(user1, viewClassName, viewFieldName, new ObjectId[]{ user1 }, "refs_followed", followedAsStrings);
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, user1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, user1.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
     }
 }

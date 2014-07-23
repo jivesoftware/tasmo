@@ -109,7 +109,9 @@ public class ReadMaterializerViewFields {
                     CommitChange commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, this);
                     initiateTraversal.read(referenceTraverser,
                         fieldValueReader,
-                        new TenantIdAndCentricId(viewDescriptor.getTenantId(), viewDescriptor.getUserId()),
+                        viewDescriptor.getTenantId(),
+                        viewDescriptor.getActorId(),
+                        viewDescriptor.getUserId(),
                         viewDescriptor.getViewId(),
                         commitChange);
                     return;

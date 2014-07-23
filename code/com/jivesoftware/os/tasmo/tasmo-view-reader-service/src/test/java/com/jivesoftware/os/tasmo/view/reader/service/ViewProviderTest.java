@@ -62,7 +62,7 @@ public class ViewProviderTest {
             public Views getViews(ViewsProcessorId viewsProcessorId) {
                 List<ViewBinding> viewBindings = new ArrayList<>();
                 List<ModelPath> modelPaths = new ArrayList<>();
-                ModelPathStep modelPathStep = new ModelPathStep(true, ImmutableSet.of("view"), null, ModelPathStepType.value, null, Arrays.asList("title"));
+                ModelPathStep modelPathStep = new ModelPathStep(true, ImmutableSet.of("view"), null, ModelPathStepType.value, null, Arrays.asList("title"), false);
                 ModelPath modelPath = ModelPath.builder("1").addPathMember(modelPathStep).build();
                 modelPaths.add(modelPath);
                 viewBindings.add(new ViewBinding("view", modelPaths, true, false, false, "id"));

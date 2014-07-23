@@ -157,17 +157,17 @@ public class ConcurrencyTest extends BaseTest {
         refC3.finalEvent();
 
         System.out.println("- Write AView ------------------------");
-        ObjectNode aTestView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
+        ObjectNode aTestView = async.readView(tenantId, actorId, new ObjectId("ATest", a1.id.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(aTestView));
-        ObjectNode aTestView1 = sync.readView(tenantIdAndCentricId, actorId, new ObjectId("ATest", a1.id.getId()));
+        ObjectNode aTestView1 = sync.readView(tenantId, actorId, new ObjectId("ATest", a1.id.getId()), Id.NULL);
         System.out.println("- vs - ");
         System.out.println(mapper.writeValueAsString(aTestView1));
         Assert.assertEquals(aTestView, aTestView1);
 
         System.out.println("- Write AViewDup-");
-        ObjectNode aTestDupView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
+        ObjectNode aTestDupView = async.readView(tenantId, actorId, new ObjectId("ATestDup", a1.id.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(aTestDupView));
-        ObjectNode aTestDupView1 = sync.readView(tenantIdAndCentricId, actorId, new ObjectId("ATestDup", a1.id.getId()));
+        ObjectNode aTestDupView1 = sync.readView(tenantId, actorId, new ObjectId("ATestDup", a1.id.getId()), Id.NULL);
         System.out.println("- vs Read - ");
         System.out.println(mapper.writeValueAsString(aTestDupView1));
         Assert.assertEquals(aTestDupView, aTestDupView1);
@@ -176,17 +176,17 @@ public class ConcurrencyTest extends BaseTest {
         Assert.assertNotNull(aTestDupView);
 
         System.out.println("- Write CView -");
-        ObjectNode cTestView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
+        ObjectNode cTestView = async.readView(tenantId, actorId, new ObjectId("CTest", c1.id.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(cTestView));
-        ObjectNode cTestView1 = sync.readView(tenantIdAndCentricId, actorId, new ObjectId("CTest", c1.id.getId()));
+        ObjectNode cTestView1 = sync.readView(tenantId, actorId, new ObjectId("CTest", c1.id.getId()), Id.NULL);
         System.out.println("- vs Read - ");
         System.out.println(mapper.writeValueAsString(cTestView1));
         Assert.assertEquals(cTestView, cTestView1);
 
         System.out.println("- Write CViewDup -");
-        ObjectNode cTestDupView = async.readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
+        ObjectNode cTestDupView = async.readView(tenantId, actorId, new ObjectId("CTestDup", c1.id.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(cTestDupView));
-        ObjectNode cTestDupView1 = sync.readView(tenantIdAndCentricId, actorId, new ObjectId("CTestDup", c1.id.getId()));
+        ObjectNode cTestDupView1 = sync.readView(tenantId, actorId, new ObjectId("CTestDup", c1.id.getId()), Id.NULL);
         System.out.println("- vs Read - ");
         System.out.println(mapper.writeValueAsString(cTestDupView1));
         Assert.assertEquals(cTestDupView, cTestDupView1);

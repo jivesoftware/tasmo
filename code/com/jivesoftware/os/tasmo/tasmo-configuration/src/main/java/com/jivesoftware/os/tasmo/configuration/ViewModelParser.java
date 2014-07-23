@@ -84,7 +84,7 @@ public class ViewModelParser {
                 Set<String> destinationClassName = splitClassNames(memberParts[3].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                    refFieldName, stepType, destinationClassName, null, false);
 
             } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
                 || pathMember.contains("." + ModelPathStepType.count + ".")
@@ -99,7 +99,7 @@ public class ViewModelParser {
                 String refFieldName = memberParts[3].trim();
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                    refFieldName, stepType, destinationClassName, null, false);
 
             } else {
 
@@ -111,7 +111,7 @@ public class ViewModelParser {
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
+                    null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames), false);
 
             }
         } catch (Exception x) {

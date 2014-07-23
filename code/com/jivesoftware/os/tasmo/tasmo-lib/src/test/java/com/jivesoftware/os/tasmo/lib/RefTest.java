@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -28,10 +29,10 @@ public class RefTest extends BaseTest {
         ObjectId user1 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "ted").build());
         ObjectId content1 = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_user", user1).build());
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
     }
 
@@ -44,20 +45,20 @@ public class RefTest extends BaseTest {
         ObjectId user1 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "ted").build());
         ObjectId content1 = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_user", user1).build());
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         ObjectId user2 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "jane").build());
         t.write(EventBuilder.update(content1, tenantId, actorId).set("ref_user", user2).build());
 
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "jane");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
     }
 }

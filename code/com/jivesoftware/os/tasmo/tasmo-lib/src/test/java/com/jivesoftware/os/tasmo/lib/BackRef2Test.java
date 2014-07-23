@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -34,7 +35,7 @@ public class BackRef2Test extends BaseTest {
 
         t.addExpectation(versionId, "VersionView", "versionAuthor", new ObjectId[]{versionId, contentId, userId}, "firstName", "larry");
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId("VersionView", versionId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId("VersionView", versionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
     }
