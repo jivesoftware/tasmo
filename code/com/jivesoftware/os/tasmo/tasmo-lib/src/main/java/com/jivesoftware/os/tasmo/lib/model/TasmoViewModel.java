@@ -491,5 +491,10 @@ public class TasmoViewModel {
         public boolean isIdCentric() {
             return idCentric;
         }
+
+        @Override
+        public String toString() {
+            return "ReadTraversalKey{" + "modelPath=" + modelPath + ", idCentric=" + idCentric + '}';
+        }
     }
 }

@@ -1,5 +1,6 @@
 package com.jivesoftware.os.tasmo.view.reader.service.shared;
 
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.google.common.collect.Lists;
 import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.id.Id;

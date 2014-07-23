@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.view.reader.service.shared;
+package com.jivesoftware.os.tasmo.id;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

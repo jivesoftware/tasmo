@@ -10,8 +10,8 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.Cur
 import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueMarshaller;
+import com.jivesoftware.os.tasmo.id.ViewValue;
+import com.jivesoftware.os.tasmo.id.ViewValueMarshaller;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import org.merlin.config.Config;

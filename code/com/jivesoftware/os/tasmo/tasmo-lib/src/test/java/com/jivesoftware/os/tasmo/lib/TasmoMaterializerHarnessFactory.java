@@ -16,7 +16,10 @@ import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
+import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
+import com.jivesoftware.os.jive.utils.row.column.value.store.hbase.HBaseSetOfSortedMapsImplInitializer;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
+import com.jivesoftware.os.jive.utils.row.column.value.store.tests.EmbeddedHBase;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
@@ -54,6 +57,7 @@ import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
+import com.jivesoftware.os.tasmo.service.HBaseBackedTasmoStorageProvider;
 import com.jivesoftware.os.tasmo.view.notification.api.NoOpViewNotificationListener;
 import com.jivesoftware.os.tasmo.view.notification.api.ViewNotification;
 import com.jivesoftware.os.tasmo.view.notification.api.ViewNotificationListener;
@@ -67,7 +71,7 @@ import com.jivesoftware.os.tasmo.view.reader.service.ViewAsObjectNode;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewProvider;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
@@ -86,19 +90,37 @@ import org.merlin.config.BindInterfaceToConfiguration;
  */
 public class TasmoMaterializerHarnessFactory {
 
+    static EmbeddedHBase hbase; // Static is lame!
+
+    synchronized static TasmoStorageProvider createEmbeddedHBaseBackStorageProvider(String namespace) throws Exception {
+        if (hbase == null) {
+            try {
+                System.out.println("Starting Hbase cluster");
+                EmbeddedHBase embeddedHBase = new EmbeddedHBase();
+                embeddedHBase.start(false);
+                System.out.println("Hbase cluster Oline.");
+                System.out.println(embeddedHBase.getConfiguration());
+                hbase = embeddedHBase;
+            } catch(Throwable x) {
+                x.printStackTrace();
+                System.exit(1);
+            }
+        }
+
+        SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsInitializer = new HBaseSetOfSortedMapsImplInitializer(hbase.getConfiguration());
+        JsonWrittenEventProvider writtenEventProvider = new JsonWrittenEventProvider();
+
+        return new HBaseBackedTasmoStorageProvider(namespace, setOfSortedMapsInitializer, writtenEventProvider);
+    }
+
     static TasmoStorageProvider createInmemoryTasmoStorageProvider() {
         return new TasmoStorageProvider() {
             private final RowColumnValueStore<TenantId, Id, ObjectId, String, RuntimeException> modifierStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId,
-                ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId,
-                ObjectId, String, Long, RuntimeException> concurrencyStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId,
-                ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId,
-                ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinksStorage = new RowColumnValueStoreImpl<>();
-            private final RowColumnValueStore<TenantIdAndCentricId,
-                ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinksStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrencyStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinksStorage = new RowColumnValueStoreImpl<>();
+            private final RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinksStorage = new RowColumnValueStoreImpl<>();
 
             @Override
             public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStorage() throws Exception {
@@ -359,8 +381,7 @@ public class TasmoMaterializerHarnessFactory {
             Views lastViews;
 
             public void reset() throws Exception {
-                RowColumnValueStore<TenantIdAndCentricId,
-                    ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
+                RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = new RowColumnValueStoreImpl<>();
 
                 CommitChange commitChangeVistor = createCommitToViewValueStore(viewValueStorage, pathKeyProvider);
 
@@ -489,8 +510,8 @@ public class TasmoMaterializerHarnessFactory {
             tasmoBlacklist,
             syncWriteConfig);
 
-        RowColumnValueStore<TenantIdAndCentricId,
-            ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = syncTasmoStorageProvider.viewValueStorage();
+        RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage = syncTasmoStorageProvider.
+            viewValueStorage();
         ViewValueStore viewValueStore = new ViewValueStore(viewValueStorage, pathKeyProvider);
 
         final TasmoReadMaterializerInitializer.TasmoReadMaterializerConfig readMaterializationConfig = BindInterfaceToConfiguration

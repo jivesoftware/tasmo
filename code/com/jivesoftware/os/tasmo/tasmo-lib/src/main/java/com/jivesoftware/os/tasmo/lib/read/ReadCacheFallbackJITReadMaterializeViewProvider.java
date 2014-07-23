@@ -23,7 +23,7 @@ import com.jivesoftware.os.tasmo.view.reader.service.ViewFieldsCollector;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewFormatter;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionCheckResult;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
