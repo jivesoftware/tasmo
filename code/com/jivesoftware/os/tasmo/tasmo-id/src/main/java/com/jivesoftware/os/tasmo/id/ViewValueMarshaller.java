@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.view.reader.service.shared;
+package com.jivesoftware.os.tasmo.id;
 
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
 import java.nio.ByteBuffer;

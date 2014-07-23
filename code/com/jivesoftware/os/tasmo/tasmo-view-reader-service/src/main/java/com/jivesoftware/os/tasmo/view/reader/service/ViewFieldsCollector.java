@@ -17,7 +17,7 @@ import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;

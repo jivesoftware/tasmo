@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.service;
+package com.jivesoftware.os.tasmo.lib;
 
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
@@ -19,13 +19,12 @@ import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
 import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
-import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
+import com.jivesoftware.os.tasmo.id.ViewValue;
+import com.jivesoftware.os.tasmo.id.ViewValueMarshaller;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueMarshaller;
 
 /**
  *

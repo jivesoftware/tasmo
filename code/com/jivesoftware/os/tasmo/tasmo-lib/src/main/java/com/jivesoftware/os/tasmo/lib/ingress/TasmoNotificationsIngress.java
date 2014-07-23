@@ -12,7 +12,7 @@ import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.view.notification.api.ViewNotification;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import java.util.ArrayList;
 import java.util.HashMap;

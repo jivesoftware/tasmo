@@ -28,7 +28,7 @@ public class CentricIdTest extends BaseTest {
         viewBindings.addAll(TasmoModelFactory
             .parseModelPathStrings(false, nonIdCentricViewClassName + "::" + nonIdCentricViewFieldName + "::User.userName,age"));
 
-        Id userId = actorId;
+        Id userId = new Id(1);
         Views views = TasmoModelFactory.bindsAsViews(viewBindings);
         t.initModel(views);
 
@@ -58,7 +58,7 @@ public class CentricIdTest extends BaseTest {
         List<ViewBinding> viewBindings = TasmoModelFactory
             .parseModelPathStrings(true, idCentricViewClassName + "::" + idCentricViewFieldName + "::User.userName,age");
 
-        Id userId = actorId;
+        Id userId = new Id(2);
         Views views = TasmoModelFactory.bindsAsViews(viewBindings);
         t.initModel(views);
 
@@ -85,7 +85,7 @@ public class CentricIdTest extends BaseTest {
         List<ViewBinding> viewBindings = TasmoModelFactory
             .parseModelPathStrings(true, idCentricViewClassName + "::" + idCentricViewFieldName + "::User.userName,age");
 
-        Id userId = actorId;
+        Id userId = new Id(1);
         Views views = TasmoModelFactory.bindsAsViews(viewBindings);
         t.initModel(views);
 

@@ -56,16 +56,24 @@ public class InitiateReadTraversal {
             commitChange,
             processingStats);
 
-        boolean isCentric = !Id.NULL.equals(userId);
+        boolean centricRequest = !Id.NULL.equals(userId);
 
         TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
         PathTraversalContext context = new PathTraversalContext(1, false);
         for (Entry<ReadTraversalKey, StepStreamerFactory> e : pathTraversers.entrySet()) {
             ReadTraversalKey readTraversalKey = e.getKey();
-            if (readTraversalKey.isIdCentric() == isCentric) {
-                StepStreamerFactory stepStreamerFactory = e.getValue();
-                StepStream stepStream = stepStreamerFactory.create();
-
+            StepStreamerFactory stepStreamerFactory = e.getValue();
+            StepStream stepStream = stepStreamerFactory.create();
+            if (readTraversalKey.isIdCentric()) {
+                if (centricRequest) {
+                    for (String rootEventClassName : rootingEventClassNames) {
+                        PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
+                        PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());
+                        LeafContext leafContext = new ReadLeafContext();
+                        stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
+                    }
+                }
+            } else {
                 for (String rootEventClassName : rootingEventClassNames) {
                     PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
                     PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());

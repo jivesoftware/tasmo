@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.service;
+package com.jivesoftware.os.tasmo.lib;
 
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
 import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
