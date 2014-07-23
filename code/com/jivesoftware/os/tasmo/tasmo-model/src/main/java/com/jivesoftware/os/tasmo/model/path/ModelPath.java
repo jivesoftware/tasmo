@@ -1,11 +1,3 @@
-/*
- * $Revision$
- * $Date$
- *
- * Copyright (C) 1999-$year$ Jive Software. All rights reserved.
- *
- * This software is the proprietary information of Jive Software. Use is subject to license terms.
- */
 package com.jivesoftware.os.tasmo.model.path;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -13,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.IdProvider;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriteException;
@@ -27,5 +28,5 @@ public interface TasmoMaterializerHarness {
 
     void clearExpectations() throws Exception;
 
-    ObjectNode readView(TenantIdAndCentricId tenantIdAndCentricId, Id actorId, ObjectId viewId) throws Exception;
+    ObjectNode readView(TenantId tenantId, Id actorId, ObjectId viewId, Id userId) throws Exception;
 }

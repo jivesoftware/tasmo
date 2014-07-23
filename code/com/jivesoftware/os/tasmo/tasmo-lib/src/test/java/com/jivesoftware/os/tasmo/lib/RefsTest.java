@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -31,12 +32,12 @@ public class RefsTest extends BaseTest {
         ObjectId user2 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "bill").build());
         ObjectId content1 = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("refs_users", Arrays.asList(user1, user2)).build());
 
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -57,7 +58,7 @@ public class RefsTest extends BaseTest {
         ObjectId content1 =
              t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("refs_users", Arrays.asList(user1, user2)).build());
 
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
         t.assertExpectation(tenantIdAndCentricId);
@@ -66,7 +67,7 @@ public class RefsTest extends BaseTest {
         ObjectId avatar = t.write(EventBuilder.create(t.idProvider(), "Avatar", tenantId, actorId).set("creationDate", "someday").build());
         t.write(EventBuilder.update(user1, tenantId, actorId).set("avatar", avatar).build());
 
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
         t.addExpectation(content1, viewClassName, viewFieldName2, new ObjectId[]{ content1, user1, avatar }, "creationDate", "someday");
@@ -89,7 +90,7 @@ public class RefsTest extends BaseTest {
 
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -97,7 +98,7 @@ public class RefsTest extends BaseTest {
 
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -118,7 +119,7 @@ public class RefsTest extends BaseTest {
 
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -126,7 +127,7 @@ public class RefsTest extends BaseTest {
 
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -135,7 +136,7 @@ public class RefsTest extends BaseTest {
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", null);
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user3 }, "userName", "john");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 

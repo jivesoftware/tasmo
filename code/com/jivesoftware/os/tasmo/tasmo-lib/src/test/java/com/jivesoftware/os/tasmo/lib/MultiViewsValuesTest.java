@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -41,13 +42,13 @@ public class MultiViewsValuesTest extends BaseTest {
             .set("userName", "ted")
             .build());
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName1, user1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName1, user1.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName2, user1.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(viewClassName2, user1.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName3, user1.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(viewClassName3, user1.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
 

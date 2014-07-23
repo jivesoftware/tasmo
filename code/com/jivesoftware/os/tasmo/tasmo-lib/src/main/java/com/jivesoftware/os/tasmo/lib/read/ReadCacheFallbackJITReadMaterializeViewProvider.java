@@ -13,6 +13,7 @@ import com.jivesoftware.os.tasmo.lib.modifier.ModifierStore;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewField;
+import com.jivesoftware.os.tasmo.model.TenantAndActor;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReadMaterializer;

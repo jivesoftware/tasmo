@@ -1,6 +1,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -68,7 +69,7 @@ public class CreationAndUpdateTest extends BaseTest {
         t.addExpectation(contentId, ContentView, tags, new ObjectId[]{ contentId, tag3 }, "name", "booya");
         t.addExpectation(contentId, ContentView, status, new ObjectId[]{ contentId }, "status", "draft");
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(ContentView, contentId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -82,18 +83,18 @@ public class CreationAndUpdateTest extends BaseTest {
         t.write(EventBuilder.update(contentId, tenantId, actorId).delete("status").build());
         t.addExpectation(contentId, ContentView, status, new ObjectId[]{ contentId }, "status", null);
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(ContentView, contentId.getId()), Id.NULL);
         System.out.println("view:" + mapper.writeValueAsString(view));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContainerView, containerId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(ContainerView, containerId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(ContentView, contentId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContainerView, containerId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(ContainerView, containerId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
     }
 }

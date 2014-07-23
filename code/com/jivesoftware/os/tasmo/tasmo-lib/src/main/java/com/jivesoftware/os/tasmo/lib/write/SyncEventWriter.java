@@ -111,19 +111,26 @@ public class SyncEventWriter implements CallbackStream<List<WrittenEvent>> {
                                     WrittenInstance writtenInstance = event.getWrittenInstance();
                                     String className = writtenInstance.getInstanceId().getClassName();
                                     TenantIdAndCentricId tenantIdAndGloballyCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
-                                    TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, event.getCentricId());
+                                    TenantIdAndCentricId tenantIdAndCentricId = null;
+                                    if (!Id.NULL.equals(event.getCentricId())) {
+                                        tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, event.getCentricId());
+                                    }
                                     ObjectId instanceId = writtenInstance.getInstanceId();
                                     long timestamp = event.getEventId();
 
                                     synchronized (lock) {
                                         if (event.getWrittenInstance().isDeletion()) {
                                             tasmoEventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp - 1);
-                                            tasmoEventPersistor.removeValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp - 1);
+                                            if (tenantIdAndCentricId != null) {
+                                                tasmoEventPersistor.removeValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp - 1);
+                                            }
                                         } else {
                                             tasmoEventPersistor.updateValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp,
                                                 writtenInstance);
-                                            tasmoEventPersistor.
-                                                updateValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp, writtenInstance);
+                                            if (tenantIdAndCentricId != null) {
+                                                tasmoEventPersistor.
+                                                    updateValueFields(model, className, tenantIdAndCentricId, instanceId, timestamp, writtenInstance);
+                                            }
                                         }
                                         Set<ObjectId> ids = eventToRefId(model, className, instanceId, writtenInstance);
                                         modifierStore.add(tenantId, event.getActorId(), ids, timestamp);

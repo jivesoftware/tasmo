@@ -96,7 +96,7 @@ public class ViewDefinitionBuilder {
                         throw new IllegalArgumentException(field + " is not a value field of " + element.eventClass);
                     }
                 }
-                pathSteps.add(new ModelPathStep(pathIdx == 0, element.eventClass, Arrays.<String>asList(element.fields)));
+                pathSteps.add(new ModelPathStep(pathIdx == 0, element.eventClass, Arrays.<String>asList(element.fields), false));
 
             } else {
                 if (element.fields.length > 1) {
@@ -111,10 +111,10 @@ public class ViewDefinitionBuilder {
                     step = handleBackref(pathIdx == 0, element.eventClass, element.fields[0], element.qualifier, elements.get(pathIdx + 1));
                 } else if (valueType == ValueType.ref) {
                     String destination = elements.get(pathIdx + 1).eventClass;
-                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.ref, destination);
+                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.ref, destination, false);
                 } else if (valueType == ValueType.refs) {
                     String destination = elements.get(pathIdx + 1).eventClass;
-                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.refs, destination);
+                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.refs, destination, false);
                 } else {
                     throw new IllegalArgumentException("Unexpected value type " + valueType + " for event " + element.eventClass
                         + "and field " + element.fields[0]);
@@ -141,11 +141,11 @@ public class ViewDefinitionBuilder {
 
         if (type == ValueType.ref || type == ValueType.refs) {
             if ("count".equals(qualifier)) {
-                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.count, destination);
+                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.count, destination, false);
             } else if ("latest".equals(qualifier)) {
-                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.latest_backRef, destination);
+                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.latest_backRef, destination, false);
             } else {
-                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.backRefs, destination);
+                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.backRefs, destination, false);
             }
         }
 

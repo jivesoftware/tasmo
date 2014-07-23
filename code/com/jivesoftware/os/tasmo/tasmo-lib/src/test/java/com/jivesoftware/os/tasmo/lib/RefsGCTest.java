@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -35,16 +36,16 @@ public class RefsGCTest extends RefsAsLeafValueTest {
             t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("refs_users", Arrays.asList(user1, user2)).build());
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user1 }, "userName", "ted");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user2 }, "userName", "bill");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         t.write(EventBuilder.update(content1, tenantId, actorId).set("refs_users", Arrays.asList(user3, user4)).build());
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user3 }, "userName", "jane");
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, user4 }, "userName", "doe");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
     }
 }

@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -37,11 +38,11 @@ public class MultiFieldTest extends BaseTest {
             t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("firstName", "tom").set("lastName", "sawyer")
                 .set("userName", "tsawyer").build());
         ObjectId contentId = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_originalAuthor", authorId).build());
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(ContentView, contentId.getId()), Id.NULL);
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, lastName, "sawyer");
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, userName, "tsawyer");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(ContentView, contentId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
         String deserializationInput = mapper.writeValueAsString(view);

@@ -1,4 +1,4 @@
-package com.jivesoftware.os.tasmo.lib.read;
+package com.jivesoftware.os.tasmo.model;
 
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.TenantId;
@@ -8,11 +8,11 @@ import java.util.Objects;
  *
  * @author jonathan.colt
  */
-class TenantAndActor {
-    final TenantId tenantId;
-    final Id actorId;
+public class TenantAndActor {
+    public final TenantId tenantId;
+    public final Id actorId;
 
-    TenantAndActor(TenantId tenantId, Id actorId) {
+    public TenantAndActor(TenantId tenantId, Id actorId) {
         this.tenantId = tenantId;
         this.actorId = actorId;
     }

@@ -2,6 +2,7 @@ package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel.ReadTraversalKey;
 import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
@@ -11,11 +12,10 @@ import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
-import com.jivesoftware.os.tasmo.model.process.ModifiedViewInfo;
 import com.jivesoftware.os.tasmo.model.process.ModifiedViewProvider;
+import com.jivesoftware.os.tasmo.model.process.NoOpModifiedViewProvider;
 import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -34,21 +34,13 @@ public class InitiateReadTraversal {
 
     public void read(ReferenceTraverser referenceTraverser,
         FieldValueReader fieldValueReader,
-        TenantIdAndCentricId tenantIdAndCentricId,
+        TenantId tenantId,
+        Id actorId,
+        Id userId,
         ObjectId id,
         CommitChange commitChange) throws Exception {
 
-        ModifiedViewProvider modifiedViewProvider = new ModifiedViewProvider() {
-
-            @Override
-            public Set<ModifiedViewInfo> getModifiedViews() {
-                return new HashSet<>();
-            }
-
-            @Override
-            public void add(ModifiedViewInfo viewId) {
-            }
-        };
+        ModifiedViewProvider modifiedViewProvider = new NoOpModifiedViewProvider();
 
         TasmoProcessingStats processingStats = new TasmoProcessingStats();
 
@@ -64,17 +56,22 @@ public class InitiateReadTraversal {
             commitChange,
             processingStats);
 
+        boolean isCentric = !Id.NULL.equals(userId);
+
+        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
         PathTraversalContext context = new PathTraversalContext(1, false);
         for (Entry<ReadTraversalKey, StepStreamerFactory> e : pathTraversers.entrySet()) {
             ReadTraversalKey readTraversalKey = e.getKey();
-            StepStreamerFactory stepStreamerFactory = e.getValue();
-            StepStream stepStream = stepStreamerFactory.create();
+            if (readTraversalKey.isIdCentric() == isCentric) {
+                StepStreamerFactory stepStreamerFactory = e.getValue();
+                StepStream stepStream = stepStreamerFactory.create();
 
-            for (String rootEventClassName : rootingEventClassNames) {
-                PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
-                PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());
-                LeafContext leafContext = new ReadLeafContext();
-                stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
+                for (String rootEventClassName : rootingEventClassNames) {
+                    PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
+                    PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());
+                    LeafContext leafContext = new ReadLeafContext();
+                    stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
+                }
             }
         }
         List<ViewField> took = context.takeChanges();

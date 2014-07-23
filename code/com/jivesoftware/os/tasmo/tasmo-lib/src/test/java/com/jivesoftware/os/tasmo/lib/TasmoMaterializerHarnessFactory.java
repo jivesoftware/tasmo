@@ -275,8 +275,8 @@ public class TasmoMaterializerHarnessFactory {
             }
 
             @Override
-            public ObjectNode readView(TenantIdAndCentricId tenantIdAndCentricId, Id actorId, ObjectId viewId) throws Exception {
-                ViewResponse view = viewProvider.readView(new ViewDescriptor(tenantIdAndCentricId.getTenantId(), actorId, viewId));
+            public ObjectNode readView(TenantId tenantId, Id actorId, ObjectId viewId, Id userId) throws Exception {
+                ViewResponse view = viewProvider.readView(new ViewDescriptor(tenantId, actorId, viewId, userId));
                 if (view != null && view.hasViewBody()) {
                     return view.getViewBody();
                 }
@@ -414,8 +414,8 @@ public class TasmoMaterializerHarnessFactory {
             }
 
             @Override
-            public ObjectNode readView(TenantIdAndCentricId tenantIdAndCentricId, Id actorId, ObjectId viewId) throws Exception {
-                ViewResponse view = viewReadMaterializer.readMaterializeView(new ViewDescriptor(tenantIdAndCentricId.getTenantId(), actorId, viewId));
+            public ObjectNode readView(TenantId tenantId, Id actorId, ObjectId viewId, Id userId) throws Exception {
+                ViewResponse view = viewReadMaterializer.readMaterializeView(new ViewDescriptor(tenantId, actorId, viewId, userId));
                 if (view != null && view.hasViewBody()) {
                     return view.getViewBody();
                 }
@@ -619,8 +619,8 @@ public class TasmoMaterializerHarnessFactory {
             }
 
             @Override
-            public ObjectNode readView(TenantIdAndCentricId tenantIdAndCentricId, Id actorId, ObjectId viewId) throws Exception {
-                ViewResponse view = viewProvider.readView(new ViewDescriptor(tenantIdAndCentricId.getTenantId(), actorId, viewId));
+            public ObjectNode readView(TenantId tenantId, Id actorId, ObjectId viewId, Id userId) throws Exception {
+                ViewResponse view = viewProvider.readView(new ViewDescriptor(tenantId, actorId, viewId, userId));
                 if (view != null && view.hasViewBody()) {
                     return view.getViewBody();
                 }
@@ -628,7 +628,7 @@ public class TasmoMaterializerHarnessFactory {
             }
         };
     }
-   
+
     public static CommitChange createCommitToViewValueStore(
         RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStorage,
         final ViewPathKeyProvider pathKeyProvider) {

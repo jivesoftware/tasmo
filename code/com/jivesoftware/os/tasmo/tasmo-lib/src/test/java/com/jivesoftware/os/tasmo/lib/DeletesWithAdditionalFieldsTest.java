@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
@@ -31,16 +32,16 @@ public class DeletesWithAdditionalFieldsTest extends BaseTest {
         ObjectId user1 = t.write(EventBuilder.create(t.idProvider(), "User", tenantId, actorId).set("userName", "ted").build());
 
         t.addExpectation(user1, viewClassName, viewFieldName, new ObjectId[]{user1}, "userName", "ted");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, user1.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, user1.getId()), Id.NULL);
         Assert.assertNotNull(view);
 
         t.write(EventBuilder.update(user1, tenantId, actorId).set(ReservedFields.DELETED, true).set("userName", "frank").build());
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, user1.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(viewClassName, user1.getId()), Id.NULL);
         Assert.assertNull(view);
 
     }
