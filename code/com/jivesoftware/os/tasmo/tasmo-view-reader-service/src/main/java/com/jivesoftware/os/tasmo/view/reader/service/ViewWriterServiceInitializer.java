@@ -8,6 +8,7 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueS
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.CurrentTimestamper;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
+import com.jivesoftware.os.tasmo.id.SaltingImmutableByteArrayMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.id.ViewValue;
@@ -37,7 +38,7 @@ public class ViewWriterServiceInitializer {
             new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
             "tasmo.views", "v", new DefaultRowColumnValueStoreMarshaller<>(
             new TenantIdAndCentricIdMarshaller(),
-            new ImmutableByteArrayMarshaller(),
+            new SaltingImmutableByteArrayMarshaller(),
             new ImmutableByteArrayMarshaller(),
             new ViewValueMarshaller()), new CurrentTimestamper()));
 

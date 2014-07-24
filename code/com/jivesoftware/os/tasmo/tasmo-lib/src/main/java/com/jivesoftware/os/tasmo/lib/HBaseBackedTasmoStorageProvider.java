@@ -17,6 +17,7 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives
 import com.jivesoftware.os.tasmo.id.IdMarshaller;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
 import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
+import com.jivesoftware.os.tasmo.id.SaltingImmutableByteArrayMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
 import com.jivesoftware.os.tasmo.id.ViewValue;
@@ -68,7 +69,7 @@ public class HBaseBackedTasmoStorageProvider implements TasmoStorageProvider {
         return new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(tableNameSpace,
             "tasmo.views", "v", new DefaultRowColumnValueStoreMarshaller<>(
                 new TenantIdAndCentricIdMarshaller(),
-                new ImmutableByteArrayMarshaller(),
+                new SaltingImmutableByteArrayMarshaller(),
                 new ImmutableByteArrayMarshaller(),
                 new ViewValueMarshaller()), new CurrentTimestamper()));
     }
