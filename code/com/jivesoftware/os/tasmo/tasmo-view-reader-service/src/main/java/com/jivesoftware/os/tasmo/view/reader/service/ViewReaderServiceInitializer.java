@@ -14,6 +14,7 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMaps
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.CurrentTimestamper;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
+import com.jivesoftware.os.tasmo.id.SaltingImmutableByteArrayMarshaller;
 import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.id.ViewValueMarshaller;
@@ -85,7 +86,7 @@ public class ViewReaderServiceInitializer {
                 RuntimeException> store = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
                 "tasmo.views", "v", new DefaultRowColumnValueStoreMarshaller<>(
                         new TenantIdAndCentricIdMarshaller(),
-                        new ImmutableByteArrayMarshaller(),
+                        new SaltingImmutableByteArrayMarshaller(),
                         new ImmutableByteArrayMarshaller(),
                         new ViewValueMarshaller()), new CurrentTimestamper()));
 

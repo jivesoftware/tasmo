@@ -17,9 +17,9 @@ import com.jivesoftware.os.tasmo.reference.lib.traverser.ReferenceTraverser;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -51,7 +51,7 @@ public class ReadMaterializerViewFields {
     public Map<ViewDescriptor, ViewFieldsResponse> readMaterialize(List<ViewDescriptor> requests) throws IOException {
 
         try {
-            final Map<ViewDescriptor, ViewFieldsResponse> changes = new HashMap<>();
+            final Map<ViewDescriptor, ViewFieldsResponse> changes = new ConcurrentHashMap<>();
             final CountDownLatch latch = new CountDownLatch(requests.size());
             for (final ViewDescriptor viewDescriptor : requests) {
                 processViewRequests.submit(new Runnable() {
