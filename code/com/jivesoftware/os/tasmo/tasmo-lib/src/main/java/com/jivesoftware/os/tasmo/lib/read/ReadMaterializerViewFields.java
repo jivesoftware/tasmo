@@ -103,31 +103,37 @@ public class ReadMaterializerViewFields {
 
         private void readMaterializeView() throws Exception {
             VersionedTasmoViewModel model = tasmoViewModel.getVersionedTasmoViewModel(viewDescriptor.getTenantId());
-            InitiateReadTraversal initiateTraversal = model.getReadTraversers().get(viewDescriptor.getViewId().getClassName());
-            while (true) {
-                try {
-                    CommitChange commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, this);
-                    initiateTraversal.read(referenceTraverser,
-                        fieldValueReader,
-                        viewDescriptor.getTenantId(),
-                        viewDescriptor.getActorId(),
-                        viewDescriptor.getUserId(),
-                        viewDescriptor.getViewId(),
-                        commitChange);
-                    return;
-                } catch (Exception x) {
-                    Throwable t = x;
-                    while (t != null) {
-                        if (t instanceof CommitChangeException) {
-                            break;
+            Map<String, InitiateReadTraversal> readTraversers = model.getReadTraversers();
+            String viewClassName = viewDescriptor.getViewId().getClassName();
+            InitiateReadTraversal initiateTraversal = readTraversers.get(viewClassName);
+            if (initiateTraversal == null) {
+                throw new RuntimeException("No read traversal declared for viewClassName:"+viewClassName+". Check your models.");
+            } else {
+                while (true) {
+                    try {
+                        CommitChange commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, this);
+                        initiateTraversal.read(referenceTraverser,
+                            fieldValueReader,
+                            viewDescriptor.getTenantId(),
+                            viewDescriptor.getActorId(),
+                            viewDescriptor.getUserId(),
+                            viewDescriptor.getViewId(),
+                            commitChange);
+                        return;
+                    } catch (Exception x) {
+                        Throwable t = x;
+                        while (t != null) {
+                            if (t instanceof CommitChangeException) {
+                                break;
+                            }
+                            t = t.getCause();
                         }
-                        t = t.getCause();
-                    }
-                    if (t instanceof CommitChangeException) {
-                        // TODO add retry count and retry timeout!!
-                        LOG.warn("Read reading viewDescriptor:" + viewDescriptor + " because it was modified while being read.");
-                    } else {
-                        throw x;
+                        if (t instanceof CommitChangeException) {
+                            // TODO add retry count and retry timeout!!
+                            LOG.warn("Read reading viewDescriptor:" + viewDescriptor + " because it was modified while being read.");
+                        } else {
+                            throw x;
+                        }
                     }
                 }
             }
