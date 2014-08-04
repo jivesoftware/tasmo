@@ -95,7 +95,7 @@
         <dependency>
             <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
             <artifactId>row-column-value-store-hbase</artifactId>
-            <version>0.12</version>
+            <version>0.20</version>
             <scope>test</scope>
             <type>jar</type>
         </dependency>

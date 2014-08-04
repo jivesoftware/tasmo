@@ -19,11 +19,11 @@
 		<connection>scm:git:git://github.com/jivesoftware/tasmo.git</connection>
 		<developerConnection>scm:git:git@github.com:jivesoftware/tasmo.git</developerConnection>
 	</scm>
+
     <distributionManagement>
-            <repository>
-                <id>modified-thirdparty</id>
-                <name>Jive Internal Repository</name>
-                <url>http://nexus-int.eng.jiveland.com/content/repositories/modified-thirdparty</url>
-            </repository>
-        </distributionManagement>
+      <snapshotRepository>
+	<id>snapshots</id>
+	<url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      </snapshotRepository>
+  </distributionManagement>
 </project>
