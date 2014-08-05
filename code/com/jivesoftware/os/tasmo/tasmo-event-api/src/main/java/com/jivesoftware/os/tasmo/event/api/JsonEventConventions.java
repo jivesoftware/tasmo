@@ -20,6 +20,7 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -54,6 +55,7 @@ public class JsonEventConventions {
                     && !fieldName.equals(ReservedFields.ACTOR_ID)
                     && !fieldName.equals(ReservedFields.CAUSED_BY)
                     && !fieldName.equals(ReservedFields.ACTIVITY_VERB)
+                    && !fieldName.equals(ReservedFields.EVENT_TYPE)
                     && !fieldName.equals(ReservedFields.MODEL_VERSION_ID)
                     && !fieldName.equals(ReservedFields.NIL_FIELD)
                     && !fieldName.equals(ReservedFields.TRACK_EVENT_PROCESSED_LIFECYCLE)) {
@@ -114,6 +116,19 @@ public class JsonEventConventions {
         } catch (Exception ex) {
             LOG.debug("Failed to get eventId: " + eventNode, ex);
             return 0L;
+        }
+    }
+
+    public EventType getEventType(ObjectNode eventNode) {
+        JsonNode got = eventNode.get(ReservedFields.EVENT_TYPE);
+        if (got == null || got.isNull()) {
+            return EventType.REGULAR;
+        }
+        try {
+            return mapper.convertValue(got, EventType.class);
+        } catch (Exception ex) {
+            LOG.debug("Failed to get event type for event: " + eventNode, ex);
+            return EventType.REGULAR;
         }
     }
 
@@ -286,6 +301,10 @@ public class JsonEventConventions {
         event.put(ReservedFields.ACTIVITY_VERB, eventVerb.name());
     }
 
+    public void setEventType(ObjectNode event, EventType eventType) {
+        event.put(ReservedFields.EVENT_TYPE, eventType.name());
+    }
+
     public void validate(ObjectNode event) {
         Preconditions.checkNotNull(event);
         TenantId tenantId = getTenantId(event);
@@ -310,7 +329,13 @@ public class JsonEventConventions {
         if (event.has(ReservedFields.TRACK_EVENT_PROCESSED_LIFECYCLE)) {
             expectedSize++;
         }
+        if (event.has(ReservedFields.MODEL_VERSION_ID)) {
+            expectedSize++;
+        }
         if (event.has(ReservedFields.EVENT_ID)) {
+            expectedSize++;
+        }
+        if (event.has(ReservedFields.EVENT_TYPE)) {
             expectedSize++;
         }
         if (event.has(ReservedFields.TRACE)) {
