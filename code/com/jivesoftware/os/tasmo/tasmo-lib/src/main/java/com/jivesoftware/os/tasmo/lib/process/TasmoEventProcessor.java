@@ -93,14 +93,17 @@ public class TasmoEventProcessor {
             public void commitChange(WrittenEventContext context,
                 TenantIdAndCentricId tenantIdAndCentricId,
                 List<ViewField> changes) throws CommitChangeException {
+
                 commitChange.commitChange(context, tenantIdAndCentricId, changes);
 
                 List<ViewNotification> notifications = new ArrayList<>();
                 for (ViewField viewFieldChange : changes) {
                     notifications.add(new ViewNotification(tenantIdAndCentricId,
-                        viewFieldChange.getEventId(),
-                        viewFieldChange.getActorId(),
-                        viewFieldChange.getViewObjectId()));
+                            viewFieldChange.getEventId(),
+                            viewFieldChange.getActorId(),
+                            viewFieldChange.getUserId(),
+                            viewFieldChange.getViewObjectId(),
+                            viewFieldChange.getModelPath().isCentric()));
 
                     // Old way factor out
                     if (model.getNotifiableViews().contains(viewFieldChange.getViewObjectId().getClassName())) {
@@ -119,7 +122,7 @@ public class TasmoEventProcessor {
         long startProcessingEvent = System.currentTimeMillis();
         ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore);
         WrittenEventContext batchContext = new WrittenEventContext(writtenEvent.getEventId(),
-            writtenEvent.getActorId(), writtenEvent, writtenEventProvider, concurrencyChecker, referenceStore,
+            writtenEvent.getActorId(), writtenEvent.getCentricId(), writtenEvent, writtenEventProvider, concurrencyChecker, referenceStore,
             fieldValueReader, referenceTraverser, modifiedViewProvider, commitChangeNotifier, processingStats);
 
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();

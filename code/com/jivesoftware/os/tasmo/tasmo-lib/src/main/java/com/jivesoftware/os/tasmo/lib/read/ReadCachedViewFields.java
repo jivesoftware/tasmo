@@ -134,6 +134,7 @@ public class ReadCachedViewFields {
 
                             viewValueFields.add(new ViewField(-1,
                                 viewDescriptor.getActorId(),
+                                viewDescriptor.getUserId(),
                                 ViewField.ViewFieldChangeType.add,
                                 viewDescriptor.getViewId(),
                                 modelPath,

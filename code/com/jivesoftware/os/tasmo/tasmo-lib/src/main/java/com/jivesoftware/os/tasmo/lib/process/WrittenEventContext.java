@@ -14,6 +14,7 @@ public class WrittenEventContext {
 
     private final long eventId;
     private final Id actorId;
+    private final Id userId;
     private final WrittenEvent event;
     private final WrittenEventProvider writtenEventProvider;
     private final ConcurrencyChecker concurrencyChecker;
@@ -34,6 +35,7 @@ public class WrittenEventContext {
 
     public WrittenEventContext(long eventId,
         Id actorId,
+        Id userId,
         WrittenEvent event,
         WrittenEventProvider writtenEventProvider,
         ConcurrencyChecker concurrencyChecker,
@@ -45,6 +47,7 @@ public class WrittenEventContext {
         TasmoProcessingStats processingStats) {
         this.eventId = eventId;
         this.actorId = actorId;
+        this.userId = userId;
         this.event = event;
         this.writtenEventProvider = writtenEventProvider;
         this.concurrencyChecker = concurrencyChecker;
@@ -64,6 +67,10 @@ public class WrittenEventContext {
         return actorId;
     }
 
+    public Id getUserId() {
+        return userId;
+    }
+    
     public TasmoProcessingStats getProcessingStats() {
         return processingStats;
     }

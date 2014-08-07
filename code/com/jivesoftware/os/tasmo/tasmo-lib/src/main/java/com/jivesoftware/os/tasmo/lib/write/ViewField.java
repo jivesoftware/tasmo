@@ -17,6 +17,7 @@ public class ViewField {
 
     private final long eventId;
     private final Id actorId;
+    private final Id userId;
     private final ViewFieldChangeType type;
     private final ObjectId viewObjectId;
     private final ModelPath modelPath;
@@ -30,6 +31,7 @@ public class ViewField {
     @JsonCreator
     public ViewField(long eventId,
             Id actorId,
+            Id userId,
             ViewFieldChangeType type,
             ObjectId viewObjectId,
             ModelPath modelPath,
@@ -41,6 +43,7 @@ public class ViewField {
             long timestamp) {
         this.eventId = eventId;
         this.actorId = actorId;
+        this.userId = userId;
         this.type = type;
         this.viewObjectId = viewObjectId;
         this.modelPath = modelPath;
@@ -60,6 +63,10 @@ public class ViewField {
         return actorId;
     }
 
+    public Id getUserId() {
+        return userId;
+    }
+    
     public ViewFieldChangeType getType() {
         return type;
     }

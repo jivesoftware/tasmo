@@ -690,6 +690,7 @@ public class TasmoMaterializerHarnessFactory {
                 }
 
                 try {
+                    System.out.println("WROTE:"+tenantIdAndCentricId+" "+write);
                     writeToViewValueStore.write(tenantIdAndCentricId, write);
                 } catch (ViewWriterException ex) {
                     throw new CommitChangeException("Failed to write BigInteger?", ex);

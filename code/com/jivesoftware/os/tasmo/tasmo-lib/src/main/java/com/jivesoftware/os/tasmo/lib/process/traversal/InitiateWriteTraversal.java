@@ -129,7 +129,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
         final ObjectId instanceId = writtenInstance.getInstanceId();
 
         if (writtenInstance.isDeletion()) {
-            long highest = concurrencyChecker.highestVersion(globalCentricId, instanceId, "*exists*", timestamp);
+            long highest = concurrencyChecker.highestVersion(tenantIdAndCentricId, instanceId, "*exists*", timestamp);
             if (highest <= timestamp) {
                 List<Callable<List<ViewField>>> callables = new ArrayList<>();
                 for (InitiateTraverserKey key : valueTraversers.keySet()) {

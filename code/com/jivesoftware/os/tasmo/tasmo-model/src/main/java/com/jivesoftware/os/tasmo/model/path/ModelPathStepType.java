@@ -13,14 +13,25 @@ package com.jivesoftware.os.tasmo.model.path;
  */
 public enum ModelPathStepType {
 
-    value(false, false), ref(false, false), latest_backRef(true, false), backRefs(true, false), count(true, false), refs(false, false),
-    centric_value(false, true), centric_ref(false, true), centric_latest_backRef(true, true), centric_backRefs(true, true),
-    centric_count(true, true), centric_refs(false, true);
+    value(true, false, false),
+    ref(false, false, false),
+    latest_backRef(false, true, false),
+    backRefs(false, true, false),
+    count(false, true, false),
+    refs(false, false, false),
+    centric_value(true, false, true),
+    centric_ref(false, false, true),
+    centric_latest_backRef(false, true, true),
+    centric_backRefs(false, true, true),
+    centric_count(false, true, true),
+    centric_refs(false, false, true);
 
+    private final boolean valueType;
     private final boolean backReferenceType;
     private final boolean centric;
 
-    private ModelPathStepType(boolean backReferenceType, boolean centric) {
+    private ModelPathStepType(boolean valueType, boolean backReferenceType, boolean centric) {
+        this.valueType = valueType;
         this.backReferenceType = backReferenceType;
         this.centric = centric;
     }
@@ -29,8 +40,11 @@ public enum ModelPathStepType {
         return backReferenceType;
     }
 
+    public boolean isValue() {
+        return valueType;
+    }
+
     public boolean isCentric() {
         return centric;
     }
-
 }

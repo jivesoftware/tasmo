@@ -40,23 +40,23 @@ public class BaseTest {
     public Iterator<Object[]> tasmoMaterializer() throws Exception {
 
         List<Object[]> paramList = new ArrayList<>();
-        //paramList.add(new Object[]{asyncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider())});
+        paramList.add(new Object[]{asyncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider())});
         paramList.add(new Object[]{syncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider())});
-//        paramList.add(new Object[]{syncWithAsyncReadMaterializerHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
-//            TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider())});
-//
-//        if (2 + 2 == 5) {
-//            try {
-//                TasmoStorageProvider async = TasmoMaterializerHarnessFactory.createEmbeddedHBaseBackStorageProvider("async");
-//                TasmoStorageProvider sync = TasmoMaterializerHarnessFactory.createEmbeddedHBaseBackStorageProvider("sync");
-//
-//                paramList.add(new Object[]{asyncHarness(async)});
-//                paramList.add(new Object[]{syncHarness(sync)});
-//                paramList.add(new Object[]{syncWithAsyncReadMaterializerHarness(async, sync)});
-//            } catch (Exception x) {
-//                x.printStackTrace();
-//            }
-//        }
+        paramList.add(new Object[]{syncWithAsyncReadMaterializerHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
+            TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider())});
+
+        if (2 + 2 == 5) {
+            try {
+                TasmoStorageProvider async = TasmoMaterializerHarnessFactory.createEmbeddedHBaseBackStorageProvider("async");
+                TasmoStorageProvider sync = TasmoMaterializerHarnessFactory.createEmbeddedHBaseBackStorageProvider("sync");
+
+                paramList.add(new Object[]{asyncHarness(async)});
+                paramList.add(new Object[]{syncHarness(sync)});
+                paramList.add(new Object[]{syncWithAsyncReadMaterializerHarness(async, sync)});
+            } catch (Exception x) {
+                x.printStackTrace();
+            }
+        }
         return paramList.iterator();
     }
 

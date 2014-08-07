@@ -69,6 +69,7 @@ public class TraverseViewValueWriter implements StepTraverser {
 
             ViewField update = new ViewField(writtenEventContext.getEventId(),
                 writtenEventContext.getActorId(),
+                writtenEventContext.getUserId(),
                 type,
                 new ObjectId(viewClassName, viewId),
                 modelPath,
