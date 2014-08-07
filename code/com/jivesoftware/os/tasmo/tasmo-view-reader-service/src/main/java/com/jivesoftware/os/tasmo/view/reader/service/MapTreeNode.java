@@ -54,9 +54,11 @@ public class MapTreeNode implements TreeNode {
         ModelPathStep thisStep = steps[0];
         switch (thisStep.getStepType()) {
             case value:
+            case centric_value:
                 values.add(value);
                 break;
-            case ref: {
+            case ref:
+            case centric_ref: {
                 String refFieldName = thisStep.getRefFieldName();
                 MapTreeNode child = singleChildren.get(refFieldName);
                 if (child == null) {
@@ -72,15 +74,19 @@ public class MapTreeNode implements TreeNode {
                 if (treeNode == null) {
                     switch (thisStep.getStepType()) {
                         case refs:
+                        case centric_refs:
                             treeNode = new AllForwardTreeNode(new ArrayTreeNode());
                             break;
                         case backRefs:
+                        case centric_backRefs:
                             treeNode = new AllBackTreeNode(new ArrayTreeNode());
                             break;
                         case latest_backRef:
+                        case centric_latest_backRef:
                             treeNode = new LatestTreeNode(new ArrayTreeNode());
                             break;
                         case count:
+                        case centric_count:
                             treeNode = new CountTreeNode();
                             break;
                     }

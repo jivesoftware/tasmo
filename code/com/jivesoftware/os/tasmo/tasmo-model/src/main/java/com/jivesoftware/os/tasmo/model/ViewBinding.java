@@ -75,7 +75,7 @@ public class ViewBinding {
                 throw new IllegalStateException("Model path " + pathId + " attempts to bind to the '" + ReservedFields.DELETED + "' field");
             }
 
-            if (!leafStep.getStepType().equals(ModelPathStepType.value)) {
+            if (!leafStep.getStepType().equals(ModelPathStepType.value) && !leafStep.getStepType().equals(ModelPathStepType.centric_value)) {
                 throw new IllegalStateException("Model path " + pathId + " does not end with a value step");
             }
 

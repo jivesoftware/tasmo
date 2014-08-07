@@ -515,7 +515,10 @@ public class Materialization {
 
         try {
             String[] memberParts = toStringArray(pathMember, ".");
-            if (pathMember.contains("." + ModelPathStepType.ref + ".") || pathMember.contains("." + ModelPathStepType.refs + ".")) {
+            if (pathMember.contains("." + ModelPathStepType.ref + ".")
+                    || pathMember.contains("." + ModelPathStepType.refs + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_ref + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_refs + ".")) {
                 // Example: Content.ref_originalAuthor.ref.User
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
                 String refFieldName = memberParts[1].trim();
@@ -527,7 +530,10 @@ public class Materialization {
 
             } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
                 || pathMember.contains("." + ModelPathStepType.count + ".")
-                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
+                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_backRefs + ".")
+                || pathMember.contains("." + ModelPathStepType.centric_count + ".")
+                || pathMember.contains("." + ModelPathStepType.centric_latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
                 // Example: Content.count.VersionedContent.ref_parent

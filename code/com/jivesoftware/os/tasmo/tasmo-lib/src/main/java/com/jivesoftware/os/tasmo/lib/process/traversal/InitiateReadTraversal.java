@@ -87,6 +87,7 @@ public class InitiateReadTraversal {
         List<ViewField> took = context.takeChanges();
         List<ViewField> changes = new ArrayList<>();
         for (ViewField t : took) {
+            System.out.println("t="+t);
             changes.add(new ViewField(t.getEventId(),
                 t.getActorId(),
                 t.getType(),

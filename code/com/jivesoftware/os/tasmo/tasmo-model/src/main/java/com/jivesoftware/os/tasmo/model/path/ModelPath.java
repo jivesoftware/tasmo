@@ -146,8 +146,8 @@ public class ModelPath {
             for (int i = 0; i < pathMembers.size(); i++) {
                 ModelPathStep step = pathMembers.get(i);
                 if (i < pathMembers.size() - 1
-                        && (step.getStepType().equals(ModelPathStepType.value)
-                        || (step.getFieldNames() != null && !step.getFieldNames().isEmpty()))) {
+                        && ((step.getStepType().equals(ModelPathStepType.value) || step.getStepType().equals(ModelPathStepType.centric_value))
+                        || (step.getFieldNames() != null && !step.getFieldNames().isEmpty()))) { // TODO I am sorry!
                     throw new IllegalArgumentException("Only leaf nodes of a model path can be value type steps");
                 }
             }

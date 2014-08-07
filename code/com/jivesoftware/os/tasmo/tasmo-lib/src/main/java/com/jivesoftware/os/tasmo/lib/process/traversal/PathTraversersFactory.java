@@ -162,12 +162,17 @@ public class PathTraversersFactory {
     private RefStreamer createLeafwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
+            case centric_ref:
                 return new ForwardRefStreamer(fieldName);
             case refs:
+            case centric_refs:
                 return new ForwardRefStreamer(fieldName);
             case backRefs:
             case count:
             case latest_backRef:
+            case centric_backRefs:
+            case centric_count:
+            case centric_latest_backRef:
                 return new BackRefStreamer(classNames, fieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support rev streaming");
@@ -196,12 +201,17 @@ public class PathTraversersFactory {
     private RefStreamer createRootwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
+            case centric_ref:
                 return new BackRefStreamer(classNames, fieldName);
             case refs:
+            case centric_refs:
                 return new BackRefStreamer(classNames, fieldName);
             case backRefs:
             case count:
             case latest_backRef: // For this case we are likely doing more work that we absolutely need to.
+            case centric_backRefs:
+            case centric_count:
+            case centric_latest_backRef: // For this case we are likely doing more work that we absolutely need to.
                 return new ForwardRefStreamer(fieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support fwd streaming");

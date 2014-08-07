@@ -49,7 +49,7 @@ public class ModelPathStep {
         this.isRootId = isRootId;
         this.originClassName = originClassName;
         this.stepType = stepType;
-        if (stepType == ModelPathStepType.value) {
+        if (stepType == ModelPathStepType.value || stepType == ModelPathStepType.centric_value) {
             if (refFieldName != null) {
                 throw new IllegalArgumentException("ModelPathStep 'refFieldName' must be null for stepType:" + stepType);
             }
