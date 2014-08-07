@@ -22,13 +22,14 @@ public class StepStreamer implements StepStream {
     }
 
     @Override
-    public void stream(TenantIdAndCentricId tenantIdAndCentricId,
+    public void stream(TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
             WrittenEventContext writtenEventContext,
             PathTraversalContext context,
             PathContext pathContext,
             LeafContext leafContext,
             PathId pathId) throws Exception {
-        steps.get(stepIndex).process(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId, nextStepStreamer());
+        steps.get(stepIndex).process(globalCentricId, userCentricId, writtenEventContext, context, pathContext, leafContext, pathId, nextStepStreamer());
     }
 
     private StepStreamer nextStepStreamer() {

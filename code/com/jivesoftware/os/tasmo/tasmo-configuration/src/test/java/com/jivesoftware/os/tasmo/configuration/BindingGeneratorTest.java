@@ -39,11 +39,11 @@ public class BindingGeneratorTest {
     public void testBindingGeneration() throws Exception {
 
         ModelPath a = ModelPath.builder("Content.value").
-                addPathMember(new ModelPathStep(true, content, null, ModelPathStepType.value, null, Arrays.asList("title"), false)).build();
+                addPathMember(new ModelPathStep(true, content, null, ModelPathStepType.value, null, Arrays.asList("title"))).build();
         ModelPath b = ModelPath.builder("Content.parent.ref.Container.tags.refs.Tag.value").
-                addPathMember(new ModelPathStep(true, content, "parent", ModelPathStepType.ref, container, null, false)).
-                addPathMember(new ModelPathStep(false, container, "tags", ModelPathStepType.refs, tag, null, false)).
-                addPathMember(new ModelPathStep(false, tag, null, ModelPathStepType.value, null, Arrays.asList("name"), false)).build();
+                addPathMember(new ModelPathStep(true, content, "parent", ModelPathStepType.ref, container, null)).
+                addPathMember(new ModelPathStep(false, container, "tags", ModelPathStepType.refs, tag, null)).
+                addPathMember(new ModelPathStep(false, tag, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
 
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 
@@ -70,7 +70,7 @@ public class BindingGeneratorTest {
     public void testBackRefBindingGeneration() throws Exception {
 
         ModelPath a = ModelPath.builder("Container.value").
-                addPathMember(new ModelPathStep(true, container, null, ModelPathStepType.value, null, Arrays.asList("name"), false)).build();
+                addPathMember(new ModelPathStep(true, container, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
 //        ModelPath b = ModelPath.builder("Container.parent.backrefs.Content.authors.refs.User.value").
 //                addPathMember(new ModelPathStep(true, content, "parent", ModelPathStepType.backRefs, container, null)).
 //                addPathMember(new ModelPathStep(false, content, "authors", ModelPathStepType.refs, user, null)).
@@ -100,32 +100,32 @@ public class BindingGeneratorTest {
     public void testLoooongPath() throws Exception {
 
         ModelPath a = ModelPath.builder("User.value").
-                addPathMember(new ModelPathStep(true, user, null, ModelPathStepType.value, null, Arrays.asList("firstName"), false)).build();
+                addPathMember(new ModelPathStep(true, user, null, ModelPathStepType.value, null, Arrays.asList("firstName"))).build();
 
         ModelPath b = ModelPath.builder("User.authors.backrefs.Content.value").
-                addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null, false)).
-                addPathMember(new ModelPathStep(false, content, null, ModelPathStepType.value, null, Arrays.asList("title"), false)).build();
+                addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null)).
+                addPathMember(new ModelPathStep(false, content, null, ModelPathStepType.value, null, Arrays.asList("title"))).build();
 
         ModelPath c = ModelPath.builder("User.authors.backrefs.Content.parent.ref.Container.parent.ref.Container.value").
-                addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null, false)).
-                addPathMember(new ModelPathStep(false, content, "parent", ModelPathStepType.ref, container, null, false)).
-                addPathMember(new ModelPathStep(false, container, "parent", ModelPathStepType.ref, container, null, false)).
-                addPathMember(new ModelPathStep(false, container, null, ModelPathStepType.value, null, Arrays.asList("name"), false)).build();
+                addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null)).
+                addPathMember(new ModelPathStep(false, content, "parent", ModelPathStepType.ref, container, null)).
+                addPathMember(new ModelPathStep(false, container, "parent", ModelPathStepType.ref, container, null)).
+                addPathMember(new ModelPathStep(false, container, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
 
         ModelPath d = ModelPath.builder("User.authors.backrefs.Content.parent.ref.Container.parent.ref.Container.tags.refs.Tag.value").
-                addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null, false)).
-                addPathMember(new ModelPathStep(false, content, "parent", ModelPathStepType.ref, container, null, false)).
-                addPathMember(new ModelPathStep(false, container, "parent", ModelPathStepType.ref, container, null, false)).
-                addPathMember(new ModelPathStep(false, container, "tags", ModelPathStepType.refs, tag, null, false)).
-                addPathMember(new ModelPathStep(false, tag, null, ModelPathStepType.value, null, Arrays.asList("name"), false)).build();
+                addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null)).
+                addPathMember(new ModelPathStep(false, content, "parent", ModelPathStepType.ref, container, null)).
+                addPathMember(new ModelPathStep(false, container, "parent", ModelPathStepType.ref, container, null)).
+                addPathMember(new ModelPathStep(false, container, "tags", ModelPathStepType.refs, tag, null)).
+                addPathMember(new ModelPathStep(false, tag, null, ModelPathStepType.value, null, Arrays.asList("name"))).build();
 
         ModelPath e = ModelPath.builder("User.authors.backrefs.Content.parent.ref.Container.parent.ref.Container.tags.refs.Tag.author.ref.User.value").
-                addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null, false)).
-                addPathMember(new ModelPathStep(false, content, "parent", ModelPathStepType.ref, container, null, false)).
-                addPathMember(new ModelPathStep(false, container, "parent", ModelPathStepType.ref, container, null, false)).
-                addPathMember(new ModelPathStep(false, container, "tags", ModelPathStepType.refs, tag, null, false)).
-                addPathMember(new ModelPathStep(false, tag, "author", ModelPathStepType.ref, user, null, false)).
-                addPathMember(new ModelPathStep(false, user, null, ModelPathStepType.value, null, Arrays.asList("lastName"), false)).build();
+                addPathMember(new ModelPathStep(true, content, "authors", ModelPathStepType.backRefs, user, null)).
+                addPathMember(new ModelPathStep(false, content, "parent", ModelPathStepType.ref, container, null)).
+                addPathMember(new ModelPathStep(false, container, "parent", ModelPathStepType.ref, container, null)).
+                addPathMember(new ModelPathStep(false, container, "tags", ModelPathStepType.refs, tag, null)).
+                addPathMember(new ModelPathStep(false, tag, "author", ModelPathStepType.ref, user, null)).
+                addPathMember(new ModelPathStep(false, user, null, ModelPathStepType.value, null, Arrays.asList("lastName"))).build();
 
         mapper.configure(SerializationFeature.INDENT_OUTPUT, true);
 

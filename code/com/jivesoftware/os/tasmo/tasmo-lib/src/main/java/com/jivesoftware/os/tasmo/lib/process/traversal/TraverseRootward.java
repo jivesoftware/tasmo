@@ -26,15 +26,18 @@ class TraverseRootward implements StepTraverser {
     private final RefStreamer streamer;
     private final int pathIndex;
     private final Set<String> validUpstreamTypes;
+    private final boolean centric;
 
-    TraverseRootward(RefStreamer streamer, int pathIndex, Set<String> validUpstreamTypes) {
+    TraverseRootward(RefStreamer streamer, int pathIndex, Set<String> validUpstreamTypes, boolean centric) {
         this.streamer = streamer;
         this.pathIndex = pathIndex;
         this.validUpstreamTypes = validUpstreamTypes;
+        this.centric = centric;
     }
 
     @Override
-    public void process(final TenantIdAndCentricId tenantIdAndCentricId,
+    public void process(final TenantIdAndCentricId globalCentricId,
+            final TenantIdAndCentricId userCentricId,
             final WrittenEventContext writtenEventContext,
             final PathTraversalContext context,
             PathContext pathContext,
@@ -46,7 +49,7 @@ class TraverseRootward implements StepTraverser {
         copyOfPathContext.setPathId(writtenEventContext, pathIndex, from.getObjectId(), from.getTimestamp());
 
         streamer.stream(writtenEventContext.getReferenceTraverser(),
-                tenantIdAndCentricId,
+                (centric ? userCentricId : globalCentricId),
                 from.getObjectId(),
                 context.getThreadTimestamp(),
                 new CallbackStream<ReferenceWithTimestamp>() {
@@ -61,7 +64,7 @@ class TraverseRootward implements StepTraverser {
                                     to.getFieldName(),
                                     to.getTimestamp());
                             copyOfPathContext.addVersions(pathIndex, Arrays.asList(ref));
-                            streamTo.stream(tenantIdAndCentricId, writtenEventContext, context, copyOfPathContext, leafContext,
+                            streamTo.stream(globalCentricId, userCentricId, writtenEventContext, context, copyOfPathContext, leafContext,
                                     new PathId(to.getObjectId(), to.getTimestamp()));
                         }
                         return to;

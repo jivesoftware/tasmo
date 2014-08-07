@@ -36,10 +36,10 @@ public class ReadMaterializerViewFields {
     private final ListeningExecutorService processViewRequests;
 
     public ReadMaterializerViewFields(ReferenceTraverser referenceTraverser,
-        FieldValueReader fieldValueReader,
-        ConcurrencyStore concurrencyStore,
-        TasmoViewModel tasmoViewModel,
-        ListeningExecutorService processViewRequests) {
+            FieldValueReader fieldValueReader,
+            ConcurrencyStore concurrencyStore,
+            TasmoViewModel tasmoViewModel,
+            ListeningExecutorService processViewRequests) {
 
         this.referenceTraverser = referenceTraverser;
         this.fieldValueReader = fieldValueReader;
@@ -97,7 +97,7 @@ public class ReadMaterializerViewFields {
 
         @Override
         public void commitChange(WrittenEventContext batchContext,
-            TenantIdAndCentricId tenantIdAndCentricId, List<ViewField> changes) throws CommitChangeException {
+                TenantIdAndCentricId tenantIdAndCentricId, List<ViewField> changes) throws CommitChangeException {
             this.changes.addAll(changes);
         }
 
@@ -107,18 +107,18 @@ public class ReadMaterializerViewFields {
             String viewClassName = viewDescriptor.getViewId().getClassName();
             InitiateReadTraversal initiateTraversal = readTraversers.get(viewClassName);
             if (initiateTraversal == null) {
-                throw new RuntimeException("No read traversal declared for viewClassName:"+viewClassName+". Check your models.");
+                throw new RuntimeException("No read traversal declared for viewClassName:" + viewClassName + ". Check your models.");
             } else {
                 while (true) {
                     try {
                         CommitChange commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, this);
                         initiateTraversal.read(referenceTraverser,
-                            fieldValueReader,
-                            viewDescriptor.getTenantId(),
-                            viewDescriptor.getActorId(),
-                            viewDescriptor.getUserId(),
-                            viewDescriptor.getViewId(),
-                            commitChange);
+                                fieldValueReader,
+                                viewDescriptor.getTenantId(),
+                                viewDescriptor.getActorId(),
+                                viewDescriptor.getUserId(),
+                                viewDescriptor.getViewId(),
+                                commitChange);
                         return;
                     } catch (Exception x) {
                         Throwable t = x;

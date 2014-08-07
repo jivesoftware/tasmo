@@ -17,7 +17,8 @@ import com.jivesoftware.os.tasmo.lib.write.PathId;
  */
 public interface StepTraverser {
 
-    void process(TenantIdAndCentricId tenantIdAndCentricId,
+    void process(TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
             WrittenEventContext writtenEventContext,
             PathTraversalContext viewFieldContext,
             PathContext pathContext,

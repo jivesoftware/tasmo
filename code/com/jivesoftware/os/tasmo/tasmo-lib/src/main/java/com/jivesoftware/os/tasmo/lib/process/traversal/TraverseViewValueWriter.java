@@ -30,7 +30,8 @@ public class TraverseViewValueWriter implements StepTraverser {
     }
 
     @Override
-    public void process(final TenantIdAndCentricId tenantIdAndCentricId,
+    public void process(final TenantIdAndCentricId globalCentricId,
+        final TenantIdAndCentricId userCentricId,
         WrittenEventContext writtenEventContext,
         PathTraversalContext pathTraversalContext,
         PathContext pathContext,

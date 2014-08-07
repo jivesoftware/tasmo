@@ -9,15 +9,18 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+import java.util.Objects;
 
 public class InitiateTraverserKey {
 
     private final String triggerFieldName;
     private final String refFieldName;
+    private final boolean centric;
 
-    public InitiateTraverserKey(String triggerFieldName, String refFieldName) {
+    public InitiateTraverserKey(String triggerFieldName, String refFieldName, boolean centric) {
         this.triggerFieldName = triggerFieldName;
         this.refFieldName = refFieldName;
+        this.centric = centric;
     }
 
     public String getTriggerFieldName() {
@@ -32,36 +35,43 @@ public class InitiateTraverserKey {
         return ReservedFields.DELETED.equals(triggerFieldName);
     }
 
-    @Override
-    public String toString() {
-        return "InitialStepKey{" + "triggerFieldName=" + triggerFieldName + ", refFieldName=" + refFieldName + '}';
+    public boolean isCentric() {
+        return centric;
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        InitiateTraverserKey that = (InitiateTraverserKey) o;
-
-        if (refFieldName != null ? !refFieldName.equals(that.refFieldName) : that.refFieldName != null) {
-            return false;
-        }
-        if (triggerFieldName != null ? !triggerFieldName.equals(that.triggerFieldName) : that.triggerFieldName != null) {
-            return false;
-        }
-
-        return true;
+    public String toString() {
+        return "InitiateTraverserKey{" + "triggerFieldName=" + triggerFieldName + ", refFieldName=" + refFieldName + ", centric=" + centric + '}';
     }
 
     @Override
     public int hashCode() {
-        int result = triggerFieldName != null ? triggerFieldName.hashCode() : 0;
-        result = 31 * result + (refFieldName != null ? refFieldName.hashCode() : 0);
-        return result;
+        int hash = 7;
+        hash = 53 * hash + Objects.hashCode(this.triggerFieldName);
+        hash = 53 * hash + Objects.hashCode(this.refFieldName);
+        hash = 53 * hash + (this.centric ? 1 : 0);
+        return hash;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final InitiateTraverserKey other = (InitiateTraverserKey) obj;
+        if (!Objects.equals(this.triggerFieldName, other.triggerFieldName)) {
+            return false;
+        }
+        if (!Objects.equals(this.refFieldName, other.refFieldName)) {
+            return false;
+        }
+        if (this.centric != other.centric) {
+            return false;
+        }
+        return true;
+    }
+
 }

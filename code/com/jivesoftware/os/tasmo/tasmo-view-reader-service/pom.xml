@@ -15,10 +15,6 @@
     </properties>
     <dependencies>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
-            <artifactId>row-column-value-store-marshall-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>com.jivesoftware.os.jive.utils</groupId>
             <artifactId>base</artifactId>
         </dependency>
@@ -35,21 +31,9 @@
             <artifactId>row-column-value-store-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>javax.ws.rs</groupId>
-            <artifactId>javax.ws.rs-api</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.google.inject</groupId>
-            <artifactId>guice</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -83,10 +67,6 @@
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-configuration</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>jaxrs-util</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>

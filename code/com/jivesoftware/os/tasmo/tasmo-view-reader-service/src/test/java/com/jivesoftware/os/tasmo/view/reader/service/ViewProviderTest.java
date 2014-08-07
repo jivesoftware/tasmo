@@ -13,6 +13,7 @@ import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
 import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -24,7 +25,6 @@ import com.jivesoftware.os.tasmo.model.path.StringHashcodeViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import java.util.ArrayList;
@@ -62,7 +62,8 @@ public class ViewProviderTest {
             public Views getViews(ViewsProcessorId viewsProcessorId) {
                 List<ViewBinding> viewBindings = new ArrayList<>();
                 List<ModelPath> modelPaths = new ArrayList<>();
-                ModelPathStep modelPathStep = new ModelPathStep(true, ImmutableSet.of("view"), null, ModelPathStepType.value, null, Arrays.asList("title"), false);
+                ModelPathStep modelPathStep = new ModelPathStep(true,
+                        ImmutableSet.of("view"), null, ModelPathStepType.value, null, Arrays.asList("title"));
                 ModelPath modelPath = ModelPath.builder("1").addPathMember(modelPathStep).build();
                 modelPaths.add(modelPath);
                 viewBindings.add(new ViewBinding("view", modelPaths, true, false, false, "id"));

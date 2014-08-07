@@ -39,18 +39,23 @@ public class PathTraverser {
         return pathTraverserKey.getInitialFieldNames();
     }
 
+    public boolean isCentric() {
+        return pathTraverserKey.isCentric();
+    }
+
     public int getPathIndex() {
         return pathTraverserKey.getPathIndex();
     }
 
-    public void traverse(TenantIdAndCentricId tenantIdAndCentricId,
+    public void traverse(TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
             WrittenEventContext writtenEventContext,
             PathTraversalContext context,
             PathContext pathContext,
             LeafContext leafContext,
             PathId pathId) throws Exception {
         StepStream stepStream = streamerFactory.create();
-        stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
+        stepStream.stream(globalCentricId, userCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
     }
 
     @Override

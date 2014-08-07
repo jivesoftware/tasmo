@@ -36,23 +36,23 @@ public class BaseTest {
         actorId = Id.NULL;
     }
 
-    @DataProvider (name = "tasmoMaterializer")
+    @DataProvider(name = "tasmoMaterializer")
     public Iterator<Object[]> tasmoMaterializer() throws Exception {
 
         List<Object[]> paramList = new ArrayList<>();
-        paramList.add(new Object[]{ asyncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider()) });
-        paramList.add(new Object[]{ syncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider()) });
-        paramList.add(new Object[]{ syncWithAsyncReadMaterializerHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
-            TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider()) });
+        paramList.add(new Object[]{asyncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider())});
+        paramList.add(new Object[]{syncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider())});
+        paramList.add(new Object[]{syncWithAsyncReadMaterializerHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider(),
+            TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider())});
 
-        if (2+2 == 5) {
+        if (2 + 2 == 5) {
             try {
                 TasmoStorageProvider async = TasmoMaterializerHarnessFactory.createEmbeddedHBaseBackStorageProvider("async");
                 TasmoStorageProvider sync = TasmoMaterializerHarnessFactory.createEmbeddedHBaseBackStorageProvider("sync");
 
-                paramList.add(new Object[]{ asyncHarness(async) });
-                paramList.add(new Object[]{ syncHarness(sync) });
-                paramList.add(new Object[]{ syncWithAsyncReadMaterializerHarness(async, sync) });
+                paramList.add(new Object[]{asyncHarness(async)});
+                paramList.add(new Object[]{syncHarness(sync)});
+                paramList.add(new Object[]{syncWithAsyncReadMaterializerHarness(async, sync)});
             } catch (Exception x) {
                 x.printStackTrace();
             }
@@ -60,43 +60,43 @@ public class BaseTest {
         return paramList.iterator();
     }
 
-    @DataProvider (name = "tasmoAsyncOnluMaterializer")
+    @DataProvider(name = "tasmoAsyncOnluMaterializer")
     public Iterator<Object[]> tasmoAsyncMaterializer() throws Exception {
 
         List<Object[]> paramList = new ArrayList<>();
-        paramList.add(new Object[]{ asyncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider()),
-            syncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider()) });
+        paramList.add(new Object[]{asyncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider()),
+            syncHarness(TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider())});
 
         return paramList.iterator();
     }
 
     private TasmoMaterializerHarness syncWithAsyncReadMaterializerHarness(
-        TasmoStorageProvider asyncTasmoStorageProvider,
-        TasmoStorageProvider syncTasmoStorageProvider) throws Exception {
+            TasmoStorageProvider asyncTasmoStorageProvider,
+            TasmoStorageProvider syncTasmoStorageProvider) throws Exception {
         return TasmoMaterializerHarnessFactory.createSynWriteNotificationReadMaterializer(
-            TasmoMaterializerHarnessFactory.createOrderIdProvider(),
-            asyncTasmoStorageProvider,
-            syncTasmoStorageProvider,
-            TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
-            TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker());
+                TasmoMaterializerHarnessFactory.createOrderIdProvider(),
+                asyncTasmoStorageProvider,
+                syncTasmoStorageProvider,
+                TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
+                TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker());
     }
 
     private TasmoMaterializerHarness asyncHarness(
-        TasmoStorageProvider asyncTasmoStorageProvider) throws Exception {
+            TasmoStorageProvider asyncTasmoStorageProvider) throws Exception {
         return TasmoMaterializerHarnessFactory.createWriteTimeMaterializer(
-            TasmoMaterializerHarnessFactory.createOrderIdProvider(),
-            asyncTasmoStorageProvider,
-            TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
-            TasmoMaterializerHarnessFactory.createNoOpViewChangeNotificationProcessor(),
-            TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker());
+                TasmoMaterializerHarnessFactory.createOrderIdProvider(),
+                asyncTasmoStorageProvider,
+                TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
+                TasmoMaterializerHarnessFactory.createNoOpViewChangeNotificationProcessor(),
+                TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker());
     }
 
     private TasmoMaterializerHarness syncHarness(TasmoStorageProvider syncTasmoStorageProvider) throws Exception {
         return TasmoMaterializerHarnessFactory.createSyncWriteSyncReadsMaterializer(
-            TasmoMaterializerHarnessFactory.createOrderIdProvider(),
-            syncTasmoStorageProvider,
-            TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
-            TasmoMaterializerHarnessFactory.createNoOpViewChangeNotificationProcessor(),
-            TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker());
+                TasmoMaterializerHarnessFactory.createOrderIdProvider(),
+                syncTasmoStorageProvider,
+                TasmoMaterializerHarnessFactory.createNoOpEventBookkeeper(),
+                TasmoMaterializerHarnessFactory.createNoOpViewChangeNotificationProcessor(),
+                TasmoMaterializerHarnessFactory.createNoOpViewPermissionChecker());
     }
 }

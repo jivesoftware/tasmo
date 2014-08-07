@@ -31,10 +31,10 @@ import java.util.StringTokenizer;
 public class TasmoModelFactory {
 
     static public Views modelToViews(String... simpleBindings) {
-         return bindsAsViews(parseModelPathStrings(simpleBindings));
+        return bindsAsViews(parseModelPathStrings(simpleBindings));
     }
 
-     static public Views modelToViews(ArrayNode views) throws Exception {
+    static public Views modelToViews(ArrayNode views) throws Exception {
         List<ViewBinding> viewBindingsList = new LinkedList<>();
         BindingGenerator bindingGenerator = new BindingGenerator();
 
@@ -90,7 +90,10 @@ public class TasmoModelFactory {
 
         try {
             String[] memberParts = toStringArray(pathMember, ".");
-            if (pathMember.contains("." + ModelPathStepType.ref + ".") || pathMember.contains("." + ModelPathStepType.refs + ".")) {
+            if (pathMember.contains("." + ModelPathStepType.ref + ".")
+                    || pathMember.contains("." + ModelPathStepType.refs + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_ref + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_refs + ".")) {
                 // Example: Content.ref_originalAuthor.ref.User
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
                 String refFieldName = memberParts[1].trim();
@@ -98,11 +101,14 @@ public class TasmoModelFactory {
                 Set<String> destinationClassName = splitClassNames(memberParts[3].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null, false);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
-                || pathMember.contains("." + ModelPathStepType.count + ".")
-                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
+                    || pathMember.contains("." + ModelPathStepType.count + ".")
+                    || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_backRefs + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_count + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
                 // Example: Content.count.VersionedContent.ref_parent
@@ -113,7 +119,7 @@ public class TasmoModelFactory {
                 String refFieldName = memberParts[3].trim();
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null, false);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else {
 
@@ -125,7 +131,7 @@ public class TasmoModelFactory {
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames), false);
+                        null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
 
             }
         } catch (Exception x) {

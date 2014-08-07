@@ -99,7 +99,7 @@ public class TasmoViewModelTest {
     private Views makeViews(String className, ChainedVersion version, String pathName, String... fieldNames) {
         List<ModelPath> modelPaths = new ArrayList<>();
         modelPaths.add(ModelPath.builder(pathName)
-                .addPathMember(new ModelPathStep(true, Sets.newHashSet(pathName), null, ModelPathStepType.value, null, Arrays.asList(fieldNames), false))
+                .addPathMember(new ModelPathStep(true, Sets.newHashSet(pathName), null, ModelPathStepType.value, null, Arrays.asList(fieldNames)))
                 .build());
         ViewBinding viewBinding = new ViewBinding(className, modelPaths, false, false, false, null);
         List<ViewBinding> viewBindings = new ArrayList<>();

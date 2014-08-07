@@ -51,9 +51,9 @@ public class TasmoViewModel {
     private final StripingLocksProvider<TenantId> loadModelLocks = new StripingLocksProvider<>(1_024);
 
     public TasmoViewModel(
-        TenantId masterTenantId,
-        ViewsProvider viewsProvider,
-        ViewPathKeyProvider viewPathKeyProvider) {
+            TenantId masterTenantId,
+            ViewsProvider viewsProvider,
+            ViewPathKeyProvider viewPathKeyProvider) {
         this.masterTenantId = masterTenantId;
         this.viewsProvider = viewsProvider;
         this.viewPathKeyProvider = viewPathKeyProvider;
@@ -88,7 +88,7 @@ public class TasmoViewModel {
             } else {
                 VersionedTasmoViewModel currentVersionedViewsModel = versionedViewModels.get(tenantId);
                 if (currentVersionedViewsModel == null
-                    || !currentVersionedViewsModel.getVersion().equals(currentVersion)) {
+                        || !currentVersionedViewsModel.getVersion().equals(currentVersion)) {
 
                     Views views = viewsProvider.getViews(new ViewsProcessorId(tenantId, "NotBeingUsedYet"));
 
@@ -109,7 +109,7 @@ public class TasmoViewModel {
                         SetMultimap<String, FieldNameAndType> eventModel = bindEventFieldTypes(views);
                         Set<String> notifiableViewClassNames = buildNotifiableViewClassNames(views);
                         versionedViewModels.put(tenantId, new VersionedTasmoViewModel(views.getVersion(),
-                            globalWriteTraversal, centricWriteTraversal, readTraversal, eventModel, notifiableViewClassNames));
+                                globalWriteTraversal, centricWriteTraversal, readTraversal, eventModel, notifiableViewClassNames));
                     } else {
                         LOG.info("ViewsProvider failed to provide a 'Views' instance for tenantId:" + tenantId);
                     }
@@ -156,7 +156,6 @@ public class TasmoViewModel {
         return eventModel;
     }
 
-
     private Map<String, InitiateReadTraversal> buildViewReaderTraveral(Views views) throws IllegalArgumentException {
 
         Map<String, PathTraversersFactory> allFieldProcessorFactories = Maps.newHashMap();
@@ -195,7 +194,6 @@ public class TasmoViewModel {
         return readTraversers;
     }
 
-
     List<PathTraverser> transformToPrefixCollapsedTree(List<TraversablePath> traversablePaths) {
         if (traversablePaths == null) {
             return null;
@@ -203,10 +201,11 @@ public class TasmoViewModel {
 
         Map<PathTraverserKey, StepTree> subTrees = new ConcurrentHashMap<>();
         for (TraversablePath traversablePath : traversablePaths) {
-            InitiateTraversalContext initialStepContext = traversablePath.getInitialStepContext();
-            PathTraverserKey pathTraverserKey = new PathTraverserKey(initialStepContext.getInitialFieldNames(),
-                initialStepContext.getPathIndex(),
-                initialStepContext.getMembersSize());
+            InitiateTraversalContext initiateTraversalContext = traversablePath.getInitialStepContext();
+            PathTraverserKey pathTraverserKey = new PathTraverserKey(initiateTraversalContext.getInitialFieldNames(),
+                    initiateTraversalContext.getPathIndex(),
+                    initiateTraversalContext.getMembersSize(),
+                    initiateTraversalContext.isCentric());
 
             StepTree stepTree = subTrees.get(pathTraverserKey);
             if (stepTree == null) {
@@ -279,13 +278,15 @@ public class TasmoViewModel {
     }
 
     private Map<String, InitiateWriteTraversal> buildInitialStepDispatchers(
-        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupSteps) {
+            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupSteps) {
 
         Map<String, InitiateWriteTraversal> all = new HashMap<>();
         for (String eventClassName : groupSteps.keySet()) {
             Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>> typedSteps = groupSteps.get(eventClassName);
 
             ArrayListMultimap<InitiateTraverserKey, TraversablePath> valueTraversers = typedSteps.get(ModelPathStepType.value);
+            ArrayListMultimap<InitiateTraverserKey, TraversablePath> centricValueTraversers = typedSteps.get(ModelPathStepType.centric_value);
+
 
             ArrayListMultimap<InitiateTraverserKey, TraversablePath> refTraversers = ArrayListMultimap.create();
             if (typedSteps.get(ModelPathStepType.ref) != null) {
@@ -295,6 +296,16 @@ public class TasmoViewModel {
             if (typedSteps.get(ModelPathStepType.refs) != null) {
                 ArrayListMultimap<InitiateTraverserKey, TraversablePath> refsPaths = typedSteps.get(ModelPathStepType.refs);
                 refTraversers.putAll(refsPaths);
+            }
+
+             ArrayListMultimap<InitiateTraverserKey, TraversablePath> centricRefTraversers = ArrayListMultimap.create();
+            if (typedSteps.get(ModelPathStepType.centric_ref) != null) {
+                ArrayListMultimap<InitiateTraverserKey, TraversablePath> refPaths = typedSteps.get(ModelPathStepType.centric_ref);
+                centricRefTraversers.putAll(refPaths);
+            }
+            if (typedSteps.get(ModelPathStepType.centric_refs) != null) {
+                ArrayListMultimap<InitiateTraverserKey, TraversablePath> refsPaths = typedSteps.get(ModelPathStepType.centric_refs);
+                centricRefTraversers.putAll(refsPaths);
             }
 
             ArrayListMultimap<InitiateTraverserKey, TraversablePath> backRefTraversers = ArrayListMultimap.create();
@@ -311,6 +322,21 @@ public class TasmoViewModel {
                 backRefTraversers.putAll(countPaths);
             }
 
+            ArrayListMultimap<InitiateTraverserKey, TraversablePath> centricBackRefTraversers = ArrayListMultimap.create();
+            if (typedSteps.get(ModelPathStepType.centric_backRefs) != null) {
+                ArrayListMultimap<InitiateTraverserKey, TraversablePath> backRefsPaths = typedSteps.get(ModelPathStepType.centric_backRefs);
+                centricBackRefTraversers.putAll(backRefsPaths);
+            }
+            if (typedSteps.get(ModelPathStepType.centric_latest_backRef) != null) {
+                ArrayListMultimap<InitiateTraverserKey, TraversablePath> latestBackRefsPaths = typedSteps.get(ModelPathStepType.centric_latest_backRef);
+                centricBackRefTraversers.putAll(latestBackRefsPaths);
+            }
+            if (typedSteps.get(ModelPathStepType.centric_count) != null) {
+                ArrayListMultimap<InitiateTraverserKey, TraversablePath> countPaths = typedSteps.get(ModelPathStepType.centric_count);
+                centricBackRefTraversers.putAll(countPaths);
+            }
+
+
 //            InitiateWriteTraversal initiateTraversal = new InitiateWriteTraversal(
 //                    concurrencyChecker,
 //                    transformToPathAtATime(valueTraversers),
@@ -318,9 +344,12 @@ public class TasmoViewModel {
 //                    transformToPathAtATime(refTraversers),
 //                    transformToPathAtATime(backRefTraversers));
             InitiateWriteTraversal initiateTraversal = new InitiateWriteTraversal(
-                transformToPrefixCollapsedTree("values", valueTraversers),
-                transformToPrefixCollapsedTree("refs", refTraversers),
-                transformToPrefixCollapsedTree("backrefs", backRefTraversers));
+                    transformToPrefixCollapsedTree("values", valueTraversers),
+                    transformToPrefixCollapsedTree("centric_values", centricValueTraversers),
+                    transformToPrefixCollapsedTree("refs", refTraversers),
+                    transformToPrefixCollapsedTree("centric_refs", centricRefTraversers),
+                    transformToPrefixCollapsedTree("backrefs", backRefTraversers),
+                    transformToPrefixCollapsedTree("centric_backrefs", centricBackRefTraversers));
 
             all.put(eventClassName, initiateTraversal);
         }
@@ -329,7 +358,7 @@ public class TasmoViewModel {
     }
 
     ListMultimap<InitiateTraverserKey, PathTraverser> transformToPrefixCollapsedTree(String family,
-        ListMultimap<InitiateTraverserKey, TraversablePath> traversablePaths) {
+            ListMultimap<InitiateTraverserKey, TraversablePath> traversablePaths) {
         if (traversablePaths == null) {
             return null;
         }
@@ -339,8 +368,9 @@ public class TasmoViewModel {
             for (TraversablePath traversablePath : traversablePaths.get(key)) {
                 InitiateTraversalContext initialStepContext = traversablePath.getInitialStepContext();
                 PathTraverserKey pathTraverserKey = new PathTraverserKey(initialStepContext.getInitialFieldNames(),
-                    initialStepContext.getPathIndex(),
-                    initialStepContext.getMembersSize());
+                        initialStepContext.getPathIndex(),
+                        initialStepContext.getMembersSize(),
+                        initialStepContext.isCentric());
 
                 StepTree stepTree = subTrees.get(pathTraverserKey);
                 if (stepTree == null) {
@@ -368,10 +398,11 @@ public class TasmoViewModel {
             for (TraversablePath traversablePath : traversablePaths.get(initiateTraverserKey)) {
                 InitiateTraversalContext initialStepContext = traversablePath.getInitialStepContext();
                 PathTraverserKey pathTraverserKey = new PathTraverserKey(initialStepContext.getInitialFieldNames(),
-                    initialStepContext.getPathIndex(),
-                    initialStepContext.getMembersSize());
+                        initialStepContext.getPathIndex(),
+                        initialStepContext.getMembersSize(),
+                        initialStepContext.isCentric());
                 PathTraverser pathTraverser = new PathTraverser(pathTraverserKey,
-                    new PathAtATimeStepStreamerFactory(traversablePath.getStepTraversers()));
+                        new PathAtATimeStepStreamerFactory(traversablePath.getStepTraversers()));
                 transformed.put(initiateTraverserKey, pathTraverser);
             }
         }
@@ -379,8 +410,8 @@ public class TasmoViewModel {
     }
 
     private void groupPathTraverserByClass(
-        Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupedPathTraversers,
-        List<TraversablePath> pathTraverers) {
+            Map<String, Map<ModelPathStepType, ArrayListMultimap<InitiateTraverserKey, TraversablePath>>> groupedPathTraversers,
+            List<TraversablePath> pathTraverers) {
 
         for (TraversablePath traversablePath : pathTraverers) {
             for (String className : traversablePath.getInitialClassNames()) {
@@ -398,11 +429,11 @@ public class TasmoViewModel {
 
                 String refFieldName = traversablePath.getRefFieldName();
                 if (refFieldName != null) {
-                    steps.put(new InitiateTraverserKey(refFieldName, refFieldName), traversablePath);
+                    steps.put(new InitiateTraverserKey(refFieldName, refFieldName, traversablePath.isCentric()), traversablePath);
                 }
 
                 for (String fieldName : traversablePath.getInitialFieldNames()) {
-                    steps.put(new InitiateTraverserKey(fieldName, refFieldName), traversablePath);
+                    steps.put(new InitiateTraverserKey(fieldName, refFieldName, traversablePath.isCentric()), traversablePath);
                 }
             }
         }
@@ -435,10 +466,10 @@ public class TasmoViewModel {
         @Override
         public String toString() {
             return Objects.toStringHelper(this)
-                .add("fieldName", fieldName)
-                .add("fieldType", fieldType)
-                .add("idCentric", idCentric)
-                .toString();
+                    .add("fieldName", fieldName)
+                    .add("fieldType", fieldType)
+                    .add("idCentric", idCentric)
+                    .toString();
         }
 
         @Override

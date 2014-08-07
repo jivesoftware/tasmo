@@ -111,10 +111,10 @@ public class ViewDefinitionBuilder {
                     step = handleBackref(pathIdx == 0, element.eventClass, element.fields[0], element.qualifier, elements.get(pathIdx + 1));
                 } else if (valueType == ValueType.ref) {
                     String destination = elements.get(pathIdx + 1).eventClass;
-                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.ref, destination, false);
+                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.ref, destination);
                 } else if (valueType == ValueType.refs) {
                     String destination = elements.get(pathIdx + 1).eventClass;
-                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.refs, destination, false);
+                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.refs, destination);
                 } else {
                     throw new IllegalArgumentException("Unexpected value type " + valueType + " for event " + element.eventClass
                         + "and field " + element.fields[0]);
@@ -141,11 +141,11 @@ public class ViewDefinitionBuilder {
 
         if (type == ValueType.ref || type == ValueType.refs) {
             if ("count".equals(qualifier)) {
-                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.count, destination, false);
+                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.count, destination);
             } else if ("latest".equals(qualifier)) {
-                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.latest_backRef, destination, false);
+                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.latest_backRef, destination);
             } else {
-                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.backRefs, destination, false);
+                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.backRefs, destination);
             }
         }
 

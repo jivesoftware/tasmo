@@ -6,9 +6,9 @@ import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
-import com.jivesoftware.os.tasmo.id.ViewValue;
 
 /**
  *

@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.id.ViewValue;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -54,7 +54,7 @@ public class ViewFieldsCollectorTest {
     public void testLacksPermissionCollector() throws Exception {
 
         ModelPath a = ModelPath.builder("Container.value").
-                addPathMember(new ModelPathStep(true, newHashSet("Container"), null, value, null, Arrays.asList("name"), false)).build();
+                addPathMember(new ModelPathStep(true, newHashSet("Container"), null, value, null, Arrays.asList("name"))).build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{new Id(1)}, new String[]{"Container"},
                 new ViewValue(new long[]{1}, "{\"name\":\"bob\"}".getBytes()), 2L);
@@ -70,7 +70,7 @@ public class ViewFieldsCollectorTest {
     public void testHasPermissionsCollector() throws Exception {
 
         ModelPath a = ModelPath.builder("Container.value").
-                addPathMember(new ModelPathStep(true, newHashSet("Container"), null, value, null, Arrays.asList("name"), false)).build();
+                addPathMember(new ModelPathStep(true, newHashSet("Container"), null, value, null, Arrays.asList("name"))).build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{new Id(1)}, new String[]{"Container"},
                 new ViewValue(new long[]{1}, "{\"name\":\"bob\"}".getBytes()), 2L);
@@ -89,8 +89,8 @@ public class ViewFieldsCollectorTest {
     public void latestAffectedByPermissions() throws Exception {
 
         ModelPath a = ModelPath.builder("Document.date")
-                .addPathMember(new ModelPathStep(true, singleton("Document"), "parent", latest_backRef, singleton("DocumentVersion"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("DocumentVersion"), null, value, null, singletonList("date"), false))
+                .addPathMember(new ModelPathStep(true, singleton("Document"), "parent", latest_backRef, singleton("DocumentVersion"), null))
+                .addPathMember(new ModelPathStep(false, singleton("DocumentVersion"), null, value, null, singletonList("date")))
                 .build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{new Id(1), new Id(2)}, new String[]{"Document", "DocumentVersion"},
@@ -112,8 +112,8 @@ public class ViewFieldsCollectorTest {
     public void latestCompletelyFilteredByPermissions() throws Exception {
 
         ModelPath a = ModelPath.builder("Document.date")
-                .addPathMember(new ModelPathStep(true, singleton("Document"), "parent", latest_backRef, singleton("DocumentVersion"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("DocumentVersion"), null, value, null, singletonList("date"), false))
+                .addPathMember(new ModelPathStep(true, singleton("Document"), "parent", latest_backRef, singleton("DocumentVersion"), null))
+                .addPathMember(new ModelPathStep(false, singleton("DocumentVersion"), null, value, null, singletonList("date")))
                 .build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{new Id(1), new Id(2)}, new String[]{"Document", "DocumentVersion"},
@@ -135,16 +135,16 @@ public class ViewFieldsCollectorTest {
     @Test
     public void naturalOrderOfAdds() throws Exception {
         ModelPath c = ModelPath.builder("c")
-                .addPathMember(new ModelPathStep(true, singleton("A"), "a2b", ref, singleton("B"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("B"), "c2b", backRefs, singleton("C"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("C"), null, value, null, singletonList("value"), false))
+                .addPathMember(new ModelPathStep(true, singleton("A"), "a2b", ref, singleton("B"), null))
+                .addPathMember(new ModelPathStep(false, singleton("B"), "c2b", backRefs, singleton("C"), null))
+                .addPathMember(new ModelPathStep(false, singleton("C"), null, value, null, singletonList("value")))
                 .build();
         ModelPath b = ModelPath.builder("b")
-                .addPathMember(new ModelPathStep(true, singleton("A"), "a2b", ref, singleton("B"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value"), false))
+                .addPathMember(new ModelPathStep(true, singleton("A"), "a2b", ref, singleton("B"), null))
+                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value")))
                 .build();
         ModelPath a = ModelPath.builder("a")
-                .addPathMember(new ModelPathStep(true, singleton("A"), null, value, null, singletonList("value"), false))
+                .addPathMember(new ModelPathStep(true, singleton("A"), null, value, null, singletonList("value")))
                 .build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{id(1)}, new String[]{"A"},
@@ -172,16 +172,16 @@ public class ViewFieldsCollectorTest {
     @Test
     public void reverseOrderOfAdds() throws Exception {
         ModelPath c = ModelPath.builder("c")
-                .addPathMember(new ModelPathStep(true, singleton("A"), "a2b", ref, singleton("B"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("B"), "c2b", backRefs, singleton("C"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("C"), null, value, null, singletonList("value"), false))
+                .addPathMember(new ModelPathStep(true, singleton("A"), "a2b", ref, singleton("B"), null))
+                .addPathMember(new ModelPathStep(false, singleton("B"), "c2b", backRefs, singleton("C"), null))
+                .addPathMember(new ModelPathStep(false, singleton("C"), null, value, null, singletonList("value")))
                 .build();
         ModelPath b = ModelPath.builder("b")
-                .addPathMember(new ModelPathStep(true, singleton("A"), "a2b", ref, singleton("B"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value"), false))
+                .addPathMember(new ModelPathStep(true, singleton("A"), "a2b", ref, singleton("B"), null))
+                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value")))
                 .build();
         ModelPath a = ModelPath.builder("a")
-                .addPathMember(new ModelPathStep(true, singleton("A"), null, value, null, singletonList("value"), false))
+                .addPathMember(new ModelPathStep(true, singleton("A"), null, value, null, singletonList("value")))
                 .build();
 
         viewFieldsCollector.add(viewDescriptor, c, new Id[]{id(1), id(2), id(4)}, new String[]{"A", "B", "C"},
@@ -209,16 +209,16 @@ public class ViewFieldsCollectorTest {
     @Test
     public void sameFieldDifferentType() throws Exception {
         ModelPath a = ModelPath.builder("a")
-                .addPathMember(new ModelPathStep(true, singleton("A"), "b2a", backRefs, singleton("B"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value"), false))
+                .addPathMember(new ModelPathStep(true, singleton("A"), "b2a", backRefs, singleton("B"), null))
+                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value")))
                 .build();
         ModelPath b = ModelPath.builder("b")
-                .addPathMember(new ModelPathStep(true, singleton("A"), "b2a", latest_backRef, singleton("B"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value"), false))
+                .addPathMember(new ModelPathStep(true, singleton("A"), "b2a", latest_backRef, singleton("B"), null))
+                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value")))
                 .build();
         ModelPath c = ModelPath.builder("c")
-                .addPathMember(new ModelPathStep(true, singleton("A"), "b2a", count, singleton("B"), null, false))
-                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value"), false))
+                .addPathMember(new ModelPathStep(true, singleton("A"), "b2a", count, singleton("B"), null))
+                .addPathMember(new ModelPathStep(false, singleton("B"), null, value, null, singletonList("value")))
                 .build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{id(1), id(2)}, new String[]{"A", "B"},
@@ -251,9 +251,9 @@ public class ViewFieldsCollectorTest {
     public void testCollector3() throws Exception {
 
         ModelPath a = ModelPath.builder("Container.parent.backrefs.Content.authors.refs.User.value").
-                addPathMember(new ModelPathStep(true, newHashSet("Content"), "parent", backRefs, newHashSet("Container"), null, false)).
-                addPathMember(new ModelPathStep(false, newHashSet("Content"), "authors", refs, newHashSet("User"), null, false)).
-                addPathMember(new ModelPathStep(false, newHashSet("User"), null, value, null, Arrays.asList("name"), false)).build();
+                addPathMember(new ModelPathStep(true, newHashSet("Content"), "parent", backRefs, newHashSet("Container"), null)).
+                addPathMember(new ModelPathStep(false, newHashSet("Content"), "authors", refs, newHashSet("User"), null)).
+                addPathMember(new ModelPathStep(false, newHashSet("User"), null, value, null, Arrays.asList("name"))).build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{new Id(1), new Id(2), new Id(3)}, new String[]{"Container", "Content", "User"},
                 new ViewValue(new long[]{1, 2, 3}, "{\"name\":\"jane\"}".getBytes()), 1L);
@@ -281,9 +281,9 @@ public class ViewFieldsCollectorTest {
     public void testCollector4() throws Exception {
 
         ModelPath a = ModelPath.builder("Container.parent.backrefs.Content.authors.refs.User.value").
-                addPathMember(new ModelPathStep(true, newHashSet("Content"), "parent", backRefs, newHashSet("Container"), null, false)).
-                addPathMember(new ModelPathStep(false, newHashSet("Content"), "authors", refs, newHashSet("User"), null, false)).
-                addPathMember(new ModelPathStep(false, newHashSet("User"), null, value, null, Arrays.asList("name"), false)).build();
+                addPathMember(new ModelPathStep(true, newHashSet("Content"), "parent", backRefs, newHashSet("Container"), null)).
+                addPathMember(new ModelPathStep(false, newHashSet("Content"), "authors", refs, newHashSet("User"), null)).
+                addPathMember(new ModelPathStep(false, newHashSet("User"), null, value, null, Arrays.asList("name"))).build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{new Id(1), new Id(2), new Id(3)}, new String[]{"Container", "Content", "User"},
                 new ViewValue(new long[]{1, 2, 3}, "{\"name\":\"bob\"}".getBytes()), 1L);
@@ -304,9 +304,9 @@ public class ViewFieldsCollectorTest {
 
         ModelPath a = ModelPath.builder("Container.parent.backrefs.StatusUpdate|Document|Blog.name.value").
                 addPathMember(new ModelPathStep(true, newHashSet("StatusUpdate", "Document", "Blog"), "parent",
-                                backRefs, singleton("Container"), null, false)).
+                                backRefs, singleton("Container"), null)).
                 addPathMember(new ModelPathStep(false, newHashSet("StatusUpdate", "Document", "Blog"), null,
-                                value, null, Arrays.asList("name"), false))
+                                value, null, Arrays.asList("name")))
                 .build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{new Id(1), new Id(2)}, new String[]{"Container", "Document"},
@@ -338,9 +338,9 @@ public class ViewFieldsCollectorTest {
 
         ModelPath a = ModelPath.builder("Container.parent.count.StatusUpdate|Document|Blog.name.value")
                 .addPathMember(new ModelPathStep(true, newHashSet("StatusUpdate", "Document", "Blog"), "parent",
-                                ModelPathStepType.count, newHashSet("Container"), null, false))
+                                ModelPathStepType.count, newHashSet("Container"), null))
                 .addPathMember(new ModelPathStep(false, newHashSet("StatusUpdate", "Document", "Blog"), null,
-                                value, null, Arrays.asList("instanceId"), false))
+                                value, null, Arrays.asList("instanceId")))
                 .build();
 
         viewFieldsCollector.add(viewDescriptor, a, new Id[]{new Id(1), new Id(2)}, new String[]{"Container", "Document"},
@@ -370,9 +370,9 @@ public class ViewFieldsCollectorTest {
     public void testLatestBackref() throws Exception {
         ModelPath a = ModelPath.builder("Container.parent.latset_backref.StatusUpdate|Document|Blog.name.value")
                 .addPathMember(new ModelPathStep(true, newHashSet("StatusUpdate", "Document", "Blog"), "parent",
-                                latest_backRef, newHashSet("Container"), null, false))
+                                latest_backRef, newHashSet("Container"), null))
                 .addPathMember(new ModelPathStep(false, newHashSet("StatusUpdate", "Document", "Blog"), null,
-                                value, null, Arrays.asList("instanceId"), false))
+                                value, null, Arrays.asList("instanceId")))
                 .build();
 
         Set<Id> permissions = new HashSet<>();

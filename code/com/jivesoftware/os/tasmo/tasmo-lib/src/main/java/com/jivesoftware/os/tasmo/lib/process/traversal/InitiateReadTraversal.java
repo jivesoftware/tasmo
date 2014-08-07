@@ -58,7 +58,9 @@ public class InitiateReadTraversal {
 
         boolean centricRequest = !Id.NULL.equals(userId);
 
-        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
+        TenantIdAndCentricId globalCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
+        TenantIdAndCentricId userCentricId = new TenantIdAndCentricId(tenantId, userId);
+
         PathTraversalContext context = new PathTraversalContext(1, false);
         for (Entry<ReadTraversalKey, StepStreamerFactory> e : pathTraversers.entrySet()) {
             ReadTraversalKey readTraversalKey = e.getKey();
@@ -70,7 +72,7 @@ public class InitiateReadTraversal {
                         PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
                         PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());
                         LeafContext leafContext = new ReadLeafContext();
-                        stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
+                        stepStream.stream(globalCentricId, userCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
                     }
                 }
             } else {
@@ -78,7 +80,7 @@ public class InitiateReadTraversal {
                     PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
                     PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());
                     LeafContext leafContext = new ReadLeafContext();
-                    stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
+                    stepStream.stream(globalCentricId, userCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
                 }
             }
         }
@@ -97,6 +99,6 @@ public class InitiateReadTraversal {
                 t.getValue(),
                 t.getTimestamp()));
         }
-        commitChange.commitChange(writtenEventContext, tenantIdAndCentricId, changes);
+        commitChange.commitChange(writtenEventContext, (centricRequest ? userCentricId : globalCentricId), changes);
     }
 }

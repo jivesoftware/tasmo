@@ -86,7 +86,7 @@ public class ViewModelTest {
         Set<String> sourceClasses = new HashSet<>();
         sourceClasses.add(pathName);
         modelPaths.add(ModelPath.builder(pathName)
-            .addPathMember(new ModelPathStep(true, sourceClasses, null, ModelPathStepType.value, null, Arrays.asList(fieldNames), false))
+            .addPathMember(new ModelPathStep(true, sourceClasses, null, ModelPathStepType.value, null, Arrays.asList(fieldNames)))
             .build());
         ViewBinding viewBinding = new ViewBinding(className, modelPaths, false, false, false, null);
         List<ViewBinding> viewBindings = new ArrayList<>();

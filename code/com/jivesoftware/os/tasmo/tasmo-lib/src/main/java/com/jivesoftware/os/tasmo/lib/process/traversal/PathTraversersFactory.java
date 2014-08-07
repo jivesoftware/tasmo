@@ -117,7 +117,7 @@ public class PathTraversersFactory {
                     };
 
             List<StepTraverser> steps = new ArrayList<>();
-            steps.add(new TraverseBackref(modelPathStep, modelPathStep.getOriginClassNames()));
+            steps.add(new TraverseBackref(modelPathStep, modelPathStep.getOriginClassNames(), modelPathStep.getStepType().isCentric()));
             steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
             steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
             steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPath, modelPathIdHashcode));
@@ -136,11 +136,12 @@ public class PathTraversersFactory {
         // leafward
         for (int pathIndex = initialPathIndex + 1; pathIndex < modelPathMembersSize; pathIndex++) {
             member = modelPathMembers.get(pathIndex);
+            boolean centric = member.getStepType().isCentric();
 
             StepTraverser processStep;
             if (pathIndex == modelPathMembersSize - 1) {
 
-                processStep = new TraverseValue(new HashSet<>(member.getFieldNames()), initialPathIndex, pathIndex);
+                processStep = new TraverseValue(new HashSet<>(member.getFieldNames()), initialPathIndex, pathIndex, centric);
 
             } else {
                 memberType = member.getStepType();
@@ -150,7 +151,7 @@ public class PathTraversersFactory {
                         memberType);
 
                 Set<String> streamToTypes = memberType.isBackReferenceType() ? member.getOriginClassNames() : member.getDestinationClassNames();
-                processStep = new TraverseLeafward(streamer, pathIndex, streamToTypes);
+                processStep = new TraverseLeafward(streamer, pathIndex, streamToTypes, centric);
             }
 
             steps.add(processStep);
@@ -179,13 +180,14 @@ public class PathTraversersFactory {
         // rootward
         for (int pathIndex = initialPathIndex - 1; pathIndex >= 0; pathIndex--) {
             member = modelPathMembers.get(pathIndex);
+            boolean centric = member.getStepType().isCentric();
             RefStreamer streamer = createRootwardStreamer(
                     member.getOriginClassNames(),
                     member.getRefFieldName(),
                     member.getStepType());
 
             Set<String> streamToTypes = member.getStepType().isBackReferenceType() ? member.getDestinationClassNames() : member.getOriginClassNames();
-            StepTraverser processStep = new TraverseRootward(streamer, pathIndex, streamToTypes);
+            StepTraverser processStep = new TraverseRootward(streamer, pathIndex, streamToTypes, centric);
             steps.add(processStep);
         }
         return steps;
