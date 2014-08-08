@@ -73,21 +73,23 @@ public class InitiateReadTraversal {
             }
         }
         List<ViewField> took = context.takeChanges();
-        List<ViewField> changes = new ArrayList<>();
+        List<ViewField> allChanges = new ArrayList<>();
         for (ViewField t : took) {
-            changes.add(new ViewField(t.getEventId(),
-                t.getActorId(),
-                t.getUserId(),
-                t.getType(),
-                id,
-                t.getModelPath(),
-                t.getModelPathIdHashcode(),
-                t.getModelPathInstanceIds(),
-                t.getModelPathVersions(),
-                t.getModelPathTimestamps(),
-                t.getValue(),
-                t.getTimestamp()));
+            ViewField viewField = new ViewField(t.getEventId(),
+                    t.getActorId(),
+                    t.getUserId(),
+                    t.getType(),
+                    id,
+                    t.getModelPath(),
+                    t.getModelPathIdHashcode(),
+                    t.getModelPathInstanceIds(),
+                    t.getModelPathVersions(),
+                    t.getModelPathTimestamps(),
+                    t.getValue(),
+                    t.getTimestamp());
+            allChanges.add(viewField);
         }
-        commitChange.commitChange(writtenEventContext, userCentricId, changes);
+        commitChange.commitChange(writtenEventContext, globalCentricId, allChanges);
+
     }
 }

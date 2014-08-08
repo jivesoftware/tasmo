@@ -121,7 +121,6 @@ public class ModelPathStep {
         List<Object> path = new LinkedList<>();
         switch (stepType) {
             case centric_value:
-                path.add("centric");
             case value:
                 path.add(originClassName);
                 path.add(isRootId ? "pid" : "id");
@@ -130,7 +129,6 @@ public class ModelPathStep {
 
             case centric_ref:
             case centric_refs:
-                path.add("centric");
             case ref:
             case refs:
                 path.add(originClassName);
@@ -143,7 +141,6 @@ public class ModelPathStep {
             case centric_latest_backRef:
             case centric_backRefs:
             case centric_count:
-                path.add("centric");
             case latest_backRef:
             case backRefs:
             case count:

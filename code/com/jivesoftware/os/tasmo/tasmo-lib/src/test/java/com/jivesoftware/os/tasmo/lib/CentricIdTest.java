@@ -17,7 +17,7 @@ import org.testng.annotations.Test;
 public class CentricIdTest extends BaseTest {
 
     @Test (dataProvider = "tasmoMaterializer", invocationCount = 1, singleThreaded = true, enabled = false)
-    public void testFieldLevelCentric(TasmoMaterializerHarness t) throws Exception {
+    public void testCentricRefsField(TasmoMaterializerHarness t) throws Exception {
         String idCentricViewClassName = "IdCentricView";
         String idCentricViewFieldName = "idCentricUserInfo";
 
