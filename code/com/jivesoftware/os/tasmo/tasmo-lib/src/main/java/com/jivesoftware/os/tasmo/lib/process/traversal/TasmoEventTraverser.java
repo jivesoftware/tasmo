@@ -27,16 +27,17 @@ public class TasmoEventTraverser implements TasmoEventTraversal {
 
     @Override
     public void traverseEvent(WrittenEventProcessor writtenEventProcessor,
-        WrittenEventContext writtenEventContext,
-        TenantIdAndCentricId tenantIdAndCentricId,
-        WrittenEvent writtenEvent) throws RuntimeException, Exception {
+            WrittenEventContext writtenEventContext,
+            TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
+            WrittenEvent writtenEvent) throws RuntimeException, Exception {
 
         String instanceClassName = writtenEvent.getWrittenInstance().getInstanceId().getClassName();
 
         long start = System.currentTimeMillis();
-        WrittenEventProcessor decoratedWrittenEventProcessor =
-             writtenEventProcessorDecorator.decorateWrittenEventProcessor(writtenEventProcessor);
-        decoratedWrittenEventProcessor.process(writtenEventContext, tenantIdAndCentricId, writtenEvent, threadTime.nextId());
+        WrittenEventProcessor decoratedWrittenEventProcessor
+                = writtenEventProcessorDecorator.decorateWrittenEventProcessor(writtenEventProcessor);
+        decoratedWrittenEventProcessor.process(writtenEventContext, globalCentricId, userCentricId, writtenEvent, threadTime.nextId());
         writtenEventContext.getProcessingStats().latency("EVENT TRAVERSAL", instanceClassName, System.currentTimeMillis() - start);
 
     }

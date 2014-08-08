@@ -38,7 +38,7 @@ import org.testng.annotations.Test;
  */
 public class ReferenceStoreMultiHopConcurrencyTest {
 
-    @Test (invocationCount = 1, singleThreaded = false, skipFailedInvocations = true)
+    @Test(invocationCount = 1, singleThreaded = false, skipFailedInvocations = true)
     public void testConcurrencyMultiRefStore() throws Exception {
 
         //System.out.println("\n |--> BEGIN \n");
@@ -67,9 +67,9 @@ public class ReferenceStoreMultiHopConcurrencyTest {
         for (int i = 0; i < eventCount; i++) {
             if (rand.nextBoolean()) {
                 lastARefBEvent = new Event(true, concurrencyStore, referenceStore, values,
-                    tenantIdAndCentricId, t, true, fromA, new Reference[0], -1);
+                        tenantIdAndCentricId, t, true, fromA, new Reference[0], -1);
                 events.add(lastARefBEvent);
-                t+=2;
+                t += 2;
             } else {
                 Reference[] toBs = new Reference[1 + rand.nextInt(10)];
                 for (int j = 0; j < toBs.length; j++) {
@@ -77,28 +77,28 @@ public class ReferenceStoreMultiHopConcurrencyTest {
                     toBs[j] = new Reference(fromB, "aToB");
 
                     for (int ii = 0; ii < eventCount; ii++) {
-                       if (rand.nextBoolean()) {
-                           lastBRefCEvent = new Event(false, concurrencyStore, referenceStore, values,
-                               tenantIdAndCentricId, t, true, fromB, new Reference[0], -1);
-                           events.add(lastBRefCEvent);
-                           t+=2;
-                       } else {
-                           Reference[] toCs = new Reference[1 + rand.nextInt(10)];
-                           for (int jj = 0; jj < toCs.length; jj++) {
-                               toCs[jj] = new Reference(new ObjectId("C", new Id(rand.nextInt(10))), "bToC");
-                           }
-                           lastBRefCEvent = new Event(false, concurrencyStore, referenceStore, values,
-                               tenantIdAndCentricId, t, false, fromB, toCs, Math.abs(rand.nextLong()));
-                           events.add(lastBRefCEvent);
-                           t+=2;
-                       }
+                        if (rand.nextBoolean()) {
+                            lastBRefCEvent = new Event(false, concurrencyStore, referenceStore, values,
+                                    tenantIdAndCentricId, t, true, fromB, new Reference[0], -1);
+                            events.add(lastBRefCEvent);
+                            t += 2;
+                        } else {
+                            Reference[] toCs = new Reference[1 + rand.nextInt(10)];
+                            for (int jj = 0; jj < toCs.length; jj++) {
+                                toCs[jj] = new Reference(new ObjectId("C", new Id(rand.nextInt(10))), "bToC");
+                            }
+                            lastBRefCEvent = new Event(false, concurrencyStore, referenceStore, values,
+                                    tenantIdAndCentricId, t, false, fromB, toCs, Math.abs(rand.nextLong()));
+                            events.add(lastBRefCEvent);
+                            t += 2;
+                        }
                     }
 
                 }
                 lastARefBEvent = new Event(true, concurrencyStore, referenceStore, values,
-                    tenantIdAndCentricId, t, false, fromA, toBs, Math.abs(rand.nextLong()));
+                        tenantIdAndCentricId, t, false, fromA, toBs, Math.abs(rand.nextLong()));
                 events.add(lastARefBEvent);
-                t+=2;
+                t += 2;
             }
         }
         final Event winner = lastARefBEvent;
@@ -127,34 +127,33 @@ public class ReferenceStoreMultiHopConcurrencyTest {
         //Thread.sleep(1000);
         //System.out.println("------------------------------------------------");
 
-
         System.out.println("Is:");
         final AtomicInteger failures = new AtomicInteger();
         values.getAllRowKeys(100, null, new CallbackStream<TenantIdAndRow<TenantIdAndCentricId, ObjectId>>() {
 
             @Override
             public TenantIdAndRow<TenantIdAndCentricId, ObjectId> callback(
-                final TenantIdAndRow<TenantIdAndCentricId, ObjectId> row) throws Exception {
+                    final TenantIdAndRow<TenantIdAndCentricId, ObjectId> row) throws Exception {
                 if (row != null) {
                     values.getEntrys(row.getTenantId(), row.getRow(), null, Long.MAX_VALUE, 1_000, false, null, null,
-                        new CallbackStream<ColumnValueAndTimestamp<String, Long, Long>>() {
+                            new CallbackStream<ColumnValueAndTimestamp<String, Long, Long>>() {
 
-                            @Override
-                            public ColumnValueAndTimestamp<String, Long, Long> callback(ColumnValueAndTimestamp<String, Long, Long> v) throws Exception {
-                                if (v != null) {
-                                    if (v.getColumn().equals("aToB")) {
+                                @Override
+                                public ColumnValueAndTimestamp<String, Long, Long> callback(ColumnValueAndTimestamp<String, Long, Long> v) throws Exception {
+                                    if (v != null) {
+                                        if (v.getColumn().equals("aToB")) {
 
-                                        System.out.println(" |--> " + row.getRow()
-                                            + " | " + v.getColumn()
-                                            + " | " + v.getValue() + " | " + v.getTimestamp());
-                                        if (!winner.contains(row.getRow(), v.getTimestamp())) {
-                                            failures.incrementAndGet();
+                                            System.out.println(" |--> " + row.getRow()
+                                                    + " | " + v.getColumn()
+                                                    + " | " + v.getValue() + " | " + v.getTimestamp());
+                                            if (!winner.contains(row.getRow(), v.getTimestamp())) {
+                                                failures.incrementAndGet();
+                                            }
                                         }
                                     }
+                                    return v;
                                 }
-                                return v;
                             }
-                        }
                     );
                 }
                 return row;
@@ -192,15 +191,15 @@ public class ReferenceStoreMultiHopConcurrencyTest {
         long value;
 
         Event(boolean firstHop,
-            ConcurrencyStore concurrencyStore,
-            ReferenceStore referenceStore,
-            RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values,
-            TenantIdAndCentricId tenantIdAndCentricId,
-            long timestamp,
-            boolean delete,
-            ObjectId from,
-            Reference[] tos,
-            long value) {
+                ConcurrencyStore concurrencyStore,
+                ReferenceStore referenceStore,
+                RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values,
+                TenantIdAndCentricId tenantIdAndCentricId,
+                long timestamp,
+                boolean delete,
+                ObjectId from,
+                Reference[] tos,
+                long value) {
             this.firstHop = firstHop;
             this.concurrencyStore = concurrencyStore;
             this.referenceStore = referenceStore;
@@ -223,7 +222,7 @@ public class ReferenceStoreMultiHopConcurrencyTest {
                 for (Reference t : tos) {
                     StringBuilder row = new StringBuilder();
                     row.append(t.getObjectId()).append(" | ")
-                        .append(t.getFieldName()).append(" | ").append(value).append(" | ").append(timestamp).append("\n");
+                            .append(t.getFieldName()).append(" | ").append(value).append(" | ").append(timestamp).append("\n");
                     rows.add(row.toString());
                 }
                 Collections.sort(rows);
@@ -247,16 +246,16 @@ public class ReferenceStoreMultiHopConcurrencyTest {
                     if (delete) {
                         if (firstHop) {
                             referenceStore.unlink(tenantIdAndCentricId, timestamp, from, "aToB", 0,
-                                new CallbackStream<ReferenceWithTimestamp>() {
-                                    @Override
-                                    public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
-                                        if (v != null) {
-                                            values.remove(tenantIdAndCentricId,
-                                                v.getObjectId(), "aToB", new ConstantTimestamper(v.getTimestamp() + 1));
+                                    new CallbackStream<ReferenceWithTimestamp>() {
+                                        @Override
+                                        public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
+                                            if (v != null) {
+                                                values.remove(tenantIdAndCentricId,
+                                                        v.getObjectId(), "aToB", new ConstantTimestamper(v.getTimestamp() + 1));
+                                            }
+                                            return v;
                                         }
-                                        return v;
-                                    }
-                                });
+                                    });
                         } else {
 
                         }
@@ -265,20 +264,20 @@ public class ReferenceStoreMultiHopConcurrencyTest {
                             final long highest = concurrencyStore.highest(tenantIdAndCentricId, from, "aToB", timestamp);
                             if (timestamp >= highest) {
                                 referenceStore.link(tenantIdAndCentricId, from, timestamp,
-                                    Arrays.asList(new ReferenceStore.LinkTo("aToB", Arrays.asList(tos))));
+                                        Arrays.asList(new ReferenceStore.LinkTo("aToB", Arrays.asList(tos))));
                             }
                             // yield
                             referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), from, "aToB", 0,
-                                new CallbackStream<ReferenceWithTimestamp>() {
-                                    @Override
-                                    public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
-                                        if (v != null) {
-                                            values.remove(tenantIdAndCentricId,
-                                                v.getObjectId(), "aToB", new ConstantTimestamper(v.getTimestamp() + 1));
+                                    new CallbackStream<ReferenceWithTimestamp>() {
+                                        @Override
+                                        public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
+                                            if (v != null) {
+                                                values.remove(tenantIdAndCentricId,
+                                                        v.getObjectId(), "aToB", new ConstantTimestamper(v.getTimestamp() + 1));
+                                            }
+                                            return v;
                                         }
-                                        return v;
-                                    }
-                                });
+                                    });
 
                             final Set<FieldVersion> want = new HashSet<>(Arrays.asList(new FieldVersion(from, "aToB", highest)));
                             Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
@@ -289,30 +288,29 @@ public class ReferenceStoreMultiHopConcurrencyTest {
 
                             final List<Add> adds = new ArrayList<>();
                             referenceStore.streamForwardRefs(tenantIdAndCentricId, Collections.singleton(from.getClassName()), "aToB", from, 0,
-                                new CallbackStream<ReferenceWithTimestamp>() {
+                                    new CallbackStream<ReferenceWithTimestamp>() {
 
-                                    @Override
-                                    public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
-                                        if (v != null) {
-                                            want.add(new FieldVersion(from, "aToB", v.getTimestamp()));
-                                            adds.add(new Add(tenantIdAndCentricId, v.getObjectId(), "aToB", value, v.getTimestamp()));
-
+                                        @Override
+                                        public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
+                                            if (v != null) {
+                                                want.add(new FieldVersion(from, "aToB", v.getTimestamp()));
+                                                adds.add(new Add(tenantIdAndCentricId, v.getObjectId(), "aToB", value, v.getTimestamp()));
 
                                             //Set<FieldVersion> want = Collections.singleton(new FieldVersion(from, fromRefFieldName, v.getTimestamp()));
-                                            //Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
-                                            //if (got == want) {
-                                            //    values.add(tenantIdAndCentricId, v.getObjectId(), fromRefFieldName, value, null,
-                                            //        new ConstantTimestamper(v.getTimestamp()));
-                                            //    System.out.println(Thread.currentThread().getName()+" |--> add "+v.getObjectId()+" "+v.getTimestamp());
-                                            //} else {
-                                            //    PathConsistencyException e = new PathConsistencyException(want, got);
-                                            //    System.out.println(Thread.currentThread() + " " + e.toString());
-                                            //    throw e;
-                                            //}
+                                                //Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+                                                //if (got == want) {
+                                                //    values.add(tenantIdAndCentricId, v.getObjectId(), fromRefFieldName, value, null,
+                                                //        new ConstantTimestamper(v.getTimestamp()));
+                                                //    System.out.println(Thread.currentThread().getName()+" |--> add "+v.getObjectId()+" "+v.getTimestamp());
+                                                //} else {
+                                                //    PathConsistencyException e = new PathConsistencyException(want, got);
+                                                //    System.out.println(Thread.currentThread() + " " + e.toString());
+                                                //    throw e;
+                                                //}
+                                            }
+                                            return v;
                                         }
-                                        return v;
-                                    }
-                                });
+                                    });
 
                             got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
                             if (got != want) {
@@ -320,7 +318,7 @@ public class ReferenceStoreMultiHopConcurrencyTest {
                                 //System.out.println(Thread.currentThread() + " " + e.toString());
                                 throw e;
                             }
-                            for(Add add:adds) {
+                            for (Add add : adds) {
                                 values.add(add.tenantId, add.rowKey, add.columnKey, add.columnValue, null, new ConstantTimestamper(add.timestamp));
                             }
                         } else {

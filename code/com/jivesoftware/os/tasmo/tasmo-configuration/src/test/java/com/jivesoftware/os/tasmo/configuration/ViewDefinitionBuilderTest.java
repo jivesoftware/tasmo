@@ -19,11 +19,12 @@ import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import java.util.List;
-import java.util.Set;
 import org.testng.Assert;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  *
@@ -43,13 +44,11 @@ public class ViewDefinitionBuilderTest {
         String rootValues = "Content.subject,body";
         ViewDefinitionBuilder builder = new ViewDefinitionBuilder(eventsModel, "SimpleView", "Content");
         builder.addPath(rootValues);
-        builder.setIdCentric(true);
         builder.setNotifiable(true);
         ViewBinding binding = builder.build();
 
         Assert.assertNotNull(binding);
         Assert.assertEquals(binding.getViewClassName(), "SimpleView");
-        Assert.assertTrue(binding.isIdCentric());
         Assert.assertTrue(binding.isNotificationRequired());
 
         List<ModelPath> steps = binding.getModelPaths();
@@ -90,7 +89,6 @@ public class ViewDefinitionBuilderTest {
 
         ViewBinding binding = builder.build();
         Assert.assertNotNull(binding);
-        Assert.assertFalse(binding.isIdCentric());
         Assert.assertFalse(binding.isNotificationRequired());
         Assert.assertEquals(binding.getModelPaths().size(), 2);
         Assert.assertEquals(binding.getViewClassName(), "RefView");

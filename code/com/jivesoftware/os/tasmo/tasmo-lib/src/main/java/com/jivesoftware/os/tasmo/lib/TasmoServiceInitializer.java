@@ -108,6 +108,7 @@ public class TasmoServiceInitializer {
         StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
             new EventValueStoreFieldValueReader(eventValueStore));
 
+
         commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, commitChange);
 
         TasmoEventProcessor tasmoEventProcessor = new TasmoEventProcessor(tasmoViewModel,

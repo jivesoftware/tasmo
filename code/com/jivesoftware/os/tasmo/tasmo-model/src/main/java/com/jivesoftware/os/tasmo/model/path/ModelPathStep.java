@@ -30,7 +30,6 @@ public class ModelPathStep {
     private final Set<String> destinationClassName;
     //leafFieldNames
     private final List<String> fieldNames;
-    private final boolean centric;
 
     // only public for jackson
     @JsonCreator
@@ -45,14 +44,12 @@ public class ModelPathStep {
         @JsonProperty (value = "destinationClassName")
         Set<String> destinationClassName,
         @JsonProperty (value = "fieldNames")
-        List<String> fieldNames,
-        @JsonProperty (value = "centric")
-        boolean centric) {
+        List<String> fieldNames) {
 
         this.isRootId = isRootId;
         this.originClassName = originClassName;
         this.stepType = stepType;
-        if (stepType == ModelPathStepType.value) {
+        if (stepType == ModelPathStepType.value || stepType == ModelPathStepType.centric_value) {
             if (refFieldName != null) {
                 throw new IllegalArgumentException("ModelPathStep 'refFieldName' must be null for stepType:" + stepType);
             }
@@ -80,16 +77,15 @@ public class ModelPathStep {
             }
             this.destinationClassName = destinationClassName;
         }
-        this.centric = centric;
     }
 
     public ModelPathStep(boolean isRootId,
-        String originClassName, String refFieldName, ModelPathStepType stepType, String destinationClassName, boolean centric) {
-        this(isRootId, Sets.newHashSet(originClassName), refFieldName, stepType, Sets.newHashSet(destinationClassName), null, centric);
+        String originClassName, String refFieldName, ModelPathStepType stepType, String destinationClassName) {
+        this(isRootId, Sets.newHashSet(originClassName), refFieldName, stepType, Sets.newHashSet(destinationClassName), null);
     }
 
     public ModelPathStep(boolean isRootId, String originClassName, List<String> valueFields, boolean centric) {
-        this(isRootId, Sets.newHashSet(originClassName), null, ModelPathStepType.value, null, valueFields, centric);
+        this(isRootId, Sets.newHashSet(originClassName), null, ModelPathStepType.value, null, valueFields);
     }
 
     public boolean getIsRootId() {
@@ -120,21 +116,19 @@ public class ModelPathStep {
         }
     }
 
-    public boolean getCentric() {
-        return centric;
-    }
-
-
     @Override
     public String toString() {
         List<Object> path = new LinkedList<>();
         switch (stepType) {
+            case centric_value:
             case value:
                 path.add(originClassName);
                 path.add(isRootId ? "pid" : "id");
                 path.add(Joiner.on(",").join(fieldNames));
                 break;
 
+            case centric_ref:
+            case centric_refs:
             case ref:
             case refs:
                 path.add(originClassName);
@@ -144,6 +138,9 @@ public class ModelPathStep {
                 path.add(destinationClassName);
                 break;
 
+            case centric_latest_backRef:
+            case centric_backRefs:
+            case centric_count:
             case latest_backRef:
             case backRefs:
             case count:
@@ -166,7 +163,6 @@ public class ModelPathStep {
         hash = 11 * hash + (this.stepType != null ? this.stepType.hashCode() : 0);
         hash = 11 * hash + (this.destinationClassName != null ? this.destinationClassName.hashCode() : 0);
         hash = 11 * hash + (this.fieldNames != null ? this.fieldNames.hashCode() : 0);
-        hash = 11 * hash + (this.centric ? 1 : 0);
         return hash;
     }
 
@@ -196,9 +192,6 @@ public class ModelPathStep {
             return false;
         }
         if (this.fieldNames != other.fieldNames && (this.fieldNames == null || !this.fieldNames.equals(other.fieldNames))) {
-            return false;
-        }
-        if (this.centric != other.centric) {
             return false;
         }
         return true;

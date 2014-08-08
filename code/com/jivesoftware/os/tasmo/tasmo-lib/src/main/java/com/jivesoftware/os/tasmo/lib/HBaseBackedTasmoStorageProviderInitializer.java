@@ -1,7 +1,6 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
-import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import org.merlin.config.Config;
 import org.merlin.config.defaults.StringDefault;

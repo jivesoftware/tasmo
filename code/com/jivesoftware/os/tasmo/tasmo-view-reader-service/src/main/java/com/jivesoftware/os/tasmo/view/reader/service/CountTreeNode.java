@@ -21,8 +21,8 @@ import com.google.common.collect.Sets;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
-import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.id.ViewValue;
+import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
@@ -55,4 +55,3 @@ class CountTreeNode implements MultiTreeNode {
         return ReservedFields.COUNT_BACK_REF_FIELD_PREFIX;
     }
 }
-

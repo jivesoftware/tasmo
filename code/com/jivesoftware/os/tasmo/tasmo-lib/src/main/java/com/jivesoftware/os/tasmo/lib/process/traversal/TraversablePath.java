@@ -19,6 +19,10 @@ public class TraversablePath {
         this.stepTraversers = stepTraversers;
     }
 
+    public boolean isCentric() {
+        return initialStepContext.isCentric();
+    }
+
     public Set<String> getInitialFieldNames() {
         return initialStepContext.getInitialFieldNames();
     }

@@ -39,26 +39,47 @@ public class BindingGenerator {
 
                     if (p.getValueType() == ValueType.value) {
                         builder.addPathMember(new ModelPathStep(isRoot,
-                            p.getFieldClasses(), null, ModelPathStepType.value, null, Arrays.asList(p.getFieldNames()), false));
+                                p.getFieldClasses(), null, ModelPathStepType.value, null, Arrays.asList(p.getFieldNames())));
+                        ModelPath modelPath = builder.build();
+                        LOG.info("Created:" + modelPath);
+                        modelPaths.add(modelPath);
+                    } else if (p.getValueType() == ValueType.centric_value) {
+                        builder.addPathMember(new ModelPathStep(isRoot,
+                                p.getFieldClasses(), null, ModelPathStepType.centric_value, null, Arrays.asList(p.getFieldNames())));
                         ModelPath modelPath = builder.build();
                         LOG.info("Created:" + modelPath);
                         modelPaths.add(modelPath);
                     } else if (nextTypedField != null) {
                         if (p.getValueType() == ValueType.ref) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.ref, nextTypedField.getFieldClasses(), null, false));
+                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.ref, nextTypedField.getFieldClasses(), null));
                         } else if (p.getValueType() == ValueType.refs) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.refs, nextTypedField.getFieldClasses(), null, false));
+                                p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.refs, nextTypedField.getFieldClasses(), null));
                         } else if (p.getValueType() == ValueType.backrefs) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.backRefs, p.getFieldClasses(), null, false));
+                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.backRefs, p.getFieldClasses(), null));
                         } else if (p.getValueType() == ValueType.count) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.count, p.getFieldClasses(), null, false));
+                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.count, p.getFieldClasses(), null));
                         } else if (p.getValueType() == ValueType.latest_backref) {
                             builder.addPathMember(new ModelPathStep(isRoot,
-                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.latest_backRef, p.getFieldClasses(), null, false));
+                                nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.latest_backRef, p.getFieldClasses(), null));
+                        } else if (p.getValueType() == ValueType.centric_ref) {
+                            builder.addPathMember(new ModelPathStep(isRoot,
+                                    p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.centric_ref, nextTypedField.getFieldClasses(), null));
+                        } else if (p.getValueType() == ValueType.centric_refs) {
+                            builder.addPathMember(new ModelPathStep(isRoot,
+                                    p.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.centric_refs, nextTypedField.getFieldClasses(), null));
+                        } else if (p.getValueType() == ValueType.centric_backrefs) {
+                            builder.addPathMember(new ModelPathStep(isRoot,
+                                    nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.centric_backRefs, p.getFieldClasses(), null));
+                        } else if (p.getValueType() == ValueType.centric_count) {
+                            builder.addPathMember(new ModelPathStep(isRoot,
+                                    nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.centric_count, p.getFieldClasses(), null));
+                        } else if (p.getValueType() == ValueType.centric_latest_backref) {
+                            builder.addPathMember(new ModelPathStep(isRoot,
+                                    nextTypedField.getFieldClasses(), p.getFieldNames()[0], ModelPathStepType.centric_latest_backRef, p.getFieldClasses(), null));
                         }
                     }
                     isRoot = false;
@@ -72,8 +93,8 @@ public class BindingGenerator {
         } else {
             viewModel.getViewObject().depthFirstTraverse(new ValidatingPathCallback(eventsModel, pathAccumulator));
         }
-        return new ViewBinding(viewModel.getViewClassName(), modelPaths, false, viewModel.isIdCentric(), viewModel.isNotifiable(),
-            viewModel.getViewIdFieldName());
+        return new ViewBinding(viewModel.getViewClassName(), modelPaths, false, viewModel.isNotifiable(),
+                viewModel.getViewIdFieldName());
     }
 
     private String createPathId(List<TypedField> path) {

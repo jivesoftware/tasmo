@@ -47,7 +47,7 @@ public class ModelPathGenerator {
     public static void main(String[] args) {
 
         ModelPathGenerator testGenerator = new ModelPathGenerator();
-
+        
         testGenerator.generateModelPaths(Arrays.asList(ModelPathStepType.values()), 4);
     }
 

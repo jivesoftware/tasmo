@@ -14,7 +14,8 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 public interface WrittenEventProcessor {
 
     void process(WrittenEventContext batchContext,
-            TenantIdAndCentricId tenantIdAndCentricId,
+            TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
             WrittenEvent writtenEvent,
             long threadTimestamp) throws Exception;
 }

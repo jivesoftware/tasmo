@@ -19,8 +19,8 @@ public class ModelPath {
 
     @JsonCreator
     public ModelPath(
-        @JsonProperty("id") String id,
-        @JsonProperty("pathMembers") List<ModelPathStep> pathMembers) {
+            @JsonProperty("id") String id,
+            @JsonProperty("pathMembers") List<ModelPathStep> pathMembers) {
         this.id = id;
         this.pathMembers = pathMembers;
 
@@ -39,6 +39,15 @@ public class ModelPath {
         if (!assignedRootId) {
             throw new IllegalStateException("ModelPath must have a root id.");
         }
+    }
+
+    public boolean isCentric() {
+        for (ModelPathStep member : pathMembers) {
+            if (member.getStepType().isCentric()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public String getId() {
@@ -146,9 +155,13 @@ public class ModelPath {
             for (int i = 0; i < pathMembers.size(); i++) {
                 ModelPathStep step = pathMembers.get(i);
                 if (i < pathMembers.size() - 1
-                        && (step.getStepType().equals(ModelPathStepType.value)
-                        || (step.getFieldNames() != null && !step.getFieldNames().isEmpty()))) {
-                    throw new IllegalArgumentException("Only leaf nodes of a model path can be value type steps");
+                        && (step.getStepType().isValue()
+                        || (step.getFieldNames() != null
+                        && !step.getFieldNames().isEmpty()))) {
+
+                    throw new IllegalArgumentException("Only leaf nodes of a model path can be value type steps."
+                            + " Encountered:" + step + " at position " + i + " out of " + pathMembers.size()
+                            + " in " + id + "=" + pathMembers);
                 }
             }
             return new ModelPath(id, pathMembers);

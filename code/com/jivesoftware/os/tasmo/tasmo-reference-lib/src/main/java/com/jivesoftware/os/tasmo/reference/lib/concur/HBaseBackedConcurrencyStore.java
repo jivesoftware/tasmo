@@ -6,7 +6,6 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-
 package com.jivesoftware.os.tasmo.reference.lib.concur;
 
 import com.jivesoftware.os.jive.utils.id.ObjectId;
@@ -29,7 +28,7 @@ import java.util.Set;
  *
  * @author jonathan.colt
  */
-public class HBaseBackedConcurrencyStore implements ConcurrencyStore{
+public class HBaseBackedConcurrencyStore implements ConcurrencyStore {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private static final String EXISTS = "*exists*";

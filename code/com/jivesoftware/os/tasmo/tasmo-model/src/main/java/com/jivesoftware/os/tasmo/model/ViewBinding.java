@@ -19,7 +19,6 @@ public class ViewBinding {
     private final String viewClassName;
     private final List<ModelPath> modelPaths;
     private final boolean persistChanges; // deprecated but left here since it has been deserialized and persisted in hbase
-    private final boolean idCentric;
     private final boolean notifiable;
     private final String viewIdFieldName;
 
@@ -28,7 +27,6 @@ public class ViewBinding {
         @JsonProperty("viewClassName") String viewClassName,
         @JsonProperty("modelPaths") List<ModelPath> modelPaths,
         @JsonProperty("persistChanges") boolean persistChanges,
-        @JsonProperty("idCentric") boolean idCentric,
         @JsonProperty("notifiable") boolean notifiable,
         @JsonProperty("viewIdFieldName") String viewIdFieldName) {
         if (viewClassName == null || viewClassName.length() == 0) {
@@ -37,14 +35,13 @@ public class ViewBinding {
         this.viewClassName = viewClassName;
         this.modelPaths = modelPaths;
         this.persistChanges = persistChanges;
-        this.idCentric = idCentric;
         this.notifiable = notifiable;
         this.viewIdFieldName = viewIdFieldName;
         validate();
     }
 
-    public ViewBinding(String viewClassName, List<ModelPath> modelPaths, boolean idCentric, boolean notifiable) {
-        this(viewClassName, modelPaths, true, idCentric, notifiable, null);
+    public ViewBinding(String viewClassName, List<ModelPath> modelPaths, boolean notifiable) {
+        this(viewClassName, modelPaths, true, notifiable, null);
     }
 
     private void validate() {
@@ -75,7 +72,7 @@ public class ViewBinding {
                 throw new IllegalStateException("Model path " + pathId + " attempts to bind to the '" + ReservedFields.DELETED + "' field");
             }
 
-            if (!leafStep.getStepType().equals(ModelPathStepType.value)) {
+            if (!leafStep.getStepType().equals(ModelPathStepType.value) && !leafStep.getStepType().equals(ModelPathStepType.centric_value)) {
                 throw new IllegalStateException("Model path " + pathId + " does not end with a value step");
             }
 
@@ -106,10 +103,6 @@ public class ViewBinding {
     @Deprecated
     public boolean isPersistChanges() {
         return persistChanges;
-    }
-
-    public boolean isIdCentric() {
-        return idCentric;
     }
 
     /**

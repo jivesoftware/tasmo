@@ -25,18 +25,22 @@ public class TraverseValue implements StepTraverser {
     private final Set<String> fieldNames;
     private final int processingPathIndex;
     private final int pathIndex;
+    private final boolean centric;
 
     public TraverseValue(Set<String> fieldNames,
             int processingPathIndex,
-            int pathIndex) {
+            int pathIndex,
+            boolean centric) {
 
         this.fieldNames = fieldNames;
         this.processingPathIndex = processingPathIndex;
         this.pathIndex = pathIndex;
+        this.centric = centric;
     }
 
     @Override
-    public void process(TenantIdAndCentricId tenantIdAndCentricId,
+    public void process(TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
             WrittenEventContext writtenEventContext,
             PathTraversalContext pathTraversalContext,
             PathContext pathContext,
@@ -53,14 +57,14 @@ public class TraverseValue implements StepTraverser {
             String[] fieldNamesArray = fieldNames.toArray(new String[fieldNames.size()]);
             ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] got = writtenEventContext
                     .getFieldValueReader()
-                    .readFieldValues(tenantIdAndCentricId, from.getObjectId(), fieldNamesArray);
+                    .readFieldValues((centric ? userCentricId : globalCentricId), from.getObjectId(), fieldNamesArray);
 
             final Map<String, ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>> fieldValues = new HashMap<>();
             for (int i = 0; i < fieldNamesArray.length; i++) {
                 fieldValues.put(fieldNamesArray[i], got[i]);
             }
 
-            List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(tenantIdAndCentricId,
+            List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(
                     writtenEventContext,
                     pathContext,
                     from.getObjectId(),
@@ -69,7 +73,7 @@ public class TraverseValue implements StepTraverser {
             pathContext.addVersions(pathIndex, versions);
         }
         PathId to = pathContext.getPathId(processingPathIndex);
-        streamTo.stream(tenantIdAndCentricId, writtenEventContext, pathTraversalContext, pathContext, leafContext, to);
+        streamTo.stream(globalCentricId, userCentricId, writtenEventContext, pathTraversalContext, pathContext, leafContext, to);
     }
 
     @Override

@@ -10,7 +10,8 @@ import com.jivesoftware.os.tasmo.lib.write.PathId;
  */
 public interface StepStream {
 
-    void stream(TenantIdAndCentricId tenantIdAndCentricId,
+    void stream(TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
             WrittenEventContext writtenEventContext,
             PathTraversalContext context,
             PathContext pathContext,

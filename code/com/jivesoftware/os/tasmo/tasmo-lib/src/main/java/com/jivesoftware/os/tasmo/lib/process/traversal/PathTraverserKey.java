@@ -12,11 +12,13 @@ public class PathTraverserKey {
     private final Set<String> initialFieldNames;
     private final int pathIndex;
     private final int pathLength;
+    private final boolean centric;
 
-    public PathTraverserKey(Set<String> initialFieldNames, int pathIndex, int pathLength) {
+    public PathTraverserKey(Set<String> initialFieldNames, int pathIndex, int pathLength, boolean centric) {
         this.initialFieldNames = initialFieldNames;
         this.pathIndex = pathIndex;
         this.pathLength = pathLength;
+        this.centric = centric;
     }
 
     public Set<String> getInitialFieldNames() {
@@ -31,17 +33,27 @@ public class PathTraverserKey {
         return pathLength;
     }
 
+    public boolean isCentric() {
+        return centric;
+    }
+
     @Override
     public String toString() {
-        return "PathTraverserKey{" + "initialFieldNames=" + initialFieldNames + ", pathIndex=" + pathIndex + ", pathLength=" + pathLength + '}';
+        return "PathTraverserKey{"
+                + "initialFieldNames=" + initialFieldNames
+                + ", pathIndex=" + pathIndex
+                + ", pathLength=" + pathLength
+                + ", centric=" + centric
+                + '}';
     }
 
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 47 * hash + Objects.hashCode(this.initialFieldNames);
-        hash = 47 * hash + this.pathIndex;
-        hash = 47 * hash + this.pathLength;
+        hash = 53 * hash + Objects.hashCode(this.initialFieldNames);
+        hash = 53 * hash + this.pathIndex;
+        hash = 53 * hash + this.pathLength;
+        hash = 53 * hash + (this.centric ? 1 : 0);
         return hash;
     }
 
@@ -61,6 +73,9 @@ public class PathTraverserKey {
             return false;
         }
         if (this.pathLength != other.pathLength) {
+            return false;
+        }
+        if (this.centric != other.centric) {
             return false;
         }
         return true;

@@ -45,7 +45,8 @@ public class InitiateReadTraversal {
         TasmoProcessingStats processingStats = new TasmoProcessingStats();
 
         WrittenEventContext writtenEventContext = new WrittenEventContext(0,
-            Id.NULL,
+            actorId,
+            userId,
             null,
             new JsonWrittenEventProvider(),
             null,
@@ -56,47 +57,39 @@ public class InitiateReadTraversal {
             commitChange,
             processingStats);
 
-        boolean centricRequest = !Id.NULL.equals(userId);
+        TenantIdAndCentricId globalCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
+        TenantIdAndCentricId userCentricId = new TenantIdAndCentricId(tenantId, userId);
 
-        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, userId);
         PathTraversalContext context = new PathTraversalContext(1, false);
         for (Entry<ReadTraversalKey, StepStreamerFactory> e : pathTraversers.entrySet()) {
             ReadTraversalKey readTraversalKey = e.getKey();
             StepStreamerFactory stepStreamerFactory = e.getValue();
             StepStream stepStream = stepStreamerFactory.create();
-            if (readTraversalKey.isIdCentric()) {
-                if (centricRequest) {
-                    for (String rootEventClassName : rootingEventClassNames) {
-                        PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
-                        PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());
-                        LeafContext leafContext = new ReadLeafContext();
-                        stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
-                    }
-                }
-            } else {
-                for (String rootEventClassName : rootingEventClassNames) {
-                    PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
-                    PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());
-                    LeafContext leafContext = new ReadLeafContext();
-                    stepStream.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
-                }
+            for (String rootEventClassName : rootingEventClassNames) {
+                PathId pathId = new PathId(new ObjectId(rootEventClassName, id.getId()), 1);
+                PathContext pathContext = new PathContext(readTraversalKey.getModelPath().getPathMemberSize());
+                LeafContext leafContext = new ReadLeafContext();
+                stepStream.stream(globalCentricId, userCentricId, writtenEventContext, context, pathContext, leafContext, pathId);
             }
         }
         List<ViewField> took = context.takeChanges();
-        List<ViewField> changes = new ArrayList<>();
+        List<ViewField> allChanges = new ArrayList<>();
         for (ViewField t : took) {
-            changes.add(new ViewField(t.getEventId(),
-                t.getActorId(),
-                t.getType(),
-                id,
-                t.getModelPath(),
-                t.getModelPathIdHashcode(),
-                t.getModelPathInstanceIds(),
-                t.getModelPathVersions(),
-                t.getModelPathTimestamps(),
-                t.getValue(),
-                t.getTimestamp()));
+            ViewField viewField = new ViewField(t.getEventId(),
+                    t.getActorId(),
+                    t.getUserId(),
+                    t.getType(),
+                    id,
+                    t.getModelPath(),
+                    t.getModelPathIdHashcode(),
+                    t.getModelPathInstanceIds(),
+                    t.getModelPathVersions(),
+                    t.getModelPathTimestamps(),
+                    t.getValue(),
+                    t.getTimestamp());
+            allChanges.add(viewField);
         }
-        commitChange.commitChange(writtenEventContext, tenantIdAndCentricId, changes);
+        commitChange.commitChange(writtenEventContext, globalCentricId, allChanges);
+
     }
 }

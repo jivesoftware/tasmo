@@ -42,8 +42,8 @@ public class PathTraversalContext {
         return take;
     }
 
-    void addChange(ViewField update) {
-        changes.add(update);
+    void addChange(ViewField change) {
+        changes.add(change);
     }
 
 }

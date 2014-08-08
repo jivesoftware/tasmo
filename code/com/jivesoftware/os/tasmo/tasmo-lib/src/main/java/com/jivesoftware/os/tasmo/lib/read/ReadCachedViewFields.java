@@ -10,6 +10,7 @@ import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.configuration.views.PathAndDictionary;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
@@ -17,7 +18,6 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
-import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore.ViewCollector;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -134,6 +134,7 @@ public class ReadCachedViewFields {
 
                             viewValueFields.add(new ViewField(-1,
                                 viewDescriptor.getActorId(),
+                                viewDescriptor.getUserId(),
                                 ViewField.ViewFieldChangeType.add,
                                 viewDescriptor.getViewId(),
                                 modelPath,

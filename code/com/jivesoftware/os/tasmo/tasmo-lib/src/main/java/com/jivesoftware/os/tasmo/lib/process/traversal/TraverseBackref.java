@@ -27,15 +27,18 @@ public class TraverseBackref implements StepTraverser {
 
     private final ModelPathStep initialModelPathMember;
     private final Set<String> validDownStreamTypes;
+    private final boolean centric;
 
     public TraverseBackref(ModelPathStep initialModelPathMember,
-            Set<String> validDownStreamTypes) {
+            Set<String> validDownStreamTypes, boolean centric) {
         this.initialModelPathMember = initialModelPathMember;
         this.validDownStreamTypes = validDownStreamTypes;
+        this.centric = centric;
     }
 
     @Override
-    public void process(final TenantIdAndCentricId tenantIdAndCentricId,
+    public void process(final TenantIdAndCentricId globalCentricId,
+            final TenantIdAndCentricId userCentricId,
             final WrittenEventContext writtenEventContext,
             final PathTraversalContext context,
             final PathContext pathContext,
@@ -47,14 +50,14 @@ public class TraverseBackref implements StepTraverser {
                 initialModelPathMember.getRefFieldName());
 
         streamer.stream(writtenEventContext.getReferenceTraverser(),
-                tenantIdAndCentricId,
+                (centric ? userCentricId : globalCentricId),
                 from.getObjectId(),
                 context.getThreadTimestamp(),
                 new CallbackStream<ReferenceWithTimestamp>() {
                     @Override
                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                         if (to != null && isValidDownStreamObject(to)) {
-                            streamTo.stream(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext,
+                            streamTo.stream(globalCentricId, userCentricId, writtenEventContext, context, pathContext, leafContext,
                                     new PathId(to.getObjectId(), to.getTimestamp()));
                         }
                         return to;

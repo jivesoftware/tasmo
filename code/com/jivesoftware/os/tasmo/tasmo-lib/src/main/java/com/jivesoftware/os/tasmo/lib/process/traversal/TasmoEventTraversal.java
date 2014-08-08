@@ -7,7 +7,10 @@ import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 
 public interface TasmoEventTraversal {
 
-    void traverseEvent(WrittenEventProcessor writtenEventProcessor, WrittenEventContext writtenEventContext, TenantIdAndCentricId tenantIdAndCentricId,
-        WrittenEvent writtenEvent) throws RuntimeException, Exception;
+    void traverseEvent(WrittenEventProcessor writtenEventProcessor,
+            WrittenEventContext writtenEventContext,
+            TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
+            WrittenEvent writtenEvent) throws RuntimeException, Exception;
 
 }

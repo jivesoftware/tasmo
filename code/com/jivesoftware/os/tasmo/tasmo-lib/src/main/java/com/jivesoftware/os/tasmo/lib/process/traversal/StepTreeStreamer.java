@@ -17,7 +17,8 @@ public class StepTreeStreamer implements StepStream {
     }
 
     @Override
-    public void stream(TenantIdAndCentricId tenantIdAndCentricId,
+    public void stream(TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
             WrittenEventContext writtenEventContext,
             PathTraversalContext context,
             PathContext pathContext,
@@ -25,7 +26,8 @@ public class StepTreeStreamer implements StepStream {
             PathId pathId) throws Exception {
         for (StepTraverser stepTraverser : stepTree.map.keySet()) {
             StepTree nextStepTree = stepTree.map.get(stepTraverser);
-            stepTraverser.process(tenantIdAndCentricId, writtenEventContext, context, pathContext, leafContext, pathId, new StepTreeStreamer(nextStepTree));
+            stepTraverser.process(globalCentricId,
+                    userCentricId, writtenEventContext, context, pathContext, leafContext, pathId, new StepTreeStreamer(nextStepTree));
         }
     }
 }
