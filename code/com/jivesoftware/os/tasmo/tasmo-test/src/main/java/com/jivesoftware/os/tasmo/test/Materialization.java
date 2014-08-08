@@ -477,7 +477,7 @@ public class Materialization {
         batchTraverserThread.shutdownNow();
     }
 
-    static List<ViewBinding> parseModelPathStrings(boolean idCentric, List<String> simpleBindings) {
+    static List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {
         ArrayListMultimap<String, ModelPath> viewBindings = ArrayListMultimap.create();
 
         for (String simpleBinding : simpleBindings) {
@@ -489,14 +489,14 @@ public class Materialization {
 
         List<ViewBinding> viewBindingsList = Lists.newArrayList();
         for (Map.Entry<String, Collection<ModelPath>> entry : viewBindings.asMap().entrySet()) {
-            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, idCentric, false, null));
+            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, false, null));
         }
 
         return viewBindingsList;
     }
 
-    Expectations initModelPaths(TenantId tenantId, boolean idCentric, List<String> simpleBindings) throws Exception {
-        List<ViewBinding> viewBindingsList = parseModelPathStrings(idCentric, simpleBindings);
+    Expectations initModelPathsFromSimpleBindings(TenantId tenantId, List<String> simpleBindings) throws Exception {
+        List<ViewBinding> viewBindingsList = parseModelPathStrings(simpleBindings);
         return initModelPaths(tenantId, viewBindingsList);
     }
 

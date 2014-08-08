@@ -22,13 +22,8 @@ import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+
+import java.util.*;
 
 /**
  *
@@ -36,10 +31,6 @@ import java.util.StringTokenizer;
 public class ViewModelParser {
 
     public List<ViewBinding> parse(List<String> modelPathtrings) {
-        return parse(modelPathtrings, false);
-    }
-
-    public List<ViewBinding> parse(List<String> modelPathtrings, boolean idCentric) {
         ArrayListMultimap<String, ModelPath> viewBindings = ArrayListMultimap.create();
 
         for (String simpleBinding : modelPathtrings) {
@@ -55,7 +46,7 @@ public class ViewModelParser {
 
         List<ViewBinding> viewBindingsList = Lists.newArrayList();
         for (Map.Entry<String, Collection<ModelPath>> entry : viewBindings.asMap().entrySet()) {
-            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, idCentric, true, null));
+            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, true, null));
         }
 
         return viewBindingsList;

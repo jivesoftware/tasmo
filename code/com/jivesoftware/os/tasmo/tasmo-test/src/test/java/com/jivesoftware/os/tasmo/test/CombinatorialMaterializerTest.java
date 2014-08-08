@@ -388,7 +388,7 @@ public class CombinatorialMaterializerTest {
     public List<ViewBinding> buildBindings(List<ModelPathStepType> refTypes, int maxNumSteps) throws Exception {
 
         List<String> pathStrings = pathGenerator.generateModelPaths(refTypes, maxNumSteps);
-        List<ViewBinding> allViewBindings = Materialization.parseModelPathStrings(false, pathStrings);
+        List<ViewBinding> allViewBindings = Materialization.parseModelPathStrings(pathStrings);
 
         if (allViewBindings.size() > 1) {
             throw new IllegalStateException("Unexpectedly generated model paths with more than one view class name");
@@ -431,7 +431,7 @@ public class CombinatorialMaterializerTest {
             testId,
             materialization,
             tenantIdAndCentricId, actorId,
-            new ViewBinding(binding.getViewClassName(), Arrays.asList(path), false, false, false, null),
+            new ViewBinding(binding.getViewClassName(), Arrays.asList(path), false, false, null),
             writerProvider,
             eventFire,
             deletedIds)};

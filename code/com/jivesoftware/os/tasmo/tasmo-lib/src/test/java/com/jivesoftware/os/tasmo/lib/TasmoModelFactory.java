@@ -65,7 +65,7 @@ public class TasmoModelFactory {
 
         List<ViewBinding> viewBindingsList = Lists.newArrayList();
         for (Map.Entry<String, Collection<ModelPath>> entry : viewBindings.asMap().entrySet()) {
-            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, false, false, null));
+            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, false, null));
         }
 
         return viewBindingsList;

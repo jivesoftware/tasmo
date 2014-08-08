@@ -66,7 +66,7 @@ public class ViewProviderTest {
                         ImmutableSet.of("view"), null, ModelPathStepType.value, null, Arrays.asList("title"));
                 ModelPath modelPath = ModelPath.builder("1").addPathMember(modelPathStep).build();
                 modelPaths.add(modelPath);
-                viewBindings.add(new ViewBinding("view", modelPaths, true, false, false, "id"));
+                viewBindings.add(new ViewBinding("view", modelPaths, true, false, "id"));
                 return new Views(viewsProcessorId.getTenantId(), getCurrentViewsVersion(viewsProcessorId.getTenantId()), viewBindings);
             }
         };
