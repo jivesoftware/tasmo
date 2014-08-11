@@ -19,7 +19,7 @@ public interface LeafContext {
 
     List<ReferenceWithTimestamp> removeLeafNodeFields(WrittenEventContext writtenEventContext, PathContext pathContext);
 
-    List<ReferenceWithTimestamp> populateLeafNodeFields(TenantIdAndCentricId tenantIdAndCentricId,
+    List<ReferenceWithTimestamp> populateLeafNodeFields(TenantIdAndCentricId  tenantIdAndCentricId,
         WrittenEventContext writtenEventContext,
         PathContext pathContext,
         ObjectId objectInstanceId,

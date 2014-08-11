@@ -33,17 +33,23 @@ public class ModelPathStep {
 
     // only public for jackson
     @JsonCreator
-    public ModelPathStep(@JsonProperty("isRootId") boolean isRootId,
-        @JsonProperty("originClassName") Set<String> originClassName,
-        @JsonProperty("refFieldName") String refFieldName,
-        @JsonProperty("stepType") ModelPathStepType stepType,
-        @JsonProperty("destinationClassName") Set<String> destinationClassName,
-        @JsonProperty("fieldNames") List<String> fieldNames) {
+    public ModelPathStep(@JsonProperty (value = "isRootId")
+        boolean isRootId,
+        @JsonProperty (value = "originClassName")
+        Set<String> originClassName,
+        @JsonProperty (value = "refFieldName")
+        String refFieldName,
+        @JsonProperty (value = "stepType")
+        ModelPathStepType stepType,
+        @JsonProperty (value = "destinationClassName")
+        Set<String> destinationClassName,
+        @JsonProperty (value = "fieldNames")
+        List<String> fieldNames) {
 
         this.isRootId = isRootId;
         this.originClassName = originClassName;
         this.stepType = stepType;
-        if (stepType == ModelPathStepType.value) {
+        if (stepType == ModelPathStepType.value || stepType == ModelPathStepType.centric_value) {
             if (refFieldName != null) {
                 throw new IllegalArgumentException("ModelPathStep 'refFieldName' must be null for stepType:" + stepType);
             }
@@ -71,14 +77,14 @@ public class ModelPathStep {
             }
             this.destinationClassName = destinationClassName;
         }
-
     }
 
-    public ModelPathStep(boolean isRootId, String originClassName, String refFieldName, ModelPathStepType stepType, String destinationClassName) {
+    public ModelPathStep(boolean isRootId,
+        String originClassName, String refFieldName, ModelPathStepType stepType, String destinationClassName) {
         this(isRootId, Sets.newHashSet(originClassName), refFieldName, stepType, Sets.newHashSet(destinationClassName), null);
     }
 
-    public ModelPathStep(boolean isRootId, String originClassName, List<String> valueFields) {
+    public ModelPathStep(boolean isRootId, String originClassName, List<String> valueFields, boolean centric) {
         this(isRootId, Sets.newHashSet(originClassName), null, ModelPathStepType.value, null, valueFields);
     }
 
@@ -114,12 +120,15 @@ public class ModelPathStep {
     public String toString() {
         List<Object> path = new LinkedList<>();
         switch (stepType) {
+            case centric_value:
             case value:
                 path.add(originClassName);
                 path.add(isRootId ? "pid" : "id");
                 path.add(Joiner.on(",").join(fieldNames));
                 break;
 
+            case centric_ref:
+            case centric_refs:
             case ref:
             case refs:
                 path.add(originClassName);
@@ -129,6 +138,9 @@ public class ModelPathStep {
                 path.add(destinationClassName);
                 break;
 
+            case centric_latest_backRef:
+            case centric_backRefs:
+            case centric_count:
             case latest_backRef:
             case backRefs:
             case count:

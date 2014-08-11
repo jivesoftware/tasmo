@@ -14,7 +14,7 @@ import org.apache.commons.math.stat.descriptive.DescriptiveStatistics;
  *
  * @author jonathan
  */
-public class ProcessingStats {
+public class TasmoProcessingStats {
 
     private static final int STATS_WINDOW = 1_000;
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();

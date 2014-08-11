@@ -4,16 +4,20 @@
     <parent>
         <groupId>com.jivesoftware.os.tasmo.inheritance.poms</groupId>
         <artifactId>shared-lib-build-management</artifactId>
-        <version>0.45-SNAPSHOT</version>
+        <version>0.54-SNAPSHOT</version>
         <relativePath>../inheritance-poms/shared-lib-build-management/pom.xml</relativePath>
     </parent>
     <groupId>com.jivesoftware.os.tasmo</groupId>
     <artifactId>tasmo-lib</artifactId>
-    <version>0.45-SNAPSHOT</version>
+    <version>0.54-SNAPSHOT</version>
     <properties>
         <module.type>service_lib</module.type>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>com.jivesoftware.os.tasmo</groupId>
+            <artifactId>tasmo-id</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-math</artifactId>
@@ -85,25 +89,15 @@
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-view-reader-service</artifactId>
         </dependency>
-        <!--        <dependency>
-            <groupId>com.jivesoftware.jive.platform.shared</groupId>
-            <artifactId>test-hbase</artifactId>
-            <version>unspecified</version>
-            <scope>test</scope>
-            <type>jar</type>
-        </dependency>-->
         <dependency>
             <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
             <artifactId>row-column-value-store-hbase</artifactId>
             <version>0.20</version>
             <scope>test</scope>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
             <artifactId>row-column-value-store-marshall-primatives</artifactId>
-            <scope>test</scope>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
@@ -121,6 +115,22 @@
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-view-notification-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
+            <artifactId>row-column-value-store-tests</artifactId>
+            <scope>test</scope>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minicluster</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

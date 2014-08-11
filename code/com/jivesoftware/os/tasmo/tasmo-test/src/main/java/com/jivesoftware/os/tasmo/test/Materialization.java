@@ -31,16 +31,14 @@ import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterResponse;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriteException;
 import com.jivesoftware.os.tasmo.event.api.write.JsonEventWriter;
-import com.jivesoftware.os.tasmo.lib.read.StatCollectingFieldValueReader;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
-import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
-import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraversal;
-import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraverser;
-import com.jivesoftware.os.tasmo.lib.process.ProcessingStats;
-import com.jivesoftware.os.tasmo.lib.ingress.TasmoWriteMaterializer;
-import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
+import com.jivesoftware.os.tasmo.lib.ingress.TasmoWriteMaterializer;
+import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
+import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventProcessorDecorator;
@@ -48,12 +46,15 @@ import com.jivesoftware.os.tasmo.lib.process.WrittenInstanceHelper;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.EventBookKeeper;
 import com.jivesoftware.os.tasmo.lib.process.notification.ViewChangeNotificationProcessor;
+import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraversal;
+import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraverser;
+import com.jivesoftware.os.tasmo.lib.read.EventValueStoreFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.read.StatCollectingFieldValueReader;
 import com.jivesoftware.os.tasmo.lib.write.CommitChange;
 import com.jivesoftware.os.tasmo.lib.write.CommitChangeException;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
-import com.jivesoftware.os.tasmo.lib.write.WriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.lib.write.ViewField;
-import com.jivesoftware.os.tasmo.lib.read.EventValueStoreFieldValueReader;
+import com.jivesoftware.os.tasmo.lib.write.WriteFanoutEventPersistor;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.Views;
 import com.jivesoftware.os.tasmo.model.ViewsProcessorId;
@@ -83,7 +84,6 @@ import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionCheckResult;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewProvider;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
@@ -250,7 +250,7 @@ public class Materialization {
     private ExecutorService traverserThreads;
     private BatchingReferenceTraverser batchingReferenceTraverser;
     TasmoEventProcessor tasmoEventProcessor;
-    ProcessingStats processingStats;
+    TasmoProcessingStats processingStats;
 
     private ExecutorService newThreadPool(int maxThread, String name) {
         ThreadFactory eventProcessorThreadFactory = new ThreadFactoryBuilder()
@@ -382,7 +382,7 @@ public class Materialization {
         WriteFanoutEventPersistor eventPersistor = new WriteFanoutEventPersistor(writtenEventProvider,
             writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
 
-        processingStats = new ProcessingStats();
+        processingStats = new TasmoProcessingStats();
         StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
             new EventValueStoreFieldValueReader(eventValueStore));
 
@@ -477,7 +477,7 @@ public class Materialization {
         batchTraverserThread.shutdownNow();
     }
 
-    static List<ViewBinding> parseModelPathStrings(boolean idCentric, List<String> simpleBindings) {
+    static List<ViewBinding> parseModelPathStrings(List<String> simpleBindings) {
         ArrayListMultimap<String, ModelPath> viewBindings = ArrayListMultimap.create();
 
         for (String simpleBinding : simpleBindings) {
@@ -489,14 +489,14 @@ public class Materialization {
 
         List<ViewBinding> viewBindingsList = Lists.newArrayList();
         for (Map.Entry<String, Collection<ModelPath>> entry : viewBindings.asMap().entrySet()) {
-            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, idCentric, false, null));
+            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, false, null));
         }
 
         return viewBindingsList;
     }
 
-    Expectations initModelPaths(TenantId tenantId, boolean idCentric, List<String> simpleBindings) throws Exception {
-        List<ViewBinding> viewBindingsList = parseModelPathStrings(idCentric, simpleBindings);
+    Expectations initModelPathsFromSimpleBindings(TenantId tenantId, List<String> simpleBindings) throws Exception {
+        List<ViewBinding> viewBindingsList = parseModelPathStrings(simpleBindings);
         return initModelPaths(tenantId, viewBindingsList);
     }
 
@@ -515,7 +515,10 @@ public class Materialization {
 
         try {
             String[] memberParts = toStringArray(pathMember, ".");
-            if (pathMember.contains("." + ModelPathStepType.ref + ".") || pathMember.contains("." + ModelPathStepType.refs + ".")) {
+            if (pathMember.contains("." + ModelPathStepType.ref + ".")
+                    || pathMember.contains("." + ModelPathStepType.refs + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_ref + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_refs + ".")) {
                 // Example: Content.ref_originalAuthor.ref.User
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
                 String refFieldName = memberParts[1].trim();
@@ -527,7 +530,10 @@ public class Materialization {
 
             } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
                 || pathMember.contains("." + ModelPathStepType.count + ".")
-                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
+                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_backRefs + ".")
+                || pathMember.contains("." + ModelPathStepType.centric_count + ".")
+                || pathMember.contains("." + ModelPathStepType.centric_latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
                 // Example: Content.count.VersionedContent.ref_parent

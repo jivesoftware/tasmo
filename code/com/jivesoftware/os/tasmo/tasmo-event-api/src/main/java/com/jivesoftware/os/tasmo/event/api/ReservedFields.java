@@ -93,6 +93,12 @@ public class ReservedFields {
     public static final String ACTIVITY_VERB = "activityVerb";
 
     /**
+     * An optional field to denote the type of event. See: {@link com.jivesoftware.os.tasmo.event.api.EventType}
+     * If this field is not set, it assumed to be a normal event
+     */
+    public static final String EVENT_TYPE = "eventType";
+
+    /**
      * This prefix is prepended to any view field which represents a multi-back reference
      */
     public static final String ALL_BACK_REF_FIELD_PREFIX = "all_";

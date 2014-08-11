@@ -6,14 +6,16 @@ import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.lib.read.ReadMaterializerViewFields;
+import com.jivesoftware.os.tasmo.lib.read.ViewFieldsResponse;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.view.notification.api.ViewNotification;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -45,40 +47,44 @@ public class TasmoNotificationsIngress implements CallbackStream<List<ViewNotifi
             return failedToProcess;
         }
 
+        Map<ViewDescriptor, ViewNotification> indexViewDescriptorToViewNotification = new HashMap<>();
         List<ViewDescriptor> viewDescriptors = new ArrayList<>(viewNotifications.size());
         for (ViewNotification viewNotification : viewNotifications) {
-            viewDescriptors.add(new ViewDescriptor(viewNotification.getTenantIdAndCentricId(),
+            ViewDescriptor viewDescriptor = new ViewDescriptor(viewNotification.getTenantIdAndCentricId(),
                 viewNotification.getActorId(),
-                viewNotification.getViewId()));
+                viewNotification.getViewId());
+            viewDescriptors.add(viewDescriptor);
+            indexViewDescriptorToViewNotification.put(viewDescriptor, viewNotification);
         }
-        
+
         long threadTime = threadTimestamp.nextId();
-        Map<ViewDescriptor, List<ViewField>> readMaterialized = readMaterializer.readMaterialize(viewDescriptors);
-        for (Entry<ViewDescriptor, List<ViewField>> changeSets : readMaterialized.entrySet()) {
+        Map<ViewDescriptor, ViewFieldsResponse> readMaterialized = readMaterializer.readMaterialize(viewDescriptors);
+        for (Entry<ViewDescriptor, ViewFieldsResponse> changeSets : readMaterialized.entrySet()) {
             ViewDescriptor viewDescriptor = changeSets.getKey();
-            List<ViewField> changes = changeSets.getValue();
-            TenantIdAndCentricId tenantIdAndCentricId = viewDescriptor.getTenantIdAndCentricId();
-
-            ViewValueWriter.Transaction transaction = viewValueWriter.begin(tenantIdAndCentricId);
-            for (ViewField change : changes) {
-                if (change.getType() == ViewField.ViewFieldChangeType.add) {
-                    PathId[] modelPathInstanceIds = change.getModelPathInstanceIds();
-                    ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];
-                    for (int i = 0; i < modelPathInstanceIds.length; i++) {
-                        ids[i] = modelPathInstanceIds[i].getObjectId();
+            ViewFieldsResponse fieldsResponse = changeSets.getValue();
+            if (fieldsResponse.isOk()) {
+                TenantIdAndCentricId tenantIdAndCentricId = viewDescriptor.getTenantIdAndCentricId();
+                ViewValueWriter.Transaction transaction = viewValueWriter.begin(tenantIdAndCentricId);
+                for (ViewField change : fieldsResponse.getViewFields()) {
+                    if (change.getType() == ViewField.ViewFieldChangeType.add) {
+                        PathId[] modelPathInstanceIds = change.getModelPathInstanceIds();
+                        ObjectId[] ids = new ObjectId[modelPathInstanceIds.length];
+                        for (int i = 0; i < modelPathInstanceIds.length; i++) {
+                            ids[i] = modelPathInstanceIds[i].getObjectId();
+                        }
+                        transaction.set(change.getViewObjectId(),
+                            change.getModelPathIdHashcode(),
+                            ids,
+                            new ViewValue(change.getModelPathTimestamps(), change.getValue()),
+                            threadTime);
                     }
-                    transaction.set(change.getViewObjectId(),
-                        change.getModelPathIdHashcode(),
-                        ids,
-                        new ViewValue(change.getModelPathTimestamps(), change.getValue()),
-                        threadTime);
                 }
+                viewValueWriter.commit(transaction);
+                viewValueWriter.clear(tenantIdAndCentricId, viewDescriptor.getViewId(), threadTime - 1);
+            } else {
+                failedToProcess.add(indexViewDescriptorToViewNotification.get(viewDescriptor));
             }
-            viewValueWriter.commit(transaction);
-            viewValueWriter.clear(tenantIdAndCentricId, viewDescriptor.getViewId(), threadTime - 1);
         }
-
-        LOG.warn("TODO Failed to process isn't implemented.");
         return failedToProcess;
     }
 

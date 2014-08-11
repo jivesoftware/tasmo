@@ -39,10 +39,10 @@ public class MultiFieldWithRefsTest extends BaseTest {
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, firstName, "tom");
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, lastName, "sawyer");
         t.addExpectation(contentId, ContentView, originalAuthor, new ObjectId[]{ contentId, authorId }, userName, "tsawyer");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(ContentView, contentId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(ContentView, contentId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(ContentView, contentId.getId()), Id.NULL);
         String deserializationInput = mapper.writeValueAsString(view);
         System.out.println("Input:" + deserializationInput);
     }

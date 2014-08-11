@@ -50,7 +50,7 @@ public class TasmoEventProcessor {
     private final FieldValueReader fieldValueReader;
     private final ReferenceTraverser referenceTraverser;
     private final CommitChange commitChange;
-    private final ProcessingStats processingStats;
+    private final TasmoProcessingStats processingStats;
 
     public TasmoEventProcessor(TasmoViewModel tasmoViewModel,
         EventPersistor eventPersistor,
@@ -63,7 +63,7 @@ public class TasmoEventProcessor {
         FieldValueReader fieldValueReader,
         ReferenceTraverser referenceTraverser,
         CommitChange commitChange,
-        ProcessingStats processingStats) {
+        TasmoProcessingStats processingStats) {
 
         this.tasmoViewModel = tasmoViewModel;
         this.eventPersistor = eventPersistor;
@@ -93,14 +93,17 @@ public class TasmoEventProcessor {
             public void commitChange(WrittenEventContext context,
                 TenantIdAndCentricId tenantIdAndCentricId,
                 List<ViewField> changes) throws CommitChangeException {
+
                 commitChange.commitChange(context, tenantIdAndCentricId, changes);
 
                 List<ViewNotification> notifications = new ArrayList<>();
                 for (ViewField viewFieldChange : changes) {
                     notifications.add(new ViewNotification(tenantIdAndCentricId,
-                        viewFieldChange.getEventId(),
-                        viewFieldChange.getActorId(),
-                        viewFieldChange.getViewObjectId()));
+                            viewFieldChange.getEventId(),
+                            viewFieldChange.getActorId(),
+                            viewFieldChange.getUserId(),
+                            viewFieldChange.getViewObjectId(),
+                            viewFieldChange.getModelPath().isCentric()));
 
                     // Old way factor out
                     if (model.getNotifiableViews().contains(viewFieldChange.getViewObjectId().getClassName())) {
@@ -119,19 +122,15 @@ public class TasmoEventProcessor {
         long startProcessingEvent = System.currentTimeMillis();
         ConcurrencyChecker concurrencyChecker = new ConcurrencyChecker(concurrencyStore);
         WrittenEventContext batchContext = new WrittenEventContext(writtenEvent.getEventId(),
-            writtenEvent.getActorId(), writtenEvent, writtenEventProvider, concurrencyChecker, referenceStore,
+            writtenEvent.getActorId(), writtenEvent.getCentricId(), writtenEvent, writtenEventProvider, concurrencyChecker, referenceStore,
             fieldValueReader, referenceTraverser, modifiedViewProvider, commitChangeNotifier, processingStats);
 
         WrittenInstance writtenInstance = writtenEvent.getWrittenInstance();
         String className = writtenInstance.getInstanceId().getClassName();
 
-        // Process event globally
-        TenantIdAndCentricId tenantIdAndGloballyCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
-        process(lock, model, model.getWriteTraversers(), className, writtenInstance, tenantIdAndGloballyCentricId, batchContext, writtenEvent);
-
-        // Process event centrically
-        TenantIdAndCentricId tenantIdAndCentricId = new TenantIdAndCentricId(tenantId, writtenEvent.getCentricId());
-        process(lock, model, model.getCentricWriteTraversers(), className, writtenInstance, tenantIdAndCentricId, batchContext, writtenEvent);
+        TenantIdAndCentricId globalCentricId = new TenantIdAndCentricId(tenantId, Id.NULL);
+        TenantIdAndCentricId userCentricId = new TenantIdAndCentricId(tenantId, writtenEvent.getCentricId());
+        process(lock, model, model.getWriteTraversers(), className, writtenInstance, globalCentricId, userCentricId, batchContext, writtenEvent);
 
         long start = System.currentTimeMillis();
         viewChangeNotificationProcessor.process(batchContext, writtenEvent);
@@ -161,7 +160,8 @@ public class TasmoEventProcessor {
         Map<String, InitiateWriteTraversal> traversers,
         String className,
         WrittenInstance writtenInstance,
-        TenantIdAndCentricId tenantIdAndGloballyCentricId,
+        TenantIdAndCentricId globalCentricId,
+        TenantIdAndCentricId userCentricId,
         WrittenEventContext batchContext,
         WrittenEvent writtenEvent) throws Exception {
 
@@ -173,29 +173,16 @@ public class TasmoEventProcessor {
             long start = System.currentTimeMillis();
             synchronized (lock) {
                 if (writtenInstance.isDeletion()) {
-                    eventPersistor.removeValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp);
+                    eventPersistor.removeValueFields(model, className, globalCentricId, instanceId, timestamp);
+                    eventPersistor.removeValueFields(model, className, userCentricId, instanceId, timestamp);
                 } else {
-                    eventPersistor.updateValueFields(model, className, tenantIdAndGloballyCentricId, instanceId, timestamp, writtenInstance);
+                    eventPersistor.updateValueFields(model, className, globalCentricId, instanceId, timestamp, writtenInstance);
+                    eventPersistor.updateValueFields(model, className, userCentricId, instanceId, timestamp, writtenInstance);
                 }
                 processingStats.latency("UPDATE", className, System.currentTimeMillis() - start);
-                eventTraverser.traverseEvent(initiateTraversal, batchContext, tenantIdAndGloballyCentricId, writtenEvent);
+                eventTraverser.traverseEvent(initiateTraversal, batchContext, globalCentricId, userCentricId, writtenEvent);
             }
         }
     }
 
-    private List<TenantIdAndCentricId> buildTenantIdAndCentricIds(VersionedTasmoViewModel model,
-        String className,
-        TenantId tenantId,
-        WrittenEvent writtenEvent) {
-
-        List<TenantIdAndCentricId> tenantIdAndCentricIds = new ArrayList<>();
-        tenantIdAndCentricIds.add(new TenantIdAndCentricId(tenantId, Id.NULL));
-        for (TasmoViewModel.FieldNameAndType fieldNameAndType : model.getEventModel().get(className)) {
-            if (fieldNameAndType.isIdCentric()) {
-                tenantIdAndCentricIds.add(new TenantIdAndCentricId(tenantId, writtenEvent.getCentricId()));
-                break;
-            }
-        }
-        return tenantIdAndCentricIds;
-    }
 }

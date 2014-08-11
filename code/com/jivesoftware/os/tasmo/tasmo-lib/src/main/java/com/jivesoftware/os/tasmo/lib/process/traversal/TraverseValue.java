@@ -25,18 +25,22 @@ public class TraverseValue implements StepTraverser {
     private final Set<String> fieldNames;
     private final int processingPathIndex;
     private final int pathIndex;
+    private final boolean centric;
 
     public TraverseValue(Set<String> fieldNames,
             int processingPathIndex,
-            int pathIndex) {
+            int pathIndex,
+            boolean centric) {
 
         this.fieldNames = fieldNames;
         this.processingPathIndex = processingPathIndex;
         this.pathIndex = pathIndex;
+        this.centric = centric;
     }
 
     @Override
-    public void process(TenantIdAndCentricId tenantIdAndCentricId,
+    public void process(TenantIdAndCentricId globalCentricId,
+            TenantIdAndCentricId userCentricId,
             WrittenEventContext writtenEventContext,
             PathTraversalContext pathTraversalContext,
             PathContext pathContext,
@@ -49,6 +53,8 @@ public class TraverseValue implements StepTraverser {
             List<ReferenceWithTimestamp> versions = leafContext.removeLeafNodeFields(writtenEventContext, pathContext);
             pathContext.addVersions(pathIndex, versions);
         } else {
+
+            TenantIdAndCentricId tenantIdAndCentricId = (centric ? userCentricId : globalCentricId);
 
             String[] fieldNamesArray = fieldNames.toArray(new String[fieldNames.size()]);
             ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] got = writtenEventContext
@@ -69,7 +75,7 @@ public class TraverseValue implements StepTraverser {
             pathContext.addVersions(pathIndex, versions);
         }
         PathId to = pathContext.getPathId(processingPathIndex);
-        streamTo.stream(tenantIdAndCentricId, writtenEventContext, pathTraversalContext, pathContext, leafContext, to);
+        streamTo.stream(globalCentricId, userCentricId, writtenEventContext, pathTraversalContext, pathContext, leafContext, to);
     }
 
     @Override

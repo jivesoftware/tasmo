@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -35,13 +36,13 @@ public class LongPathsTest extends BaseTest {
         t.write(EventBuilder.update(containerId, tenantId, actorId).set("refs_moderators", Arrays.asList(userId)).build());
         ObjectId contentId = t.write(EventBuilder.create(t.idProvider(), "Content", tenantId, actorId).set("ref_parent", containerId).build());
         t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", "moderator");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(contentView, contentId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
         t.write(EventBuilder.update(containerId, tenantId, actorId).set("refs_moderators", Collections.<ObjectId>emptyList()).build());
         t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", null);
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(contentView, contentId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -49,7 +50,7 @@ public class LongPathsTest extends BaseTest {
         t.write(EventBuilder.update(containerId, tenantId, actorId).set("refs_moderators", Arrays.asList(userId, userId2)).build());
         t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId}, "userName", "moderator");
         t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId2}, "userName", "moderator2");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(contentView, contentId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -61,12 +62,12 @@ public class LongPathsTest extends BaseTest {
         t.addExpectation(contentId, contentView, moderatorNames, new ObjectId[]{contentId, containerId, userId2}, "userName", "moderator2");
 
         System.out.println("READ");
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(contentView, contentId.getId()), Id.NULL);
         System.out.println("Post-event:" + mapper.writeValueAsString(view));
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(contentView, contentId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(contentView, contentId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
     }
 }

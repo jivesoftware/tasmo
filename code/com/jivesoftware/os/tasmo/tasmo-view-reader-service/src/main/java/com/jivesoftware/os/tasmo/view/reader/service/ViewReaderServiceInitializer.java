@@ -2,8 +2,11 @@ package com.jivesoftware.os.tasmo.view.reader.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
+import com.jivesoftware.os.jive.utils.id.ImmutableByteArrayMarshaller;
+import com.jivesoftware.os.jive.utils.id.SaltingImmutableByteArrayMarshaller;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
@@ -13,15 +16,13 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueS
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.CurrentTimestamper;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
-import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
+import com.jivesoftware.os.tasmo.id.ViewValue;
+import com.jivesoftware.os.tasmo.id.ViewValueMarshaller;
 import com.jivesoftware.os.tasmo.model.ViewsProvider;
 import com.jivesoftware.os.tasmo.model.path.ViewPathKeyProvider;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueMarshaller;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import java.io.IOException;
 import java.util.concurrent.Executors;
@@ -85,7 +86,7 @@ public class ViewReaderServiceInitializer {
                 RuntimeException> store = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
                 "tasmo.views", "v", new DefaultRowColumnValueStoreMarshaller<>(
                         new TenantIdAndCentricIdMarshaller(),
-                        new ImmutableByteArrayMarshaller(),
+                        new SaltingImmutableByteArrayMarshaller(),
                         new ImmutableByteArrayMarshaller(),
                         new ViewValueMarshaller()), new CurrentTimestamper()));
 

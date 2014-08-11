@@ -27,7 +27,9 @@ public class ValidatingPathCallback implements PathCallback {
     }
 
     private void assertFieldIsPresent(Set<String> classNames, ValueType type, String[] fieldNames) throws IllegalArgumentException {
-        if (type != ValueType.backrefs && type != ValueType.latest_backref && type != ValueType.count) {
+        if (type != ValueType.backrefs && type != ValueType.centric_backrefs &&
+                type != ValueType.latest_backref && type != ValueType.centric_latest_backref &&
+                type != ValueType.count && type != ValueType.centric_count) {
             for (String fieldName : fieldNames) {
                 int foundEventsWithField = 0;
                 if (isIgnoredField(fieldName)) {
@@ -40,10 +42,14 @@ public class ValidatingPathCallback implements PathCallback {
                         if (event.get(fieldName).equals(type)) {
                             foundEventsWithField++;
                         } else {
-                            if (type == ValueType.value) {
+                            if (type == ValueType.value || type == ValueType.centric_value) {
                                 if (event.get(fieldName).equals(ValueType.ref)) {
                                     foundEventsWithField++;
                                 } else if (event.get(fieldName).equals(ValueType.refs)) {
+                                    foundEventsWithField++;
+                                } else if (event.get(fieldName).equals(ValueType.centric_ref)) {
+                                    foundEventsWithField++;
+                                } else if (event.get(fieldName).equals(ValueType.centric_refs)) {
                                     foundEventsWithField++;
                                 }
                             }

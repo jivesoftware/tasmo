@@ -8,10 +8,10 @@ public class ObjectIdTestDataProvider {
     public static Object[][] createObjectId() {
 
         String className1 = "amazon";
-        long id1 = 300_000;
+        long id1 = 300000;
 
         String className2 = "雅虎邮箱";
-        long id2 = 20_000;
+        long id2 = 20000;
 
         return new Object[][] {
             { className1, id1 },

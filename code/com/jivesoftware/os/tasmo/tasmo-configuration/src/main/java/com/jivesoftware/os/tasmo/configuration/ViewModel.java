@@ -11,20 +11,19 @@ package com.jivesoftware.os.tasmo.configuration;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+
 import java.util.Iterator;
 import java.util.Objects;
 
 public class ViewModel {
 
     private final String viewClassName;
-    private final boolean idCentric;
     private final boolean notifiable;
     private final String viewIdFieldName;
     private final ViewObject viewObject;
 
-    private ViewModel(String viewClassName, boolean idCentric, boolean notifiable, String viewIdFieldName, ViewObject viewObject) {
+    private ViewModel(String viewClassName, boolean notifiable, String viewIdFieldName, ViewObject viewObject) {
         this.viewClassName = viewClassName;
-        this.idCentric = idCentric;
         this.notifiable = notifiable;
         this.viewIdFieldName = viewIdFieldName;
         this.viewObject = viewObject;
@@ -32,10 +31,6 @@ public class ViewModel {
 
     public String getViewClassName() {
         return viewClassName;
-    }
-
-    public boolean isIdCentric() {
-        return idCentric;
     }
 
     public boolean isNotifiable() {
@@ -64,15 +59,11 @@ public class ViewModel {
 
         public ViewModel build() {
             String viewClassName = null;
-            boolean idCentric = false;
             boolean notifiable = false;
             String viewIdFieldName = null;
             ViewObject viewObject = null;
             for (Iterator<String> it = viewConfigurationNode.fieldNames(); it.hasNext();) {
                 String fieldName = it.next();
-                if (fieldName.equals("idCentric")) {
-                    idCentric = true;
-                }
                 if (fieldName.equals("notifiable")) {
                     notifiable = true;
                 }
@@ -88,7 +79,7 @@ public class ViewModel {
             if (viewClassName == null) {
                 throw new IllegalStateException("Failed to locate a valid viewObject definition.");
             }
-            return new ViewModel(viewClassName, idCentric, notifiable, viewIdFieldName, viewObject);
+            return new ViewModel(viewClassName, notifiable, viewIdFieldName, viewObject);
         }
     }
 
@@ -96,7 +87,6 @@ public class ViewModel {
     public String toString() {
         return "ViewModel{"
             + "viewClassName=" + viewClassName
-            + ", idCentric=" + idCentric
             + ", viewIdFieldName=" + viewIdFieldName
             + ", viewObject=" + viewObject + '}';
     }
@@ -105,7 +95,6 @@ public class ViewModel {
     public int hashCode() {
         int hash = 5;
         hash = 97 * hash + Objects.hashCode(this.viewClassName);
-        hash = 97 * hash + (this.idCentric ? 1 : 0);
         hash = 97 * hash + Objects.hashCode(this.viewIdFieldName);
         hash = 97 * hash + Objects.hashCode(this.viewObject);
         return hash;
@@ -121,9 +110,6 @@ public class ViewModel {
         }
         final ViewModel other = (ViewModel) obj;
         if (!Objects.equals(this.viewClassName, other.viewClassName)) {
-            return false;
-        }
-        if (this.idCentric != other.idCentric) {
             return false;
         }
         if (!Objects.equals(this.viewIdFieldName, other.viewIdFieldName)) {

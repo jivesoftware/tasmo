@@ -61,7 +61,8 @@ public class ViewPathDictionaryTest {
     @Test
     public void testWithBackRef() {
         ModelPath.Builder builder = ModelPath.builder("Test");
-        ModelPathStep root = new ModelPathStep(true, Sets.newHashSet("A", "B"), "rootPointsToMiddle", ModelPathStepType.ref, Sets.newHashSet("C", "D"), null);
+        ModelPathStep root = new ModelPathStep(true,
+            Sets.newHashSet("A", "B"), "rootPointsToMiddle", ModelPathStepType.ref, Sets.newHashSet("C", "D"), null);
         builder.addPathMember(root);
 
         ModelPathStep middle = new ModelPathStep(false, Sets.newHashSet("E", "F"), "tailPointsToMiddle",

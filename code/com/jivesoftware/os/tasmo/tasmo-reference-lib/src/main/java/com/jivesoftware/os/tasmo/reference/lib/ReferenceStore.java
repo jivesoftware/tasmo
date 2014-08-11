@@ -113,7 +113,8 @@ public class ReferenceStore {
                         public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> bId) throws Exception {
                             if (bId != null) {
 
-                                ReferenceWithTimestamp reference = new ReferenceWithTimestamp(bId.getColumn(), fieldName, bId.getTimestamp());
+                                ReferenceWithTimestamp reference = new ReferenceWithTimestamp(tenantIdAndCentricId,
+                                        bId.getColumn(), fieldName, bId.getTimestamp());
                                 if (LOG.isTraceEnabled()) {
 
                                     LOG.trace(System.currentTimeMillis() + " |--> {} Got bIds Tenant={} a={} b={} Timestamp={}", new Object[]{
@@ -155,7 +156,7 @@ public class ReferenceStore {
                         public ColumnValueAndTimestamp<ObjectId, byte[], Long> callback(ColumnValueAndTimestamp<ObjectId, byte[], Long> backRef)
                         throws Exception {
                             if (backRef != null) {
-                                ReferenceWithTimestamp reference = new ReferenceWithTimestamp(backRef.getColumn(),
+                                ReferenceWithTimestamp reference = new ReferenceWithTimestamp(tenantIdAndCentricId, backRef.getColumn(),
                                         fieldName, backRef.getTimestamp());
                                 if (LOG.isTraceEnabled()) {
 
@@ -250,7 +251,7 @@ public class ReferenceStore {
                                 ClassAndField_IdKey aClassAndField_bId = new ClassAndField_IdKey(from.getClassName(),
                                         fieldName, to.getColumn());
 
-                                tos.add(new ReferenceWithTimestamp(to.getColumn(), fieldName, to.getTimestamp()));
+                                tos.add(new ReferenceWithTimestamp(tenantIdAndCentricId, to.getColumn(), fieldName, to.getTimestamp()));
 
                                 removeBackLinks.add(new RowColumnTimestampRemove<>(aClassAndField_bId, from, constantTimestamper));
                                 removeLinks.add(new RowColumnTimestampRemove<>(aClassAndField_aId, to.getColumn(), constantTimestamper));

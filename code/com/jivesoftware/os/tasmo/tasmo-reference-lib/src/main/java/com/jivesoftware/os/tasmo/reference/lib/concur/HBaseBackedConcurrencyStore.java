@@ -6,9 +6,10 @@
  *
  * This software is the proprietary information of Jive Software. Use is subject to license terms.
  */
-
 package com.jivesoftware.os.tasmo.reference.lib.concur;
 
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
@@ -29,7 +30,7 @@ import java.util.Set;
  *
  * @author jonathan.colt
  */
-public class HBaseBackedConcurrencyStore implements ConcurrencyStore{
+public class HBaseBackedConcurrencyStore implements ConcurrencyStore {
 
     private static final MetricLogger LOG = MetricLoggerFactory.getLogger();
     private static final String EXISTS = "*exists*";
@@ -115,12 +116,30 @@ public class HBaseBackedConcurrencyStore implements ConcurrencyStore{
 
     /**
      *
-     * @param tenantId
-     * @param expected
-     * @return expected instance if no instance was modified.
+     * @param expectedSet
+     * @return expectedSet instance if no instance was modified.
      */
     @Override
-    public Set<FieldVersion> checkIfModified(TenantIdAndCentricId tenantId, Set<FieldVersion> expectedSet) {
+    public Set<FieldVersion> checkIfModified(Set<FieldVersion> expectedSet) {
+        ListMultimap<TenantIdAndCentricId, FieldVersion> perTenantFieldVersions = ArrayListMultimap.create();
+        for (FieldVersion fieldVersion : expectedSet) {
+            perTenantFieldVersions.put(fieldVersion.getTenantIdAndCentricId(), fieldVersion);
+        }
+        Set<FieldVersion> unexpected = new HashSet<>();
+        for (TenantIdAndCentricId tenantIdAndCentricId : perTenantFieldVersions.keySet()) {
+            List<FieldVersion> expected = perTenantFieldVersions.get(tenantIdAndCentricId);
+            List<FieldVersion> was = checkIfModified(tenantIdAndCentricId, expected);
+            if (was != expected) {
+                unexpected.addAll(was);
+            }
+        }
+        if (unexpected.isEmpty()) {
+            return expectedSet;
+        }
+        return unexpected;
+    }
+
+    private List<FieldVersion> checkIfModified(TenantIdAndCentricId tenantId, List<FieldVersion> expectedSet) {
         List<FieldVersion> expected = new ArrayList<>(expectedSet);
         List<ObjectId> rows = new ArrayList<>();
         List<String> columns = new ArrayList<>();
@@ -133,7 +152,7 @@ public class HBaseBackedConcurrencyStore implements ConcurrencyStore{
         }
 
         List<Map<String, Long>> results = updatedStore.multiRowMultiGet(tenantId, rows, columns, null, null);
-        Set<FieldVersion> was = new HashSet<>(expected.size());
+        List<FieldVersion> was = new ArrayList<>(expected.size());
         for (int i = 0; i < expected.size(); i++) {
             FieldVersion e = expected.get(i);
             Map<String, Long> result = results.get(i);
@@ -144,7 +163,7 @@ public class HBaseBackedConcurrencyStore implements ConcurrencyStore{
                 if (got == null) {
                     was.add(e);
                 } else if (!Objects.equals(got, e.version)) {
-                    was.add(new FieldVersion(e.objectId, e.fieldName, got));
+                    was.add(new FieldVersion(tenantId, e.objectId, e.fieldName, got));
                     return was; // Means epected has been modified
                 } else {
                     was.add(e);
@@ -152,6 +171,5 @@ public class HBaseBackedConcurrencyStore implements ConcurrencyStore{
             }
         }
         return expectedSet;
-
     }
 }

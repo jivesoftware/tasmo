@@ -10,6 +10,7 @@ import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.configuration.views.PathAndDictionary;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.lib.write.PathId;
 import com.jivesoftware.os.tasmo.lib.write.ViewField;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
@@ -17,7 +18,6 @@ import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceWithTimestamp;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore.ViewCollector;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -46,7 +46,7 @@ public class ReadCachedViewFields {
         this.viewMaxSizeInBytes = viewMaxSizeInBytes;
     }
 
-    public Map<ViewDescriptor, List<ViewField>> readViews(List<ViewDescriptor> request) throws IOException {
+    public Map<ViewDescriptor, ViewFieldsResponse> readViews(List<ViewDescriptor> request) throws IOException {
         Preconditions.checkArgument(request != null);
 
         List<ViewCollectorImpl> viewCollectors = Lists.newArrayList();
@@ -64,9 +64,9 @@ public class ReadCachedViewFields {
         try {
             viewValueReader.readViewValues(viewCollectors);
 
-            Map<ViewDescriptor, List<ViewField>> views = new HashMap<>();
+            Map<ViewDescriptor, ViewFieldsResponse> views = new HashMap<>();
             for (ViewCollectorImpl viewCollector : viewCollectors) {
-                views.put(viewCollector.getViewDescriptor(), viewCollector.getViewValueFields());
+                views.put(viewCollector.getViewDescriptor(), new ViewFieldsResponse(viewCollector.getViewValueFields()));
             }
             return Collections.unmodifiableMap(views);
         } catch (Exception ex) {
@@ -129,11 +129,13 @@ public class ReadCachedViewFields {
                                 ModelPathStep modelPathStep = modelPath.getPathMembers().get(i);
                                 ObjectId objectId = new ObjectId(viewPathClasses[i], modelPathIds[i]);
                                 modelPathInstanceIds[i] = new PathId(objectId, modelPathTimeStamps[i]);
-                                referenceWithTimestamps.add(new ReferenceWithTimestamp(objectId, modelPathStep.getRefFieldName(), modelPathTimeStamps[i]));
+                                referenceWithTimestamps.add(new ReferenceWithTimestamp(viewDescriptor.getTenantIdAndCentricId(), objectId,
+                                        modelPathStep.getRefFieldName(), modelPathTimeStamps[i]));
                             }
 
                             viewValueFields.add(new ViewField(-1,
                                 viewDescriptor.getActorId(),
+                                viewDescriptor.getUserId(),
                                 ViewField.ViewFieldChangeType.add,
                                 viewDescriptor.getViewId(),
                                 modelPath,

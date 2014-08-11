@@ -5,9 +5,9 @@ import com.google.inject.Singleton;
 import com.jivesoftware.os.jive.utils.jaxrs.util.ResponseHelper;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.ingress.EventConvertingCallbackStream;
 import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
-import com.jivesoftware.os.tasmo.lib.process.ProcessingStats;
+import com.jivesoftware.os.tasmo.lib.ingress.EventConvertingCallbackStream;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import java.util.List;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -28,7 +28,7 @@ public class MaterializerServiceEndpoints {
     EventConvertingCallbackStream ingressWrittenEvents;
 
     @Context
-    ProcessingStats tasmoProcessingStats;
+    TasmoProcessingStats tasmoProcessingStats;
 
     @Context
     TasmoBlacklist tasmoBlacklist;

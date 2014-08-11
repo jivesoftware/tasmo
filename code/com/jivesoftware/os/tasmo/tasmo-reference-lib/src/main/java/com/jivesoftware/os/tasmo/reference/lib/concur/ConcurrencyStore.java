@@ -14,11 +14,10 @@ public interface ConcurrencyStore {
 
     /**
      *
-     * @param tenantId
      * @param expectedSet
      * @return expected instance if no instance was modified.
      */
-    Set<FieldVersion> checkIfModified(TenantIdAndCentricId tenantId, Set<FieldVersion> expectedSet);
+    Set<FieldVersion> checkIfModified(Set<FieldVersion> expectedSet);
 
     Set<ObjectId> getExistence(TenantIdAndCentricId tenantId, Set<ObjectId> objectIds);
 

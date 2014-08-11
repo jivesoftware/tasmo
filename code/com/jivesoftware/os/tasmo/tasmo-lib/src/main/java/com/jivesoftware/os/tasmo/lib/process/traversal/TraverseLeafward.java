@@ -26,15 +26,18 @@ class TraverseLeafward implements StepTraverser {
     private final RefStreamer streamer;
     private final int pathIndex;
     private final Set<String> validDownStreamTypes;
+    private final boolean centric;
 
-    TraverseLeafward(RefStreamer streamer, int pathIndex, Set<String> validDownStreamTypes) {
+    TraverseLeafward(RefStreamer streamer, int pathIndex, Set<String> validDownStreamTypes, boolean centric) {
         this.streamer = streamer;
         this.pathIndex = pathIndex;
         this.validDownStreamTypes = validDownStreamTypes;
+        this.centric = centric;
     }
 
     @Override
-    public void process(final TenantIdAndCentricId tenantIdAndCentricId,
+    public void process(final TenantIdAndCentricId globalCentricId,
+            final TenantIdAndCentricId userCentricId,
             final WrittenEventContext writtenEventContext,
             final PathTraversalContext context,
             PathContext pathContext,
@@ -45,19 +48,28 @@ class TraverseLeafward implements StepTraverser {
         final PathContext copyOfPathContext = pathContext.getCopy();
         copyOfPathContext.setPathId(writtenEventContext, pathIndex, from.getObjectId(), from.getTimestamp());
 
-        streamer.stream(writtenEventContext.getReferenceTraverser(), tenantIdAndCentricId, from.getObjectId(), context.getThreadTimestamp(),
+        final TenantIdAndCentricId tenantIdAndCentricId = (centric ? userCentricId : globalCentricId);
+        streamer.stream(writtenEventContext.getReferenceTraverser(),
+                tenantIdAndCentricId,
+                from.getObjectId(),
+                context.getThreadTimestamp(),
                 new CallbackStream<ReferenceWithTimestamp>() {
                     @Override
                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                         if (to != null && isValidDownStreamObject(to)) {
 
-                            ReferenceWithTimestamp ref = new ReferenceWithTimestamp(
+                            ReferenceWithTimestamp ref = new ReferenceWithTimestamp(tenantIdAndCentricId,
                                     (streamer.isBackRefStreamer()) ? to.getObjectId() : from.getObjectId(),
                                     to.getFieldName(),
                                     to.getTimestamp());
 
                             copyOfPathContext.addVersions(pathIndex, Arrays.asList(ref));
-                            streamTo.stream(tenantIdAndCentricId, writtenEventContext, context, copyOfPathContext, leafContext,
+                            streamTo.stream(globalCentricId,
+                                    userCentricId,
+                                    writtenEventContext,
+                                    context,
+                                    copyOfPathContext,
+                                    leafContext,
                                     new PathId(to.getObjectId(), to.getTimestamp()));
                         }
                         return to;

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.io.Files;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
-import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -62,9 +61,7 @@ public class DebugHarnessTest extends BaseTest {
         boolean failed = false;
         for (Id commentInstanceId : instanceIds) {
             ObjectId viewObjectId = new ObjectId("UserFollowActivityView", commentInstanceId);
-            ObjectNode view = t.readView(
-                    new TenantIdAndCentricId(tenantId, Id.NULL),
-                    actorId, viewObjectId);
+            ObjectNode view = t.readView(tenantId, actorId, viewObjectId, Id.NULL);
             System.err.println("View: " + commentInstanceId.toStringForm());
             System.err.println(mapper.writeValueAsString(view));
             if (view == null) {

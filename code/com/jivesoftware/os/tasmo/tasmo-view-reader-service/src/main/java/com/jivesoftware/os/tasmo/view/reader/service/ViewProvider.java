@@ -14,18 +14,18 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
-import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.configuration.views.PathAndDictionary;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
+import com.jivesoftware.os.tasmo.id.ViewValue;
+import com.jivesoftware.os.tasmo.model.TenantAndActor;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewDescriptor;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewReader;
 import com.jivesoftware.os.tasmo.view.reader.api.ViewResponse;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore.ViewCollector;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -266,40 +265,4 @@ public class ViewProvider<V> implements ViewReader<V> {
 
     }
 
-    static class TenantAndActor {
-
-        private final TenantId tenantId;
-        private final Id actorId;
-
-        TenantAndActor(TenantId tenantId, Id actorId) {
-            this.tenantId = tenantId;
-            this.actorId = actorId;
-        }
-
-        @Override
-        public int hashCode() {
-            int hash = 3;
-            hash = 79 * hash + Objects.hashCode(this.tenantId);
-            hash = 79 * hash + Objects.hashCode(this.actorId);
-            return hash;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            final TenantAndActor other = (TenantAndActor) obj;
-            if (!Objects.equals(this.tenantId, other.tenantId)) {
-                return false;
-            }
-            if (!Objects.equals(this.actorId, other.actorId)) {
-                return false;
-            }
-            return true;
-        }
-    }
 }

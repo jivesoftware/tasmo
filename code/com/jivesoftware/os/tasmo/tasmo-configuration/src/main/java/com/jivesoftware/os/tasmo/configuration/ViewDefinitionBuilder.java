@@ -53,7 +53,6 @@ public class ViewDefinitionBuilder {
     private final String viewName;
     private final String rootEventType;
     private final List<ModelPath> paths;
-    private boolean idCentric;
     private boolean notifiable;
 
     public ViewDefinitionBuilder(EventsModel eventsModel, String viewName, String rootEventType) {
@@ -61,10 +60,6 @@ public class ViewDefinitionBuilder {
         this.viewName = viewName;
         this.rootEventType = rootEventType;
         this.paths = new ArrayList<>();
-    }
-
-    public void setIdCentric(boolean idCentric) {
-        this.idCentric = idCentric;
     }
 
     public void setNotifiable(boolean notifiable) {
@@ -92,11 +87,11 @@ public class ViewDefinitionBuilder {
 
             if (pathIdx == elements.size() - 1) {
                 for (String field : element.fields) {
-                    if (eventFields.get(field) != ValueType.value) {
+                    if (eventFields.get(field) != ValueType.value && eventFields.get(field) != ValueType.centric_value) {
                         throw new IllegalArgumentException(field + " is not a value field of " + element.eventClass);
                     }
                 }
-                pathSteps.add(new ModelPathStep(pathIdx == 0, element.eventClass, Arrays.<String>asList(element.fields)));
+                pathSteps.add(new ModelPathStep(pathIdx == 0, element.eventClass, Arrays.<String>asList(element.fields), false));
 
             } else {
                 if (element.fields.length > 1) {
@@ -115,6 +110,12 @@ public class ViewDefinitionBuilder {
                 } else if (valueType == ValueType.refs) {
                     String destination = elements.get(pathIdx + 1).eventClass;
                     step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.refs, destination);
+                } else if (valueType == ValueType.centric_ref) {
+                    String destination = elements.get(pathIdx + 1).eventClass;
+                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.centric_ref, destination);
+                } else if (valueType == ValueType.centric_refs) {
+                    String destination = elements.get(pathIdx + 1).eventClass;
+                    step = new ModelPathStep(pathIdx == 0, element.eventClass, element.fields[0], ModelPathStepType.centric_refs, destination);
                 } else {
                     throw new IllegalArgumentException("Unexpected value type " + valueType + " for event " + element.eventClass
                         + "and field " + element.fields[0]);
@@ -147,13 +148,21 @@ public class ViewDefinitionBuilder {
             } else {
                 return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.backRefs, destination);
             }
+        } else if (type == ValueType.centric_ref || type == ValueType.centric_refs) {
+            if ("count".equals(qualifier)) {
+                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.centric_count, destination);
+            } else if ("latest".equals(qualifier)) {
+                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.centric_latest_backRef, destination);
+            } else {
+                return new ModelPathStep(head, nextElement.eventClass, refField, ModelPathStepType.centric_backRefs, destination);
+            }
         }
 
         throw new IllegalArgumentException("event " + destination + " and field " + refField + " are not valid for the current model");
     }
 
     public ViewBinding build() {
-        return new ViewBinding(viewName, paths, idCentric, notifiable);
+        return new ViewBinding(viewName, paths, notifiable);
     }
 
     private class PathElement {

@@ -14,6 +14,7 @@ public class WrittenEventContext {
 
     private final long eventId;
     private final Id actorId;
+    private final Id userId;
     private final WrittenEvent event;
     private final WrittenEventProvider writtenEventProvider;
     private final ConcurrencyChecker concurrencyChecker;
@@ -22,7 +23,7 @@ public class WrittenEventContext {
     private final ReferenceTraverser referenceTraverser;
     private final ModifiedViewProvider modifiedViewProvider;
     private final CommitChange commitChange;
-    private final ProcessingStats processingStats;
+    private final TasmoProcessingStats processingStats;
 
     public int valuePaths; // hack
     public int refPaths; // hack
@@ -34,6 +35,7 @@ public class WrittenEventContext {
 
     public WrittenEventContext(long eventId,
         Id actorId,
+        Id userId,
         WrittenEvent event,
         WrittenEventProvider writtenEventProvider,
         ConcurrencyChecker concurrencyChecker,
@@ -42,9 +44,10 @@ public class WrittenEventContext {
         ReferenceTraverser referenceTraverser,
         ModifiedViewProvider modifiedViewProvider,
         CommitChange commitChange,
-        ProcessingStats processingStats) {
+        TasmoProcessingStats processingStats) {
         this.eventId = eventId;
         this.actorId = actorId;
+        this.userId = userId;
         this.event = event;
         this.writtenEventProvider = writtenEventProvider;
         this.concurrencyChecker = concurrencyChecker;
@@ -64,7 +67,11 @@ public class WrittenEventContext {
         return actorId;
     }
 
-    public ProcessingStats getProcessingStats() {
+    public Id getUserId() {
+        return userId;
+    }
+    
+    public TasmoProcessingStats getProcessingStats() {
         return processingStats;
     }
 

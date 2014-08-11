@@ -28,11 +28,11 @@ public class InitiateTraversalContext {
     private final Set<String> allInitialFieldNames = Sets.newHashSet();
 
     public InitiateTraversalContext(
-        ModelPathStep initialModelPathMember,
-        int pathIndex,
-        int membersSize,
-        String viewclassName,
-        long modelPathIdHashcode) {
+            ModelPathStep initialModelPathMember,
+            int pathIndex,
+            int membersSize,
+            String viewclassName,
+            long modelPathIdHashcode) {
         this.initialModelPathMember = initialModelPathMember;
         this.pathIndex = pathIndex;
         this.membersSize = membersSize;
@@ -44,6 +44,10 @@ public class InitiateTraversalContext {
             allInitialFieldNames.addAll(fieldNames);
         }
         allInitialFieldNames.add(ReservedFields.DELETED);
+    }
+
+    public boolean isCentric() {
+        return initialModelPathMember.getStepType().isCentric();
     }
 
     public Set<String> getInitialClassNames() {
@@ -77,10 +81,10 @@ public class InitiateTraversalContext {
     @Override
     public String toString() {
         return "InitialStep{ viewClassName=" + viewClassName
-            + ", initialModelPathMember=" + initialModelPathMember
-            + ", pathIndex=" + pathIndex
-            + ", membersSize=" + membersSize
-            + ", modelPathId=" + modelPathIdHashcode
-            + '}';
+                + ", initialModelPathMember=" + initialModelPathMember
+                + ", pathIndex=" + pathIndex
+                + ", membersSize=" + membersSize
+                + ", modelPathId=" + modelPathIdHashcode
+                + '}';
     }
 }

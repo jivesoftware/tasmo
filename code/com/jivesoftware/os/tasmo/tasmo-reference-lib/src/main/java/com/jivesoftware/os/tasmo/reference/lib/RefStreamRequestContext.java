@@ -82,7 +82,8 @@ public class RefStreamRequestContext implements CallbackStream<ColumnValueAndTim
             }
             refStreamQueue.put(NULL);
         } else {
-            ReferenceWithTimestamp referenceWithTimestamp = new ReferenceWithTimestamp(v.getColumn(), referringFieldName, v.getTimestamp());
+            ReferenceWithTimestamp referenceWithTimestamp = new ReferenceWithTimestamp(tenantIdAndCentricId,
+                    v.getColumn(), referringFieldName, v.getTimestamp());
             batch.add(referenceWithTimestamp);
             if (batch.size() > MAX_FAN_OUT_BEFORE_WARN) {
                 LOG.warn("TODO: streamBackRefs reference fan-out is exceeding comfort level. We need to break scans into batched scans.");

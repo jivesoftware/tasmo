@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -34,31 +35,31 @@ public class MultiTypedFieldTest extends BaseTest {
         ObjectId commentId = t.write(EventBuilder.create(t.idProvider(), "Comment", tenantId, actorId).set("modDate", "eventLater").build());
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         t.write(EventBuilder.update(commentVersionId, tenantId, actorId).set("parent", statusId).build());
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", "later");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
 
         t.write(EventBuilder.update(commentVersionId, tenantId, actorId).set("parent", commentId).build());
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         //setting to a type that was not in the path will blow away the old view and not populate a new one for this path
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", null);
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", null);
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, commentId }, "modDate", null);
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -81,10 +82,10 @@ public class MultiTypedFieldTest extends BaseTest {
         ObjectId commentId = t.write(EventBuilder.create(t.idProvider(), "Comment", tenantId, actorId).set("modDate", "eventLater").build());
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         t.write(EventBuilder.update(statusId, tenantId, actorId).set("child", commentVersionId).build());
@@ -92,10 +93,10 @@ public class MultiTypedFieldTest extends BaseTest {
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", "later");
         //we don't actually clean up the latest backref anymore
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         t.write(EventBuilder.update(commentVersionId, tenantId, actorId).set("child", commentVersionId).build());
@@ -106,7 +107,7 @@ public class MultiTypedFieldTest extends BaseTest {
         //we don't actually clean up the latest backref anymore
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, commentId }, "modDate", null);
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -129,20 +130,20 @@ public class MultiTypedFieldTest extends BaseTest {
         ObjectId commentId = t.write(EventBuilder.create(t.idProvider(), "Comment", tenantId, actorId).set("modDate", "eventLater").build());
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         t.write(EventBuilder.update(statusId, tenantId, actorId).set("child", commentVersionId).build());
 
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", "later");
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
-        view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         t.write(EventBuilder.update(commentVersionId, tenantId, actorId).set("child", commentVersionId).build());
@@ -150,7 +151,7 @@ public class MultiTypedFieldTest extends BaseTest {
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, statusId }, "modDate", "later");
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, documentId }, "modDate", "now");
         t.addExpectation(commentVersionId, viewClassName, viewFieldName, new ObjectId[]{ commentVersionId, commentId }, "modDate", null);
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentVersionId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentVersionId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -176,7 +177,7 @@ public class MultiTypedFieldTest extends BaseTest {
         ObjectId commentVersionId = t.write(EventBuilder.create(t.idProvider(), "CommentVersion", tenantId, actorId).set("creationDate", "now")
             .set("processedBody", "booya").set("parent", commentId).set("author", userId).build());
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentId.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentId.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         t.addExpectation(commentId, viewClassName, "pathId1", new ObjectId[]{ commentId, commentVersionId }, "creationDate", "now");
@@ -185,7 +186,7 @@ public class MultiTypedFieldTest extends BaseTest {
         t.addExpectation(commentId, viewClassName, "pathId2", new ObjectId[]{ commentId, commentVersionId, userId }, "firstName", "ted");
         t.addExpectation(commentId, viewClassName, "pathId2", new ObjectId[]{ commentId, commentVersionId, userId }, "lastName", "tedson");
 
-        t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentId.getId()));
+        t.readView(tenantId, actorId, new ObjectId(viewClassName, commentId.getId()), Id.NULL);
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
 
@@ -193,7 +194,7 @@ public class MultiTypedFieldTest extends BaseTest {
             commentVersionId = t.write(EventBuilder.create(t.idProvider(), "CommentVersion", tenantId, actorId).set("creationDate", "later" + i)
                 .set("processedBody", "awwyeah").set("parent", commentId).set("author", userId).build());
 
-            view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentId.getId()));
+            view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentId.getId()), Id.NULL);
             System.out.println(mapper.writeValueAsString(view));
 
             t.addExpectation(commentId, viewClassName, "pathId1", new ObjectId[]{ commentId, commentVersionId }, "creationDate", "later" + i);
@@ -207,7 +208,7 @@ public class MultiTypedFieldTest extends BaseTest {
 
             t.write(EventBuilder.update(docId, tenantId, actorId).set("authz", "somedamnthing").build());
 
-            view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, commentId.getId()));
+            view = t.readView(tenantId, actorId, new ObjectId(viewClassName, commentId.getId()), Id.NULL);
             System.out.println(mapper.writeValueAsString(view));
 
             t.addExpectation(commentId, viewClassName, "pathId1", new ObjectId[]{ commentId, commentVersionId }, "creationDate", "later" + i);

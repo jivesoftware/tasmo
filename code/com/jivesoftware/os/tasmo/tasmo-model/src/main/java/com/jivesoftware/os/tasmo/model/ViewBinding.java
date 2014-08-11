@@ -1,11 +1,3 @@
-/*
- * $Revision$
- * $Date$
- *
- * Copyright (C) 1999-$year$ Jive Software. All rights reserved.
- *
- * This software is the proprietary information of Jive Software. Use is subject to license terms.
- */
 package com.jivesoftware.os.tasmo.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -15,7 +7,6 @@ import com.jivesoftware.os.tasmo.event.api.ReservedFields;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +19,6 @@ public class ViewBinding {
     private final String viewClassName;
     private final List<ModelPath> modelPaths;
     private final boolean persistChanges; // deprecated but left here since it has been deserialized and persisted in hbase
-    private final boolean idCentric;
     private final boolean notifiable;
     private final String viewIdFieldName;
 
@@ -37,7 +27,6 @@ public class ViewBinding {
         @JsonProperty("viewClassName") String viewClassName,
         @JsonProperty("modelPaths") List<ModelPath> modelPaths,
         @JsonProperty("persistChanges") boolean persistChanges,
-        @JsonProperty("idCentric") boolean idCentric,
         @JsonProperty("notifiable") boolean notifiable,
         @JsonProperty("viewIdFieldName") String viewIdFieldName) {
         if (viewClassName == null || viewClassName.length() == 0) {
@@ -46,14 +35,13 @@ public class ViewBinding {
         this.viewClassName = viewClassName;
         this.modelPaths = modelPaths;
         this.persistChanges = persistChanges;
-        this.idCentric = idCentric;
         this.notifiable = notifiable;
         this.viewIdFieldName = viewIdFieldName;
         validate();
     }
 
-    public ViewBinding(String viewClassName, List<ModelPath> modelPaths, boolean idCentric, boolean notifiable) {
-        this(viewClassName, modelPaths, true, idCentric, notifiable, null);
+    public ViewBinding(String viewClassName, List<ModelPath> modelPaths, boolean notifiable) {
+        this(viewClassName, modelPaths, true, notifiable, null);
     }
 
     private void validate() {
@@ -84,7 +72,7 @@ public class ViewBinding {
                 throw new IllegalStateException("Model path " + pathId + " attempts to bind to the '" + ReservedFields.DELETED + "' field");
             }
 
-            if (!leafStep.getStepType().equals(ModelPathStepType.value)) {
+            if (!leafStep.getStepType().equals(ModelPathStepType.value) && !leafStep.getStepType().equals(ModelPathStepType.centric_value)) {
                 throw new IllegalStateException("Model path " + pathId + " does not end with a value step");
             }
 
@@ -115,10 +103,6 @@ public class ViewBinding {
     @Deprecated
     public boolean isPersistChanges() {
         return persistChanges;
-    }
-
-    public boolean isIdCentric() {
-        return idCentric;
     }
 
     /**

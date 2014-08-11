@@ -22,13 +22,8 @@ import com.jivesoftware.os.tasmo.model.ViewBinding;
 import com.jivesoftware.os.tasmo.model.path.ModelPath;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+
+import java.util.*;
 
 /**
  *
@@ -36,10 +31,6 @@ import java.util.StringTokenizer;
 public class ViewModelParser {
 
     public List<ViewBinding> parse(List<String> modelPathtrings) {
-        return parse(modelPathtrings, false);
-    }
-
-    public List<ViewBinding> parse(List<String> modelPathtrings, boolean idCentric) {
         ArrayListMultimap<String, ModelPath> viewBindings = ArrayListMultimap.create();
 
         for (String simpleBinding : modelPathtrings) {
@@ -55,7 +46,7 @@ public class ViewModelParser {
 
         List<ViewBinding> viewBindingsList = Lists.newArrayList();
         for (Map.Entry<String, Collection<ModelPath>> entry : viewBindings.asMap().entrySet()) {
-            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, idCentric, true, null));
+            viewBindingsList.add(new ViewBinding(entry.getKey(), new ArrayList<>(entry.getValue()), false, true, null));
         }
 
         return viewBindingsList;
@@ -76,7 +67,10 @@ public class ViewModelParser {
 
         try {
             String[] memberParts = toStringArray(pathMember, ".");
-            if (pathMember.contains("." + ModelPathStepType.ref + ".") || pathMember.contains("." + ModelPathStepType.refs + ".")) {
+            if (pathMember.contains("." + ModelPathStepType.ref + ".")
+                    || pathMember.contains("." + ModelPathStepType.refs + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_ref + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_refs + ".")) {
                 // Example: Content.ref_originalAuthor.ref.User
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
                 String refFieldName = memberParts[1].trim();
@@ -84,11 +78,14 @@ public class ViewModelParser {
                 Set<String> destinationClassName = splitClassNames(memberParts[3].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else if (pathMember.contains("." + ModelPathStepType.backRefs + ".")
-                || pathMember.contains("." + ModelPathStepType.count + ".")
-                || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")) {
+                    || pathMember.contains("." + ModelPathStepType.count + ".")
+                    || pathMember.contains("." + ModelPathStepType.latest_backRef + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_backRefs + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_count + ".")
+                    || pathMember.contains("." + ModelPathStepType.centric_latest_backRef + ".")) {
 
                 // Example: Content.backRefs.VersionedContent.ref_parent
                 // Example: Content.count.VersionedContent.ref_parent
@@ -99,7 +96,7 @@ public class ViewModelParser {
                 String refFieldName = memberParts[3].trim();
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    refFieldName, stepType, destinationClassName, null);
+                        refFieldName, stepType, destinationClassName, null);
 
             } else {
 
@@ -111,7 +108,7 @@ public class ViewModelParser {
                 Set<String> originClassName = splitClassNames(memberParts[0].trim());
 
                 return new ModelPathStep(sortPrecedence == 0, originClassName,
-                    null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
+                        null, ModelPathStepType.value, null, Arrays.asList(valueFieldNames));
 
             }
         } catch (Exception x) {

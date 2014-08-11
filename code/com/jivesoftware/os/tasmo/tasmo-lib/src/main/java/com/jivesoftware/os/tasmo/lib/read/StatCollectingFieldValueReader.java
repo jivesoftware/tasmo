@@ -3,15 +3,15 @@ package com.jivesoftware.os.tasmo.lib.read;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.tasmo.lib.process.ProcessingStats;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 
 public class StatCollectingFieldValueReader implements FieldValueReader {
 
-    private final ProcessingStats tasmoProcessingStats;
+    private final TasmoProcessingStats tasmoProcessingStats;
     private final FieldValueReader delegateFieldValueReader;
 
-    public StatCollectingFieldValueReader(ProcessingStats tasmoProcessingStats, FieldValueReader delegateFieldValueReader) {
+    public StatCollectingFieldValueReader(TasmoProcessingStats tasmoProcessingStats, FieldValueReader delegateFieldValueReader) {
         this.tasmoProcessingStats = tasmoProcessingStats;
         this.delegateFieldValueReader = delegateFieldValueReader;
     }

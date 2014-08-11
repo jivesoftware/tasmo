@@ -37,7 +37,7 @@ import org.testng.annotations.Test;
  */
 public class ReferenceStoreConcurrencyTest {
 
-    @Test (invocationCount = 1, singleThreaded = false, skipFailedInvocations = true)
+    @Test(invocationCount = 1, singleThreaded = false, skipFailedInvocations = true)
     public void testConcurrencyMultiRefStore() throws Exception {
 
         //System.out.println("\n |--> BEGIN \n");
@@ -71,7 +71,7 @@ public class ReferenceStoreConcurrencyTest {
                     tos[j] = new Reference(new ObjectId("B", new Id(rand.nextInt(5))), fromRefFieldName);
                 }
                 events[i] = new Event(concurrencyStore, referenceStore, values,
-                    tenantIdAndCentricId, time, false, from, fromRefFieldName, tos, Math.abs(rand.nextLong()));
+                        tenantIdAndCentricId, time, false, from, fromRefFieldName, tos, Math.abs(rand.nextLong()));
             }
         }
         final Event winner = events[events.length - 1];
@@ -101,32 +101,31 @@ public class ReferenceStoreConcurrencyTest {
         //Thread.sleep(1000);
         //System.out.println("------------------------------------------------");
 
-
         System.out.println("Is:");
         final AtomicInteger failures = new AtomicInteger();
         values.getAllRowKeys(100, null, new CallbackStream<TenantIdAndRow<TenantIdAndCentricId, ObjectId>>() {
 
             @Override
             public TenantIdAndRow<TenantIdAndCentricId, ObjectId> callback(
-                final TenantIdAndRow<TenantIdAndCentricId, ObjectId> row) throws Exception {
+                    final TenantIdAndRow<TenantIdAndCentricId, ObjectId> row) throws Exception {
                 if (row != null) {
                     values.getEntrys(row.getTenantId(), row.getRow(), null, Long.MAX_VALUE, 1_000, false, null, null,
-                        new CallbackStream<ColumnValueAndTimestamp<String, Long, Long>>() {
+                            new CallbackStream<ColumnValueAndTimestamp<String, Long, Long>>() {
 
-                            @Override
-                            public ColumnValueAndTimestamp<String, Long, Long> callback(ColumnValueAndTimestamp<String, Long, Long> v) throws Exception {
-                                if (v != null) {
+                                @Override
+                                public ColumnValueAndTimestamp<String, Long, Long> callback(ColumnValueAndTimestamp<String, Long, Long> v) throws Exception {
+                                    if (v != null) {
 
-                                    System.out.println(" |--> " + row.getRow()
-                                        + " | " + v.getColumn()
-                                        + " | " + v.getValue() + " | " + v.getTimestamp());
-                                    if (!winner.contains(row.getRow(), v.getTimestamp())) {
-                                        failures.incrementAndGet();
+                                        System.out.println(" |--> " + row.getRow()
+                                                + " | " + v.getColumn()
+                                                + " | " + v.getValue() + " | " + v.getTimestamp());
+                                        if (!winner.contains(row.getRow(), v.getTimestamp())) {
+                                            failures.incrementAndGet();
+                                        }
                                     }
+                                    return v;
                                 }
-                                return v;
                             }
-                        }
                     );
                 }
                 return row;
@@ -164,15 +163,15 @@ public class ReferenceStoreConcurrencyTest {
         long value;
 
         Event(ConcurrencyStore concurrencyStore,
-            ReferenceStore referenceStore,
-            RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values,
-            TenantIdAndCentricId tenantIdAndCentricId,
-            long timestamp,
-            boolean delete,
-            ObjectId from,
-            String fromRefFieldName,
-            Reference[] tos,
-            long value) {
+                ReferenceStore referenceStore,
+                RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values,
+                TenantIdAndCentricId tenantIdAndCentricId,
+                long timestamp,
+                boolean delete,
+                ObjectId from,
+                String fromRefFieldName,
+                Reference[] tos,
+                long value) {
             this.concurrencyStore = concurrencyStore;
             this.referenceStore = referenceStore;
             this.values = values;
@@ -195,7 +194,7 @@ public class ReferenceStoreConcurrencyTest {
                 for (Reference t : tos) {
                     StringBuilder row = new StringBuilder();
                     row.append(t.getObjectId()).append(" | ")
-                        .append(t.getFieldName()).append(" | ").append(value).append(" | ").append(timestamp).append("\n");
+                            .append(t.getFieldName()).append(" | ").append(value).append(" | ").append(timestamp).append("\n");
                     rows.add(row.toString());
                 }
                 Collections.sort(rows);
@@ -218,37 +217,37 @@ public class ReferenceStoreConcurrencyTest {
 
                     if (delete) {
                         referenceStore.unlink(tenantIdAndCentricId, timestamp, from, fromRefFieldName, 0,
-                            new CallbackStream<ReferenceWithTimestamp>() {
-                                @Override
-                                public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
-                                    if (v != null) {
-                                        values.remove(tenantIdAndCentricId,
-                                            v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp() + 1));
+                                new CallbackStream<ReferenceWithTimestamp>() {
+                                    @Override
+                                    public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
+                                        if (v != null) {
+                                            values.remove(tenantIdAndCentricId,
+                                                    v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp() + 1));
+                                        }
+                                        return v;
                                     }
-                                    return v;
-                                }
-                            });
+                                });
                     } else {
                         final long highest = concurrencyStore.highest(tenantIdAndCentricId, from, fromRefFieldName, timestamp);
                         if (timestamp >= highest) {
                             referenceStore.link(tenantIdAndCentricId, from, timestamp,
-                                Arrays.asList(new ReferenceStore.LinkTo(fromRefFieldName, Arrays.asList(tos))));
+                                    Arrays.asList(new ReferenceStore.LinkTo(fromRefFieldName, Arrays.asList(tos))));
                         }
                         // yield
                         referenceStore.unlink(tenantIdAndCentricId, Math.max(timestamp, highest), from, fromRefFieldName, 0,
-                            new CallbackStream<ReferenceWithTimestamp>() {
-                                @Override
-                                public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
-                                    if (v != null) {
-                                        values.remove(tenantIdAndCentricId,
-                                            v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp() + 1));
+                                new CallbackStream<ReferenceWithTimestamp>() {
+                                    @Override
+                                    public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
+                                        if (v != null) {
+                                            values.remove(tenantIdAndCentricId,
+                                                    v.getObjectId(), fromRefFieldName, new ConstantTimestamper(v.getTimestamp() + 1));
+                                        }
+                                        return v;
                                     }
-                                    return v;
-                                }
-                            });
+                                });
 
-                        final Set<FieldVersion> want = new HashSet<>(Arrays.asList(new FieldVersion(from, fromRefFieldName, highest)));
-                        Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+                        final Set<FieldVersion> want = new HashSet<>(Arrays.asList(new FieldVersion(tenantIdAndCentricId, from, fromRefFieldName, highest)));
+                        Set<FieldVersion> got = concurrencyStore.checkIfModified(want);
                         if (got != want) {
                             PathConsistencyException e = new PathConsistencyException(want, got);
                             throw e;
@@ -256,39 +255,38 @@ public class ReferenceStoreConcurrencyTest {
 
                         final List<Add> adds = new ArrayList<>();
                         referenceStore.streamForwardRefs(tenantIdAndCentricId, Collections.singleton(from.getClassName()), fromRefFieldName, from, 0,
-                            new CallbackStream<ReferenceWithTimestamp>() {
+                                new CallbackStream<ReferenceWithTimestamp>() {
 
-                                @Override
-                                public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
-                                    if (v != null) {
-                                        want.add(new FieldVersion(from, fromRefFieldName, v.getTimestamp()));
-                                        adds.add(new Add(tenantIdAndCentricId, v.getObjectId(), fromRefFieldName, value, v.getTimestamp()));
-
+                                    @Override
+                                    public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
+                                        if (v != null) {
+                                            want.add(new FieldVersion(tenantIdAndCentricId, from, fromRefFieldName, v.getTimestamp()));
+                                            adds.add(new Add(tenantIdAndCentricId, v.getObjectId(), fromRefFieldName, value, v.getTimestamp()));
 
                                         //Set<FieldVersion> want = Collections.singleton(new FieldVersion(from, fromRefFieldName, v.getTimestamp()));
-                                        //Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
-                                        //if (got == want) {
-                                        //    values.add(tenantIdAndCentricId, v.getObjectId(), fromRefFieldName, value, null,
-                                        //        new ConstantTimestamper(v.getTimestamp()));
-                                        //    System.out.println(Thread.currentThread().getName()+" |--> add "+v.getObjectId()+" "+v.getTimestamp());
-                                        //} else {
-                                        //    PathConsistencyException e = new PathConsistencyException(want, got);
-                                        //    System.out.println(Thread.currentThread() + " " + e.toString());
-                                        //    throw e;
-                                        //}
+                                            //Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+                                            //if (got == want) {
+                                            //    values.add(tenantIdAndCentricId, v.getObjectId(), fromRefFieldName, value, null,
+                                            //        new ConstantTimestamper(v.getTimestamp()));
+                                            //    System.out.println(Thread.currentThread().getName()+" |--> add "+v.getObjectId()+" "+v.getTimestamp());
+                                            //} else {
+                                            //    PathConsistencyException e = new PathConsistencyException(want, got);
+                                            //    System.out.println(Thread.currentThread() + " " + e.toString());
+                                            //    throw e;
+                                            //}
+                                        }
+                                        return v;
                                     }
-                                    return v;
-                                }
-                            });
+                                });
 
-                        got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+                        got = concurrencyStore.checkIfModified(want);
                         if (got != want) {
                             PathConsistencyException e = new PathConsistencyException(want, got);
                             //System.out.println(Thread.currentThread() + " " + e.toString());
                             throw e;
                         }
-                        for(Add add:adds) {
-                            values.add(add.tenantId,add.rowKey, add.columnKey, add.columnValue, null, new ConstantTimestamper(add.timestamp));
+                        for (Add add : adds) {
+                            values.add(add.tenantId, add.rowKey, add.columnKey, add.columnValue, null, new ConstantTimestamper(add.timestamp));
                         }
                     }
                     return;

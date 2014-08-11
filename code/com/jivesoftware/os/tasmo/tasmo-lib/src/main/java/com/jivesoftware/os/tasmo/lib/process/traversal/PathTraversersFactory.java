@@ -117,7 +117,7 @@ public class PathTraversersFactory {
                     };
 
             List<StepTraverser> steps = new ArrayList<>();
-            steps.add(new TraverseBackref(modelPathStep, modelPathStep.getOriginClassNames()));
+            steps.add(new TraverseBackref(modelPathStep, modelPathStep.getOriginClassNames(), modelPathStep.getStepType().isCentric()));
             steps.addAll(buildLeafwardTraversers(initialPathIndex, modelPathSteps));
             steps.addAll(buildRootwardTraversers(initialPathIndex, modelPathSteps));
             steps.add(new TraverseViewValueWriter(viewIdFieldName, viewClassName, modelPath, modelPathIdHashcode));
@@ -136,11 +136,12 @@ public class PathTraversersFactory {
         // leafward
         for (int pathIndex = initialPathIndex + 1; pathIndex < modelPathMembersSize; pathIndex++) {
             member = modelPathMembers.get(pathIndex);
+            boolean centric = member.getStepType().isCentric();
 
             StepTraverser processStep;
             if (pathIndex == modelPathMembersSize - 1) {
 
-                processStep = new TraverseValue(new HashSet<>(member.getFieldNames()), initialPathIndex, pathIndex);
+                processStep = new TraverseValue(new HashSet<>(member.getFieldNames()), initialPathIndex, pathIndex, centric);
 
             } else {
                 memberType = member.getStepType();
@@ -150,7 +151,7 @@ public class PathTraversersFactory {
                         memberType);
 
                 Set<String> streamToTypes = memberType.isBackReferenceType() ? member.getOriginClassNames() : member.getDestinationClassNames();
-                processStep = new TraverseLeafward(streamer, pathIndex, streamToTypes);
+                processStep = new TraverseLeafward(streamer, pathIndex, streamToTypes, centric);
             }
 
             steps.add(processStep);
@@ -161,12 +162,17 @@ public class PathTraversersFactory {
     private RefStreamer createLeafwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
+            case centric_ref:
                 return new ForwardRefStreamer(fieldName);
             case refs:
+            case centric_refs:
                 return new ForwardRefStreamer(fieldName);
             case backRefs:
             case count:
             case latest_backRef:
+            case centric_backRefs:
+            case centric_count:
+            case centric_latest_backRef:
                 return new BackRefStreamer(classNames, fieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support rev streaming");
@@ -179,13 +185,14 @@ public class PathTraversersFactory {
         // rootward
         for (int pathIndex = initialPathIndex - 1; pathIndex >= 0; pathIndex--) {
             member = modelPathMembers.get(pathIndex);
+            boolean centric = member.getStepType().isCentric();
             RefStreamer streamer = createRootwardStreamer(
                     member.getOriginClassNames(),
                     member.getRefFieldName(),
                     member.getStepType());
 
             Set<String> streamToTypes = member.getStepType().isBackReferenceType() ? member.getDestinationClassNames() : member.getOriginClassNames();
-            StepTraverser processStep = new TraverseRootward(streamer, pathIndex, streamToTypes);
+            StepTraverser processStep = new TraverseRootward(streamer, pathIndex, streamToTypes, centric);
             steps.add(processStep);
         }
         return steps;
@@ -194,12 +201,17 @@ public class PathTraversersFactory {
     private RefStreamer createRootwardStreamer(Set<String> classNames, String fieldName, ModelPathStepType fieldType) {
         switch (fieldType) {
             case ref:
+            case centric_ref:
                 return new BackRefStreamer(classNames, fieldName);
             case refs:
+            case centric_refs:
                 return new BackRefStreamer(classNames, fieldName);
             case backRefs:
             case count:
             case latest_backRef: // For this case we are likely doing more work that we absolutely need to.
+            case centric_backRefs:
+            case centric_count:
+            case centric_latest_backRef: // For this case we are likely doing more work that we absolutely need to.
                 return new ForwardRefStreamer(fieldName);
             default:
                 throw new IllegalArgumentException("fieldType:" + fieldType + " doesn't support fwd streaming");

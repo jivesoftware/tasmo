@@ -20,9 +20,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.ReservedFields;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStep;
 import com.jivesoftware.os.tasmo.model.path.ModelPathStepType;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,9 +54,11 @@ public class MapTreeNode implements TreeNode {
         ModelPathStep thisStep = steps[0];
         switch (thisStep.getStepType()) {
             case value:
+            case centric_value:
                 values.add(value);
                 break;
-            case ref: {
+            case ref:
+            case centric_ref: {
                 String refFieldName = thisStep.getRefFieldName();
                 MapTreeNode child = singleChildren.get(refFieldName);
                 if (child == null) {
@@ -72,15 +74,19 @@ public class MapTreeNode implements TreeNode {
                 if (treeNode == null) {
                     switch (thisStep.getStepType()) {
                         case refs:
+                        case centric_refs:
                             treeNode = new AllForwardTreeNode(new ArrayTreeNode());
                             break;
                         case backRefs:
+                        case centric_backRefs:
                             treeNode = new AllBackTreeNode(new ArrayTreeNode());
                             break;
                         case latest_backRef:
+                        case centric_latest_backRef:
                             treeNode = new LatestTreeNode(new ArrayTreeNode());
                             break;
                         case count:
+                        case centric_count:
                             treeNode = new CountTreeNode();
                             break;
                     }

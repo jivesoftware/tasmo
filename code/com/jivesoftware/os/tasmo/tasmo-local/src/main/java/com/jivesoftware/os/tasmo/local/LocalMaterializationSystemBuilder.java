@@ -33,7 +33,7 @@ import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
 import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraversal;
 import com.jivesoftware.os.tasmo.lib.process.traversal.TasmoEventTraverser;
-import com.jivesoftware.os.tasmo.lib.process.ProcessingStats;
+import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.lib.ingress.TasmoWriteMaterializer;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
@@ -75,7 +75,7 @@ import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionCheckResult;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewPermissionChecker;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewProvider;
 import com.jivesoftware.os.tasmo.view.reader.service.ViewValueReader;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
+import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueStore;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewValueWriter;
 import com.jivesoftware.os.tasmo.view.reader.service.writer.ViewWriteFieldChange;
@@ -208,7 +208,7 @@ public class LocalMaterializationSystemBuilder implements LocalMaterializationSy
         WriteFanoutEventPersistor eventPersistor = new WriteFanoutEventPersistor(writtenEventProvider,
             writtenInstanceHelper, concurrencyStore, eventValueStore, referenceStore);
 
-        ProcessingStats processingStats = new ProcessingStats();
+        TasmoProcessingStats processingStats = new TasmoProcessingStats();
         StatCollectingFieldValueReader fieldValueReader = new StatCollectingFieldValueReader(processingStats,
             new EventValueStoreFieldValueReader(eventValueStore));
 

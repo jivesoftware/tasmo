@@ -60,6 +60,7 @@ public class ConcurrencyAndExistenceCommitChange implements CommitChange {
                 traceLogging(ids, existence, c);
                 acceptableChanges.add(new ViewField(c.getEventId(),
                         c.getActorId(),
+                        c.getUserId(),
                         ViewFieldChangeType.remove,
                         c.getViewObjectId(),
                         c.getModelPath(),

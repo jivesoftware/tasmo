@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.IdProvider;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
@@ -76,7 +77,7 @@ public class BackRefBridgeTest extends BaseTest {
 
         t.write(events);
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(commentClass, comment1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(commentClass, comment1.getId()), Id.NULL);
         System.out.println(mapper.writeValueAsString(view));
 
         t.addExpectation(comment1, commentClass, content, new ObjectId[]{ comment1, doc1, documentVersion1 }, "processedSubject", "subject");

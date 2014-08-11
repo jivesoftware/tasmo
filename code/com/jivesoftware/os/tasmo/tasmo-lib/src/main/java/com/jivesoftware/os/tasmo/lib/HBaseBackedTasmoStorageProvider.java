@@ -1,10 +1,16 @@
-package com.jivesoftware.os.tasmo.service;
+package com.jivesoftware.os.tasmo.lib;
 
 import com.jivesoftware.os.jive.utils.id.Id;
+import com.jivesoftware.os.jive.utils.id.IdMarshaller;
 import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
+import com.jivesoftware.os.jive.utils.id.ImmutableByteArrayMarshaller;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.ObjectIdMarshaller;
+import com.jivesoftware.os.jive.utils.id.SaltingImmutableByteArrayMarshaller;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricIdMarshaller;
+import com.jivesoftware.os.jive.utils.id.TenantIdMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.DefaultRowColumnValueStoreMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.NeverAcceptsFailureSetOfSortedMaps;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
@@ -14,18 +20,12 @@ import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMa
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.ByteArrayTypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.LongTypeMarshaller;
 import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.primatives.StringTypeMarshaller;
-import com.jivesoftware.os.tasmo.id.IdMarshaller;
-import com.jivesoftware.os.tasmo.id.ImmutableByteArrayMarshaller;
-import com.jivesoftware.os.tasmo.id.ObjectIdMarshaller;
-import com.jivesoftware.os.tasmo.id.TenantIdAndCentricIdMarshaller;
-import com.jivesoftware.os.tasmo.id.TenantIdMarshaller;
-import com.jivesoftware.os.tasmo.lib.TasmoStorageProvider;
+import com.jivesoftware.os.tasmo.id.ViewValue;
+import com.jivesoftware.os.tasmo.id.ViewValueMarshaller;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKeyMarshaller;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValue;
-import com.jivesoftware.os.tasmo.view.reader.service.shared.ViewValueMarshaller;
 
 /**
  *
@@ -69,7 +69,7 @@ public class HBaseBackedTasmoStorageProvider implements TasmoStorageProvider {
         return new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(tableNameSpace,
             "tasmo.views", "v", new DefaultRowColumnValueStoreMarshaller<>(
                 new TenantIdAndCentricIdMarshaller(),
-                new ImmutableByteArrayMarshaller(),
+                new SaltingImmutableByteArrayMarshaller(),
                 new ImmutableByteArrayMarshaller(),
                 new ViewValueMarshaller()), new CurrentTimestamper()));
     }

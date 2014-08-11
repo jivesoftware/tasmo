@@ -9,6 +9,7 @@
 package com.jivesoftware.os.tasmo.lib;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.tasmo.event.api.write.EventBuilder;
 import com.jivesoftware.os.tasmo.model.Views;
@@ -32,7 +33,7 @@ public class CirculareRefTest extends BaseTest {
         t.addExpectation(content1, viewClassName, viewFieldName, new ObjectId[]{ content1, parent1 }, "name", "ted");
 
 
-        ObjectNode view = t.readView(tenantIdAndCentricId, actorId, new ObjectId(viewClassName, content1.getId()));
+        ObjectNode view = t.readView(tenantId, actorId, new ObjectId(viewClassName, content1.getId()), Id.NULL);
         System.out.println("\nView:" + mapper.writeValueAsString(view) + "\n");
         t.assertExpectation(tenantIdAndCentricId);
         t.clearExpectations();
