@@ -1,7 +1,5 @@
 package com.jivesoftware.os.tasmo.lib.write;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import java.util.Objects;
 
@@ -14,9 +12,7 @@ public class PathId {
     private final ObjectId objectId;
     private final long timestamp;
 
-    @JsonCreator
-    public PathId(@JsonProperty("objectId") ObjectId objectId,
-            @JsonProperty("timestamp") long timestamp) {
+    public PathId(ObjectId objectId, long timestamp) {
         this.objectId = objectId;
         this.timestamp = timestamp;
     }

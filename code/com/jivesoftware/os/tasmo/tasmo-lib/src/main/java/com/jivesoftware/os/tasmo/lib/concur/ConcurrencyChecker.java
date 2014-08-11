@@ -28,9 +28,8 @@ public class ConcurrencyChecker {
         return concurrencyStore.highests(tenantId, instanceId, refFieldNames);
     }
 
-    public void checkIfModifiedOutFromUnderneathMe(TenantIdAndCentricId tenantIdAndCentricId,
-            Set<FieldVersion> want) throws PathConsistencyException {
-        Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+    public void checkIfModifiedOutFromUnderneathMe(Set<FieldVersion> want) throws PathConsistencyException {
+        Set<FieldVersion> got = concurrencyStore.checkIfModified(want);
         if (got != want) {
             PathConsistencyException e = new PathConsistencyException(want, got);
             throw e;

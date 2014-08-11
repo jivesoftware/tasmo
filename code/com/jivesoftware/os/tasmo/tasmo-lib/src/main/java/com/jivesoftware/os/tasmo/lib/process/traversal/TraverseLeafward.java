@@ -48,8 +48,9 @@ class TraverseLeafward implements StepTraverser {
         final PathContext copyOfPathContext = pathContext.getCopy();
         copyOfPathContext.setPathId(writtenEventContext, pathIndex, from.getObjectId(), from.getTimestamp());
 
+        final TenantIdAndCentricId tenantIdAndCentricId = (centric ? userCentricId : globalCentricId);
         streamer.stream(writtenEventContext.getReferenceTraverser(),
-                (centric ? userCentricId : globalCentricId),
+                tenantIdAndCentricId,
                 from.getObjectId(),
                 context.getThreadTimestamp(),
                 new CallbackStream<ReferenceWithTimestamp>() {
@@ -57,7 +58,7 @@ class TraverseLeafward implements StepTraverser {
                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                         if (to != null && isValidDownStreamObject(to)) {
 
-                            ReferenceWithTimestamp ref = new ReferenceWithTimestamp(
+                            ReferenceWithTimestamp ref = new ReferenceWithTimestamp(tenantIdAndCentricId,
                                     (streamer.isBackRefStreamer()) ? to.getObjectId() : from.getObjectId(),
                                     to.getFieldName(),
                                     to.getTimestamp());

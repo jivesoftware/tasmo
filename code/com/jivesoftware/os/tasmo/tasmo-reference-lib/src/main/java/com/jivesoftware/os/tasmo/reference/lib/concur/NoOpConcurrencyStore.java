@@ -16,7 +16,7 @@ public class NoOpConcurrencyStore implements ConcurrencyStore {
     }
 
     @Override
-    public Set<FieldVersion> checkIfModified(TenantIdAndCentricId tenantId, Set<FieldVersion> expectedSet) {
+    public Set<FieldVersion> checkIfModified(Set<FieldVersion> expectedSet) {
         return expectedSet;
     }
 

@@ -1,25 +1,30 @@
 package com.jivesoftware.os.tasmo.reference.lib;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import java.util.Objects;
 
 public class ReferenceWithTimestamp {
 
+    private final TenantIdAndCentricId tenantIdAndCentricId;
     private final ObjectId objectId;
     private final String fieldName;
     private final long timestamp;
-    private final String pathToCreator;
 
     @JsonCreator
-    public ReferenceWithTimestamp(@JsonProperty("objectId") ObjectId objectId,
-            @JsonProperty("fieldName") String fieldName,
-            @JsonProperty("timestamp") long timestamp) {
+    public ReferenceWithTimestamp(TenantIdAndCentricId tenantIdAndCentricId,
+            ObjectId objectId,
+            String fieldName,
+            long timestamp) {
+        this.tenantIdAndCentricId = tenantIdAndCentricId;
         this.objectId = objectId;
         this.fieldName = fieldName;
         this.timestamp = timestamp;
-        this.pathToCreator = ""; //Debug.caller(10);
+    }
+
+    public TenantIdAndCentricId getTenantIdAndCentricId() {
+        return tenantIdAndCentricId;
     }
 
     public ObjectId getObjectId() {
@@ -36,15 +41,21 @@ public class ReferenceWithTimestamp {
 
     @Override
     public String toString() {
-        return "Reference{" + "objectId=" + objectId + ", fieldName=" + fieldName + ", timestamp=" + timestamp + '}' + pathToCreator;
+        return "ReferenceWithTimestamp{"
+                + "tenantIdAndCentricId=" + tenantIdAndCentricId
+                + ", objectId=" + objectId
+                + ", fieldName=" + fieldName
+                + ", timestamp=" + timestamp
+                + '}';
     }
 
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 19 * hash + Objects.hashCode(this.objectId);
-        hash = 19 * hash + Objects.hashCode(this.fieldName);
-        hash = 19 * hash + (int) (this.timestamp ^ (this.timestamp >>> 32));
+        hash = 37 * hash + Objects.hashCode(this.tenantIdAndCentricId);
+        hash = 37 * hash + Objects.hashCode(this.objectId);
+        hash = 37 * hash + Objects.hashCode(this.fieldName);
+        hash = 37 * hash + (int) (this.timestamp ^ (this.timestamp >>> 32));
         return hash;
     }
 
@@ -57,6 +68,9 @@ public class ReferenceWithTimestamp {
             return false;
         }
         final ReferenceWithTimestamp other = (ReferenceWithTimestamp) obj;
+        if (!Objects.equals(this.tenantIdAndCentricId, other.tenantIdAndCentricId)) {
+            return false;
+        }
         if (!Objects.equals(this.objectId, other.objectId)) {
             return false;
         }

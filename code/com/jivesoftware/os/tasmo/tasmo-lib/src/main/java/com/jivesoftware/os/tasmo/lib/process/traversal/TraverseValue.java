@@ -54,17 +54,19 @@ public class TraverseValue implements StepTraverser {
             pathContext.addVersions(pathIndex, versions);
         } else {
 
+            TenantIdAndCentricId tenantIdAndCentricId = (centric ? userCentricId : globalCentricId);
+
             String[] fieldNamesArray = fieldNames.toArray(new String[fieldNames.size()]);
             ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>[] got = writtenEventContext
                     .getFieldValueReader()
-                    .readFieldValues((centric ? userCentricId : globalCentricId), from.getObjectId(), fieldNamesArray);
+                    .readFieldValues(tenantIdAndCentricId, from.getObjectId(), fieldNamesArray);
 
             final Map<String, ColumnValueAndTimestamp<String, OpaqueFieldValue, Long>> fieldValues = new HashMap<>();
             for (int i = 0; i < fieldNamesArray.length; i++) {
                 fieldValues.put(fieldNamesArray[i], got[i]);
             }
 
-            List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(
+            List<ReferenceWithTimestamp> versions = leafContext.populateLeafNodeFields(tenantIdAndCentricId,
                     writtenEventContext,
                     pathContext,
                     from.getObjectId(),

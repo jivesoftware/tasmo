@@ -81,7 +81,7 @@ public class ReadCacheFallbackJITReadMaterializeViewProvider<V> implements ViewR
         List<ViewDescriptor> needToReadMaterializeTheseViews = new ArrayList<>();
         for (ViewDescriptor viewDescriptor : viewDescriptors) {
             ViewFieldsResponse viewFieldsResponse = cachedViews.get(viewDescriptor);
-            if (!viewFieldsResponse.isOk() || viewFieldsResponse.getViewFields().isEmpty()) {
+            if (viewFieldsResponse == null || !viewFieldsResponse.isOk() || viewFieldsResponse.getViewFields().isEmpty()) {
                 needToReadMaterializeTheseViews.add(viewDescriptor);
             } else {
                 if (modifierStore.isPresent()) {

@@ -129,7 +129,8 @@ public class ReadCachedViewFields {
                                 ModelPathStep modelPathStep = modelPath.getPathMembers().get(i);
                                 ObjectId objectId = new ObjectId(viewPathClasses[i], modelPathIds[i]);
                                 modelPathInstanceIds[i] = new PathId(objectId, modelPathTimeStamps[i]);
-                                referenceWithTimestamps.add(new ReferenceWithTimestamp(objectId, modelPathStep.getRefFieldName(), modelPathTimeStamps[i]));
+                                referenceWithTimestamps.add(new ReferenceWithTimestamp(viewDescriptor.getTenantIdAndCentricId(), objectId,
+                                        modelPathStep.getRefFieldName(), modelPathTimeStamps[i]));
                             }
 
                             viewValueFields.add(new ViewField(-1,

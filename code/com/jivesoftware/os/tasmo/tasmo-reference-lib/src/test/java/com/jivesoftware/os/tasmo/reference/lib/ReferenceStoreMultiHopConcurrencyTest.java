@@ -279,8 +279,8 @@ public class ReferenceStoreMultiHopConcurrencyTest {
                                         }
                                     });
 
-                            final Set<FieldVersion> want = new HashSet<>(Arrays.asList(new FieldVersion(from, "aToB", highest)));
-                            Set<FieldVersion> got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+                            final Set<FieldVersion> want = new HashSet<>(Arrays.asList(new FieldVersion(tenantIdAndCentricId, from, "aToB", highest)));
+                            Set<FieldVersion> got = concurrencyStore.checkIfModified(want);
                             if (got != want) {
                                 PathConsistencyException e = new PathConsistencyException(want, got);
                                 throw e;
@@ -293,7 +293,7 @@ public class ReferenceStoreMultiHopConcurrencyTest {
                                         @Override
                                         public ReferenceWithTimestamp callback(ReferenceWithTimestamp v) throws Exception {
                                             if (v != null) {
-                                                want.add(new FieldVersion(from, "aToB", v.getTimestamp()));
+                                                want.add(new FieldVersion(tenantIdAndCentricId, from, "aToB", v.getTimestamp()));
                                                 adds.add(new Add(tenantIdAndCentricId, v.getObjectId(), "aToB", value, v.getTimestamp()));
 
                                             //Set<FieldVersion> want = Collections.singleton(new FieldVersion(from, fromRefFieldName, v.getTimestamp()));
@@ -312,7 +312,7 @@ public class ReferenceStoreMultiHopConcurrencyTest {
                                         }
                                     });
 
-                            got = concurrencyStore.checkIfModified(tenantIdAndCentricId, want);
+                            got = concurrencyStore.checkIfModified(want);
                             if (got != want) {
                                 PathConsistencyException e = new PathConsistencyException(want, got);
                                 //System.out.println(Thread.currentThread() + " " + e.toString());

@@ -1,6 +1,7 @@
 package com.jivesoftware.os.tasmo.lib.process.traversal;
 
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
 import com.jivesoftware.os.tasmo.model.process.LeafNodeFields;
@@ -41,7 +42,7 @@ public class WriteLeafContext implements LeafContext {
     }
 
     @Override
-    public List<ReferenceWithTimestamp> populateLeafNodeFields(
+    public List<ReferenceWithTimestamp> populateLeafNodeFields(TenantIdAndCentricId  tenantIdAndCentricId,
             WrittenEventContext writtenEventContext,
             PathContext pathContext,
             ObjectId objectInstanceId,
@@ -67,7 +68,7 @@ public class WriteLeafContext implements LeafContext {
                 } else {
                     fieldsToPopulate.addField(fieldName, fieldValue);
                 }
-                versions.add(new ReferenceWithTimestamp(objectInstanceId, fieldName, timestamp));
+                versions.add(new ReferenceWithTimestamp(tenantIdAndCentricId, objectInstanceId, fieldName, timestamp));
             }
         }
         pathContext.setLastTimestamp(latestTimestamp);

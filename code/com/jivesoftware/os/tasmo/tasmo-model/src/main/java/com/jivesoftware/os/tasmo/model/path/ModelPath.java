@@ -155,9 +155,7 @@ public class ModelPath {
             for (int i = 0; i < pathMembers.size(); i++) {
                 ModelPathStep step = pathMembers.get(i);
                 if (i < pathMembers.size() - 1
-                        && (step.getStepType().isValue()
-                        || (step.getFieldNames() != null
-                        && !step.getFieldNames().isEmpty()))) {
+                        && (step.getStepType().isValue())) {
 
                     throw new IllegalArgumentException("Only leaf nodes of a model path can be value type steps."
                             + " Encountered:" + step + " at position " + i + " out of " + pathMembers.size()

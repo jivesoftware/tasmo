@@ -47,7 +47,7 @@ public class ModelPathGenerator {
     public static void main(String[] args) {
 
         ModelPathGenerator testGenerator = new ModelPathGenerator();
-        
+
         testGenerator.generateModelPaths(Arrays.asList(ModelPathStepType.values()), 4);
     }
 
@@ -89,7 +89,6 @@ public class ModelPathGenerator {
 
         //forward ref
         //ContentView + "::" + moderatorNames + "::Content.ref_parent.ref.Container|Container.refs_moderators.refs.User|User.userName"
-
         //back ref
         //viewClassName + "::" + viewFieldName + "::Content.backRefs.User.ref_content|User.userName,age"
         int i = 0;
@@ -111,7 +110,6 @@ public class ModelPathGenerator {
         }
 
         builder.append((char) (i + alphabetZero)).append(".value1,value2,value3");
-
 
 //        System.out.println(builder.toString());
         return builder.toString();

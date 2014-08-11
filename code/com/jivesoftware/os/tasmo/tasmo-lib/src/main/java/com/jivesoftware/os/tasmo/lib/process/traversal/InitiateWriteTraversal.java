@@ -195,7 +195,8 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
                                 LeafContext leafContext = new WriteLeafContext();
 
                                 Set<String> fieldNames = pathTraverser.getInitialFieldNames();
-                                List<ReferenceWithTimestamp> valueVersions = leafContext.populateLeafNodeFields(writtenEventContext,
+                                List<ReferenceWithTimestamp> valueVersions = leafContext.populateLeafNodeFields(tenantIdAndCentricId,
+                                        writtenEventContext,
                                         pathContext,
                                         instanceId,
                                         fieldNames,
@@ -207,7 +208,8 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
                                         new PathId(instanceId, timestamp));
                                 writtenEventContext.valuePaths++;
                                 for (ReferenceWithTimestamp valueVersion : valueVersions) {
-                                    want.add(new FieldVersion(instanceId, valueVersion.getFieldName(), valueVersion.getTimestamp()));
+                                    want.add(new FieldVersion(valueVersion.getTenantIdAndCentricId(),
+                                            instanceId, valueVersion.getFieldName(), valueVersion.getTimestamp()));
                                 }
                                 List<ViewField> takeChanges = context.takeChanges(); // TODO add auto flush if writeableChanges is to large.
                                 writtenEventContext.changes += takeChanges.size();
@@ -219,7 +221,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
                 }
             }
             commit(writtenEventContext, tenantIdAndCentricId, callables);
-            concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId, want);
+            concurrencyChecker.checkIfModifiedOutFromUnderneathMe(want);
         }
     }
 
@@ -270,7 +272,9 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
                                 public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                     if (to != null && to.getTimestamp() < timestamp) {
                                         traverse(writtenEventContext,
-                                                globalCentricId, userCentricId, writtenEvent,
+                                                tenantIdAndCentricId,
+                                                globalCentricId, userCentricId,
+                                                writtenEvent,
                                                 forwardRefTraversers,
                                                 backRefTraversers,
                                                 key, instanceId, refFieldName, to, threadTimestamp, true,
@@ -290,9 +294,9 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
             Set<FieldVersion> fieldVersions = new HashSet<>();
             for (int i = 0; i < refFieldNames.length; i++) {
                 long highest = highestVersions.get(i) == null ? timestamp : highestVersions.get(i);
-                fieldVersions.add(new FieldVersion(instanceId, refFieldNames[i], highest));
+                fieldVersions.add(new FieldVersion(tenantIdAndCentricId, instanceId, refFieldNames[i], highest));
             }
-            concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId, fieldVersions);
+            concurrencyChecker.checkIfModifiedOutFromUnderneathMe(fieldVersions);
 
             callables.clear();
             for (int i = 0; i < refFieldNames.length; i++) {
@@ -314,7 +318,9 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
                                     public ReferenceWithTimestamp callback(ReferenceWithTimestamp to) throws Exception {
                                         if (to != null) {
                                             traverse(writtenEventContext,
-                                                    globalCentricId, userCentricId, writtenEvent,
+                                                    tenantIdAndCentricId,
+                                                    globalCentricId, userCentricId,
+                                                    writtenEvent,
                                                     forwardRefTraversers,
                                                     backRefTraversers,
                                                     key, instanceId, refFieldName, to, threadTimestamp, false,
@@ -328,12 +334,13 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
                 });
             }
             commit(writtenEventContext, tenantIdAndCentricId, callables);
-            concurrencyChecker.checkIfModifiedOutFromUnderneathMe(tenantIdAndCentricId, fieldVersions);
+            concurrencyChecker.checkIfModifiedOutFromUnderneathMe(fieldVersions);
         }
 
     }
 
     private void traverse(final WrittenEventContext writtenEventContext,
+            final TenantIdAndCentricId tenantIdAndCentricId,
             final TenantIdAndCentricId globalCentricId,
             final TenantIdAndCentricId userCentricId,
             final WrittenEvent writtenEvent,
@@ -347,8 +354,7 @@ public class InitiateWriteTraversal implements WrittenEventProcessor {
             final boolean removal,
             List<ViewField> writeableChanges) throws Exception {
 
-        final ReferenceWithTimestamp from = new ReferenceWithTimestamp(instanceId,
-                refFieldName, to.getTimestamp());
+        final ReferenceWithTimestamp from = new ReferenceWithTimestamp(tenantIdAndCentricId, instanceId, refFieldName, to.getTimestamp());
 
         for (final PathTraverser pathTraverser : forwardRefTraversers.get(key)) {
             PathTraversalContext context = pathTraverser.createContext(writtenEventContext, writtenEvent, threadTimestamp, removal);

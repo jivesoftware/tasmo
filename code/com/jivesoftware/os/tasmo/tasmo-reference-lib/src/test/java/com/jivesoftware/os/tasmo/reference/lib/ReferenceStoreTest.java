@@ -59,7 +59,7 @@ public class ReferenceStoreTest {
         List<ReferenceWithTimestamp> versionResults = new ArrayList<>();
         long eventId = order.incrementAndGet();
         for (Reference bId : bIds) {
-            versionResults.add(new ReferenceWithTimestamp(bId.getObjectId(), bId.getFieldName(), 0));
+            versionResults.add(new ReferenceWithTimestamp(tenantIdAndCentricId, bId.getObjectId(), bId.getFieldName(), 0));
         }
 
         referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, 0, new ObjectIdResults());
@@ -69,7 +69,7 @@ public class ReferenceStoreTest {
         Set<String> aClassNames = Sets.newHashSet(aClassName);
 
         referenceStore.streamBackRefs(tenantIdAndCentricId, bId3.getObjectId(), aClassNames, aFieldName, 0, results);
-        Assert.assertTrue(equal(results.results, Arrays.asList(new ReferenceWithTimestamp(aId.getObjectId(), aId.getFieldName(), 0))));
+        Assert.assertTrue(equal(results.results, Arrays.asList(new ReferenceWithTimestamp(tenantIdAndCentricId, aId.getObjectId(), aId.getFieldName(), 0))));
         results.results.clear();
 
         referenceStore.streamForwardRefs(tenantIdAndCentricId, Collections.singleton(aClassName), aFieldName, aId.getObjectId(), 0, results);
@@ -81,13 +81,13 @@ public class ReferenceStoreTest {
         eventId = order.incrementAndGet();
         versionResults.clear();
         for (Reference bId : bIds) {
-            versionResults.add(new ReferenceWithTimestamp(bId.getObjectId(), bId.getFieldName(), 0));
+            versionResults.add(new ReferenceWithTimestamp(tenantIdAndCentricId, bId.getObjectId(), bId.getFieldName(), 0));
         }
         referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, 0, new ObjectIdResults());
         referenceStore.link(tenantIdAndCentricId, aId.getObjectId(), eventId, Arrays.asList(new ReferenceStore.LinkTo(aFieldName, bIds)));
 
         referenceStore.streamBackRefs(tenantIdAndCentricId, bId3.getObjectId(), aClassNames, aFieldName, 0, results);
-        Assert.assertTrue(equal(results.results, Arrays.asList(new ReferenceWithTimestamp(aId.getObjectId(), aId.getFieldName(), 0))));
+        Assert.assertTrue(equal(results.results, Arrays.asList(new ReferenceWithTimestamp(tenantIdAndCentricId, aId.getObjectId(), aId.getFieldName(), 0))));
         results.results.clear();
 
         //bid2 is no longer linked to by aId
@@ -104,7 +104,7 @@ public class ReferenceStoreTest {
         eventId = order.incrementAndGet();
         versionResults.clear();
         for (Reference bId : bIds) {
-            versionResults.add(new ReferenceWithTimestamp(bId.getObjectId(), bId.getFieldName(), 0));
+            versionResults.add(new ReferenceWithTimestamp(tenantIdAndCentricId, bId.getObjectId(), bId.getFieldName(), 0));
         }
         referenceStore.unlink(tenantIdAndCentricId, eventId, aId.getObjectId(), aFieldName, 0, new ObjectIdResults());
         referenceStore.link(tenantIdAndCentricId, aId.getObjectId(), eventId, Arrays.asList(new ReferenceStore.LinkTo(aFieldName, bIds)));
