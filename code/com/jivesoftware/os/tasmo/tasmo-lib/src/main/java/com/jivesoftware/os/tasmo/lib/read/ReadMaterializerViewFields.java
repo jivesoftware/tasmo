@@ -4,7 +4,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
 import com.jivesoftware.os.jive.utils.logger.MetricLogger;
 import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.tasmo.lib.concur.ConcurrencyAndExistenceCommitChange;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.model.VersionedTasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.process.WrittenEventContext;
@@ -111,7 +110,7 @@ public class ReadMaterializerViewFields {
             } else {
                 while (true) {
                     try {
-                        CommitChange commitChange = new ConcurrencyAndExistenceCommitChange(concurrencyStore, this);
+                        CommitChange commitChange = this; // new ConcurrencyAndExistenceCommitChange(concurrencyStore, this);
                         initiateTraversal.read(referenceTraverser,
                                 fieldValueReader,
                                 viewDescriptor.getTenantId(),
