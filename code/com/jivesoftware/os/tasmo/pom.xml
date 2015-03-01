@@ -12,7 +12,6 @@
         <relativePath>inheritance-poms/global-repo-management/pom.xml</relativePath>
     </parent>
     <modules>
-        <module>inheritance-poms</module>
         <module>tasmo-configuration</module>
         <module>tasmo-event-api</module>
         <module>tasmo-id</module>
