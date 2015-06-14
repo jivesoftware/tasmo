@@ -10,21 +10,21 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.id.ChainedVersion;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.jive.utils.logger.MetricLogger;
-import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
 import com.jivesoftware.os.jive.utils.ordered.id.ConstantWriterIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProvider;
 import com.jivesoftware.os.jive.utils.ordered.id.OrderIdProviderImpl;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.rcvs.api.CallbackStream;
+import com.jivesoftware.os.rcvs.api.ColumnValueAndTimestamp;
+import com.jivesoftware.os.rcvs.api.RowColumnValueStore;
+import com.jivesoftware.os.rcvs.inmemory.InMemoryRowColumnValueStore;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.EventWriterOptions;
@@ -191,27 +191,27 @@ public class Materialization {
         return new RowColumnValueStoreProvider() {
             @Override
             public RowColumnValueStore<TenantId, ObjectId, String, String, RuntimeException> existenceStore() {
-                return new RowColumnValueStoreImpl<>();
+                return new InMemoryRowColumnValueStore<>();
             }
 
             @Override
             public RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore() {
-                return new RowColumnValueStoreImpl<>();
+                return new InMemoryRowColumnValueStore<>();
             }
 
             @Override
             public RowColumnValueStore<TenantIdAndCentricId, ImmutableByteArray, ImmutableByteArray, ViewValue, RuntimeException> viewValueStore() {
-                return new RowColumnValueStoreImpl<>();
+                return new InMemoryRowColumnValueStore<>();
             }
 
             @Override
             public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks() {
-                return new RowColumnValueStoreImpl<>();
+                return new InMemoryRowColumnValueStore<>();
             }
 
             @Override
             public RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks() {
-                return new RowColumnValueStoreImpl<>();
+                return new InMemoryRowColumnValueStore<>();
             }
         };
         //}
@@ -275,7 +275,7 @@ public class Materialization {
         RowColumnValueStoreProvider rowColumnValueStoreProvider = getRowColumnValueStoreProvider(uuid);
         RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue, RuntimeException> eventStore = rowColumnValueStoreProvider.eventStore();
 
-        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new InMemoryRowColumnValueStore<>();
         ConcurrencyStore concurrencyStore = new HBaseBackedConcurrencyStore(concurrency);
         eventValueStore = new EventValueStore(concurrencyStore, eventStore);
 

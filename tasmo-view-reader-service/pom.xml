@@ -19,15 +19,15 @@
             <artifactId>base</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>logger</artifactId>
+            <groupId>com.jivesoftware.os.mlogger</groupId>
+            <artifactId>core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-id</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
             <artifactId>row-column-value-store-api</artifactId>
         </dependency>
         <dependency>
@@ -57,25 +57,29 @@
             <artifactId>tasmo-view-reader-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
+            <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>merlin-config</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>http-client</artifactId>
+            <groupId>com.jivesoftware.os.routing.bird</groupId>
+            <artifactId>routing-bird-http-client</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-configuration</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
             <artifactId>row-column-value-store-inmemory</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.jive.utils</groupId>
             <artifactId>id</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
+            <artifactId>row-column-value-store-marshall-id</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -16,9 +16,9 @@
 package com.jivesoftware.os.tasmo.service;
 
 import com.github.rholder.retry.Retryer;
-import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
-import com.jivesoftware.os.jive.utils.logger.MetricLogger;
-import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.rcvs.api.CallbackStream;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import java.util.ArrayList;
 import java.util.List;

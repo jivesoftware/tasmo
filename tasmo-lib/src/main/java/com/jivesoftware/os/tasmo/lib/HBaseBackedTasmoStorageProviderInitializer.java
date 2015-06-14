@@ -1,6 +1,6 @@
 package com.jivesoftware.os.tasmo.lib;
 
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
+import com.jivesoftware.os.rcvs.api.RowColumnValueStoreInitializer;
 import com.jivesoftware.os.tasmo.model.process.WrittenEventProvider;
 import org.merlin.config.Config;
 import org.merlin.config.defaults.StringDefault;
@@ -20,16 +20,16 @@ public class HBaseBackedTasmoStorageProviderInitializer {
 
     public static TasmoStorageProvider initializeStorageProvider(
         final HBaseBackedTasmoStorageProviderConfig config,
-        final SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+        final RowColumnValueStoreInitializer<Exception> rowColumnValueStoreInitializer,
         final WrittenEventProvider writtenEventProvider) {
 
-        return new HBaseBackedTasmoStorageProvider(config.getTableNameSpace(), setOfSortedMapsImplInitializer, writtenEventProvider);
+        return new HBaseBackedTasmoStorageProvider(config.getTableNameSpace(), rowColumnValueStoreInitializer, writtenEventProvider);
     }
 
     public static TasmoStorageProvider initializeSyncStorageProvider(
         final HBaseBackedTasmoStorageProviderConfig config,
-        final SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+        final RowColumnValueStoreInitializer<Exception> rowColumnValueStoreInitializer,
         final WrittenEventProvider writtenEventProvider) {
-        return new HBaseBackedTasmoStorageProvider(config.getTableNameSpace() + ".sync", setOfSortedMapsImplInitializer, writtenEventProvider);
+        return new HBaseBackedTasmoStorageProvider(config.getTableNameSpace() + ".sync", rowColumnValueStoreInitializer, writtenEventProvider);
     }
 }

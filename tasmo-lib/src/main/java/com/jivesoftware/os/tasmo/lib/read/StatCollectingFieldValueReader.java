@@ -2,7 +2,7 @@ package com.jivesoftware.os.tasmo.lib.read;
 
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
+import com.jivesoftware.os.rcvs.api.ColumnValueAndTimestamp;
 import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
 

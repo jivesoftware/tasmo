@@ -2,9 +2,9 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
-import com.jivesoftware.os.jive.utils.logger.MetricLogger;
-import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.rcvs.api.CallbackStream;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore;
 import com.jivesoftware.os.tasmo.lib.model.TasmoViewModel;
 import com.jivesoftware.os.tasmo.lib.modifier.ModifierStore;

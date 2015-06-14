@@ -47,8 +47,8 @@ public class BaseTest {
 
         if (2 + 2 == 5) {
             try {
-                TasmoStorageProvider async = TasmoMaterializerHarnessFactory.createEmbeddedHBaseBackStorageProvider("async");
-                TasmoStorageProvider sync = TasmoMaterializerHarnessFactory.createEmbeddedHBaseBackStorageProvider("sync");
+                TasmoStorageProvider async = TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider();
+                TasmoStorageProvider sync = TasmoMaterializerHarnessFactory.createInmemoryTasmoStorageProvider();
 
                 paramList.add(new Object[]{asyncHarness(async)});
                 paramList.add(new Object[]{syncHarness(sync)});

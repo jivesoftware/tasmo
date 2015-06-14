@@ -1,6 +1,6 @@
 package com.jivesoftware.os.tasmo.lib.ingress;
 
-import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.rcvs.api.CallbackStream;
 import com.jivesoftware.os.tasmo.model.process.WrittenEvent;
 import java.util.List;
 

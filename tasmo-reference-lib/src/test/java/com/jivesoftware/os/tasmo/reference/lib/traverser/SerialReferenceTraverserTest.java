@@ -1,12 +1,12 @@
 package com.jivesoftware.os.tasmo.reference.lib.traverser;
 
-import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
+import com.jivesoftware.os.rcvs.api.CallbackStream;
+import com.jivesoftware.os.rcvs.api.RowColumnValueStore;
+import com.jivesoftware.os.rcvs.inmemory.InMemoryRowColumnValueStore;
 import com.jivesoftware.os.tasmo.reference.lib.ClassAndField_IdKey;
 import com.jivesoftware.os.tasmo.reference.lib.Reference;
 import com.jivesoftware.os.tasmo.reference.lib.ReferenceStore;
@@ -39,11 +39,11 @@ public class SerialReferenceTraverserTest {
 
     @BeforeTest
     public void setUp() {
-        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> updated = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> updated = new InMemoryRowColumnValueStore<>();
         concurrencyStore = new HBaseBackedConcurrencyStore(updated);
 
-        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks = new RowColumnValueStoreImpl<>();
-        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks = new InMemoryRowColumnValueStore<>();
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks = new InMemoryRowColumnValueStore<>();
         referenceStore = new ReferenceStore(concurrencyStore, multiLinks, multiBackLinks);
     }
 

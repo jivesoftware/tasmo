@@ -2,9 +2,9 @@ package com.jivesoftware.os.tasmo.service;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.Singleton;
-import com.jivesoftware.os.jive.utils.jaxrs.util.ResponseHelper;
-import com.jivesoftware.os.jive.utils.logger.MetricLogger;
-import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.routing.bird.shared.ResponseHelper;
 import com.jivesoftware.os.tasmo.lib.TasmoBlacklist;
 import com.jivesoftware.os.tasmo.lib.ingress.EventConvertingCallbackStream;
 import com.jivesoftware.os.tasmo.lib.process.TasmoProcessingStats;

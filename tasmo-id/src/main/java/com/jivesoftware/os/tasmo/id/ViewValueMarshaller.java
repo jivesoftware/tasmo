@@ -1,6 +1,6 @@
 package com.jivesoftware.os.tasmo.id;
 
-import com.jivesoftware.os.jive.utils.row.column.value.store.marshall.api.TypeMarshaller;
+import com.jivesoftware.os.rcvs.marshall.api.TypeMarshaller;
 import java.nio.ByteBuffer;
 
 /**

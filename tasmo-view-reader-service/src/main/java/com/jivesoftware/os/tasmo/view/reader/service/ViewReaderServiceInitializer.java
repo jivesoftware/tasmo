@@ -2,19 +2,19 @@ package com.jivesoftware.os.tasmo.view.reader.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
-import com.jivesoftware.os.jive.utils.id.ImmutableByteArrayMarshaller;
-import com.jivesoftware.os.jive.utils.id.SaltingImmutableByteArrayMarshaller;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricIdMarshaller;
-import com.jivesoftware.os.jive.utils.logger.MetricLogger;
-import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.DefaultRowColumnValueStoreMarshaller;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.NeverAcceptsFailureSetOfSortedMaps;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.SetOfSortedMapsImplInitializer;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.CurrentTimestamper;
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.rcvs.api.ColumnValueAndTimestamp;
+import com.jivesoftware.os.rcvs.api.DefaultRowColumnValueStoreMarshaller;
+import com.jivesoftware.os.rcvs.api.NeverAcceptsFailureRowColumnValueStore;
+import com.jivesoftware.os.rcvs.api.RowColumnValueStore;
+import com.jivesoftware.os.rcvs.api.RowColumnValueStoreInitializer;
+import com.jivesoftware.os.rcvs.api.timestamper.CurrentTimestamper;
+import com.jivesoftware.os.rcvs.marshall.id.ImmutableByteArrayMarshaller;
+import com.jivesoftware.os.rcvs.marshall.id.SaltingImmutableByteArrayMarshaller;
+import com.jivesoftware.os.rcvs.marshall.id.TenantIdAndCentricIdMarshaller;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.id.ViewValueMarshaller;
@@ -59,7 +59,7 @@ public class ViewReaderServiceInitializer {
     }
 
     public static ViewReader<ViewResponse> initializeViewReader(ViewReaderServiceConfig config,
-            SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+            RowColumnValueStoreInitializer<Exception> setOfSortedMapsImplInitializer,
             ViewPermissionChecker viewPermissionChecker,
             ViewsProvider viewsProvider,
             ViewPathKeyProvider viewPathKeyProvider) throws Exception {
@@ -72,7 +72,7 @@ public class ViewReaderServiceInitializer {
     }
 
     private static <V> ViewProvider<V> build(
-            SetOfSortedMapsImplInitializer<Exception> setOfSortedMapsImplInitializer,
+            RowColumnValueStoreInitializer<Exception> setOfSortedMapsImplInitializer,
             final ViewPermissionChecker viewPermissionChecker,
             ViewsProvider viewsProvider,
             ViewPathKeyProvider viewPathKeyProvider,
@@ -83,7 +83,7 @@ public class ViewReaderServiceInitializer {
                 ImmutableByteArray,
                 ImmutableByteArray,
                 ViewValue,
-                RuntimeException> store = new NeverAcceptsFailureSetOfSortedMaps<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
+                RuntimeException> store = new NeverAcceptsFailureRowColumnValueStore<>(setOfSortedMapsImplInitializer.initialize(config.getTableNameSpace(),
                 "tasmo.views", "v", new DefaultRowColumnValueStoreMarshaller<>(
                         new TenantIdAndCentricIdMarshaller(),
                         new SaltingImmutableByteArrayMarshaller(),

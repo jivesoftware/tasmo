@@ -27,15 +27,15 @@
             <artifactId>ordered-id</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>logger</artifactId>
+            <groupId>com.jivesoftware.os.mlogger</groupId>
+            <artifactId>core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-reference-lib</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
             <artifactId>row-column-value-store-api</artifactId>
         </dependency>
         <dependency>
@@ -43,7 +43,7 @@
             <artifactId>tasmo-id</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
+            <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>merlin-config</artifactId>
         </dependency>
         <dependency>
@@ -84,11 +84,11 @@
             <artifactId>tasmo-view-reader-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>jaxrs-util</artifactId>
+            <groupId>com.jivesoftware.os.routing.bird</groupId>
+            <artifactId>routing-bird-http-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
             <artifactId>row-column-value-store-marshall-primatives</artifactId>
         </dependency>
         <dependency>

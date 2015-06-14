@@ -12,14 +12,14 @@ package com.jivesoftware.os.tasmo.view.reader.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.Lists;
-import com.jivesoftware.os.jive.utils.http.client.HttpClient;
-import com.jivesoftware.os.jive.utils.http.client.HttpClientConfiguration;
-import com.jivesoftware.os.jive.utils.http.client.HttpClientException;
-import com.jivesoftware.os.jive.utils.http.client.HttpClientFactory;
-import com.jivesoftware.os.jive.utils.http.client.HttpClientFactoryProvider;
-import com.jivesoftware.os.jive.utils.http.client.HttpResponse;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
+import com.jivesoftware.os.routing.bird.http.client.HttpClient;
+import com.jivesoftware.os.routing.bird.http.client.HttpClientConfiguration;
+import com.jivesoftware.os.routing.bird.http.client.HttpClientException;
+import com.jivesoftware.os.routing.bird.http.client.HttpClientFactory;
+import com.jivesoftware.os.routing.bird.http.client.HttpClientFactoryProvider;
+import com.jivesoftware.os.routing.bird.http.client.HttpResponse;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Collection;
@@ -45,7 +45,7 @@ public class CLI {
 
         ObjectMapper mapper = new ObjectMapper();
         long start = System.currentTimeMillis();
-        HttpResponse postJson = client.postJson("/view/get", mapper.writeValueAsString(request));
+        HttpResponse postJson = client.postJson("/view/get", mapper.writeValueAsString(request), null);
 
         ArrayNode entries = mapper.readValue(new ByteArrayInputStream(postJson.getResponseBody()), ArrayNode.class);
         for (int i = 0; i < entries.size(); i++) {

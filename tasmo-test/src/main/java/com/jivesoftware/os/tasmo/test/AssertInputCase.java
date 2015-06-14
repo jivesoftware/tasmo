@@ -4,15 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.IntNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.jive.utils.logger.MetricLogger;
-import com.jivesoftware.os.jive.utils.logger.MetricLoggerFactory;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantIdAndRow;
+import com.jivesoftware.os.mlogger.core.MetricLogger;
+import com.jivesoftware.os.mlogger.core.MetricLoggerFactory;
+import com.jivesoftware.os.rcvs.api.CallbackStream;
+import com.jivesoftware.os.rcvs.api.ColumnValueAndTimestamp;
+import com.jivesoftware.os.rcvs.api.TenantIdAndRow;
 import com.jivesoftware.os.tasmo.event.api.JsonEventConventions;
 import com.jivesoftware.os.tasmo.event.api.write.Event;
 import com.jivesoftware.os.tasmo.id.ViewValue;
@@ -109,7 +109,7 @@ public class AssertInputCase {
 
         } catch (Throwable t) {
             System.out.println("Test:testAllModelPathCombinationsAndEventFireCombinations: category:" + ic.category
-                    + " testId:" + ic.testId + " seed:" + seed + " Failed.");
+                + " testId:" + ic.testId + " seed:" + seed + " Failed.");
             t.printStackTrace();
 
             if (verbose) {
@@ -122,23 +122,23 @@ public class AssertInputCase {
 
                     @Override
                     public TenantIdAndRow<TenantIdAndCentricId, ImmutableByteArray> callback(
-                            final TenantIdAndRow<TenantIdAndCentricId, ImmutableByteArray> row) throws Exception {
+                        final TenantIdAndRow<TenantIdAndCentricId, ImmutableByteArray> row) throws Exception {
                         if (row != null) {
                             ic.materialization.rawViewValueStore.getEntrys(row.getTenantId(), row.getRow(), null, Long.MAX_VALUE, 1_000, false, null, null,
-                                    new CallbackStream<ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long>>() {
+                                new CallbackStream<ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long>>() {
 
-                                        @Override
-                                        public ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> callback(
-                                                ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> value) throws Exception {
-                                                    if (value != null) {
+                                    @Override
+                                    public ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> callback(
+                                        ColumnValueAndTimestamp<ImmutableByteArray, ViewValue, Long> value) throws Exception {
+                                            if (value != null) {
 
-                                                        System.out.println(" |--> " + rowKey(row.getRow())
-                                                                + " | " + columnKey(value.getColumn())
-                                                                + " | " + value.getValue() + " | " + value.getTimestamp());
-                                                    }
-                                                    return value;
-                                                }
-                                    });
+                                                System.out.println(" |--> " + rowKey(row.getRow())
+                                                    + " | " + columnKey(value.getColumn())
+                                                    + " | " + value.getValue() + " | " + value.getTimestamp());
+                                            }
+                                            return value;
+                                        }
+                                });
                         }
                         return row;
                     }
@@ -171,7 +171,7 @@ public class AssertInputCase {
 
     //TODO use and communicate different leaf node fields per branch.
     public void assertViewElementExists(List<ModelPathStep> path, int pathIndex, ObjectNode viewNode,
-            Map<String, String> expectedFieldValues, List<AssertionResult> resultAccumulator) {
+        Map<String, String> expectedFieldValues, List<AssertionResult> resultAccumulator) {
 
         if (viewNode == null) {
             resultAccumulator.add(new AssertionResult(false, "Supplied view node is null"));

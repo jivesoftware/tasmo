@@ -62,8 +62,8 @@
             <type>jar</type>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>logger</artifactId>
+            <groupId>com.jivesoftware.os.mlogger</groupId>
+            <artifactId>core</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
@@ -74,11 +74,11 @@
             <artifactId>tasmo-reference-lib</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
             <artifactId>row-column-value-store-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
             <artifactId>row-column-value-store-inmemory</artifactId>
         </dependency>
         <dependency>
@@ -90,13 +90,12 @@
             <artifactId>tasmo-view-reader-service</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
-            <artifactId>row-column-value-store-hbase</artifactId>
-            <scope>test</scope>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
+            <artifactId>row-column-value-store-marshall-primatives</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
-            <artifactId>row-column-value-store-marshall-primatives</artifactId>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
+            <artifactId>row-column-value-store-api</artifactId>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
@@ -108,18 +107,12 @@
             <artifactId>id</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
+            <groupId>com.jivesoftware.os.routing.bird</groupId>
             <artifactId>merlin-config</artifactId>
         </dependency>
         <dependency>
             <groupId>com.jivesoftware.os.tasmo</groupId>
             <artifactId>tasmo-view-notification-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.jivesoftware.os.jive.utils.row.column.value.store</groupId>
-            <artifactId>row-column-value-store-tests</artifactId>
-            <scope>test</scope>
-            <type>jar</type>
         </dependency>
         <dependency>
             <groupId>org.apache.hadoop</groupId>
@@ -130,6 +123,10 @@
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-minicluster</artifactId>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jivesoftware.os.rcvs</groupId>
+            <artifactId>row-column-value-store-marshall-id</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -11,9 +11,9 @@ import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
+import com.jivesoftware.os.rcvs.api.ColumnValueAndTimestamp;
+import com.jivesoftware.os.rcvs.api.RowColumnValueStore;
+import com.jivesoftware.os.rcvs.inmemory.InMemoryRowColumnValueStore;
 import com.jivesoftware.os.tasmo.lib.events.EventValueStore.Transaction;
 import com.jivesoftware.os.tasmo.model.process.JsonWrittenEventProvider;
 import com.jivesoftware.os.tasmo.model.process.OpaqueFieldValue;
@@ -36,10 +36,10 @@ public class EventValueStoreTest {
 
     @BeforeTest
     public void setUp() {
-        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> concurrency = new InMemoryRowColumnValueStore<>();
         concurrencyStore = new HBaseBackedConcurrencyStore(concurrency);
         eventValueStore = new EventValueStore(concurrencyStore,
-                new RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue>());
+                new InMemoryRowColumnValueStore<TenantIdAndCentricId, ObjectId, String, OpaqueFieldValue>());
     }
 
     /**

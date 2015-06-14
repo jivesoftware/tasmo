@@ -10,8 +10,8 @@ import com.jivesoftware.os.jive.utils.id.ImmutableByteArray;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
+import com.jivesoftware.os.rcvs.api.RowColumnValueStore;
+import com.jivesoftware.os.rcvs.inmemory.InMemoryRowColumnValueStore;
 import com.jivesoftware.os.tasmo.configuration.views.TenantViewsProvider;
 import com.jivesoftware.os.tasmo.id.ViewValue;
 import com.jivesoftware.os.tasmo.model.ViewBinding;
@@ -97,7 +97,7 @@ public class ViewProviderTest {
             }
         };
         viewFormatter = new ViewAsObjectNode();
-        store = new RowColumnValueStoreImpl<>();
+        store = new InMemoryRowColumnValueStore<>();
         viewValueReader = new ViewValueReader(new ViewValueStore(store, new StringHashcodeViewPathKeyProvider()));
 
         viewProvider = new ViewProvider(viewPermissionChecker,

@@ -4,16 +4,16 @@
  */
 package com.jivesoftware.os.tasmo.reference.lib;
 
-import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
 import com.jivesoftware.os.jive.utils.id.Id;
 import com.jivesoftware.os.jive.utils.id.ObjectId;
 import com.jivesoftware.os.jive.utils.id.TenantId;
 import com.jivesoftware.os.jive.utils.id.TenantIdAndCentricId;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.ColumnValueAndTimestamp;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.RowColumnValueStore;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.TenantIdAndRow;
-import com.jivesoftware.os.jive.utils.row.column.value.store.api.timestamper.ConstantTimestamper;
-import com.jivesoftware.os.jive.utils.row.column.value.store.inmemory.RowColumnValueStoreImpl;
+import com.jivesoftware.os.rcvs.api.CallbackStream;
+import com.jivesoftware.os.rcvs.api.ColumnValueAndTimestamp;
+import com.jivesoftware.os.rcvs.api.RowColumnValueStore;
+import com.jivesoftware.os.rcvs.api.TenantIdAndRow;
+import com.jivesoftware.os.rcvs.api.timestamper.ConstantTimestamper;
+import com.jivesoftware.os.rcvs.inmemory.InMemoryRowColumnValueStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.ConcurrencyStore;
 import com.jivesoftware.os.tasmo.reference.lib.concur.FieldVersion;
 import com.jivesoftware.os.tasmo.reference.lib.concur.HBaseBackedConcurrencyStore;
@@ -42,11 +42,11 @@ public class ReferenceStoreMultiHopConcurrencyTest {
     public void testConcurrencyMultiRefStore() throws Exception {
 
         //System.out.println("\n |--> BEGIN \n");
-        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> updated = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long, RuntimeException> updated = new InMemoryRowColumnValueStore<>();
         ConcurrencyStore concurrencyStore = new HBaseBackedConcurrencyStore(updated);
 
-        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks = new RowColumnValueStoreImpl<>();
-        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks = new RowColumnValueStoreImpl<>();
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiLinks = new InMemoryRowColumnValueStore<>();
+        RowColumnValueStore<TenantIdAndCentricId, ClassAndField_IdKey, ObjectId, byte[], RuntimeException> multiBackLinks = new InMemoryRowColumnValueStore<>();
         ReferenceStore referenceStore = new ReferenceStore(concurrencyStore, multiLinks, multiBackLinks);
 
         long seed = System.currentTimeMillis();
@@ -57,7 +57,7 @@ public class ReferenceStoreMultiHopConcurrencyTest {
 
         ObjectId fromA = new ObjectId("A", new Id(rand.nextInt(1_000)));
 
-        final RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values = new RowColumnValueStoreImpl<>();
+        final InMemoryRowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long> values = new InMemoryRowColumnValueStore<>();
 
         int eventCount = 50;
         List<Event> events = new ArrayList<>();
@@ -182,7 +182,7 @@ public class ReferenceStoreMultiHopConcurrencyTest {
         boolean firstHop;
         ConcurrencyStore concurrencyStore;
         ReferenceStore referenceStore;
-        RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values;
+        InMemoryRowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long> values;
         TenantIdAndCentricId tenantIdAndCentricId;
         long timestamp;
         boolean delete;
@@ -193,7 +193,7 @@ public class ReferenceStoreMultiHopConcurrencyTest {
         Event(boolean firstHop,
                 ConcurrencyStore concurrencyStore,
                 ReferenceStore referenceStore,
-                RowColumnValueStoreImpl<TenantIdAndCentricId, ObjectId, String, Long> values,
+                InMemoryRowColumnValueStore<TenantIdAndCentricId, ObjectId, String, Long> values,
                 TenantIdAndCentricId tenantIdAndCentricId,
                 long timestamp,
                 boolean delete,

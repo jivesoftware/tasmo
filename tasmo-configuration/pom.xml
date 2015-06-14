@@ -45,8 +45,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.jivesoftware.os.jive.utils</groupId>
-            <artifactId>logger</artifactId>
+            <groupId>com.jivesoftware.os.mlogger</groupId>
+            <artifactId>core</artifactId>
             <type>jar</type>
         </dependency>
         <dependency>

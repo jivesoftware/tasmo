@@ -2,7 +2,7 @@ package com.jivesoftware.os.tasmo.lib;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.jivesoftware.os.jive.utils.base.interfaces.CallbackStream;
+import com.jivesoftware.os.rcvs.api.CallbackStream;
 import com.jivesoftware.os.tasmo.lib.ingress.TasmoWriteMaterializer;
 import com.jivesoftware.os.tasmo.lib.process.TasmoEventProcessor;
 import com.jivesoftware.os.tasmo.lib.process.bookkeeping.BookkeepingEvent;
