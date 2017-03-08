@@ -12,3 +12,6 @@ Tasmo based applications declare a set of events and views, where the events are
 
 #### Getting Started
 Check out some Tasmo basics over at [the wiki](https://github.com/jivesoftware/tasmo/wiki).
+
+#### Licensing
+Tasmo is licensed under the Apache License, Version 2.0. See LICENSE for full license text.
